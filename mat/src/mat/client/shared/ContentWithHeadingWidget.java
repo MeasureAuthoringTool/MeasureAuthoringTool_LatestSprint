@@ -1,8 +1,10 @@
 package mat.client.shared;
 
+import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.Widget;
 
@@ -12,24 +14,25 @@ import com.google.gwt.user.client.ui.Widget;
 public class ContentWithHeadingWidget extends Composite{
 	
 	
-	/** The heading. */
-	HTML heading = new HTML();
+	HorizontalPanel buttonPanel = new HorizontalPanel();
 	
 	/** The code list info. */
-	SimplePanel codeListInfo = new SimplePanel(); 
+	SimplePanel codeListInfo = new SimplePanel();
 	
 	/** The content. */
 	SimplePanel content = new SimplePanel();
 	
-	/** The footer. */
-	SimplePanel footer = new SimplePanel();
-	
-	/** The header holder. */
-	FocusableWidget headerHolder = new FocusableWidget(heading);
-	
 	/** The embedded link holder. */
 	SimplePanel embeddedLinkHolder = new SimplePanel();
 	
+	/** The footer. */
+	SimplePanel footer = new SimplePanel();
+	
+	/** The heading. */
+	HTML heading = new HTML();
+	/** The header holder. */
+	FocusableWidget headingHolder = new FocusableWidget(heading);
+	FlowPanel vPanel = new FlowPanel();
 	/**
 	 * Instantiates a new content with heading widget.
 	 */
@@ -37,13 +40,15 @@ public class ContentWithHeadingWidget extends Composite{
 		codeListInfo.getElement().setId("codeListInfo_SimplePanel");
 		content.getElement().setId("content_SimplePanel");
 		footer.getElement().setId("footer_SimplePanel");
-		
-		FlowPanel vPanel = new FlowPanel();
 		vPanel.getElement().setId("vPanel_FlowPanel");
 		
 		heading.addStyleName("contentWithHeadingHeader");
 		heading.addStyleName("leftAligned");
-		vPanel.add(heading);
+		HorizontalPanel mainPanel = new HorizontalPanel();
+		mainPanel.add(heading);
+		buttonPanel.setStylePrimaryName("headingButton");
+		mainPanel.add(buttonPanel);
+		vPanel.add(mainPanel);
 		vPanel.add(codeListInfo);
 		vPanel.add(content);
 		vPanel.addStyleName("contentWithHeadingPanel");
@@ -52,7 +57,7 @@ public class ContentWithHeadingWidget extends Composite{
 		SimplePanel sPanel = new SimplePanel();
 		sPanel.getElement().setId("sPanel_SimplePanel");
 		sPanel.add(vPanel);
-		initWidget(sPanel);		
+		initWidget(sPanel);
 	}
 	
 	/**
@@ -72,16 +77,10 @@ public class ContentWithHeadingWidget extends Composite{
 	}
 	
 	/**
-	 * Sets the heading.
-	 * 
-	 * @param text
-	 *            the text
-	 * @param linkName
-	 *            the link name
+	 * @return the buttonPanel
 	 */
-	public void setHeading(String text,String linkName) {
-		String linkStr = SkipListBuilder.buildEmbeddedString(linkName);
-		heading.setHTML(linkStr +"<h1>" + text + "</h1>");
+	public HorizontalPanel getButtonPanel() {
+		return buttonPanel;
 	}
 	
 	/*public void setEmbeddedLink(String linkName){
@@ -90,6 +89,26 @@ public class ContentWithHeadingWidget extends Composite{
 		embeddedLinkHolder.add(w);
 	}*/
 	
+	
+	/** @param text
+	 * @param linkName
+	 * @param createElement
+	 * @param searchButton */
+	public void setButtonPanel( Button createElement, Button searchButton) {
+		if (createElement != null) {
+			buttonPanel.add(createElement);
+		}
+		if (searchButton != null) {
+			buttonPanel.add(searchButton);
+		}
+	}
+	
+	/**
+	 * @param buttonPanel the buttonPanel to set
+	 */
+	public void setButtonPanel(HorizontalPanel buttonPanel) {
+		this.buttonPanel = buttonPanel;
+	}
 	
 	/**
 	 * Sets the code list info.
@@ -113,16 +132,25 @@ public class ContentWithHeadingWidget extends Composite{
 		content.add(w);
 	}
 	
-	/**
-	 * Sets the footer.
+	/** Sets the footer.
 	 * 
-	 * @param w
-	 *            the new footer
-	 */
-	public void setFooter(Widget w){
+	 * @param w the new footer */
+	public void setFooter(Widget w) {
 		footer.clear();
 		footer.add(w);
 	}
 	
+	/**
+	 * Sets the heading.
+	 * 
+	 * @param text
+	 *            the text
+	 * @param linkName
+	 *            the link name
+	 */
+	public void setHeading(String text,String linkName) {
+		String linkStr = SkipListBuilder.buildEmbeddedString(linkName);
+		heading.setHTML(linkStr +"<h1>" + text + "</h1>");
+	}
 	
 }

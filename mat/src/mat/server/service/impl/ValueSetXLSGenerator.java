@@ -1,6 +1,7 @@
 package mat.server.service.impl;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 import mat.dao.ListObjectDAO;
 import mat.model.ListObject;
@@ -15,14 +16,20 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
  * **/
 public class ValueSetXLSGenerator extends XLSGenerator {
 
-/**
- *@param loid - String.
- *@param names - String Array.
- *@param wkbk -HSSFWorkbook.
- * @param lo - ListObject.
- * **/
-public final void addValueSetWorkSheet(final String loid, final String[] names,
-		final HSSFWorkbook wkbk, final ListObject lo) {
+	/**
+	 * Adds the value set work sheet.
+	 * 
+	 * @param loid
+	 *            - String.
+	 * @param names
+	 *            - String Array.
+	 * @param wkbk
+	 *            -HSSFWorkbook.
+	 * @param lo
+	 *            - ListObject. *
+	 */
+	public final void addValueSetWorkSheet(final String loid, final String[] names,
+			final HSSFWorkbook wkbk, final ListObject lo) {
 		String sheetName = stripInvalidChars(lo.getName());
 
 		HSSFCellStyle style = wkbk.createCellStyle();
@@ -35,22 +42,30 @@ public final void addValueSetWorkSheet(final String loid, final String[] names,
 		rowCache.clear();
 		sizeColumns(wkst);
 	}
-/**
- *@param loid - String.
- * @param lo - ListObject.
- * @return HSSFWorkbook.
- * **/
+	
+	/**
+	 * Gets the xls.
+	 * 
+	 * @param loid
+	 *            - String.
+	 * @param lo
+	 *            - ListObject.
+	 * @return HSSFWorkbook. *
+	 */
 
 	public final HSSFWorkbook getXLS(final String loid, final ListObject lo) {
 
 		HSSFWorkbook wkbk = new HSSFWorkbook();
 		createMetaData(wkbk);
-		addDisclaimer(wkbk);
+		// addDisclaimer(wkbk);
 		// adding measure value set
 		addValueSetWorkSheet(loid, getNAME_STRINGS(), wkbk, lo);
 		return wkbk;
 	}
 
+	/* (non-Javadoc)
+	 * @see mat.server.service.impl.XLSGenerator#cacheXLSRow(mat.model.ListObject, mat.dao.ListObjectDAO, java.sql.Timestamp)
+	 */
 	@Override
 	protected final void cacheXLSRow(final ListObject lo, final ListObjectDAO listObjectDAO,
 			final Timestamp vsPackageDate) {
@@ -59,6 +74,9 @@ public final void addValueSetWorkSheet(final String loid, final String[] names,
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see mat.server.service.impl.XLSGenerator#getErrorXLS()
+	 */
 	@Override
 	public final HSSFWorkbook getErrorXLS() {
 		HSSFWorkbook wkbk = new HSSFWorkbook();
@@ -67,6 +85,9 @@ public final void addValueSetWorkSheet(final String loid, final String[] names,
 		return wkbk;
 	}
 
+	/* (non-Javadoc)
+	 * @see mat.server.service.impl.XLSGenerator#cacheXLSRow(mat.model.MatValueSet)
+	 */
 	@Override
 	protected void cacheXLSRow(final MatValueSet lo) {
 

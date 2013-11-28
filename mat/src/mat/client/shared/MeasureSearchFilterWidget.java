@@ -2,7 +2,7 @@ package mat.client.shared;
 
 import mat.client.ImageResources;
 import mat.client.measure.metadata.CustomCheckBox;
-
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -58,7 +58,7 @@ public class MeasureSearchFilterWidget extends Composite implements ClickHandler
 	private DisclosurePanel searchFilterDisclosurePanel = new DisclosurePanel();
 	
 	/** The search input. {@link WatermarkedTextBox}. */
-	private WatermarkedTextBox searchInput = new WatermarkedTextBox();
+	private TextBox searchInput = new TextBox();
 	/**
 	 * Selected filter value - {@link Integer}.
 	 */
@@ -66,9 +66,9 @@ public class MeasureSearchFilterWidget extends Composite implements ClickHandler
 	/**
 	 * Default Constructor.
 	 */
-	public MeasureSearchFilterWidget() {
-		searchInput.setWatermark("Search");
-		searchButton = new PrimaryButton("Go", "primaryButton");
+	public MeasureSearchFilterWidget(String cssStyleTopPanel, String cssStyleDisclosurePanel) {
+		// searchInput.setWatermark("Search");
+		searchButton = new PrimaryButton("Search", "primaryButton");
 		searchButton.addClickHandler(this);
 		searchInput.getElement().getStyle().setHeight(TEXT_BOX_HT, Unit.PX);
 		/*
@@ -78,18 +78,32 @@ public class MeasureSearchFilterWidget extends Composite implements ClickHandler
 		 */
 		searchButton.getElement().getStyle().setMarginLeft(SEARCH_BTN_MRGN_LEFT, Unit.PX);
 		VerticalPanel topPanel = new VerticalPanel();
+		topPanel.setWidth("100px");
+		topPanel.getElement().setId("MeasureSearchFilterWidget_verticalPanel");
 		FlowPanel fp = new FlowPanel();
-		HorizontalPanel panel = new HorizontalPanel();
-		createDisclosurePanel(panel);
-		panel.add(searchInput);
-		panel.add(searchButton);
-		topPanel.add(panel);
+		fp.getElement().setId("MeasureSearchFilterWidget_FlowPanel");
+		HorizontalPanel horizontalPanel = new HorizontalPanel();
+		fp.getElement().setId("MeasureSearchFilterWidget_HorizontalPanel");
+		createDisclosurePanel(horizontalPanel);
+		horizontalPanel.add(searchInput);
+		horizontalPanel.add(searchButton);
+		Label invisibleLabel = (Label) LabelBuilder.buildInvisibleLabel(new Label("SearchWidgetDisplayed"),
+				"SearchWidgetDisplayed");
+		topPanel.add(invisibleLabel);
+		topPanel.add(horizontalPanel);
 		fp.add(searchFilterDisclosurePanel);
-		fp.setStylePrimaryName("filterDisclosurePanel");
+		fp.setStylePrimaryName(cssStyleDisclosurePanel);
 		topPanel.add(fp);
-		panel.setStylePrimaryName("searchWidget");
+		horizontalPanel.setStylePrimaryName(cssStyleTopPanel);
 		resetFilter();
 		addHandlersToCheckBox();
+		Element element = topPanel.getElement();
+		element.setAttribute("aria-role", "panel");
+		element.setAttribute("aria-labelledby", "SearchWidgetDisplayed");
+		element.setAttribute("aria-live", "assertive");
+		element.setAttribute("aria-atomic", "true");
+		element.setAttribute("aria-relevant", "all");
+		element.setAttribute("role", "alert");
 		// All composites must call initWidget() in their constructors.
 		initWidget(topPanel);
 	}
@@ -131,13 +145,16 @@ public class MeasureSearchFilterWidget extends Composite implements ClickHandler
 		searchFilterDisclosurePanel.setAnimationEnabled(true);
 		searchFilterDisclosurePanel.setOpen(false);
 		VerticalPanel contentWidget = new VerticalPanel();
+		contentWidget.getElement().setId("MeasureSearchFilterWidget_VerticalPanelContentWidget");
 		HorizontalPanel myMeasurePanel = new HorizontalPanel();
+		myMeasurePanel.getElement().setId("MeasureSearchFilterWidget_HorizontalPanelMyMeasure");
 		Label myMeasuresText = (Label) LabelBuilder.buildLabel("My Measures", "My Measures");
 		myMeasuresText.setStylePrimaryName("searchWidgetLabel");
 		myMeasuresCheckBox.setStylePrimaryName("searchWidgetCheckBox");
 		myMeasurePanel.add(myMeasuresText);
 		myMeasurePanel.add(myMeasuresCheckBox);
 		HorizontalPanel allMeasurePanel = new HorizontalPanel();
+		allMeasurePanel.getElement().setId("MeasureSearchFilterWidget_HorizontalPanelAllMeasure");
 		Label allMeasuresText = (Label) LabelBuilder.buildLabel("All Measures", "All Measures");
 		allMeasuresText.setStylePrimaryName("searchWidgetLabel");
 		allMeasuresCheckBox.setStylePrimaryName("searchWidgetCheckBox");
@@ -147,9 +164,11 @@ public class MeasureSearchFilterWidget extends Composite implements ClickHandler
 		contentWidget.add(new SpacerWidget());
 		contentWidget.add(allMeasurePanel);
 		HorizontalPanel headerWidget = new HorizontalPanel();
-		CustomButton zoomButton = (CustomButton) getImage("Search",
-				ImageResources.INSTANCE.search_zoom(), "Search");
-		zoomButton.setEnabled(false);
+		headerWidget.getElement().setId("MeasureSearchFilterWidget_HorizontalPanelHeaderWidget");
+		/*
+		 * CustomButton zoomButton = (CustomButton) getImage("Search", ImageResources.INSTANCE.search_zoom(), "Search");
+		 * zoomButton.setEnabled(false);
+		 */
 		CustomButton filterButton = (CustomButton) getImage("Click to select filter",
 				ImageResources.INSTANCE.arrow_filter(), "Click to select filter");
 		filterButton.addClickHandler(new ClickHandler() {
@@ -160,13 +179,15 @@ public class MeasureSearchFilterWidget extends Composite implements ClickHandler
 			}
 		});
 		HorizontalPanel editButtonPanel = new HorizontalPanel();
+		editButtonPanel.getElement().setId("MeasureSearchFilterWidget_HorizontalPanelEditButton");
 		editButtonPanel
 		.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
-		editButtonPanel.add(zoomButton);
+		// editButtonPanel.add(zoomButton);
 		editButtonPanel.add(filterButton);
 		headerWidget.add(editButtonPanel);
 		searchFilterDisclosurePanel.setContent(contentWidget);
 		VerticalPanel widgetPanel = new VerticalPanel();
+		widgetPanel.getElement().setId("MeasureSearchFilterWidget_VerticalPanelWidgetPanel");
 		widgetPanel.add(headerWidget);
 		widgetPanel.setCellHorizontalAlignment(headerWidget,
 				HasHorizontalAlignment.ALIGN_RIGHT);

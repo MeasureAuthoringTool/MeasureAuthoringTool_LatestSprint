@@ -55,130 +55,163 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 
 	/** The container panel. */
 	private SimplePanel containerPanel = new SimplePanel();
-	
+
 	/** The disclosure panel. */
 	private DisclosurePanel disclosurePanel = new DisclosurePanel("Element without VSAC value set");
-	
+
 	/** The disclosure panel vsac. */
 	private DisclosurePanel disclosurePanelVSAC = new DisclosurePanel("Element with VSAC value set");
-	
+
 	/** The user defined input. */
 	private TextBox userDefinedInput = new TextBox();
-	
+
 	/** The psuedo qdm to measure. */
 	private Button psuedoQDMToMeasure = new PrimaryButton("Apply to Measure", "primaryButton");
-	
+
 	/** The data type panel. */
 	private SimplePanel dataTypePanel = new SimplePanel();
-	
+
 	/** The error message panel. */
 	private ErrorMessageDisplay errorMessagePanel = new ErrorMessageDisplay();
-	
+
 	/** The success message panel. */
-	private SuccessMessageDisplay successMessagePanel = new SuccessMessageDisplay();	
-	
+	private SuccessMessageDisplay successMessagePanel = new SuccessMessageDisplay();
+
 	/** The error message user defined panel. */
 	private ErrorMessageDisplay errorMessageUserDefinedPanel = new ErrorMessageDisplay();
-	
+
 	/** The success message user defined panel. */
 	private SuccessMessageDisplay successMessageUserDefinedPanel = new SuccessMessageDisplay();
-	
+
 	/** The all data type input. */
 	private ListBoxMVP allDataTypeInput = new ListBoxMVP();
-	
+
 	/** The oid input. */
-	private TextBox oidInput = new TextBox();	
-	
-	/** The version input. */
-	private DateBoxWithCalendar versionInput = new DateBoxWithCalendar(DateTimeFormat.getFormat("yyyyMMdd"));
-	
+	private TextBox oidInput = new TextBox();
+
+	/** Version. */
+	private CustomCheckBox version = new CustomCheckBox("Select Version", "Version", 1);
+
+	/** Effective Date. */
+	private CustomCheckBox effectiveDate = new CustomCheckBox("Select Effective Date", "Effective Date", 1);
+
+	/** The date input. */
+	private DateBoxWithCalendar dateInput = new DateBoxWithCalendar(DateTimeFormat.getFormat("yyyyMMdd"));
+
 	/** The retrieve button. */
-	private Button retrieveButton = new PrimaryButton("Search","primaryMetaDataButton");
-	
+	private Button retrieveButton = new PrimaryButton("Search", "primaryMetaDataButton");
+
 	/** The data types list box. */
 	private ListBoxMVP dataTypesListBox = new ListBoxMVP();
-	
+
 	/** The apply to measure button. */
-	private Button applyToMeasureButton = new PrimaryButton("Apply to Measure","primaryButton");
-	
+	private Button applyToMeasureButton = new PrimaryButton("Apply to Measure", "primaryButton");
+
 	/** The cancel button. */
 	private Button cancelButton = new SecondaryButton("Cancel");
-	
+
 	/** The specific occurrence. */
-	private CustomCheckBox specificOccurrence = new CustomCheckBox(ConstantMessages.TOOLTIP_FOR_OCCURRENCE, "Specific Occurrence",true); //US 450
-	
+	private CustomCheckBox specificOccurrence = new CustomCheckBox(ConstantMessages.TOOLTIP_FOR_OCCURRENCE,
+												"Specific Occurrence", true); //US 450
+
 	/** The value set details panel. */
 	private VerticalPanel valueSetDetailsPanel = new VerticalPanel();
-	
+
 	/** The current mat value set. */
-	MatValueSet currentMatValueSet;
-	
+	private MatValueSet currentMatValueSet;
+
 	/** The data type change handler. */
 	private  ValueChangeHandler<String> dataTypeChangeHandler = new ValueChangeHandler<String>() {
 		@Override
 		public void onValueChange(ValueChangeEvent<String> event) {
 			specificOccurrence.setValue(false);
 			String selectedValue = event.getValue();
-		    if(!selectedValue.isEmpty()&& !selectedValue.equals("")){
+		    if (!selectedValue.isEmpty() && !selectedValue.equals("")) {
 		    	applyToMeasureButton.setEnabled(true);
-		    }
-		    else{
+		    } else {
 		    	applyToMeasureButton.setEnabled(false);
 		    }
-		    
-		    ListBoxMVP listbox = (ListBoxMVP)event.getSource();
-		    if(listbox.getItemText(listbox.getSelectedIndex()).equalsIgnoreCase(ConstantMessages.ATTRIBUTE)) {
+
+		    ListBoxMVP listbox = (ListBoxMVP) event.getSource();
+		    if (listbox.getItemText(listbox.getSelectedIndex()).equalsIgnoreCase(ConstantMessages.ATTRIBUTE)) {
 		    	specificOccurrence.setValue(false);
 		    	specificOccurrence.setEnabled(false);
-		    }
-		    else {
+		    } else {
 		    	specificOccurrence.setEnabled(true);
 		    }
 		}
 	};
-		
+
+	/** Version change handler. */
+	private  ValueChangeHandler<Boolean> versionChangeHandler = new ValueChangeHandler<Boolean>() {
+		@Override
+		public void onValueChange(ValueChangeEvent<Boolean> event) {
+			if (version.getValue().equals(Boolean.TRUE)) {
+				effectiveDate.setValue(Boolean.FALSE);
+				dateInput.setEnabled(true);
+			} else {
+				dateInput.setValue(StringUtils.EMPTY);
+				dateInput.setEnabled(false);
+			}
+		}
+	};
+
+	/** EffectiveDate change handler. */
+	private  ValueChangeHandler<Boolean> effectiveDateChangeHandler = new ValueChangeHandler<Boolean>() {
+		@Override
+		public void onValueChange(ValueChangeEvent<Boolean> event) {
+			if (effectiveDate.getValue().equals(Boolean.TRUE)) {
+				version.setValue(Boolean.FALSE);
+				dateInput.setEnabled(true);
+			} else {
+				dateInput.setValue(StringUtils.EMPTY);
+				dateInput.setEnabled(false);
+			}
+		}
+	};
+
 	/**
 	 * Instantiates a new qDS code list search view.
 	 */
 	public QDSCodeListSearchView() {
 		VerticalPanel vp = new VerticalPanel();
 		vp.getElement().setId("vp_VerticalPanel");
-		vp.setWidth("100%");	
+		vp.setWidth("100%");
 		vp.add(buildElementWithVSACValueSetWidget());
 		vp.add(new SpacerWidget());
 		vp.add(buildUserDefinedDisclosureWidget());
 		vp.add(new SpacerWidget());
 		vp.add(new SpacerWidget());
-		vp.add(new SpacerWidget());		
+		vp.add(new SpacerWidget());
 		HorizontalPanel mainPanel = new HorizontalPanel();
 		mainPanel.getElement().setId("mainPanel_HorizontalPanel");
-		mainPanel.setWidth("100%");		
+		mainPanel.setWidth("100%");
 		mainPanel.add(vp);
 		containerPanel.getElement().setId("containerPanel_SimplePanel");
 		containerPanel.setWidth("100%");
 		containerPanel.add(mainPanel);
 		containerPanel.setStyleName("qdsContentPanel");
-		MatContext.get().setQDSView(this);		
+		MatContext.get().setQDSView(this);
 		valueSetDetailsPanel.setVisible(false);
-	}	
-	
+	}
+
 	/**
 	 * Builds the user defined disclosure widget.
-	 * 
+	 *
 	 * @return the widget
 	 */
-	private Widget buildUserDefinedDisclosureWidget(){
+	private Widget buildUserDefinedDisclosureWidget() {
 		HorizontalPanel horiPanel = new HorizontalPanel();
 		VerticalPanel valueSetPanel = new VerticalPanel();
 		VerticalPanel dataTypePanel = new VerticalPanel();
-		
-		Widget widgetValueSet =LabelBuilder.buildLabel(userDefinedInput, "Name");
+
+		Widget widgetValueSet = LabelBuilder.buildLabel(userDefinedInput, "Name");
 		valueSetPanel.add(widgetValueSet);
 		valueSetPanel.add(new SpacerWidget());
 		userDefinedInput.setWidth("230px");
 		userDefinedInput.setMaxLength(255);
 		valueSetPanel.add(userDefinedInput);
-		
+
 		Widget widgetDataType = LabelBuilder.buildLabel("Select Datatype", "Select Datatype");
 		dataTypePanel.add(widgetDataType);
 		dataTypePanel.add(new SpacerWidget());
@@ -187,18 +220,18 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 				new FocusHandler() {
 					@Override
 					public void onFocus(FocusEvent event) {
-						MatContext.get().clearDVIMessages();	
+						MatContext.get().clearDVIMessages();
 					}
 		});
 		dataTypePanel.setStyleName("marginLeftRight");
 		horiPanel.add(valueSetPanel);
 		horiPanel.add(dataTypePanel);
-		
+
 		HorizontalPanel buttonHorizontalPanel = new HorizontalPanel();
 		psuedoQDMToMeasure.setTitle("Apply to Measure");
 		buttonHorizontalPanel.add(psuedoQDMToMeasure);
 		buttonHorizontalPanel.add(new SpacerWidget());
-				
+
 		VerticalPanel mainPanel = new VerticalPanel();
 		mainPanel.add(horiPanel);
 		mainPanel.add(new SpacerWidget());
@@ -210,34 +243,34 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		disclosurePanel.add(mainPanel);
 		return disclosurePanel;
 	}
-	
+
 	/**
 	 * Builds the element with vsac value set widget.
-	 * 
+	 *
 	 * @return the widget
 	 */
-	private Widget buildElementWithVSACValueSetWidget(){
+	private Widget buildElementWithVSACValueSetWidget() {
 		VerticalPanel mainPanel = new VerticalPanel();
 		mainPanel.getElement().setId("mainPanel_VerticalPanel");
-		mainPanel.setWidth("100%");		
+		mainPanel.setWidth("100%");
 		mainPanel.add(successMessagePanel);
-		mainPanel.add(errorMessagePanel);		
-		mainPanel.add(buildSearchPanel());		
+		mainPanel.add(errorMessagePanel);
+		mainPanel.add(buildSearchPanel());
 		mainPanel.add(new SpacerWidget());
-		mainPanel.add(new SpacerWidget());			
+		mainPanel.add(new SpacerWidget());
 		valueSetDetailsPanel.getElement().setId("valueSetDetailsPanel_VerticalPanel");
 		valueSetDetailsPanel.setStyleName("valueSetDetailsPanel");
 		valueSetDetailsPanel.setWidth("95%");
-		mainPanel.add(valueSetDetailsPanel);				
+		mainPanel.add(valueSetDetailsPanel);
 		disclosurePanelVSAC.setWidth("100%");
 		disclosurePanelVSAC.add(mainPanel);
 		disclosurePanelVSAC.setOpen(true);
-		return disclosurePanelVSAC;		
+		return disclosurePanelVSAC;
 	}
-	
+
 	/**
 	 * Builds the search panel.
-	 * 
+	 *
 	 * @return the widget
 	 */
 	private Widget buildSearchPanel() {
@@ -249,58 +282,69 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		searchHeader.setStyleName("valueSetHeader");
 		searchHeader.getElement().setAttribute("tabIndex", "0");
 		searchPanel.add(searchHeader);
-		searchPanel.add(new SpacerWidget());		
+		searchPanel.add(new SpacerWidget());
 		oidInput.getElement().setId("oidInput_TextBox");
 		oidInput.getElement().setAttribute("tabIndex", "0");
 		oidInput.setTitle("Enter OID");
 		oidInput.setWidth("300px");
-		oidInput.setMaxLength(200);		
-		versionInput.getElement().setId("versionInput_DateBoxWithCalendar");
-		versionInput.setTitle("Enter version");
-		versionInput.getElement().setAttribute("tabIndex", "0");
+		oidInput.setMaxLength(200);
+		HorizontalPanel versionEffectiveDatePanel = new HorizontalPanel();
+		versionEffectiveDatePanel.getElement().setId("versionEffectiveDate_HorizontalPanel");
+		versionEffectiveDatePanel.add(version);
+		versionEffectiveDatePanel.add(effectiveDate);
+		version.addValueChangeHandler(versionChangeHandler);
+		effectiveDate.addValueChangeHandler(effectiveDateChangeHandler);
+		effectiveDate.addStyleName("secondLabel");
+		versionEffectiveDatePanel.addStyleName("marginTop");
+		dateInput.getElement().setId("dateInput_DateBoxWithCalendar");
+		dateInput.setTitle("Enter Date");
+		dateInput.getElement().setAttribute("tabIndex", "0");
+		dateInput.setEnabled(false);
 		retrieveButton.getElement().setId("retrieveButton_Button");
 		retrieveButton.getElement().setAttribute("tabIndex", "0");
-		retrieveButton.setTitle("Search");		
-		Grid queryGrid = new Grid(3,2);
+		retrieveButton.setTitle("Search");
+		Grid queryGrid = new Grid(5, 1);
 		queryGrid.setWidget(0, 0, LabelBuilder.buildRequiredLabel(new Label(), "OID:"));
-		queryGrid.setWidget(0, 1, oidInput);
-		queryGrid.setWidget(1, 0, LabelBuilder.buildLabel(new Label(), "Version (Optional):"));
-		queryGrid.setWidget(1, 1, versionInput);
-		queryGrid.setWidget(2, 0, retrieveButton);
+		queryGrid.setWidget(1, 0, oidInput);
+		queryGrid.setWidget(2, 0, versionEffectiveDatePanel);
+		queryGrid.setWidget(3, 0, dateInput);
+		queryGrid.setWidget(4, 0, retrieveButton);
 		queryGrid.setStyleName("secondLabel");
-		searchPanel.add(queryGrid);				
+		searchPanel.add(queryGrid);
 		return searchPanel;
 	}
 
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#buildValueSetDetailsWidget(java.util.ArrayList)
 	 */
-	public void buildValueSetDetailsWidget(ArrayList<MatValueSet> matValueSets) {		
-		MatValueSet matValueSet = matValueSets.get(0);
-		currentMatValueSet = matValueSet;
-		
-		valueSetDetailsPanel.clear();
-		valueSetDetailsPanel.add(createDetailsWidget(matValueSet));
-		if(matValueSet.isGrouping()) {
-			valueSetDetailsPanel.add(new SpacerWidget());
-			valueSetDetailsPanel.add(createGroupingMembersCellTable(matValueSet));
-		}
-		valueSetDetailsPanel.add(new SpacerWidget());
-		valueSetDetailsPanel.add(new SpacerWidget());
-		valueSetDetailsPanel.add(new SpacerWidget());
-		valueSetDetailsPanel.add(createDataTypeWidget());
-	}
+	public void buildValueSetDetailsWidget(ArrayList<MatValueSet> matValueSets) {
+		if (matValueSets != null) {
+			MatValueSet matValueSet = matValueSets.get(0);
+			currentMatValueSet = matValueSet;
 	
+			valueSetDetailsPanel.clear();
+			valueSetDetailsPanel.add(createDetailsWidget(matValueSet));
+			if (matValueSet.isGrouping()) {
+				valueSetDetailsPanel.add(new SpacerWidget());
+				valueSetDetailsPanel.add(createGroupingMembersCellTable(matValueSet));
+			}
+			valueSetDetailsPanel.add(new SpacerWidget());
+			valueSetDetailsPanel.add(new SpacerWidget());
+			valueSetDetailsPanel.add(new SpacerWidget());
+			valueSetDetailsPanel.add(createDataTypeWidget());
+		}
+	}
+
 	/**
 	 * Creates the grouping members cell table.
-	 * 
+	 *
 	 * @param matValueSet
 	 *            the mat value set
 	 * @return the widget
 	 */
 	private Widget createGroupingMembersCellTable(MatValueSet matValueSet) {
-		List<MatValueSet> groupedMatValueSets = matValueSet.getGroupedValueSet(); 
-		
+		List<MatValueSet> groupedMatValueSets = matValueSet.getGroupedValueSet();
+
 		CellTable<MatValueSet> groupingValueSetTable = new CellTable<MatValueSet>();
 		groupingValueSetTable.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
 		groupingValueSetTable.getElement().setAttribute("tabIndex", "0");
@@ -308,23 +352,23 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		groupingValueSetTable.addStyleName("valueSetMarginTop");
 		groupingValueSetTable.setPageSize(4);
 		groupingValueSetTable.redraw();
-		
+
 		TextColumn<MatValueSet> valuesetNameColumn = new TextColumn<MatValueSet>() {
 			@Override
-			public String getValue(MatValueSet object) {				
+			public String getValue(MatValueSet object) {
 				return object.getDisplayName();
 			}
 		};
 		groupingValueSetTable.addColumn(valuesetNameColumn, "Value Set Name");
-		
+
 		TextColumn<MatValueSet> oidColumn = new TextColumn<MatValueSet>() {
 			@Override
-			public String getValue(MatValueSet object) {				
+			public String getValue(MatValueSet object) {
 				return object.getID();
 			}
 		};
 		groupingValueSetTable.addColumn(oidColumn, "OID");
-		
+
 		TextColumn<MatValueSet> codeSystemColumn = new TextColumn<MatValueSet>() {
 			@Override
 			public String getValue(MatValueSet object) {
@@ -332,12 +376,12 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 			}
 		};
 		groupingValueSetTable.addColumn(codeSystemColumn, "CodeSystem");
-		
-		ListDataProvider<MatValueSet> listDataProvider = new ListDataProvider<MatValueSet>();	
+
+		ListDataProvider<MatValueSet> listDataProvider = new ListDataProvider<MatValueSet>();
 		listDataProvider.refresh();
 		listDataProvider.getList().addAll(groupedMatValueSets);
 		listDataProvider.addDataDisplay(groupingValueSetTable);
-		
+
 		VerticalPanel groupingPanel = new VerticalPanel();
 		groupingPanel.getElement().setId("groupingPanel_VerticalPanel");
 		groupingPanel.setWidth("100%");
@@ -347,8 +391,8 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		groupingHeader.setStyleName("valueSetHeader");
 		groupingHeader.setWidth("150px");
 		groupingPanel.add(groupingHeader);
-		groupingPanel.add(groupingValueSetTable);		
-				
+		groupingPanel.add(groupingValueSetTable);
+
 		CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
 		MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
 		spager.addStyleName("valueSetMarginLeft_7px");
@@ -356,13 +400,13 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
         spager.setPageStart(0);
         spager.setToolTipAndTabIndex(spager);
         groupingPanel.add(spager);
-        
+
 		return groupingPanel;
 	}
 
 	/**
 	 * Creates the details widget.
-	 * 
+	 *
 	 * @param matValueSet
 	 *            the mat value set
 	 * @return the widget
@@ -371,14 +415,14 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		VerticalPanel detailsPanel = new VerticalPanel();
 		detailsPanel.getElement().setId("detailsPanel_VerticalPanel");
 		detailsPanel.setWidth("100%");
-		
+
 		Label detailsHeader = new Label("Value set details");
 		detailsHeader.getElement().setId("detailsHeader_Label");
 		detailsHeader.getElement().setAttribute("tabIndex", "0");
 		detailsHeader.setStyleName("valueSetHeader");
 		detailsPanel.add(detailsHeader);
-		
-		Grid details = new Grid(6,3);
+
+		Grid details = new Grid(6, 3);
 		details.setCellSpacing(5);
 		details.getColumnFormatter().setWidth(0, "35%");
 		details.getColumnFormatter().setWidth(1, "35%");
@@ -389,57 +433,58 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		details.getRowFormatter().setVerticalAlign(1, HasVerticalAlignment.ALIGN_TOP);
 		details.getRowFormatter().setVerticalAlign(3, HasVerticalAlignment.ALIGN_TOP);
 		details.getRowFormatter().setVerticalAlign(5, HasVerticalAlignment.ALIGN_TOP);
-		
+
 		details.setWidget(0, 0, createHTML("Name:", "Name", null));
 		details.setWidget(1, 0, createHTML(matValueSet.getDisplayName(), "NameValue", null));
 		details.setWidget(0, 1, createHTML("OID:", "OID", "valueSetMarginLeft"));
 		details.setWidget(1, 1, createHTML(matValueSet.getID(), "oidValue", "valueSetMarginLeft"));
-		details.setWidget(0, 2, createHTML("Code System:", "Code System", "valueSetMarginLeft"));
+		details.setWidget(0, 2, createHTML("Code System:", "CodeSystem", "valueSetMarginLeft"));
 		details.setWidget(1, 2, createHTML(getCodeSystem(matValueSet), "CodeSystemValue", "valueSetMarginLeft"));
 		details.setWidget(2, 0, createHTML("Type:", "Type", "valueSetMarginTop"));
 		details.setWidget(3, 0, createHTML(matValueSet.getType(), "TypeValue", null));
 		details.setWidget(2, 1, createHTML("Version:", "Version", "valueSetMarginLeft,valueSetMarginTop"));
-		details.setWidget(3, 1, createHTML(matValueSet.getVersion(),"VersionValue", "valueSetMarginLeft"));
-		details.setWidget(4, 0, createHTML("Developer:", "Developer", "valueSetMarginTop"));
-		details.setWidget(5, 0, createHTML(matValueSet.getSource(), "DeveloperValue", null));
+		details.setWidget(3, 1, createHTML(matValueSet.getVersion(), "VersionValue", "valueSetMarginLeft"));
+		details.setWidget(2, 2, createHTML("Effective Date:", "EffectiveDate", "valueSetMarginLeft,valueSetMarginTop"));
+		details.setWidget(3, 2, createHTML(matValueSet.getRevisionDate(), "EffectiveDateValue", "valueSetMarginLeft"));
+		details.setWidget(4, 0, createHTML("Steward:", "Steward", "valueSetMarginTop"));
+		details.setWidget(5, 0, createHTML(matValueSet.getSource(), "StewardValue", null));
 		details.setWidget(4, 1, createHTML("Status:", "Status", "valueSetMarginLeft,valueSetMarginTop"));
 		details.setWidget(5, 1, createHTML(matValueSet.getStatus(), "StatusValue", "valueSetMarginLeft"));
 		detailsPanel.add(details);
-				
+
 		return detailsPanel;
 	}
-	
+
 	/**
 	 * Gets the code system.
-	 * 
+	 *
 	 * @param matValueSet
 	 *            the mat value set
 	 * @return the code system
 	 */
-	private String getCodeSystem(MatValueSet matValueSet) {		
-		if(matValueSet.isGrouping()) {
+	private String getCodeSystem(MatValueSet matValueSet) {
+		if (matValueSet.isGrouping()) {
 			String codeSystem = StringUtils.EMPTY;
-			List<MatValueSet> groupedMatValueSets = matValueSet.getGroupedValueSet(); 
-			if(groupedMatValueSets!=null) {
+			List<MatValueSet> groupedMatValueSets = matValueSet.getGroupedValueSet();
+			if (groupedMatValueSets != null) {
 				ListIterator<MatValueSet> itr = groupedMatValueSets.listIterator();
-				while(itr.hasNext()) {
+				while (itr.hasNext()) {
 					MatValueSet groupedMatValueSet = itr.next();
 					codeSystem += groupedMatValueSet.getCodeSystemName();
-					if(itr.hasNext()) {
+					if (itr.hasNext()) {
 						codeSystem += ", ";
 					}
-				}				
-			}		
+				}
+			}
 			return codeSystem;
-		}
-		else {
+		} else {
 			return matValueSet.getCodeSystemName();
-		}		
+		}
 	}
-	
+
 	/**
 	 * Creates the html.
-	 * 
+	 *
 	 * @param value
 	 *            the value
 	 * @param id
@@ -449,15 +494,15 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 	 * @return the html
 	 */
 	private HTML createHTML(String value, String id, String styles) {
-		HTML html = new HTML(value);		
-		if(id!=null && !id.trim().isEmpty()) {
+		HTML html = new HTML(value);
+		if (id != null && !id.trim().isEmpty()) {
 			html.getElement().setId(id);
 		} else {
 			html.getElement().setId(value);
-		}		
-		if(styles!=null && !styles.trim().isEmpty()) {
+		}
+		if (styles != null && !styles.trim().isEmpty()) {
 			String[] stylesArray = styles.split(",");
-			for(String style : stylesArray) {
+			for (String style : stylesArray) {
 				html.addStyleName(style.trim());
 			}
 		}
@@ -469,7 +514,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 
 	/**
 	 * Creates the data type widget.
-	 * 
+	 *
 	 * @return the widget
 	 */
 	private Widget createDataTypeWidget() {
@@ -488,7 +533,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		vPanel.add(specificOccurrence);
 		vPanel.add(new SpacerWidget());
 		vPanel.add(new SpacerWidget());
-		HorizontalPanel buttonsPanel = new HorizontalPanel();	
+		HorizontalPanel buttonsPanel = new HorizontalPanel();
 		buttonsPanel.getElement().setId("buttonsPanel_HorizontalPanel");
 		applyToMeasureButton.getElement().setId("applyToMeasureButton_Button");
 		applyToMeasureButton.addStyleName("firstLabel");
@@ -497,7 +542,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		buttonsPanel.add(applyToMeasureButton);
 		cancelButton.getElement().setId("cancelButton_Button");
 		cancelButton.setTitle("Cancel");
-		cancelButton.addClickHandler(new ClickHandler() {			
+		cancelButton.addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				resetVSACValueSetWidget();
@@ -505,11 +550,11 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 			}
 		});
 		buttonsPanel.add(cancelButton);
-		
+
 		boolean editable = MatContext.get().getMeasureLockService().checkForEditPermission();
 		dataTypesListBox.setEnabled(editable);
 		specificOccurrence.setEnabled(editable);
-		
+
 		vPanel.add(buttonsPanel);
 		return vPanel;
 	}
@@ -521,7 +566,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 	public Widget asWidget() {
 		return containerPanel;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getSpecificOccurrenceInput()
 	 */
@@ -529,7 +574,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 	public CustomCheckBox getSpecificOccurrenceInput(){
 		return specificOccurrence;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getDataTypeWidget()
 	 */
@@ -537,7 +582,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 	public Widget getDataTypeWidget() {
 		return dataTypePanel;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getErrorMessageDisplay()
 	 */
@@ -545,7 +590,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 	public ErrorMessageDisplay getErrorMessageDisplay() {
 		return errorMessagePanel;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getSuccessMessageDisplay()
 	 */
@@ -562,36 +607,34 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		getSuccessMessageDisplay().clear();
 		getErrorMessageDisplay().clear();
 	}
-		
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getDataTypeValue(mat.client.shared.ListBoxMVP)
 	 */
 	@Override
 	public String getDataTypeValue(ListBoxMVP inputListBox) {
-		if(inputListBox.getSelectedIndex() >= 0) {
+		if (inputListBox.getSelectedIndex() >= 0) {
 			return inputListBox.getValue(inputListBox.getSelectedIndex());
-		}
-		else {
+		} else {
 			return "";
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getDataTypeText(mat.client.shared.ListBoxMVP)
 	 */
 	@Override
 	public String getDataTypeText(ListBoxMVP inputListBox) {
-		if(inputListBox.getSelectedIndex() >= 0) {
+		if (inputListBox.getSelectedIndex() >= 0) {
 			return inputListBox.getItemText(inputListBox.getSelectedIndex());
-		}
-		else {
+		} else {
 			return "";
 		}
 	}
 
 	/**
 	 * Sets the list box items.
-	 * 
+	 *
 	 * @param listBox
 	 *            the list box
 	 * @param itemList
@@ -599,16 +642,16 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 	 * @param defaultOption
 	 *            the default option
 	 */
-	private void setListBoxItems(ListBox listBox, List<? extends HasListBox> itemList, String defaultOption){
+	private void setListBoxItems(ListBox listBox, List<? extends HasListBox> itemList, String defaultOption) {
 		listBox.clear();
-		listBox.addItem(defaultOption,"");
-		if(itemList != null){
-			for(HasListBox listBoxContent : itemList){
-				listBox.addItem(listBoxContent.getItem(),"" +listBoxContent.getValue());
+		listBox.addItem(defaultOption, "");
+		if (itemList != null) {
+			for (HasListBox listBoxContent : itemList) {
+				listBox.addItem(listBoxContent.getItem(), "" + listBoxContent.getValue());
 			}
 		}
-	}	
-	
+	}
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getDisclosurePanel()
 	 */
@@ -635,7 +678,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 
 	/**
 	 * Sets the disclosure panel vsac.
-	 * 
+	 *
 	 * @param disclosurePanelVSAC
 	 *            the new disclosure panel vsac
 	 */
@@ -652,7 +695,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 
 	/**
 	 * Sets the user defined input.
-	 * 
+	 *
 	 * @param userDefinedInput
 	 *            the new user defined input
 	 */
@@ -669,7 +712,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 
 	/**
 	 * Sets the psuedo qdm to measure.
-	 * 
+	 *
 	 * @param psuedoQDMToMeasure
 	 *            the new psuedo qdm to measure
 	 */
@@ -686,7 +729,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 
 	/**
 	 * Sets the all data type input.
-	 * 
+	 *
 	 * @param allDataTypeInput
 	 *            the new all data type input
 	 */
@@ -703,7 +746,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 
 	/**
 	 * Sets the error message user defined panel.
-	 * 
+	 *
 	 * @param errorMessageUserDefinedPanel
 	 *            the new error message user defined panel
 	 */
@@ -721,7 +764,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 
 	/**
 	 * Sets the success message user defined panel.
-	 * 
+	 *
 	 * @param successMessageUserDefinedPanel
 	 *            the new success message user defined panel
 	 */
@@ -729,14 +772,17 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 			SuccessMessageDisplay successMessageUserDefinedPanel) {
 		this.successMessageUserDefinedPanel = successMessageUserDefinedPanel;
 	}
-		
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#resetVSACValueSetWidget()
 	 */
 	@Override
 	public void resetVSACValueSetWidget() {
 		getOIDInput().setValue(StringUtils.EMPTY);
-		getVersionInput().setValue(StringUtils.EMPTY);
+		getVersion().setValue(Boolean.FALSE);
+		getEffectiveDate().setValue(Boolean.FALSE);
+		getDateInput().setValue(StringUtils.EMPTY);
+		getDateInput().setEnabled(false);
 		getValueSetDetailsPanel().setVisible(false);
 	}
 
@@ -747,7 +793,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 	public void setAllDataTypeOptions(List<? extends HasListBox> texts) {
 		setListBoxItems(allDataTypeInput, texts, MatContext.PLEASE_SELECT);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#setDataTypesListBoxOptions(java.util.List)
 	 */
@@ -755,7 +801,7 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 	public void setDataTypesListBoxOptions(List<? extends HasListBox> texts) {
 		setListBoxItems(dataTypesListBox, texts, MatContext.PLEASE_SELECT);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getOIDInput()
 	 */
@@ -764,24 +810,34 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 		return oidInput;
 	}
 
-	/* (non-Javadoc)
-	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getVersionInput()
+	/**
+	 * Gets the version.
+	 *
+	 * @return the version
 	 */
 	@Override
-	public DateBoxWithCalendar getVersionInput() {
-		return versionInput;
+	public CustomCheckBox getVersion() {
+		return version;
 	}
 
 	/**
-	 * Sets the version input.
-	 * 
-	 * @param versionInput
-	 *            the new version input
+	 * Gets the effective date.
+	 *
+	 * @return the effective date
 	 */
-	public void setVersionInput(DateBoxWithCalendar versionInput) {
-		this.versionInput = versionInput;
+	@Override
+	public CustomCheckBox getEffectiveDate() {
+		return effectiveDate;
 	}
-	
+
+	/* (non-Javadoc)
+	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getDateInput()
+	 */
+	@Override
+	public DateBoxWithCalendar getDateInput() {
+		return dateInput;
+	}
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getRetrieveButton()
 	 */
@@ -813,12 +869,12 @@ public class QDSCodeListSearchView  implements QDSCodeListSearchPresenter.Search
 	public Button getApplyToMeasureButton() {
 		return applyToMeasureButton;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSCodeListSearchPresenter.SearchDisplay#getCurrentMatValueSet()
 	 */
 	@Override
 	public MatValueSet getCurrentMatValueSet() {
 		return currentMatValueSet;
-	}	
+	}
 }

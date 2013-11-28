@@ -122,6 +122,9 @@ public class MessageDelegate {
 	
 	/** The Constant VALUE_SET_DRAFT_SAVED. */
 	public static final String VALUE_SET_DRAFT_SAVED = "Value Set successfully saved as a draft.";
+
+	/** The Constant VSAC_VERSION_OR_EFFECTIVE_DATE_REQUIRED. */
+	public static final String VSAC_VERSION_OR_EFFECTIVE_DATE_REQUIRED = "Value set version or effective date has been selected. Please enter a date to continue.";
 	
 	/**
 	 * Gets the measure save server error message.
@@ -291,6 +294,8 @@ public class MessageDelegate {
 	/** The measure package umls not logged in. */
 	private final String MEASURE_PACKAGE_UMLS_NOT_LOGGED_IN = "Measure packaged successfully. "
 			+ "Value set data is not included in the measure package as you are not logged into UMLS.";
+	
+	private final String MEASURE_PACKAGE_FAILED_VSAC_TIMEOUT = "Measure Package Failed. VSAC request timed out. Please contact HelpDesk.";
 	
 	/** The measure selection error. */
 	private final String MEASURE_SELECTION_ERROR = "Please select at least one measure";
@@ -479,7 +484,7 @@ public class MessageDelegate {
 	
 	/** The vsac update successfull. */
 	private final String VSAC_UPDATE_SUCCESSFULL = "Successfully updated applied QDM list with VSAC data.";
-	
+
 	/**
 	 * Gets the abv name required message.
 	 * 
@@ -1040,6 +1045,15 @@ public class MessageDelegate {
 	 */
 	public String getMEASURE_PACKAGE_UMLS_NOT_LOGGED_IN() {
 		return MEASURE_PACKAGE_UMLS_NOT_LOGGED_IN;
+	}
+	
+	/**
+	 * Gets the measure package failed due to vsac timeout message.
+	 * 
+	 * @return String the MEASURE_PACKAGE_FAILED_VSAC_TIMEOUT
+	 */
+	public String getMEASURE_PACKAGE_VSAC_TIMEOUT() {
+		return MEASURE_PACKAGE_FAILED_VSAC_TIMEOUT;
 	}
 	
 	/**
@@ -1803,5 +1817,14 @@ public class MessageDelegate {
 	 */
 	public String getVSAC_UPDATE_SUCCESSFULL() {
 		return VSAC_UPDATE_SUCCESSFULL;
+	}
+	
+	/**
+	 * Gets the vsac version or effective date required.
+	 *
+	 * @return the vsac version or effective date required
+	 */
+	public String getVSAC_VERSION_OR_EFFECTIVE_DATE_REQUIRED() {
+		return VSAC_VERSION_OR_EFFECTIVE_DATE_REQUIRED;
 	}
 }
