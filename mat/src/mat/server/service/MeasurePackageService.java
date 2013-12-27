@@ -40,20 +40,18 @@ public interface MeasurePackageService {
 	 */
 	long count(String searchText);
 	
-	/**
-	 * Count measures for draft.
+	/** Count measures for draft.
 	 * 
-	 * @return {@link Long}. *
-	 */
+	 * @param searchText the search text
+	 * @return {@link Long}. * */
 	/* long countMeasuresForDraft(); */
 	
 	long countMeasuresForDraft(String searchText);
 	
-	/**
-	 * Count measures for version.
+	/** Count measures for version.
 	 * 
-	 * @return {@link Long}. *
-	 */
+	 * @param searchText the search text
+	 * @return {@link Long}. * */
 	/* long countMeasuresForVersion(); */
 	
 	long countMeasuresForVersion(String searchText);
@@ -262,18 +260,12 @@ public interface MeasurePackageService {
 	
 	/**
 	 * Search measures for draft.
-	 * 
-	 * @param startIndex
-	 *            - {@link Integer}.
-	 * @param numResults
-	 *            - {@link Integer}.
-	 * @return {@link List} {@link MeasureShareDTO}. *
-	 */
-	/*
-	 * List<MeasureShareDTO> searchMeasuresForDraft(int startIndex, int numResults);
-	 */
-	
-	List<MeasureShareDTO> searchMeasuresForDraft(String searchText, int startIndex, int numResults);
+	 *
+	 * @param searchText
+	 * 				- {@link String}.
+	 * @return {@link List} {@link MeasureShareDTO}.
+	 */		
+	List<MeasureShareDTO> searchMeasuresForDraft(String searchText);
 	
 	/**
 	 * Search measures for version.
@@ -350,5 +342,5 @@ public interface MeasurePackageService {
 	 *             - {@link Exception}.
 	 */
 	ValidateMeasureResult validateMeasureForExport(String key,
-			ArrayList<MatValueSet> matValueSetList) throws Exception;
+			List<MatValueSet> matValueSetList) throws Exception;
 }

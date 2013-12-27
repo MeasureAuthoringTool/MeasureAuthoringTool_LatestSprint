@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.List;
 import java.util.Map.Entry;
-
 import mat.client.umls.service.VSACAPIService;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.MatValueSet;
@@ -17,7 +17,6 @@ import mat.server.service.MeasureLibraryService;
 import mat.server.util.ResourceLoader;
 import mat.server.util.UMLSSessionTicket;
 import mat.shared.ConstantMessages;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,8 +42,10 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 	
 	/** serialVersionUID for VSACAPIServiceImpl class. **/
 	private static final long serialVersionUID = -6645961609626183169L;
-	
-	private static final int TIME_OUT_FAILURE_CODE = 3;
+	/** The Constant TIME_OUT_FAILURE_CODE. */
+	private static final int VSAC_TIME_OUT_FAILURE_CODE = 3;
+	/** The Constant REQUEST_FAILURE_CODE. */
+	private static final int VSAC_REQUEST_FAILURE_CODE = 4;
 	
 	/**
 	 * Private method to Convert VSAC xml pay load into Java object through
@@ -239,6 +240,7 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 			ArrayList<MatValueSet> matValueSetList = new ArrayList<MatValueSet>();
 			HashMap<QualityDataSetDTO, QualityDataSetDTO> updateInMeasureXml =
 					new HashMap<QualityDataSetDTO, QualityDataSetDTO>();
+			List<String> notFoundOIDList = new ArrayList<String>();
 			for (QualityDataSetDTO qualityDataSetDTO : appliedQDMList) {
 				LOGGER.info("OID ====" + qualityDataSetDTO.getOid());
 				// Filter out Timing Element and User defined QDM's.
@@ -261,16 +263,31 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 								+ qualityDataSetDTO.getDataType());
 					}
 					if (vsr != null) {
-						if (vsr.isFailResponse() && (vsr.getFailReason() == TIME_OUT_FAILURE_CODE)) {
-							LOGGER.info("Value Set reterival failed at VSAC for OID :"
-									+ qualityDataSetDTO.getOid() + " with Data Type : "
-									+ qualityDataSetDTO.getDataType()
-									+ ". Failure Reason:" + vsr.getFailReason());
-							//inValidateVsacUser();
-							//MatContext.get().setUMLSLoggedIn(false);
-							result.setSuccess(false);
-							result.setFailureReason(vsr.getFailReason());
-							return result;
+						LOGGER.info("Value Set from VSAC for OID :"
+								+ qualityDataSetDTO.getOid() + " with Data Type : "
+								+ qualityDataSetDTO.getDataType()
+								+ ". Failure Reason:" + vsr.getFailReason());
+						if (vsr.isFailResponse()) {
+							int failReason = vsr.getFailReason();
+							switch(failReason){
+								case VSAC_TIME_OUT_FAILURE_CODE:
+									{
+										LOGGER.info("Value Set reterival failed at VSAC for OID :"
+												+ qualityDataSetDTO.getOid() + " with Data Type : "
+												+ qualityDataSetDTO.getDataType()
+												+ ". Failure Reason:" + vsr.getFailReason());
+										//inValidateVsacUser();
+										//MatContext.get().setUMLSLoggedIn(false);
+										result.setSuccess(false);
+										result.setFailureReason(vsr.getFailReason());
+										return result;
+									}
+								case VSAC_REQUEST_FAILURE_CODE:
+									{
+										notFoundOIDList.add(qualityDataSetDTO.getOid());
+										continue;
+									}
+							}
 						}
 						if ((vsr.getXmlPayLoad() != null) && StringUtils.isNotEmpty(vsr.getXmlPayLoad())) {
 							VSACValueSetWrapper wrapper = convertXmltoValueSet(vsr.getXmlPayLoad());
@@ -283,11 +300,19 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 									qualityDataSetDTO.setTaxonomy(ConstantMessages.
 											GROUPING_CODE_SYSTEM);
 									handleVSACGroupedValueSet(eightHourTicket, matValueSet);
+									if (matValueSet.getGroupedValueSet().size() != 0) {
+										matValueSetList.add(matValueSet);
+									}
 								} else {
-									qualityDataSetDTO.setTaxonomy(matValueSet.getConceptList().
-											getConceptList().get(0).getCodeSystemName());
+									if (matValueSet.getConceptList().getConceptList() != null) {
+										qualityDataSetDTO.setTaxonomy(matValueSet.getConceptList().
+												getConceptList().get(0).
+												getCodeSystemName());
+										matValueSetList.add(matValueSet);
+									} else {
+										qualityDataSetDTO.setTaxonomy(StringUtils.EMPTY);
+									}
 								}
-								matValueSetList.add(matValueSet);
 								updateInMeasureXml.put(qualityDataSetDTO, toBeModifiedQDM);
 							}
 						}
@@ -310,7 +335,12 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 							if (matValueSet != null) {
 								matValueSet.setQdmId(qualityDataSetDTO.getId());
 								handleVSACGroupedValueSet(eightHourTicket, matValueSet);
-								matValueSetList.add(matValueSet);
+								if (matValueSet.isGrouping()
+										&& (matValueSet.getGroupedValueSet().size() != 0)) {
+									matValueSetList.add(matValueSet);
+								} else if (matValueSet.getConceptList().getConceptList() != null) {
+									matValueSetList.add(matValueSet);
+								}
 							}
 						}
 					}
@@ -320,6 +350,8 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 			updateAllInMeasureXml(updateInMeasureXml, measureId);
 			result.setSuccess(true);
 			result.setVsacResponse(matValueSetList);
+			LOGGER.info("OID's not found:"+notFoundOIDList);
+			result.setRetrievalFailedOIDs(notFoundOIDList);
 		} else {
 			result.setSuccess(false);
 			result.setFailureReason(result.UMLS_NOT_LOGGEDIN);
@@ -367,7 +399,7 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 								+ qualityDataSetDTO.getDataType());
 					}
 					if (vsr != null) {
-						if (vsr.isFailResponse() && (vsr.getFailReason() == TIME_OUT_FAILURE_CODE)) {
+						if (vsr.isFailResponse() && (vsr.getFailReason() == VSAC_TIME_OUT_FAILURE_CODE)) {
 							LOGGER.info("Value Set reterival failed at VSAC for OID :"
 									+ qualityDataSetDTO.getOid() + " with Data Type : "
 									+ qualityDataSetDTO.getDataType() + ". Failure Reason: "
@@ -388,8 +420,12 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 									qualityDataSetDTO.setTaxonomy(ConstantMessages.
 											GROUPING_CODE_SYSTEM);
 								} else {
-									qualityDataSetDTO.setTaxonomy(matValueSet.getConceptList().
-											getConceptList().get(0).getCodeSystemName());
+									if (matValueSet.getConceptList().getConceptList() != null) {
+										qualityDataSetDTO.setTaxonomy(matValueSet.getConceptList().
+												getConceptList().get(0).getCodeSystemName());
+									} else {
+										qualityDataSetDTO.setTaxonomy(StringUtils.EMPTY);
+									}
 								}
 								updateInMeasureXml.put(qualityDataSetDTO, toBeModifiedQDM);
 							}

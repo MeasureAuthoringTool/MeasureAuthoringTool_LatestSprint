@@ -92,10 +92,11 @@ public interface MeasureServiceAsync {
 	void getAllMeasureNotesByMeasureID(String measureID,
 			AsyncCallback<MeasureNotesModel> callback);
 	
-	/**
-	 * @param userId
-	 * @param callback
-	 */
+	/** Gets the all recent measure for user.
+	 * 
+	 * @param userId the user id
+	 * @param callback the callback
+	 * @return the all recent measure for user */
 	void getAllRecentMeasureForUser(String userId, AsyncCallback<ManageMeasureSearchModel> callback);
 	
 	/**
@@ -289,7 +290,13 @@ public interface MeasureServiceAsync {
 	 */
 	void search(String searchText, int startIndex, int pageSize,int filter, AsyncCallback<ManageMeasureSearchModel> callback);
 	
-	void searchMeasuresForDraft(String searchText, int startIndex, int pageSize, AsyncCallback<ManageMeasureSearchModel> callback);
+	/**
+	 * Search measures for draft.
+	 *
+	 * @param searchText the search text
+	 * @param callback the callback
+	 */
+	void searchMeasuresForDraft(String searchText, AsyncCallback<ManageMeasureSearchModel> callback);
 	
 	/**
 	 * Search measures for version.
@@ -397,5 +404,5 @@ public interface MeasureServiceAsync {
 	 * @param callback
 	 *            the callback
 	 */
-	void validateMeasureForExport(String key, ArrayList<MatValueSet> matValueSetList, AsyncCallback<ValidateMeasureResult> callback);
+	void validateMeasureForExport(String key, List<MatValueSet> matValueSetList, AsyncCallback<ValidateMeasureResult> callback);
 }

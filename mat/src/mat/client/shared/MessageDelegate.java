@@ -295,6 +295,7 @@ public class MessageDelegate {
 	private final String MEASURE_PACKAGE_UMLS_NOT_LOGGED_IN = "Measure packaged successfully. "
 			+ "Value set data is not included in the measure package as you are not logged into UMLS.";
 	
+	/** The measure package failed vsac timeout. */
 	private final String MEASURE_PACKAGE_FAILED_VSAC_TIMEOUT = "Measure Package Failed. VSAC request timed out. Please contact HelpDesk.";
 	
 	/** The measure selection error. */
@@ -341,6 +342,9 @@ public class MessageDelegate {
 	
 	/** The package success. */
 	private final String PACKAGE_SUCCESS = "Measure packaged successfully. Please access the Measure Library to export the measure.";
+	
+	/** The package success with some OID's not retrived from VSAC. */
+	private final String PACKAGE_SUCCESS_VSAC_OID_MISSING = "Measure packaged successfully. One or more OID(s) could not be updated from VSAC.";
 	
 	/** The password mismatch. */
 	private final String PASSWORD_MISMATCH = "Your new password and confirm password do not match.";
@@ -1270,6 +1274,10 @@ public class MessageDelegate {
 	 */
 	public final String getPackageSuccessMessage() {
 		return PACKAGE_SUCCESS;
+	}
+	
+	public final String getPackageSuccessAmberMessage() {
+		return PACKAGE_SUCCESS_VSAC_OID_MISSING;
 	}
 	
 	/**

@@ -10,6 +10,7 @@ import com.google.gwt.cell.client.FieldUpdater;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.dom.client.TableCaptionElement;
 import com.google.gwt.event.logical.shared.HasSelectionHandlers;
 import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
@@ -27,9 +28,15 @@ import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.view.client.ListDataProvider;
-/** @author jnarang */
+
+/** The Class MostRecentMeasureWidget.
+ * 
+ * @author jnarang */
 public class MostRecentMeasureWidget extends Composite implements HasSelectionHandlers<ManageMeasureSearchModel.Result> {
-	/** @author jnarang. */
+	
+	/** The Interface Observer.
+	 * 
+	 * @author jnarang. */
 	public static interface Observer {
 		/** On export clicked.
 		 * @param result the result */
@@ -47,18 +54,25 @@ public class MostRecentMeasureWidget extends Composite implements HasSelectionHa
 	private Observer observer;
 	/** VerticalPanel Instance which hold's View for Most Recent Measure. */
 	private VerticalPanel searchPanel = new VerticalPanel();
+	
 	/** Method to Add Column's in Table.
-	 * @param table
-	 * @return */
-	private CellTable<ManageMeasureSearchModel.Result> addColumnToTable(final CellTable<ManageMeasureSearchModel.Result> table) {
+	 * 
+	 * @param table the table
+	 * @return the cell table */
+	private CellTable<Result> addColumnToTable(final CellTable<ManageMeasureSearchModel.Result> table) {
 		if (table.getColumnCount() != MAX_TABLE_COLUMN_SIZE) {
+			Element element = cellTable.getElement();
+			element.setAttribute("aria-labelledby", "MostRecentMeasureActivityTable");
+			com.google.gwt.dom.client.TableElement elem = cellTable.getElement().cast();
+			TableCaptionElement caption = elem.createCaption();
+			caption.appendChild(new HTML("<h4 class=\"invisible\"> Recent Measure Acitivity Table. </h4>").getElement());
 			Column<ManageMeasureSearchModel.Result, SafeHtml> measureName =
 					new Column<ManageMeasureSearchModel.Result, SafeHtml>(new
 							ClickableSafeHtmlCell()) {
 				@Override
 				public SafeHtml getValue(ManageMeasureSearchModel.Result object) {
 					SafeHtmlBuilder sb = new SafeHtmlBuilder();
-					sb.appendHtmlConstant("<a href=\"#\" tabindex=\"0\" "
+					sb.appendHtmlConstant("<a href=\"#\" "
 							+ "style=\"text-decoration:none\" title='" + object.getName()
 							+ "' >");
 					sb.appendEscaped(object.getName()); sb.appendHtmlConstant("</a>"); return sb.toSafeHtml(); } };
@@ -70,7 +84,7 @@ public class MostRecentMeasureWidget extends Composite implements HasSelectionHa
 						}
 					});
 					table.addColumn(measureName, SafeHtmlUtils.fromSafeConstant(
-							"<span title='Measure Name Column' tabindex=\"0\">" + "Measure Name" + "</span>"));
+							"<span title='Measure Name Column'>" + "Measure Name" + "</span>"));
 					Column<ManageMeasureSearchModel.Result, SafeHtml> version =
 							new Column<ManageMeasureSearchModel.Result, SafeHtml>(
 									new MatSafeHTMLCell()) {
@@ -80,7 +94,7 @@ public class MostRecentMeasureWidget extends Composite implements HasSelectionHa
 						}
 					};
 					table.addColumn(version, SafeHtmlUtils.fromSafeConstant(
-							"<span title='Version' tabindex=\"0\">" + "Version" + "</span>"));
+							"<span title='Version'>" + "Version" + "</span>"));
 					Cell<String> exportButton = new MatButtonCell("Click to Export", "customExportButton");
 					Column<Result, String> exportColumn =
 							new Column<ManageMeasureSearchModel.Result, String>(exportButton) {
@@ -112,7 +126,7 @@ public class MostRecentMeasureWidget extends Composite implements HasSelectionHa
 						}
 					});
 					table.addColumn(exportColumn,
-							SafeHtmlUtils.fromSafeConstant("<span title='Export' tabindex=\"0\">"
+							SafeHtmlUtils.fromSafeConstant("<span title='Export'>"
 									+ "Export" + "</span>"));
 					table.setColumnWidth(0, 65.0, Unit.PCT);
 					table.setColumnWidth(1, 30.0, Unit.PCT);
@@ -142,9 +156,17 @@ public class MostRecentMeasureWidget extends Composite implements HasSelectionHa
 		sortProvider.getList().addAll(measureSearchModel.getData());
 		cellTable = addColumnToTable(cellTable);
 		sortProvider.addDataDisplay(cellTable);
+		Label invisibleLabel = (Label) LabelBuilder.buildInvisibleLabel(new Label("MostRecentMeasureActivityTable"),
+				"MostRecentMeasureActivityTable");
+		cellTable.getElement().setAttribute("id", "MostRecentActivityCellTable");
+		cellTable.getElement().setAttribute("Summary", "Recent Measure Activity Table.");
+		searchPanel.add(invisibleLabel);
 		searchPanel.add(cellTable);
 	}
-	/** @return VerticalPanel. */
+	
+	/** Builds the most recent widget.
+	 * 
+	 * @return VerticalPanel. */
 	public VerticalPanel buildMostRecentWidget() {
 		searchPanel.clear();
 		searchPanel.getElement().setId("searchPanel_VerticalPanel");
@@ -181,16 +203,24 @@ public class MostRecentMeasureWidget extends Composite implements HasSelectionHa
 		String htmlConstant = "<html>" + "<head> </head> <Body><span title='" + title + "'>" + title + "</span></body>" + "</html>";
 		return new SafeHtmlBuilder().appendHtmlConstant(htmlConstant).toSafeHtml();
 	}
-	/** @return the measureSearchModel */
+	
+	/** Gets the manageMeasureSearchModel Instance.
+	 * 
+	 * @return the measureSearchModel */
 	public ManageMeasureSearchModel getMeasureSearchModel() {
 		return measureSearchModel;
 	}
 	
-	/** @return */
+	/** Gets the select id for edit tool.
+	 * 
+	 * @return the select id for edit tool */
 	public HasSelectionHandlers<ManageMeasureSearchModel.Result> getSelectIdForEditTool() {
 		return this;
 	}
-	/** @param measureSearchModel the measureSearchModel to set */
+	
+	/** Sets the manageMeasureSearchModel Instance.
+	 * 
+	 * @param measureSearchModel the measureSearchModel to set */
 	public void setMeasureSearchModel(ManageMeasureSearchModel measureSearchModel) {
 		this.measureSearchModel = measureSearchModel;
 	}

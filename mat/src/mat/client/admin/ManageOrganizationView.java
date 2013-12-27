@@ -9,6 +9,7 @@ import mat.client.shared.search.HasPageSizeSelectionHandler;
 import mat.client.shared.search.SearchResults;
 import mat.client.shared.search.SearchView;
 import com.google.gwt.event.dom.client.HasClickHandlers;
+import com.google.gwt.event.logical.shared.HasSelectionHandlers;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HasValue;
@@ -40,7 +41,8 @@ public class ManageOrganizationView implements ManageOrganizationPresenter.Searc
 	
 	
 	/** The view. */
-	private SearchView<ManageOrganizationSearchModel.Result> view = new SearchView<ManageOrganizationSearchModel.Result>("Users");
+	private SearchView<ManageOrganizationSearchModel.Result> view = new SearchView<ManageOrganizationSearchModel.Result>(
+			"Organizations");
 	
 	/** Constructor. **/
 	public ManageOrganizationView() {
@@ -148,4 +150,11 @@ public class ManageOrganizationView implements ManageOrganizationPresenter.Searc
 		return searchText;
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.client.admin.ManageOrganizationPresenter.SearchDisplay#getSelectIdForEditTool()
+	 */
+	@Override
+	public HasSelectionHandlers<ManageOrganizationSearchModel.Result> getSelectIdForEditTool() {
+		return view;
+	}
 }

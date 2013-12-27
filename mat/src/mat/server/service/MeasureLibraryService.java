@@ -90,8 +90,10 @@ public interface MeasureLibraryService {
 	 */
 	MeasureNotesModel getAllMeasureNotesByMeasureID(String measureID);
 	
-	/** @param userId
-	 * @return */
+	/** Gets the all recent measure for user.
+	 * 
+	 * @param userId the user id
+	 * @return the all recent measure for user */
 	ManageMeasureSearchModel getAllRecentMeasureForUser(String userId);
 	
 	/**
@@ -261,18 +263,14 @@ public interface MeasureLibraryService {
 	ManageMeasureSearchModel search(String searchText, int startIndex,
 			int pageSize, int filter);
 	
+	
 	/**
 	 * Search measures for draft.
-	 * 
-	 * @param startIndex
-	 *            the start index
-	 * @param pageSize
-	 *            the page size
+	 *
+	 * @param searchText the search text
 	 * @return the manage measure search model
 	 */
-	/* ManageMeasureSearchModel searchMeasuresForDraft(int startIndex, int pageSize); */
-	
-	ManageMeasureSearchModel searchMeasuresForDraft(String searchText, int startIndex, int pageSize);
+	ManageMeasureSearchModel searchMeasuresForDraft(String searchText);
 	
 	/**
 	 * Search measures for version.
@@ -367,5 +365,5 @@ public interface MeasureLibraryService {
 	 *             the mat exception
 	 */
 	ValidateMeasureResult validateMeasureForExport(String key,
-			ArrayList<MatValueSet> matValueSetList) throws MatException;
+			List<MatValueSet> matValueSetList) throws MatException;
 }

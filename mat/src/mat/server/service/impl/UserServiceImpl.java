@@ -20,10 +20,12 @@ import mat.client.admin.service.SaveUpdateUserResult;
 import mat.client.login.service.SecurityQuestionOptions;
 import mat.client.shared.MatContext;
 import mat.client.shared.NameValuePair;
+import mat.dao.OrganizationDAO;
 import mat.dao.SecurityRoleDAO;
 import mat.dao.StatusDAO;
 import mat.dao.TransactionAuditLogDAO;
 import mat.dao.UserDAO;
+import mat.model.Organization;
 import mat.model.SecurityRole;
 import mat.model.Status;
 import mat.model.TransactionAuditLog;
@@ -97,6 +99,10 @@ public class UserServiceImpl implements UserService {
 	/** The transaction audit log dao. */
 	@Autowired
 	private TransactionAuditLogDAO transactionAuditLogDAO;
+	
+	/** The organization dao. */
+	@Autowired
+	private OrganizationDAO organizationDAO;
 	
 	/** The code list service. */
 	@Autowired
@@ -761,9 +767,11 @@ public class UserServiceImpl implements UserService {
 		user.setPhoneNumber(model.getPhoneNumber());
 		user.setStatus(getStatusObject(model.isActive()));
 		user.setSecurityRole(getRole(model.getRole()));
-		user.setOrgOID(model.getOid());
+		//user.setOrgOID(model.getOid());
 		//user.setRootOID(model.getRootOid());
-		user.setOrganizationName(model.getOrganization());
+		//user.setOrganizationName(model.getOrganization());
+		Organization organization = organizationDAO.find(Long.parseLong(model.getOrganizationId()));
+		user.setOrganization(organization);
 		
 		if(model.isActive() && user.getActivationDate() == null) {
 			user.setTerminationDate(null);

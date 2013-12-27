@@ -80,7 +80,9 @@ MeasureService {
 		return this.getMeasureLibraryService().getAllMeasureNotesByMeasureID(measureID);
 	}
 	
-	/** @param userId - String userId.
+	/** Gets the all recent measure for user.
+	 * 
+	 * @param userId - String userId.
 	 * @return ManageMeasureSearchModel */
 	@Override
 	public ManageMeasureSearchModel getAllRecentMeasureForUser(String userId) {
@@ -236,14 +238,13 @@ MeasureService {
 	}
 	
 	/* (non-Javadoc)
-	 * @see mat.client.measure.service.MeasureService#searchMeasuresForDraft(int, int)
+	 * @see mat.client.measure.service.MeasureService#searchMeasuresForDraft(java.lang.String)
 	 */
 	@Override
-	public ManageMeasureSearchModel searchMeasuresForDraft(String searchText,int startIndex,
-			int pageSize) {
-		return this.getMeasureLibraryService().searchMeasuresForDraft(searchText,startIndex, pageSize);
+	public ManageMeasureSearchModel searchMeasuresForDraft(String searchText) {
+		return this.getMeasureLibraryService().searchMeasuresForDraft(searchText);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#searchMeasuresForVersion(java.lang.String)
 	 */
@@ -251,7 +252,7 @@ MeasureService {
 	public ManageMeasureSearchModel searchMeasuresForVersion(String searchText) {
 		return this.getMeasureLibraryService().searchMeasuresForVersion(searchText);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#searchUsers(int, int)
 	 */
@@ -260,7 +261,7 @@ MeasureService {
 			int pageSize) {
 		return this.getMeasureLibraryService().searchUsers(startIndex, pageSize);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#transferOwnerShipToUser(java.util.List, java.lang.String)
 	 */
@@ -316,7 +317,7 @@ MeasureService {
 	 * @see mat.client.measure.service.MeasureService#validateMeasureForExport(java.lang.String, java.util.ArrayList)
 	 */
 	@Override
-	public ValidateMeasureResult validateMeasureForExport(String key , ArrayList<MatValueSet> matValueSetList)
+	public ValidateMeasureResult validateMeasureForExport(String key , List<MatValueSet> matValueSetList)
 			throws MatException {
 		return this.getMeasureLibraryService().validateMeasureForExport(key, matValueSetList);
 	}
