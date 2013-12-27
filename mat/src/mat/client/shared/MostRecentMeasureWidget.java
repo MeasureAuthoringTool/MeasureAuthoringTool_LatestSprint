@@ -3,6 +3,7 @@ package mat.client.shared;
 import java.util.ArrayList;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureSearchModel.Result;
+import mat.client.util.CellTableUtility;
 import mat.shared.ClickableSafeHtmlCell;
 import com.google.gwt.cell.client.Cell;
 import com.google.gwt.cell.client.Cell.Context;
@@ -54,83 +55,85 @@ public class MostRecentMeasureWidget extends Composite implements HasSelectionHa
 	private Observer observer;
 	/** VerticalPanel Instance which hold's View for Most Recent Measure. */
 	private VerticalPanel searchPanel = new VerticalPanel();
-	
 	/** Method to Add Column's in Table.
-	 * 
 	 * @param table the table
 	 * @return the cell table */
 	private CellTable<Result> addColumnToTable(final CellTable<ManageMeasureSearchModel.Result> table) {
 		if (table.getColumnCount() != MAX_TABLE_COLUMN_SIZE) {
-			Element element = cellTable.getElement();
-			element.setAttribute("aria-labelledby", "MostRecentMeasureActivityTable");
+			Label searchHeader = new Label("Recent Activity");
+			searchHeader.getElement().setId("searchHeader_Label");
+			searchHeader.setStyleName("recentSearchHeader");
 			com.google.gwt.dom.client.TableElement elem = cellTable.getElement().cast();
 			TableCaptionElement caption = elem.createCaption();
-			caption.appendChild(new HTML("<h4 class=\"invisible\"> Recent Measure Acitivity Table. </h4>").getElement());
+			caption.appendChild(searchHeader.getElement());
 			Column<ManageMeasureSearchModel.Result, SafeHtml> measureName =
 					new Column<ManageMeasureSearchModel.Result, SafeHtml>(new
 							ClickableSafeHtmlCell()) {
 				@Override
 				public SafeHtml getValue(ManageMeasureSearchModel.Result object) {
 					SafeHtmlBuilder sb = new SafeHtmlBuilder();
-					sb.appendHtmlConstant("<a href=\"#\" "
+					sb.appendHtmlConstant("<a href=\"javascript:void(0);\" "
 							+ "style=\"text-decoration:none\" title='" + object.getName()
 							+ "' >");
-					sb.appendEscaped(object.getName()); sb.appendHtmlConstant("</a>"); return sb.toSafeHtml(); } };
-					measureName.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, SafeHtml>() {
-						@Override
-						public void update(int index, ManageMeasureSearchModel.Result object, SafeHtml value) {
-							MatContext.get().clearDVIMessages();
-							SelectionEvent.fire(MostRecentMeasureWidget.this, object);
-						}
-					});
-					table.addColumn(measureName, SafeHtmlUtils.fromSafeConstant(
-							"<span title='Measure Name Column'>" + "Measure Name" + "</span>"));
-					Column<ManageMeasureSearchModel.Result, SafeHtml> version =
-							new Column<ManageMeasureSearchModel.Result, SafeHtml>(
-									new MatSafeHTMLCell()) {
-						@Override
-						public SafeHtml getValue(ManageMeasureSearchModel.Result object) {
-							return getColumnToolTip(object.getVersion());
-						}
-					};
-					table.addColumn(version, SafeHtmlUtils.fromSafeConstant(
-							"<span title='Version'>" + "Version" + "</span>"));
-					Cell<String> exportButton = new MatButtonCell("Click to Export", "customExportButton");
-					Column<Result, String> exportColumn =
-							new Column<ManageMeasureSearchModel.Result, String>(exportButton) {
-						@Override
-						public String getValue(ManageMeasureSearchModel.Result object) {
-							return "Export";
-						}
-						@Override
-						public void onBrowserEvent(Context context, Element elem,
-								final ManageMeasureSearchModel.Result object, NativeEvent event) {
-							if ((object != null) && object.isExportable()) {
-								super.onBrowserEvent(context, elem, object, event);
-							}
-						}
-						@Override
-						public void render(Cell.Context context, ManageMeasureSearchModel.Result object,
-								SafeHtmlBuilder sb) {
-							if (object.isExportable()) {
-								super.render(context, object, sb);
-							}
-						}
-					};
-					exportColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, String>() {
-						@Override
-						public void update(int index, ManageMeasureSearchModel.Result object, String value) {
-							if ((object != null) && object.isExportable()) {
-								observer.onExportClicked(object);
-							}
-						}
-					});
-					table.addColumn(exportColumn,
-							SafeHtmlUtils.fromSafeConstant("<span title='Export'>"
-									+ "Export" + "</span>"));
-					table.setColumnWidth(0, 65.0, Unit.PCT);
-					table.setColumnWidth(1, 30.0, Unit.PCT);
-					table.setColumnWidth(2, 5.0, Unit.PCT);
+					sb.appendEscaped(object.getName());
+					sb.appendHtmlConstant("</a>");
+					return sb.toSafeHtml();
+				}
+			};
+			measureName.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, SafeHtml>() {
+				@Override
+				public void update(int index, ManageMeasureSearchModel.Result object, SafeHtml value) {
+					SelectionEvent.fire(MostRecentMeasureWidget.this, object);
+				}
+			});
+			table.addColumn(measureName, SafeHtmlUtils.fromSafeConstant(
+					"<span title='Measure Name Column'>" + "Measure Name" + "</span>"));
+			Column<ManageMeasureSearchModel.Result, SafeHtml> version =
+					new Column<ManageMeasureSearchModel.Result, SafeHtml>(
+							new MatSafeHTMLCell()) {
+				@Override
+				public SafeHtml getValue(ManageMeasureSearchModel.Result object) {
+					return CellTableUtility.getColumnToolTip(object.getVersion());
+				}
+			};
+			table.addColumn(version, SafeHtmlUtils.fromSafeConstant(
+					"<span title='Version'>" + "Version" + "</span>"));
+			Cell<String> exportButton = new MatButtonCell("Click to Export", "customExportButton");
+			Column<Result, String> exportColumn =
+					new Column<ManageMeasureSearchModel.Result, String>(exportButton) {
+				@Override
+				public String getValue(ManageMeasureSearchModel.Result object) {
+					return "Export";
+				}
+				@Override
+				public void onBrowserEvent(Context context, Element elem,
+						final ManageMeasureSearchModel.Result object, NativeEvent event) {
+					if ((object != null) && object.isExportable()) {
+						super.onBrowserEvent(context, elem, object, event);
+					}
+				}
+				@Override
+				public void render(Cell.Context context, ManageMeasureSearchModel.Result object,
+						SafeHtmlBuilder sb) {
+					if (object.isExportable()) {
+						super.render(context, object, sb);
+					}
+				}
+			};
+			exportColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, String>() {
+				@Override
+				public void update(int index, ManageMeasureSearchModel.Result object, String value) {
+					if ((object != null) && object.isExportable()) {
+						observer.onExportClicked(object);
+					}
+				}
+			});
+			table.addColumn(exportColumn,
+					SafeHtmlUtils.fromSafeConstant("<span title='Export'>"
+							+ "Export" + "</span>"));
+			table.setColumnWidth(0, 65.0, Unit.PCT);
+			table.setColumnWidth(1, 30.0, Unit.PCT);
+			table.setColumnWidth(2, 5.0, Unit.PCT);
 		}
 		return table;
 	}
@@ -156,31 +159,39 @@ public class MostRecentMeasureWidget extends Composite implements HasSelectionHa
 		sortProvider.getList().addAll(measureSearchModel.getData());
 		cellTable = addColumnToTable(cellTable);
 		sortProvider.addDataDisplay(cellTable);
-		Label invisibleLabel = (Label) LabelBuilder.buildInvisibleLabel(new Label("MostRecentMeasureActivityTable"),
-				"MostRecentMeasureActivityTable");
+		Label invisibleLabel = (Label) LabelBuilder
+				.buildInvisibleLabel(
+						"recentActivitySummary",
+						"In the following Recent Activity table, Measure Name is given in first column,"
+								+ " Version in second column and Export in third column.");
 		cellTable.getElement().setAttribute("id", "MostRecentActivityCellTable");
-		cellTable.getElement().setAttribute("Summary", "Recent Measure Activity Table.");
+		cellTable.getElement().setAttribute("aria-describedby", "recentActivitySummary");
 		searchPanel.add(invisibleLabel);
 		searchPanel.add(cellTable);
 	}
-	
 	/** Builds the most recent widget.
-	 * 
 	 * @return VerticalPanel. */
 	public VerticalPanel buildMostRecentWidget() {
 		searchPanel.clear();
 		searchPanel.getElement().setId("searchPanel_VerticalPanel");
 		searchPanel.setStyleName("recentSearchPanel");
-		Label searchHeader = new Label("Recent Activity");
-		searchHeader.getElement().setId("searchHeader_Label");
-		searchHeader.setStyleName("recentSearchHeader");
-		searchHeader.getElement().setAttribute("tabIndex", "0");
-		searchPanel.add(searchHeader);
-		searchPanel.add(new SpacerWidget());
+		// searchPanel.getElement().setAttribute("tabIndex", "0");
+		/*
+		 * Label invisibleLabel = (Label) LabelBuilder.buildInvisibleLabel(new Label("RecentActivityTable"), "RecentActivityTable");
+		 * searchPanel.add(invisibleLabel); Element element = searchPanel.getElement(); element.setAttribute("aria-role", "panel");
+		 * element.setAttribute("aria-labelledby", "RecentActivityTable"); element.setAttribute("aria-live", "assertive");
+		 * element.setAttribute("aria-atomic", "true"); element.setAttribute("aria-relevant", "all"); element.setAttribute("role", "alert");
+		 */
 		if ((measureSearchModel != null) && (measureSearchModel.getData().size() > 0)) {
 			buildCellTable();
 		} else {
+			Label searchHeader = new Label("Recent Activity");
+			searchHeader.getElement().setId("searchHeader_Label");
+			searchHeader.setStyleName("recentSearchHeader");
+			searchHeader.getElement().setAttribute("tabIndex", "0");
 			HTML desc = new HTML("<p> No Recent Activity</p>");
+			searchPanel.add(searchHeader);
+			searchPanel.add(new SpacerWidget());
 			searchPanel.add(desc);
 		}
 		return searchPanel;
@@ -193,16 +204,7 @@ public class MostRecentMeasureWidget extends Composite implements HasSelectionHa
 	public void fireEvent(GwtEvent<?> event) {
 		handlerManager.fireEvent(event);
 	}
-	/**
-	 * Gets the column tool tip.
-	 * @param title
-	 *            the title
-	 * @return the column tool tip
-	 */
-	private SafeHtml getColumnToolTip(String title) {
-		String htmlConstant = "<html>" + "<head> </head> <Body><span title='" + title + "'>" + title + "</span></body>" + "</html>";
-		return new SafeHtmlBuilder().appendHtmlConstant(htmlConstant).toSafeHtml();
-	}
+	
 	
 	/** Gets the manageMeasureSearchModel Instance.
 	 * 

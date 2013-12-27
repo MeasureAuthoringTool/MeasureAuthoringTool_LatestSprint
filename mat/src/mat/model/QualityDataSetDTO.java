@@ -38,11 +38,16 @@ public class QualityDataSetDTO implements IsSerializable {
 	/** The effective date. */
 	private String effectiveDate;
 	
+	/** QDM Modified At VSAC. */
+	private boolean hasModifiedAtVSAC;
 	/** The id. */
 	private String id;
 	
 	/** The is used. */
 	private boolean isUsed;
+	
+	/** QDM is not available in VSAC. */
+	private boolean notFoundInVSAC;
 	
 	/** The occurrence text. */
 	private String occurrenceText;
@@ -64,7 +69,6 @@ public class QualityDataSetDTO implements IsSerializable {
 	
 	/** The version. */
 	private String version;
-	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
@@ -111,6 +115,13 @@ public class QualityDataSetDTO implements IsSerializable {
 	 * @return the effectiveDate */
 	public String getEffectiveDate() {
 		return effectiveDate;
+	}
+	
+	/**
+	 * @return the hasModifiedAtVSAC
+	 */
+	public boolean getHasModifiedAtVSAC() {
+		return hasModifiedAtVSAC;
 	}
 	
 	/**
@@ -186,6 +197,13 @@ public class QualityDataSetDTO implements IsSerializable {
 	}
 	
 	/**
+	 * @return the notFoundInVSAC
+	 */
+	public boolean isNotFoundInVSAC() {
+		return notFoundInVSAC;
+	}
+	
+	/**
 	 * Checks if is supp data element.
 	 * 
 	 * @return true, if is supp data element
@@ -241,6 +259,13 @@ public class QualityDataSetDTO implements IsSerializable {
 	}
 	
 	/**
+	 * @param hasModifiedAtVSAC the hasModifiedAtVSAC to set
+	 */
+	public void setHasModifiedAtVSAC(boolean hasModifiedAtVSAC) {
+		this.hasModifiedAtVSAC = hasModifiedAtVSAC;
+	}
+	
+	/**
 	 * Sets the id.
 	 * 
 	 * @param id
@@ -248,6 +273,13 @@ public class QualityDataSetDTO implements IsSerializable {
 	 */
 	public void setId(String id) {
 		this.id = id;
+	}
+	
+	/**
+	 * @param notFoundInVSAC the notFoundInVSAC to set
+	 */
+	public void setNotFoundInVSAC(boolean notFoundInVSAC) {
+		this.notFoundInVSAC = notFoundInVSAC;
 	}
 	
 	/**
@@ -290,6 +322,8 @@ public class QualityDataSetDTO implements IsSerializable {
 		this.taxonomy = taxonomy;
 	}
 	
+	
+	
 	/**
 	 * Sets the type.
 	 * 
@@ -300,6 +334,8 @@ public class QualityDataSetDTO implements IsSerializable {
 		this.type = type;
 	}
 	
+	
+	
 	/**
 	 * Sets the used.
 	 * 
@@ -309,7 +345,6 @@ public class QualityDataSetDTO implements IsSerializable {
 	public void setUsed(boolean isUsed) {
 		this.isUsed = isUsed;
 	}
-	
 	/**
 	 * Sets the uuid.
 	 * 
@@ -319,7 +354,9 @@ public class QualityDataSetDTO implements IsSerializable {
 	public void setUuid(String uuid) {
 		this.uuid = uuid;
 	}
-	
+
+
+
 	/**
 	 * Sets the version.
 	 * 
@@ -329,7 +366,9 @@ public class QualityDataSetDTO implements IsSerializable {
 	public void setVersion(String version) {
 		this.version = version;
 	}
-	
+
+
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */

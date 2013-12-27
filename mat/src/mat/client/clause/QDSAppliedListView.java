@@ -5,18 +5,21 @@ import java.util.List;
 import mat.client.CustomPager;
 import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.ErrorMessageDisplayInterface;
+import mat.client.shared.LabelBuilder;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatSimplePager;
 import mat.client.shared.RadioButtonCell;
 import mat.client.shared.SpacerWidget;
 import mat.client.shared.SuccessMessageDisplay;
 import mat.client.shared.SuccessMessageDisplayInterface;
+import mat.client.util.CellTableUtility;
 import mat.model.QualityDataSetDTO;
 import mat.shared.ConstantMessages;
 import com.google.gwt.cell.client.FieldUpdater;
 import com.google.gwt.cell.client.SafeHtmlCell;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.dom.client.TableCaptionElement;
 import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.safehtml.shared.SafeHtmlUtils;
@@ -120,6 +123,13 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 	private CellTable<QualityDataSetDTO> addColumnToTable(final CellTable<QualityDataSetDTO> table,
 			ListHandler<QualityDataSetDTO> sortHandler) {
 		if (table.getColumnCount() != TABLE_COL_COUNT) {
+			Label searchHeader = new Label("Applied QDM Elements");
+			searchHeader.getElement().setId("searchHeader_Label");
+			searchHeader.setStyleName("recentSearchHeader");
+			searchHeader.getElement().setAttribute("tabIndex", "0");
+			com.google.gwt.dom.client.TableElement elem = table.getElement().cast();
+			TableCaptionElement caption = elem.createCaption();
+			caption.appendChild(searchHeader.getElement());
 			final RadioButtonCell rbCell = new RadioButtonCell(true, true);
 			Column<QualityDataSetDTO, Boolean> radioButtonColumn = new Column<QualityDataSetDTO, Boolean>(rbCell) {
 				@Override
@@ -148,7 +158,7 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 				}
 			});
 			table.addColumn(radioButtonColumn, SafeHtmlUtils.fromSafeConstant(
-					"<span title='Select to Modify' tabindex=\"0\">Select</span>"));
+					"<span title='Select to Modify'>Select</span>"));
 			Column<QualityDataSetDTO, SafeHtml> nameColumn = new Column<QualityDataSetDTO, SafeHtml>(new SafeHtmlCell()) {
 				@Override
 				public SafeHtml getValue(QualityDataSetDTO object) {
@@ -161,20 +171,27 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 						value = object.getCodeListName();
 						title = title.append("Name : ").append(value);
 					}
-					return getColumnToolTip(value, title);
+					if (ConstantMessages.USER_DEFINED_QDM_OID.equalsIgnoreCase(object.getOid())) {
+						return getNameColumnToolTip(value, title, object.getHasModifiedAtVSAC(),
+								object.isNotFoundInVSAC());
+					} else {
+						return getNameColumnToolTip(value, title, object.getHasModifiedAtVSAC(),
+								object.isNotFoundInVSAC());
+					}
+					// return getColumnToolTip(value, title);
 				}
 			};
 			table.addColumn(nameColumn, SafeHtmlUtils.fromSafeConstant(
-					"<span title='Name' tabindex=\"0\">" + "Name" + "</span>"));
+					"<span title='Name'>" + "Name" + "</span>"));
 			Column<QualityDataSetDTO, SafeHtml> dataTypeColumn = new Column<QualityDataSetDTO, SafeHtml>(new SafeHtmlCell()) {
 				@Override
 				public SafeHtml getValue(QualityDataSetDTO object) {
 					StringBuilder title = new StringBuilder();
 					title = title.append("Datatype : ").append(object.getDataType());
-					return getColumnToolTip(object.getDataType(), title);
+					return CellTableUtility.getColumnToolTip(object.getDataType(), title.toString());
 				}
 			};
-			table.addColumn(dataTypeColumn, SafeHtmlUtils.fromSafeConstant("<span title='Datatype' tabindex=\"0\">" + "Datatype"
+			table.addColumn(dataTypeColumn, SafeHtmlUtils.fromSafeConstant("<span title='Datatype'>" + "Datatype"
 					+ "</span>"));
 			Column<QualityDataSetDTO, SafeHtml> oidColumn = new Column<QualityDataSetDTO, SafeHtml>(new SafeHtmlCell()) {
 				@Override
@@ -188,17 +205,18 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 						title = title.append("OID : ").append(object.getOid());
 						oid = object.getOid();
 					}
-					return getColumnToolTip(oid, title);
+					return CellTableUtility.getColumnToolTip(oid, title.toString());
 				}
 			};
-			table.addColumn(oidColumn, SafeHtmlUtils.fromSafeConstant("<span title='OID' tabindex=\"0\">" + "OID" + "</span>"));
+			table.addColumn(oidColumn, SafeHtmlUtils.fromSafeConstant("<span title='OID'>" + "OID" + "</span>"));
 			Column<QualityDataSetDTO, SafeHtml> versionColumn = new Column<QualityDataSetDTO, SafeHtml>(new SafeHtmlCell()) {
 				@Override
 				public SafeHtml getValue(QualityDataSetDTO object) {
 					StringBuilder title = new StringBuilder();
 					String version = null;
 					if (!object.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)) {
-						if (object.getVersion().equalsIgnoreCase("1.0") || object.getVersion().equalsIgnoreCase("1")) {
+						if (object.getVersion().equalsIgnoreCase("1.0")
+								|| object.getVersion().equalsIgnoreCase("1")) {
 							title = title.append("Version : ").append("Most Recent");
 							version = "Most Recent";
 						} else {
@@ -212,10 +230,10 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 					} else {
 						version = "";
 					}
-					return getColumnToolTip(version, title);
+					return CellTableUtility.getColumnToolTip(version, title.toString());
 				}
 			};
-			table.addColumn(versionColumn, SafeHtmlUtils.fromSafeConstant("<span title='Version' tabindex=\"0\">" + "Version"
+			table.addColumn(versionColumn, SafeHtmlUtils.fromSafeConstant("<span title='Version'>" + "Version"
 					+ "</span>"));
 			Column<QualityDataSetDTO, SafeHtml> effectiveDateColumn = new Column<QualityDataSetDTO,
 					SafeHtml>(new SafeHtmlCell()) {
@@ -229,7 +247,7 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 					} else {
 						title = title.append("Effective Date : ").append("No Effective Date Selected");
 					}
-					return getColumnToolTip(effectiveDate, title);
+					return CellTableUtility.getColumnToolTip(effectiveDate, title.toString());
 				}
 			};
 			table.addColumn(effectiveDateColumn, SafeHtmlUtils.fromSafeConstant(
@@ -280,13 +298,7 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 	@Override
 	public void buildCellTable(QDSAppliedListModel appliedListModel) {
 		cellTablePanel.clear();
-		cellTablePanel.setStyleName("QdmAppliedListSearchPanel");
-		Label searchHeader = new Label("Applied QDM Elements");
-		searchHeader.getElement().setId("searchHeader_Label");
-		searchHeader.setStyleName("recentSearchHeader");
-		searchHeader.getElement().setAttribute("tabIndex", "0");
-		cellTablePanel.add(searchHeader);
-		cellTablePanel.add(new SpacerWidget());
+		cellTablePanel.setStyleName("cellTablePanel");
 		if ((appliedListModel.getAppliedQDMs() != null) && (appliedListModel.getAppliedQDMs().size() > 0)) {
 			CellTable<QualityDataSetDTO> table = new CellTable<QualityDataSetDTO>();
 			table.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
@@ -305,16 +317,34 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 			spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
 			spager.setDisplay(table);
 			spager.setPageStart(0);
-			spager.setToolTipAndTabIndex(spager);
-			/* cellTablePanel.clear(); */
+			/* spager.setToolTipAndTabIndex(spager); */
+			Label invisibleLabel = (Label) LabelBuilder
+					.buildInvisibleLabel(
+							"appliedQDMTableSummary",
+							"In the Following Applied QDM Elements table a radio button is positioned to "
+									+ "the left of the table with a select Column header followed by "
+									+ "QDM name in second column, Datatype in third column, OID in "
+									+ "fourth column, Version in fifth column and Effective date in "
+									+ "sixth column. The Applied QDM elements are listed alphabetically"
+									+ " in a table.  ");
+			table.getElement().setAttribute("id", "AppliedQDMTable");
+			table.getElement().setAttribute("aria-describedby", "appliedQDMTableSummary");
+			cellTablePanel.add(invisibleLabel);
 			cellTablePanel.add(table);
 			cellTablePanel.add(new SpacerWidget());
 			cellTablePanel.add(spager);
 			removeButton.setEnabled(false);
 			modify.setEnabled(checkForEnable() && (appliedListModel.getLastSelected() != null) ? true : false);
 			updateVsacButton.setEnabled(true);
+			
 		} else {
+			Label searchHeader = new Label("Applied QDM Elements");
+			searchHeader.getElement().setId("searchHeader_Label");
+			searchHeader.setStyleName("recentSearchHeader");
+			searchHeader.getElement().setAttribute("tabIndex", "0");
 			HTML desc = new HTML("<p> No Applied QDM Elements.</p>");
+			cellTablePanel.add(searchHeader);
+			cellTablePanel.add(new SpacerWidget());
 			cellTablePanel.add(desc);
 			removeButton.setEnabled(false);
 			modify.setEnabled(false);
@@ -351,20 +381,7 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 	public SuccessMessageDisplayInterface getApplyToMeasureSuccessMsg() {
 		return successMessagePanel;
 	}
-	/**
-	 * Gets the column tool tip.
-	 * @param columnText
-	 *            the column text
-	 * @param title
-	 *            the title
-	 * @return the column tool tip
-	 */
-	private SafeHtml getColumnToolTip(String columnText, StringBuilder title) {
-		String htmlConstant = "<html>" + "<head> </head> <Body><span tabIndex = \"0\" title='" + title + "'>" + columnText
-				+ "</span></body>"
-				+ "</html>";
-		return new SafeHtmlBuilder().appendHtmlConstant(htmlConstant).toSafeHtml();
-	}
+	
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSAppliedListPresenter.SearchDisplay#getErrorMessageDisplay()
 	 */
@@ -386,6 +403,39 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 	@Override
 	public Button getModifyButton() {
 		return modify;
+	}
+	/** @param columnText - String.
+	 * @param title - StringBuilder.
+	 * @param hasImage - Boolean.
+	 * @param isUserDefined Boolean.
+	 * @return */
+	private SafeHtml getNameColumnToolTip(String columnText, StringBuilder title, boolean hasImage,
+			boolean isUserDefined) {
+		if (hasImage && !isUserDefined) {
+			String htmlConstant = "<html>"
+					+ "<head> </head> <Body><img src =\"images/bullet_tick.png\" alt=\"QDM Updated From VSAC.\""
+					+ "title = \"QDM Updated From VSAC.\"/>"
+					+ "<span tabIndex = \"0\" title='" + title + "'>"
+					+ columnText
+					+ "</span></body>"
+					+ "</html>";
+			return new SafeHtmlBuilder().appendHtmlConstant(htmlConstant).toSafeHtml();
+		} else if (hasImage && isUserDefined) {
+			String htmlConstant = "<html>"
+					+ "<head> </head> <Body><img src =\"images/userDefinedWarning.png\""
+					+ "alt=\"Warning : QDM not available in VSAC.\""
+					+ " title=\"QDM not available in VSAC.\"/>"
+					+ "<span tabIndex = \"0\" title='" + title + "'>"
+					+ columnText
+					+ "</span></body>"
+					+ "</html>";
+			return new SafeHtmlBuilder().appendHtmlConstant(htmlConstant).toSafeHtml();
+		} else {
+			String htmlConstant = "<html>" + "<head> </head> <Body><span tabIndex = \"0\" title='" + title + "'>" + columnText
+					+ "</span></body>"
+					+ "</html>";
+			return new SafeHtmlBuilder().appendHtmlConstant(htmlConstant).toSafeHtml();
+		}
 	}
 	/* (non-Javadoc)
 	 * @see mat.client.clause.QDSAppliedListPresenter.SearchDisplay#getRemoveButton()
@@ -424,32 +474,38 @@ public class QDSAppliedListView  implements QDSAppliedListPresenter.SearchDispla
 	 * ArrayList<HasCell<QualityDataSetDTO, ?>> hasCells = new ArrayList<HasCell<QualityDataSetDTO, ?>>(); // final
 	 * MultiSelectionModel<QualityDataSetDTO> selectionModel = new MultiSelectionModel<QualityDataSetDTO>(); final
 	 * SingleSelectionModel<QualityDataSetDTO> selectionModel = new SingleSelectionModel<QualityDataSetDTO>(); //
-	 * cellList.setSelectionModel(selectionModel); hasCells.add(new HasCell<QualityDataSetDTO, Boolean>() {
-	 * // private MatCheckBoxCell cbCell = new MatCheckBoxCell(); private RadioButtonCell cbCell = new RadioButtonCell(true, true);
+	 * cellList.setSelectionModel(selectionModel); hasCells.add(new HasCell<QualityDataSetDTO, Boolean>() { // private MatCheckBoxCell
+	 * cbCell = new MatCheckBoxCell(); private RadioButtonCell cbCell = new RadioButtonCell(true, true);
+	 * 
 	 * @Override public Cell<Boolean> getCell() { return cbCell; }
-	 * @Override public FieldUpdater<QualityDataSetDTO, Boolean> getFieldUpdater() { return new FieldUpdater<QualityDataSetDTO,
-	 * Boolean>() {
+	 * 
+	 * @Override public FieldUpdater<QualityDataSetDTO, Boolean> getFieldUpdater() { return new FieldUpdater<QualityDataSetDTO, Boolean>() {
+	 * 
 	 * @Override public void update(int index, QualityDataSetDTO object, Boolean value) { errorMessagePanel.clear(); lastSelectedObject =
 	 * object; if (checkForEnable()) { modify.setEnabled(true); updateVsacButton.setEnabled(true); if (object.isUsed()) {
 	 * removeButton.setEnabled(false); } else { removeButton.setEnabled(true); } } else { removeButton.setEnabled(false);
-	 * modify.setEnabled(false); updateVsacButton.setEnabled(false); }
-	 * } }; }
+	 * modify.setEnabled(false); updateVsacButton.setEnabled(false); } } }; }
+	 * 
 	 * @Override public Boolean getValue(QualityDataSetDTO object) { cbCell.setUsed(object.isUsed()); return
-	 * selectionModel.isSelected(object); } });
-	 * hasCells.add(new HasCell<QualityDataSetDTO, String>() { private TextCell cell = new TextCell();
+	 * selectionModel.isSelected(object); } }); hasCells.add(new HasCell<QualityDataSetDTO, String>() { private TextCell cell = new
+	 * TextCell();
+	 * 
 	 * @SuppressWarnings("unchecked")
+	 * 
 	 * @Override public Cell<String> getCell() { return cell; }
+	 * 
 	 * @Override public FieldUpdater<QualityDataSetDTO, String> getFieldUpdater() { return null; }
+	 * 
 	 * @Override public String getValue(QualityDataSetDTO object) { String value; String QDMDetails = ""; if
 	 * (object.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)) { QDMDetails = "(User defined)"; } else { String version =
 	 * object.getVersion(); String effectiveDate = object.getEffectiveDate(); if (effectiveDate != null) { QDMDetails = "(OID: " +
 	 * object.getOid() + ", Effective Date: " + effectiveDate + ")"; } else if (!version.equals("1.0") && !version.equals("1")) { QDMDetails
-	 * = "(OID: " + object.getOid() + ", Version: " + version + ")"; } else { QDMDetails = "(OID: " + object.getOid() + ")"; } }
-	 * if ((object.getOccurrenceText() != null) && !object.getOccurrenceText().equals("")) { value = object.getOccurrenceText() + " of " +
+	 * = "(OID: " + object.getOid() + ", Version: " + version + ")"; } else { QDMDetails = "(OID: " + object.getOid() + ")"; } } if
+	 * ((object.getOccurrenceText() != null) && !object.getOccurrenceText().equals("")) { value = object.getOccurrenceText() + " of " +
 	 * object.getCodeListName() + ": " + object.getDataType() + " " + QDMDetails; } else { value = object.getCodeListName() + ": " +
-	 * object.getDataType() + " " + QDMDetails; }
-	 * return value; } });
-	 * Cell<QualityDataSetDTO> myClassCell = new CompositeCell<QualityDataSetDTO>(hasCells) {
+	 * object.getDataType() + " " + QDMDetails; } return value; } }); Cell<QualityDataSetDTO> myClassCell = new
+	 * CompositeCell<QualityDataSetDTO>(hasCells) {
+	 * 
 	 * @Override protected Element getContainerElement(Element parent) { // Return the first TR element in the table. return
 	 * parent.getFirstChildElement().getFirstChildElement().getFirstChildElement(); }
 	 * 

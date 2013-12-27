@@ -2,6 +2,7 @@ package mat.client.shared;
 
 import mat.shared.ConstantMessages;
 
+// TODO: Auto-generated Javadoc
 /**
  * Message store to prevent duplicated messages final String fields and their
  * getters.
@@ -122,7 +123,7 @@ public class MessageDelegate {
 	
 	/** The Constant VALUE_SET_DRAFT_SAVED. */
 	public static final String VALUE_SET_DRAFT_SAVED = "Value Set successfully saved as a draft.";
-
+	
 	/** The Constant VSAC_VERSION_OR_EFFECTIVE_DATE_REQUIRED. */
 	public static final String VSAC_VERSION_OR_EFFECTIVE_DATE_REQUIRED = "Value set version or effective date has been selected. Please enter a date to continue.";
 	
@@ -344,10 +345,16 @@ public class MessageDelegate {
 	private final String PACKAGE_SUCCESS = "Measure packaged successfully. Please access the Measure Library to export the measure.";
 	
 	/** The package success with some OID's not retrived from VSAC. */
-	private final String PACKAGE_SUCCESS_VSAC_OID_MISSING = "Measure packaged successfully. One or more OID(s) could not be updated from VSAC.";
+	private final String PACKAGE_SUCCESS_VSAC_OID_MISSING = "Measure packaged successfully. One or more OIDs could not be updated from VSAC.";
 	
 	/** The password mismatch. */
 	private final String PASSWORD_MISMATCH = "Your new password and confirm password do not match.";
+	
+	/** The is not previous password. */
+	private final String IS_NOT_PREVIOUS_PASSWORD="New password cannot be same as current password.";
+	
+	/** The change old password. */
+	private final String CHANGE_OLD_PASSWORD="Password needs to be at least one day old before you can change it. Try again.";
 	
 	/** The password mismatch error message. */
 	private final String PASSWORD_MISMATCH_ERROR_MESSAGE = "Incorrect password supplied.Try again";
@@ -488,7 +495,7 @@ public class MessageDelegate {
 	
 	/** The vsac update successfull. */
 	private final String VSAC_UPDATE_SUCCESSFULL = "Successfully updated applied QDM list with VSAC data.";
-
+	
 	/**
 	 * Gets the abv name required message.
 	 * 
@@ -1276,6 +1283,11 @@ public class MessageDelegate {
 		return PACKAGE_SUCCESS;
 	}
 	
+	/**
+	 * Gets the package success amber message.
+	 *
+	 * @return the package success amber message
+	 */
 	public final String getPackageSuccessAmberMessage() {
 		return PACKAGE_SUCCESS_VSAC_OID_MISSING;
 	}
@@ -1834,5 +1846,23 @@ public class MessageDelegate {
 	 */
 	public String getVSAC_VERSION_OR_EFFECTIVE_DATE_REQUIRED() {
 		return VSAC_VERSION_OR_EFFECTIVE_DATE_REQUIRED;
+	}
+	
+	/**
+	 * Gets the checks if is not previous password.
+	 *
+	 * @return the checks if is not previous password
+	 */
+	public String getIS_NOT_PREVIOUS_PASSWORD() {
+		return IS_NOT_PREVIOUS_PASSWORD;
+	}
+
+	/**
+	 * Gets the change old password.
+	 *
+	 * @return the change old password
+	 */
+	public String getCHANGE_OLD_PASSWORD() {
+		return CHANGE_OLD_PASSWORD;
 	}
 }

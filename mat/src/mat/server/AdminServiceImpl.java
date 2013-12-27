@@ -207,14 +207,15 @@ public class AdminServiceImpl extends SpringRemoteServiceServlet implements Admi
 		AdminManageOrganizationModelValidator test = new AdminManageOrganizationModelValidator();
 		List<String> messages = test.isValidOrganizationDetail(updatedModel);
 		SaveUpdateUserResult result = new SaveUpdateUserResult();
-		if(messages.size()!=0){
-			for(String message: messages){
-				logger.info("Server-Side Validation failed for SaveUpdateOrganizationResult And failure Message is :" + message);
+		if (messages.size() != 0) {
+			for (String message: messages) {
+				logger.info("Server-Side Validation failed for"
+						+ " SaveUpdateOrganizationResult And failure Message is :" + message);
 			}
 			result.setSuccess(false);
 			result.setMessages(messages);
 			result.setFailureReason(SaveUpdateOrganizationResult.SERVER_SIDE_VALIDATION);
-		}else{
+		} else {
 			if (currentModel.isExistingOrg()) {
 				organization = getOrganizationDAO().findByOid(currentModel.getOid());
 				organization.setOrganizationName(updatedModel.getOrganization());
@@ -247,27 +248,27 @@ public class AdminServiceImpl extends SpringRemoteServiceServlet implements Admi
 	public SaveUpdateUserResult saveUpdateUser(ManageUsersDetailModel model) throws InCorrectUserRoleException {
 		checkAdminUser();
 		AdminManageUserModelValidator test = new AdminManageUserModelValidator();
-		List<String>  messages= test.isValidUsersDetail(model);
+		List<String>  messages = test.isValidUsersDetail(model);
 		SaveUpdateUserResult result = new SaveUpdateUserResult();
-		if(messages.size()!=0){
-			for(String message: messages){
-				logger.info("Server-Side Validation failed for SaveUpdateUserResult for Login ID: "+model.getLoginId()+ " And failure Message is :"+ message);
+		if (messages.size() != 0) {
+			for (String message: messages) {
+				logger.info("Server-Side Validation failed for SaveUpdateUserResult for Login ID: "
+						+ model.getLoginId() + " And failure Message is :" + message);
 			}
 			result.setSuccess(false);
 			result.setMessages(messages);
 			result.setFailureReason(SaveUpdateUserResult.SERVER_SIDE_VALIDATION);
-		}else{
+		} else {
 			result = getUserService().saveUpdateUser(model);
 		}
 		return result;
 	}
 	/* (non-Javadoc)
-	 * @see mat.client.admin.service.AdminService#searchOrganization(java.lang.String, int, int)
+	 * @see mat.client.admin.service.AdminService#searchOrganization(java.lang.String)
 	 */
 	@Override
-	public ManageOrganizationSearchModel searchOrganization(String key, int startIndex, int pageSize)
-	{
-		List<Organization> searchResults = getOrganizationDAO().searchOrganization(key, startIndex - 1, pageSize);
+	public ManageOrganizationSearchModel searchOrganization(String key)	{
+		List<Organization> searchResults = getOrganizationDAO().searchOrganization(key);
 		logger.info("Organization search returned " + searchResults.size());
 		ManageOrganizationSearchModel model = new ManageOrganizationSearchModel();
 		List<ManageOrganizationSearchModel.Result> detailList = new ArrayList<ManageOrganizationSearchModel.Result>();
@@ -279,39 +280,43 @@ public class AdminServiceImpl extends SpringRemoteServiceServlet implements Admi
 			detailList.add(r);
 		}
 		model.setData(detailList);
-		model.setStartIndex(startIndex);
-		model.setResultsTotal(getOrganizationDAO().countSearchResults(key));
-		logger.info("Searching Organization on " + key + " with page size " + pageSize);
+		//model.setStartIndex(startIndex);
+		//model.setResultsTotal(getOrganizationDAO().countSearchResults(key));
+		logger.info("Searching Organization on " + key);
 		return model;
 	}
 	
 	/* (non-Javadoc)
-	 * @see mat.client.admin.service.AdminService#searchUsers(java.lang.String, int, int)
+	 * @see mat.client.admin.service.AdminService#searchUsers(java.lang.String)
 	 */
 	@Override
-	public ManageUsersSearchModel searchUsers(String key, int startIndex, int pageSize) throws InCorrectUserRoleException {
+	public ManageUsersSearchModel searchUsers(String key) throws InCorrectUserRoleException {
 		checkAdminUser();
 		
 		UserService userService = getUserService();
-		List<User> searchResults = userService.searchForUsersByName(key, startIndex, pageSize);
+		List<User> searchResults = userService.searchForUsersByName(key);
 		logger.info("User search returned " + searchResults.size());
 		
 		ManageUsersSearchModel model = new  ManageUsersSearchModel();
 		List<ManageUsersSearchModel.Result> detailList = new ArrayList<ManageUsersSearchModel.Result>();
-		for(User user : searchResults) {
+		for (User user : searchResults) {
 			ManageUsersSearchModel.Result r = new ManageUsersSearchModel.Result();
 			r.setFirstName(user.getFirstName());
 			r.setLastName(user.getLastName());
 			r.setOrgName(user.getOrganizationName());
 			r.setKey(user.getId());
 			r.setLoginId(user.getLoginId());
+			if (user.getStatus() != null) {
+				r.setStatus(user.getStatus().getDescription());
+			}
 			detailList.add(r);
 		}
 		model.setData(detailList);
 		
-		model.setStartIndex(startIndex);
-		model.setResultsTotal(getUserService().countSearchResults(key));
-		logger.info("Searching users on " + key + " with page size " + pageSize);
+		//model.setStartIndex(startIndex);
+		//model.setResultsTotal(getUserService().countSearchResults(key));
+		//logger.info("Searching users on " + key + " with page size " + pageSize);
+		logger.info("Searching users on " + key);
 		
 		return model;
 	}

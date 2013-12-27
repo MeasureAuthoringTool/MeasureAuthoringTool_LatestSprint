@@ -8,13 +8,10 @@ import mat.client.admin.service.SaveUpdateOrganizationResult;
 import mat.client.shared.ErrorMessageDisplayInterface;
 import mat.client.shared.MatContext;
 import mat.client.shared.SuccessMessageDisplayInterface;
-import mat.client.shared.search.PageSelectionEvent;
-import mat.client.shared.search.PageSelectionEventHandler;
-import mat.client.shared.search.PageSizeSelectionEvent;
-import mat.client.shared.search.PageSizeSelectionEventHandler;
 import mat.client.shared.search.SearchResultUpdate;
 import mat.client.shared.search.SearchResults;
 import mat.shared.AdminManageOrganizationModelValidator;
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
@@ -24,6 +21,7 @@ import com.google.gwt.event.dom.client.KeyUpHandler;
 import com.google.gwt.event.logical.shared.HasSelectionHandlers;
 import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.FlowPanel;
@@ -59,21 +57,39 @@ public class ManageOrganizationPresenter implements MatPresenter {
 		 * @return the success message display */
 		SuccessMessageDisplayInterface getSuccessMessageDisplay();
 		/** Sets the title.
-		 * 
 		 * @param title the new title */
 		void setTitle(String title);
 	}
 	/** The Interface SearchDisplay. */
-	public static interface SearchDisplay extends mat.client.shared.search.SearchDisplay {
+	public static interface SearchDisplay {
+		/**
+		 * As widget.
+		 *
+		 * @return the widget
+		 */
+		Widget asWidget();
 		/** Builds the data table.
 		 * @param results the results */
 		void buildDataTable(SearchResults<ManageOrganizationSearchModel.Result> results);
 		/** Gets the creates the new button.
 		 * @return the creates the new button */
 		HasClickHandlers getCreateNewButton();
+		/**
+		 * Gets the search button.
+		 *
+		 * @return the search button
+		 */
+		HasClickHandlers getSearchButton();
+		/**
+		 * Gets the search string.
+		 *
+		 * @return the search string
+		 */
+		HasValue<String> getSearchString();
 		/** Gets the select id for edit tool.
 		 * @return the select id for edit tool */
 		HasSelectionHandlers<ManageOrganizationSearchModel.Result> getSelectIdForEditTool();
+		Button getGenerateCSVFileButton();
 	}
 	/** The current details. */
 	private ManageOrganizationDetailModel currentDetails;
@@ -85,13 +101,11 @@ public class ManageOrganizationPresenter implements MatPresenter {
 	private SimplePanel panel = new SimplePanel();
 	/** The search display. */
 	private SearchDisplay searchDisplay;
-	/** The start index. */
-	private int startIndex = 1;
 	/** ManageOrganizationDetailModel updatedDetails. */
 	private ManageOrganizationDetailModel updatedDetails;
 	/** Instantiates a new manage Organizations presenter.
-	 * @param sDisplayArg the s display arg
-	 * @param dDisplayArg the d display arg */
+	 * @param sDisplayArg the SearchDisplay
+	 * @param dDisplayArg the DetailDisplay */
 	public ManageOrganizationPresenter(SearchDisplay sDisplayArg, DetailDisplay dDisplayArg) {
 		searchDisplay = sDisplayArg;
 		detailDisplay = dDisplayArg;
@@ -100,6 +114,13 @@ public class ManageOrganizationPresenter implements MatPresenter {
 			@Override
 			public void onClick(ClickEvent event) {
 				createNew();
+			}
+		});
+		
+		searchDisplay.getGenerateCSVFileButton().addClickHandler(new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				generateCSVForActiveOids();
 			}
 		});
 		TextBox searchWidget = (TextBox) (searchDisplay.getSearchString());
@@ -127,27 +148,13 @@ public class ManageOrganizationPresenter implements MatPresenter {
 			@Override
 			public void onClick(ClickEvent event) {
 				String key = searchDisplay.getSearchString().getValue();
-				search(key, startIndex, searchDisplay.getPageSize());
+				search(key);
 			}
 		});
 		searchDisplay.getSelectIdForEditTool().addSelectionHandler(new SelectionHandler<ManageOrganizationSearchModel.Result>() {
 			@Override
 			public void onSelection(SelectionEvent<ManageOrganizationSearchModel.Result> event) {
 				edit(event.getSelectedItem().getOid());
-			}
-		});
-		searchDisplay.getPageSelectionTool().addPageSelectionHandler(new PageSelectionEventHandler() {
-			@Override
-			public void onPageSelection(PageSelectionEvent event) {
-				startIndex = (searchDisplay.getPageSize() * (event.getPageNumber() - 1)) + 1;
-				search(lastSearchKey, startIndex, searchDisplay.getPageSize());
-			}
-		});
-		searchDisplay.getPageSizeSelectionTool().addPageSizeSelectionHandler(new PageSizeSelectionEventHandler() {
-			@Override
-			public void onPageSizeSelection(PageSizeSelectionEvent event) {
-				searchDisplay.getSearchString().setValue("");
-				search("", startIndex, searchDisplay.getPageSize());
 			}
 		});
 	}
@@ -185,7 +192,14 @@ public class ManageOrganizationPresenter implements MatPresenter {
 	private void displaySearch() {
 		panel.clear();
 		panel.add(searchDisplay.asWidget());
-		search("", 1, searchDisplay.getPageSize());
+		search("");
+	}
+	/**
+	 * Generate csv of active user emails.
+	 */
+	private void generateCSVForActiveOids() {
+		String url = GWT.getModuleBaseURL() + "export?format=exportActiveOIDCSV";
+		Window.open(url + "&type=save", "_self", "");
 	}
 	/** Edits the.
 	 * @param key the key */
@@ -230,12 +244,11 @@ public class ManageOrganizationPresenter implements MatPresenter {
 		widget.addStyleName("myAccountPanelContent");
 		return vPanel;
 	}
-	/** @param model
-	 * @return */
+	/** @param model - ManageOrganizationDetailModel.
+	 * @return boolean - isValid */
 	private boolean isValid(ManageOrganizationDetailModel model) {
-		AdminManageOrganizationModelValidator test = new AdminManageOrganizationModelValidator();
-		List<String> message = test.isValidOrganizationDetail(model);
-		
+		AdminManageOrganizationModelValidator adminManageOrganizationModelValidator = new AdminManageOrganizationModelValidator();
+		List<String> message = adminManageOrganizationModelValidator.isValidOrganizationDetail(model);
 		boolean valid = message.size() == 0;
 		if (!valid) {
 			detailDisplay.getErrorMessageDisplay().setMessages(message);
@@ -251,13 +264,11 @@ public class ManageOrganizationPresenter implements MatPresenter {
 	}
 	/** Search.
 	 * @param key the key
-	 * @param startIndex the start index
-	 * @param pageSize the page size */
-	private void search(String key, int startIndex, int pageSize) {
+	 */
+	private void search(String key) {
 		lastSearchKey = key;
 		showSearchingBusy(true);
-		MatContext.get().getAdminService().searchOrganization(key, startIndex, pageSize,
-				new AsyncCallback<ManageOrganizationSearchModel>() {
+		MatContext.get().getAdminService().searchOrganization(key, new AsyncCallback<ManageOrganizationSearchModel>() {
 			@Override
 			public void onFailure(Throwable caught) {
 				detailDisplay.getErrorMessageDisplay()
@@ -273,7 +284,7 @@ public class ManageOrganizationPresenter implements MatPresenter {
 				sru = null;
 				searchDisplay.buildDataTable(result);
 				showSearchingBusy(false);
-				Mat.focusSkipLists("Manage Users");
+				Mat.focusSkipLists("Manage Organizations");
 			}
 		});
 	}

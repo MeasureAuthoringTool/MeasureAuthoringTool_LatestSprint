@@ -69,23 +69,18 @@ public interface AdminServiceAsync {
 	/** Search organization.
 	 * 
 	 * @param key the key
-	 * @param startIndex the start index
-	 * @param pageSize the page size
 	 * @param callback the callback */
-	public void searchOrganization(String key, int startIndex, int pageSize, AsyncCallback<ManageOrganizationSearchModel> callback);
+	public void searchOrganization(String key, AsyncCallback<ManageOrganizationSearchModel> callback);
+	
 	/**
 	 * Search users.
 	 * 
 	 * @param key
 	 *            the key
-	 * @param startIndex
-	 *            the start index
-	 * @param pageSize
-	 *            the page size
 	 * @param callback
 	 *            the callback
 	 */
-	public void searchUsers(String key, int startIndex, int pageSize, AsyncCallback<ManageUsersSearchModel> callback);
+	public void searchUsers(String key, AsyncCallback<ManageUsersSearchModel> callback);
 	
 	/** Gets the all organizations.
 	 * 
