@@ -72,6 +72,7 @@ import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.Widget;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class ManageMeasurePresenter.
  */
@@ -270,10 +271,10 @@ public class ManageMeasurePresenter implements MatPresenter {
 		/**
 		 * Builds the data table.
 		 * 
-		 * @param results
-		 *            the results
+		 * @param manageDraftMeasureModel
+		 *            the ManageDraftMeasureModel
 		 */
-		void buildDataTable(SearchResults<ManageMeasureSearchModel.Result> results);
+		void buildDataTable(ManageDraftMeasureModel manageDraftMeasureModel);
 		/**
 		 * Gets the cancel button.
 		 * 
@@ -536,11 +537,12 @@ public class ManageMeasurePresenter implements MatPresenter {
 		/**
 		 * Builds the data table.
 		 * 
-		 * @param results
+		 * @param manageMeasureSearchModel
 		 *            the results
 		 */
 		public void buildDataTable(
-				SearchResults<ManageMeasureSearchModel.Result> results);
+				ManageMeasureSearchModel manageMeasureSearchModel);
+		
 		
 		/** Builds the most recent widget. */
 		void buildMostRecentWidget();
@@ -630,6 +632,13 @@ public class ManageMeasurePresenter implements MatPresenter {
 		MostRecentMeasureWidget getMostRecentMeasureWidget();
 		
 		/**
+		 * Gets the measure search view.
+		 *
+		 * @return the measure search view
+		 */
+		MeasureSearchView getMeasureSearchView();
+		
+		/**
 		 * Gets the page selection tool.
 		 * 
 		 * @return the page selection tool
@@ -698,6 +707,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		 * 
 		 * @return the zoom button */
 		CustomButton getZoomButton();
+		
 	}
 	
 	/**
@@ -707,9 +717,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 		
 		/**
 		 * Builds the data table.
-		 * 
-		 * @param results
-		 *            the results
+		 *
+		 * @param adapter the adapter
 		 */
 		public void buildDataTable(UserShareInfoAdapter adapter);
 		
@@ -1177,102 +1186,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 		
 	}
 	
-	/**
-	 * Handlers for Non Admin Search Results.
-	 * 
-	 * @param searchResults
-	 *            the search results
-	 */
-	private void addHandlersToAdaptor(MeasureSearchResultsAdapter searchResults) {
-		
-		searchResults.setObserver(new MeasureSearchResultsAdapter.Observer() {
-			@Override
-			public void onCloneClicked(ManageMeasureSearchModel.Result result) {
-				measureDeletion = false;
-				isMeasureDeleted = false;
-				searchDisplay.getSuccessMeasureDeletion().clear();
-				searchDisplay.getErrorMeasureDeletion().clear();
-				isClone = true;
-				editClone(result.getId());
-			}
-			
-			@Override
-			public void onEditClicked(ManageMeasureSearchModel.Result result) {
-				// When edit has been clicked, no need to fire measureSelected
-				// Event.
-				// fireMeasureSelectedEvent(result.getId(),
-				// result.getName(), result.getShortName(),
-				// result.getScoringType(),result.isEditable(),result.isMeasureLocked(),
-				// result.getLockedUserId(result.getLockedUserInfo()));
-				measureDeletion = false;
-				isMeasureDeleted = false;
-				searchDisplay.getSuccessMeasureDeletion().clear();
-				searchDisplay.getErrorMeasureDeletion().clear();
-				edit(result.getId());
-			}
-			
-			@Override
-			public void onExportClicked(ManageMeasureSearchModel.Result result) {
-				measureDeletion = false;
-				isMeasureDeleted = false;
-				searchDisplay.getSuccessMeasureDeletion().clear();
-				searchDisplay.getErrorMeasureDeletion().clear();
-				export(result.getId(), result.getName());
-			}
-			
-			@Override
-			public void onExportSelectedClicked(CustomCheckBox checkBox) {
-				measureDeletion = false;
-				isMeasureDeleted = false;
-				searchDisplay.getSuccessMeasureDeletion().clear();
-				searchDisplay.getErrorMeasureDeletion().clear();
-				searchDisplay.getErrorMessageDisplayForBulkExport().clear();
-				if (checkBox.getValue()) {
-					if (manageMeasureSearchModel.getSelectedExportIds().size() > 89) {
-						searchDisplay
-						.getErrorMessageDisplayForBulkExport()
-						.setMessage(
-								"Export file has a limit of 90 measures");
-						searchDisplay.getExportSelectedButton().setFocus(true);
-						checkBox.setValue(false);
-					} else {
-						manageMeasureSearchModel.getSelectedExportIds().add(
-								checkBox.getFormValue());
-					}
-				} else {
-					manageMeasureSearchModel.getSelectedExportIds().remove(
-							checkBox.getFormValue());
-				}
-			}
-			
-			@Override
-			public void onHistoryClicked(ManageMeasureSearchModel.Result result) {
-				measureDeletion = false;
-				isMeasureDeleted = false;
-				searchDisplay.getSuccessMeasureDeletion().clear();
-				searchDisplay.getErrorMeasureDeletion().clear();
-				historyDisplay
-				.setReturnToLinkText("<< Return to Measure Library");
-				if (!result.isEditable()) {
-					historyDisplay.setUserCommentsReadOnly(true);
-				} else {
-					historyDisplay.setUserCommentsReadOnly(false);
-				}
-				
-				displayHistory(result.getId(), result.getName());
-			}
-			
-			@Override
-			public void onShareClicked(ManageMeasureSearchModel.Result result) {
-				measureDeletion = false;
-				isMeasureDeleted = false;
-				searchDisplay.getSuccessMeasureDeletion().clear();
-				searchDisplay.getErrorMeasureDeletion().clear();
-				displayShare(result.getId(), result.getName());
-			}
-		});
-		
-	}
 	
 	/**
 	 * Admin search display handlers.
@@ -1670,7 +1583,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 */
 	private void displaySearch() {
 		
-		String heading = "My Measures";
+		String heading = "";
 		int filter;
 		
 		if (ClientConstants.ADMINISTRATOR.equalsIgnoreCase(MatContext.get()
@@ -2485,6 +2398,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 						}
 					});
 				} else {
+					pageSize = Integer.MAX_VALUE;
 					showSearchingBusy(true);
 					MatContext
 					.get()
@@ -2516,10 +2430,132 @@ public class ManageMeasurePresenter implements MatPresenter {
 						public void onSuccess(
 								ManageMeasureSearchModel result) {
 							
-							MeasureSearchResultsAdapter searchResults = new MeasureSearchResultsAdapter();
-							addHandlersToAdaptor(searchResults);
-							searchResults.setData(result);
+							//MeasureSearchResultsAdapter searchResults = new MeasureSearchResultsAdapter();
+							//  MeasureSearchView measureSearchView=new MeasureSearchView();
+							//addHandlersToAdaptor(measureSearview);
+							if(searchDisplay.getMeasureSearchFilterWidget().
+									getSelectedFilter()!=0){
+								searchDisplay.getMeasureSearchView().setMeasureListLabel("All Measures");
+							}else{
+								searchDisplay.getMeasureSearchView().setMeasureListLabel("My Measures");
+							}
+							if(result.getData().size()>0){
+								searchDisplay.getExportSelectedButton().setVisible(true);
+							}
+							else{
+								searchDisplay.getExportSelectedButton().setVisible(false);
+							}
+							
+							searchDisplay.getMeasureSearchView().setObserver(new MeasureSearchView.Observer() {
+								@Override
+								public void onCloneClicked(ManageMeasureSearchModel.Result result) {
+									measureDeletion = false;
+									isMeasureDeleted = false;
+									searchDisplay.getSuccessMeasureDeletion().clear();
+									searchDisplay.getErrorMeasureDeletion().clear();
+									isClone = true;
+									editClone(result.getId());
+								}
+								
+								@Override
+								public void onEditClicked(ManageMeasureSearchModel.Result result) {
+									// When edit has been clicked, no need to fire measureSelected
+									// Event.
+									// fireMeasureSelectedEvent(result.getId(),
+									// result.getName(), result.getShortName(),
+									// result.getScoringType(),result.isEditable(),result.isMeasureLocked(),
+									// result.getLockedUserId(result.getLockedUserInfo()));
+									measureDeletion = false;
+									isMeasureDeleted = false;
+									searchDisplay.getSuccessMeasureDeletion().clear();
+									searchDisplay.getErrorMeasureDeletion().clear();
+									edit(result.getId());
+								}
+								
+								@Override
+								public void onExportClicked(ManageMeasureSearchModel.Result result) {
+									measureDeletion = false;
+									isMeasureDeleted = false;
+									searchDisplay.getSuccessMeasureDeletion().clear();
+									searchDisplay.getErrorMeasureDeletion().clear();
+									export(result.getId(), result.getName());
+								}
+								
+								@Override
+								public void onExportSelectedClicked(Result result,boolean isCBChecked) {
+									measureDeletion = false;
+									isMeasureDeleted = false;
+									searchDisplay.getSuccessMeasureDeletion().clear();
+									searchDisplay.getErrorMeasureDeletion().clear();
+									searchDisplay.getErrorMessageDisplayForBulkExport().clear();
+									updateExportedIDs(result, manageMeasureSearchModel,isCBChecked);
+									
+								}
+								@Override
+								public void onExportSelectedClicked(CustomCheckBox checkBox) {
+									measureDeletion = false;
+									isMeasureDeleted = false;
+									searchDisplay.getSuccessMeasureDeletion().clear();
+									searchDisplay.getErrorMeasureDeletion().clear();
+									searchDisplay.getErrorMessageDisplayForBulkExport().clear();
+									if (checkBox.getValue()) {
+										if (manageMeasureSearchModel.getSelectedExportIds().size() > 89) {
+											searchDisplay
+											.getErrorMessageDisplayForBulkExport()
+											.setMessage(
+													"Export file has a limit of 90 measures");
+											searchDisplay.getExportSelectedButton().setFocus(true);
+											checkBox.setValue(false);
+										} else {
+											manageMeasureSearchModel.getSelectedExportIds().add(
+													checkBox.getFormValue());
+										}
+									} else {
+										manageMeasureSearchModel.getSelectedExportIds().remove(
+												checkBox.getFormValue());
+									}
+								}
+								
+								@Override
+								public void onHistoryClicked(ManageMeasureSearchModel.Result result) {
+									measureDeletion = false;
+									isMeasureDeleted = false;
+									searchDisplay.getSuccessMeasureDeletion().clear();
+									searchDisplay.getErrorMeasureDeletion().clear();
+									historyDisplay
+									.setReturnToLinkText("<< Return to Measure Library");
+									if (!result.isEditable()) {
+										historyDisplay.setUserCommentsReadOnly(true);
+									} else {
+										historyDisplay.setUserCommentsReadOnly(false);
+									}
+									
+									displayHistory(result.getId(), result.getName());
+								}
+								
+								@Override
+								public void onShareClicked(ManageMeasureSearchModel.Result result) {
+									measureDeletion = false;
+									isMeasureDeleted = false;
+									searchDisplay.getSuccessMeasureDeletion().clear();
+									searchDisplay.getErrorMeasureDeletion().clear();
+									displayShare(result.getId(), result.getName());
+								}
+								
+								@Override
+								public void onClearAllBulkExportClicked() {
+									
+									manageMeasureSearchModel.getSelectedExportResults().removeAll(
+											manageMeasureSearchModel.getSelectedExportResults());
+									manageMeasureSearchModel.getSelectedExportIds().removeAll(
+											manageMeasureSearchModel.getSelectedExportIds());
+									
+								}
+								
+								
+							});
 							result.setSelectedExportIds(new ArrayList<String>());
+							result.setSelectedExportResults(new ArrayList<Result>());
 							manageMeasureSearchModel = result;
 							MatContext.get()
 							.setManageMeasureSearchModel(
@@ -2567,12 +2603,42 @@ public class ManageMeasurePresenter implements MatPresenter {
 							SearchResultUpdate sru = new SearchResultUpdate();
 							sru.update(result, (TextBox) searchDisplay
 									.getSearchString(), lastSearchText);
-							searchDisplay.buildDataTable(searchResults);
+							updateMeasureFamily(manageMeasureSearchModel);
+							searchDisplay.buildDataTable(manageMeasureSearchModel);
 							showSearchingBusy(false);
 							
 						}
+						
 					});
 				}
+	}
+	
+	//TODO
+	
+	/**
+	 * Update measure family.
+	 *
+	 * @param manageMeasureSearchModel the manage measure search model
+	 */
+	public void updateMeasureFamily(ManageMeasureSearchModel manageMeasureSearchModel){
+		boolean isFamily=false;
+		if(manageMeasureSearchModel!=null)
+		{   List<Result> result=new ArrayList<ManageMeasureSearchModel.Result>();
+		result.addAll(manageMeasureSearchModel.getData());
+		for(int i=0;i<result.size();i++){
+			if(i>0){
+				if(result.get(i).getMeasureSetId().equalsIgnoreCase(
+						result.get(i-1).getMeasureSetId())) {
+					result.get(i).setMeasureFamily(!isFamily);
+				} else {
+					result.get(i).setMeasureFamily(isFamily);
+				}
+			}
+			else{
+				result.get(i).setMeasureFamily(isFamily);
+			}
+		}
+		}
 	}
 	
 	/**
@@ -2856,9 +2922,15 @@ public class ManageMeasurePresenter implements MatPresenter {
 							MatContext.get().getMessageDelegate()
 							.getMeasureSelectionError());
 				} else {
-					searchDisplay.clearBulkExportCheckBoxes(searchDisplay
-							.getMeasureDataTable());
+					//					searchDisplay.clearBulkExportCheckBoxes(searchDisplay
+					//							.getMeasureDataTable());
+					//search(searchText, shareStartIndex, pageSize, filter)
+					int filter = searchDisplay.getSelectedFilter();
+					//					search(searchDisplay.getSearchString().getValue(), startIndex,
+					//							searchDisplay.getPageSize(), filter);
 					bulkExport(manageMeasureSearchModel.getSelectedExportIds());
+					searchDisplay.getMeasureSearchView().clearBulkExportCheckBoxes();
+					
 				}
 			}
 		});
@@ -2970,7 +3042,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 			
 			@Override
 			public void onSuccess(ManageMeasureSearchModel result) {
-				draftMeasureResults = new ManageDraftMeasureModel(result.getData());
+				draftMeasureResults = new ManageDraftMeasureModel();
+				draftMeasureResults.setData(result);
 				draftDisplay.buildDataTable(draftMeasureResults);
 			}
 		});
@@ -3024,6 +3097,10 @@ public class ManageMeasurePresenter implements MatPresenter {
 						searchDisplay.getErrorMeasureDeletion().clear();
 						export(result.getId(), result.getName());
 					}
+					
+					
+					
+					
 				});
 				searchDisplay.buildMostRecentWidget();
 			}
@@ -3179,7 +3256,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 			Mat.hideLoadingMessage();
 		}
 		((Button) searchDisplay.getSearchButton()).setEnabled(!busy);
+		((Button) searchDisplay.getBulkExportButton()).setEnabled(!busy);
 		((TextBox) (searchDisplay.getSearchString())).setEnabled(!busy);
+		
 	}
 	
 	/**
@@ -3414,6 +3493,42 @@ public class ManageMeasurePresenter implements MatPresenter {
 			
 		}
 	}
+	
+	/**
+	 * Update exported i ds.
+	 *
+	 * @param result the result
+	 * @param model the model
+	 * @param isCBChecked the is cb checked
+	 */
+	private void updateExportedIDs(Result result, ManageMeasureSearchModel model,
+			boolean isCBChecked) {
+		List<String> selectedIdList = model.getSelectedExportIds();;
+		if (isCBChecked) {
+			 if (!selectedIdList.contains(result.getId())) {
+				model.getSelectedExportResults().add(result);
+				selectedIdList.add(result.getId());
+			}
+		}
+		else {
+//			if(selectedIdList.size()>9){
+//				searchDisplay
+//				.getErrorMessageDisplayForBulkExport()
+//				.setMessage(
+//						"Export file has a limit of 90 measures");
+//				searchDisplay.getExportSelectedButton().setFocus(true);
+//			}
+			for (int i = 0; i < model.getSelectedExportIds().size(); i++) {
+				if (result.getId().equals(model.getSelectedExportResults().get(i)
+						.getId())) {
+					model.getSelectedExportIds().remove(i);
+					model.getSelectedExportResults().remove(i);
+				}
+			}
+			
+		}
+	}
+	
 	
 	/**
 	 * Version display handlers.
