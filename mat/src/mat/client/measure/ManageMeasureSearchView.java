@@ -15,8 +15,8 @@ import mat.client.shared.SpacerWidget;
 import mat.client.shared.SuccessMessageDisplay;
 import mat.client.shared.search.HasPageSelectionHandler;
 import mat.client.shared.search.HasPageSizeSelectionHandler;
-import mat.client.shared.search.SearchResults;
 import mat.client.shared.search.SearchView;
+
 import com.google.gwt.event.dom.client.HasClickHandlers;
 import com.google.gwt.event.logical.shared.HasSelectionHandlers;
 import com.google.gwt.resources.client.ImageResource;
@@ -30,6 +30,7 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class ManageMeasureSearchView.
  */
@@ -65,6 +66,8 @@ ManageMeasurePresenter.SearchDisplay {
 	/** The form. */
 	final FormPanel form = new FormPanel();
 	
+	
+	
 	/** The msfp. */
 	/*
 	 * private MeasureSearchFilterPanel msfp = new MeasureSearchFilterPanel();
@@ -82,6 +85,8 @@ ManageMeasurePresenter.SearchDisplay {
 	
 	/** The most recent vertical panel. */
 	VerticalPanel mostRecentVerticalPanel = new VerticalPanel();
+	
+	//MeasureSearchView measureSearchView;
 	
 	/** The options. */
 	/*
@@ -102,8 +107,13 @@ ManageMeasurePresenter.SearchDisplay {
 	private SuccessMessageDisplay successMeasureDeletion = new SuccessMessageDisplay();
 	
 	/** The view. */
-	SearchView<ManageMeasureSearchModel.Result> view = new MeasureSearchView(
-			"Measures");
+	private SearchView<ManageMeasureSearchModel.Result> view  =new SearchView<ManageMeasureSearchModel.Result>();
+	
+	/** The search view. */
+	MeasureSearchView searchView;
+	
+	/** The view. */
+	MeasureSearchView measureSearchView = new MeasureSearchView("Measures");
 	
 	/** The zoom button. */
 	CustomButton zoomButton = (CustomButton) getImage("Search",
@@ -128,18 +138,19 @@ ManageMeasurePresenter.SearchDisplay {
 		buildMostRecentWidget();
 		mainHorizontalPanel.add(mostRecentVerticalPanel);
 		mainHorizontalPanel.add(measureFilterVP);
-		
 		mainPanel.add(mainHorizontalPanel);
 		mainPanel.add(successMeasureDeletion);
 		mainPanel.add(errorMeasureDeletion);
 		mainPanel.add(new SpacerWidget());
 		mainPanel.add(errorMessages);
 		mainPanel.add(new SpacerWidget());
-		mainPanel.add(view.asWidget());
+		mainPanel.add(measureSearchView.asWidget());
 		mainPanel
 		.add(ManageLoadingView.buildLoadingPanel("loadingPanelExport"));
+		mainPanel.add(new SpacerWidget());
+		mainPanel.add(new SpacerWidget());
 		mainPanel.add(buildBottomButtonWidget((PrimaryButton) bulkExportButton,
-				errorMessagesForBulkExport));
+				      errorMessagesForBulkExport));
 		MatContext.get().setManageMeasureSearchView(this);
 		
 	}
@@ -154,24 +165,24 @@ ManageMeasurePresenter.SearchDisplay {
 	
 	/**
 	 * Builds the bottom button widget.
-	 * 
-	 * @param button
-	 *            the button
-	 * @param errorMessageDisplay
-	 *            the error message display
+	 *
+	 * @param bulkExportButton the bulk export button
+	 * @param errorMessageDisplay the error message display
 	 * @return the widget
 	 */
-	private Widget buildBottomButtonWidget(PrimaryButton button,
+	private Widget buildBottomButtonWidget(PrimaryButton bulkExportButton,
 			ErrorMessageDisplay errorMessageDisplay) {
 		FlowPanel flowPanel = new FlowPanel();
 		flowPanel.getElement().setId("measureLibrary_bottomPanel");
 		flowPanel.add(errorMessageDisplay);
 		flowPanel.setStyleName("rightAlignButton");
-		flowPanel.add(button);
+		bulkExportButton.setTitle("Bulk Export");
+		flowPanel.add(bulkExportButton);
 		form.setWidget(flowPanel);
 		form.getElement().setId("measureLibrary_bottomPanelForm");
 		return form;
 	}
+	
 	
 	/*
 	 * (non-Javadoc)
@@ -179,11 +190,12 @@ ManageMeasurePresenter.SearchDisplay {
 	 * @see mat.client.measure.ManageMeasurePresenter.SearchDisplay#buildDataTable(mat.client.shared.search.SearchResults)
 	 */
 	@Override
-	public void buildDataTable(
-			SearchResults<ManageMeasureSearchModel.Result> results) {
-		view.buildDataTable(results);
+	public void buildDataTable(ManageMeasureSearchModel 
+			manageMeasureSearchModel) {
+		measureSearchView.buildCellTable(manageMeasureSearchModel);
 	}
 	
+
 	/* (non-Javadoc)
 	 * @see mat.client.measure.ManageMeasurePresenter.SearchDisplay#buildMostRecentWidget()
 	 */
@@ -397,6 +409,14 @@ ManageMeasurePresenter.SearchDisplay {
 	}
 	
 	/* (non-Javadoc)
+	 * @see mat.client.measure.ManageMeasurePresenter.SearchDisplay#getMeasureSearchView()
+	 */
+	@Override
+	public MeasureSearchView getMeasureSearchView() {
+		return measureSearchView;
+	}
+//	
+	/* (non-Javadoc)
 	 * @see mat.client.measure.ManageMeasurePresenter.SearchDisplay#getPageSize()
 	 */
 	@Override
@@ -468,7 +488,7 @@ ManageMeasurePresenter.SearchDisplay {
 	 */
 	@Override
 	public HasSelectionHandlers<ManageMeasureSearchModel.Result> getSelectIdForEditTool() {
-		return view;
+		return measureSearchView;
 	}
 	
 	/* (non-Javadoc)
@@ -533,5 +553,7 @@ ManageMeasurePresenter.SearchDisplay {
 			SuccessMessageDisplay successMeasureDeletion) {
 		this.successMeasureDeletion = successMeasureDeletion;
 	}
+
+
 	
 }

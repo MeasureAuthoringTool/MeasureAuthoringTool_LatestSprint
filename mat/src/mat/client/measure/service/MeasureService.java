@@ -184,6 +184,13 @@ public interface MeasureService extends RemoteService {
 	SaveMeasureResult save(ManageMeasureDetailModel model);
 	
 	/**
+	 * Save Called To update Revision Number at Create New Package button Click.
+	 * @param model -ManageMeasureDetailModel.
+	 * @return - SaveMeasureResult.
+	 */
+	SaveMeasureResult saveMeasureAtPackage(ManageMeasureDetailModel model);
+	
+	/**
 	 * Save and delete measure.
 	 * 
 	 * @param measureID
@@ -260,7 +267,7 @@ public interface MeasureService extends RemoteService {
 	 * @return the manage measure search model
 	 */
 	ManageMeasureSearchModel searchMeasuresForDraft(String searchText);
-
+	
 	/**
 	 * Search measures for version.
 	 *
@@ -354,4 +361,6 @@ public interface MeasureService extends RemoteService {
 	 */
 	ValidateMeasureResult validateMeasureForExport(String key,
 			List<MatValueSet> matValueSetList) throws MatException;
+	
+	void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel, String nodeUUID);
 }

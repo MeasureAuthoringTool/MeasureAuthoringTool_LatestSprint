@@ -73,6 +73,7 @@ import org.exolab.castor.xml.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.w3c.dom.Attr;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -137,6 +138,57 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			getService().saveMeasureXml(measureXmlModel);
 		}
 		
+	}
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#saveSubTreeInMeasureXml(mat.client.clause.clauseworkspace.model.MeasureXmlModel, java.lang.String)
+	 */
+	@Override
+	public void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel, String nodeUUID) {
+		logger.info("Inside saveSubTreeInMeasureXml Method for measure Id " + measureXmlModel.getMeasureId() + " .");
+		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
+		if (((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml()))) {
+			XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
+			try {
+				Node subTreeLookUpNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc()
+						, measureXmlModel.getParentNode());
+				// Add subTreeLookUp node if not available in MeasureXml.
+				if (subTreeLookUpNode == null) {
+					logger.info("Adding subTreeNodeLookUp Node for measure Id "
+							+ measureXmlModel.getMeasureId() + " .");
+					String xPathSupplementalDataElement = "/measure/supplementalDataElements";
+					Node supplementaDataElementsElement = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(),
+							xPathSupplementalDataElement);
+					String tagNameSubTeeLookUp = "subTreeLookUp";
+					Element subTreeLookUpElement = xmlProcessor.getOriginalDoc()
+							.createElement(tagNameSubTeeLookUp);
+					((Element) supplementaDataElementsElement.getParentNode())
+					.insertBefore(subTreeLookUpElement,
+							supplementaDataElementsElement.getNextSibling());
+					xmlProcessor.setOriginalXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
+				}
+				// If Node already exist's and its a update then existing node will be removed from Parent Node
+				// and updated node will be added.
+				String xPathForSubTree = "/measure/subTreeLookUp/subTree";
+				NodeList subTreeNodeForUUID = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), xPathForSubTree);
+				for (int i = 0; i < subTreeNodeForUUID.getLength(); i++) {
+					Node newNode = subTreeNodeForUUID.item(i);
+					if (newNode.getAttributes().getNamedItem("uuid").getNodeValue().equals(nodeUUID)) {
+						logger.info("Replacing SubTreeNode for UUID " + nodeUUID + " .");
+						xmlProcessor.removeFromParent(newNode);
+						xmlProcessor.setOriginalXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
+						break;
+					}
+				}
+				xmlModel.setXml(xmlProcessor.getOriginalXml());
+				String result = callAppendNode(xmlModel, measureXmlModel.getXml()
+						, measureXmlModel.getToReplaceNode(), measureXmlModel.getParentNode());
+				measureXmlModel.setXml(result);
+				getService().saveMeasureXml(measureXmlModel);
+			} catch (XPathExpressionException exception) {
+				exception.printStackTrace();
+			}
+		}
+		logger.info("End saveSubTreeInMeasureXml Method for measure Id " + measureXmlModel.getMeasureId() + " .");
 	}
 	
 	/**
@@ -230,6 +282,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			// draft have to be
 			// created..
 			Measure measure = getService().getById(clonedMeasureId);// get the
+			// Cloned Measure Revision Number reset to '000' when cloned.
+			measure.setRevisionNumber("000");
 			// Cloned
 			// version
 			// of the
@@ -267,14 +321,17 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				.getPeriodModel().getStartDate() : null);
 		manageMeasureDetailModel.setMeasToPeriod(manageMeasureDetailModel.getPeriodModel() != null ? manageMeasureDetailModel
 				.getPeriodModel().getStopDate() : null);
-		manageMeasureDetailModel.setEndorseByNQF((StringUtils.isNotBlank(manageMeasureDetailModel.getEndorsement()) ? true : false));
-		manageMeasureDetailModel.setOrgVersionNumber(MeasureUtility.formatVersionText(String.valueOf(measure.getVersionNumber())));
+		manageMeasureDetailModel.setEndorseByNQF((StringUtils.isNotBlank(
+				manageMeasureDetailModel.getEndorsement()) ? true : false));
+		manageMeasureDetailModel.setOrgVersionNumber(MeasureUtility.formatVersionText(measure.getRevisionNumber(),
+				String.valueOf(measure.getVersionNumber())));
 		manageMeasureDetailModel.setVersionNumber(MeasureUtility.getVersionText(manageMeasureDetailModel.getOrgVersionNumber(),
 				measure.isDraft()));
 		manageMeasureDetailModel.setFinalizedDate(DateUtility.convertDateToString(measure.getFinalizedDate()));
 		manageMeasureDetailModel.setDraft(measure.isDraft());
 		manageMeasureDetailModel.setValueSetDate(DateUtility.convertDateToStringNoTime(measure.getValueSetDate()));
-		manageMeasureDetailModel.setNqfId(manageMeasureDetailModel.getNqfModel() != null ? manageMeasureDetailModel.getNqfModel()
+		manageMeasureDetailModel.setNqfId(manageMeasureDetailModel.getNqfModel() != null ?
+				manageMeasureDetailModel.getNqfModel()
 				.getExtension() : null);
 		manageMeasureDetailModel.seteMeasureId(measure.geteMeasureId());
 		manageMeasureDetailModel.setMeasureOwnerId(measure.getOwner().getId());
@@ -420,7 +477,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		model.setName(measure.getDescription());
 		model.setShortName(measure.getaBBRName());
 		model.setMeasScoring(measure.getMeasureScoring());
-		model.setOrgVersionNumber(MeasureUtility.formatVersionText(String.valueOf(measure.getVersionNumber())));
+		model.setOrgVersionNumber(MeasureUtility.formatVersionText(measure.getRevisionNumber(),
+				String.valueOf(measure.getVersionNumber())));
 		model.setVersionNumber(MeasureUtility.getVersionText(model.getOrgVersionNumber(), measure.isDraft()));
 		model.setFinalizedDate(DateUtility.convertDateToString(measure.getFinalizedDate()));
 		model.setDraft(measure.isDraft());
@@ -639,8 +697,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
 		for (QualityDataSetDTO dataSetDTO : appliedQDMList) {
 			String XPATH_EXPRESSION = "/measure//clause//@id=";
-			XPATH_EXPRESSION = XPATH_EXPRESSION.concat("'").concat(dataSetDTO.getUuid()).concat("' or /measure//clause//@qdmUUID= '")
-					.concat(dataSetDTO.getUuid()).concat("' or /measure/supplementalDataElements//@id='").concat(dataSetDTO.getUuid())
+			XPATH_EXPRESSION = XPATH_EXPRESSION.concat("'").concat(dataSetDTO.getUuid()).
+					concat("' or /measure//clause//@qdmUUID= '").concat(dataSetDTO.getUuid()).
+					concat("' or /measure/supplementalDataElements//@id='").concat(dataSetDTO.getUuid())
+					.concat("' or /measure/measureDetails/itemCount//@id='").concat(dataSetDTO.getUuid())
 					.concat("'");
 			
 			try {
@@ -756,15 +816,16 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			detail.setOwnerEmailAddress(measure.getOwner().getEmailAddress());
 			detail.setMeasureSetId(measure.getMeasureSet().getId());
 			detail.setScoringType(measure.getMeasureScoring());
-			detail.setMeasureLocked(measure.getLockedOutDate() != null);
+			detail.setMeasureLocked(getMeasureDAO().isMeasureLocked(measure.getId()));
 			List<MeasureShareDTO> measureShare = getMeasureDAO().
 					getMeasureShareInfoForMeasureAndUser(measure.getOwner().getId(), measure.getId());
 			if (measureShare.size() > 0) {
-				detail.setEditable((currentUserId.equals(measure.getOwner().getId()) || isSuperUser
+				detail.setEditable(((currentUserId.equals(measure.getOwner().getId()) || isSuperUser
 						|| ShareLevel.MODIFY_ID.equals(
-								measureShare.get(0).getShareLevel())) && measure.isDraft());
+								measureShare.get(0).getShareLevel()))) && measure.isDraft());
 			} else {
-				detail.setEditable((currentUserId.equals(measure.getOwner().getId()) || isSuperUser));
+				detail.setEditable((currentUserId.equals(measure.getOwner().getId()) || isSuperUser)
+						&& measure.isDraft());
 			}
 			detailModelList.add(detail);
 		}
@@ -933,8 +994,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 		if (measureXmlModel == null) {
 			logger.info("Measure XML is null");
+		}else{
+			logger.info("XML ::: " + measureXmlModel.getXml());
 		}
-		logger.info("XML ::: " + measureXmlModel.getXml());
 		return measureXmlModel;
 	}
 	
@@ -1137,12 +1199,32 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		rs.setSuccess(false);
 		return rs;
 	}
-	
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#saveMeasureAtPackage(mat.client.measure.ManageMeasureDetailModel)
+	 */
+	@Override
+	public SaveMeasureResult saveMeasureAtPackage(ManageMeasureDetailModel model) {
+		Measure measure = getService().getById(model.getId());
+		Integer revisionNumber = new Integer(000);
+		if ((measure.getRevisionNumber() != null) && StringUtils.isNotEmpty(measure.getRevisionNumber())) {
+			revisionNumber = Integer.parseInt(measure.getRevisionNumber());
+			revisionNumber = revisionNumber + 1;
+			measure.setRevisionNumber(String.format("%03d", revisionNumber));
+			model.setRevisionNumber(String.format("%03d", revisionNumber));
+		} else {
+			revisionNumber = revisionNumber + 1;
+			measure.setRevisionNumber(String.format("%03d", revisionNumber));
+			model.setRevisionNumber(String.format("%03d", revisionNumber));
+		}
+		getService().save(measure);
+		SaveMeasureResult result = save(model);
+		return result;
+	}
 	/* (non-Javadoc)
 	 * @see mat.server.service.MeasureLibraryService#save(mat.client.measure.ManageMeasureDetailModel)
 	 */
 	@Override
-	public final SaveMeasureResult save(final ManageMeasureDetailModel model) {
+	public final SaveMeasureResult save(ManageMeasureDetailModel model) {
 		
 		Measure pkg = null;
 		MeasureSet measureSet = null;
@@ -1150,6 +1232,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			// editing an existing measure
 			pkg = getService().getById(model.getId());
 			model.setVersionNumber(pkg.getVersion());
+			if (pkg.isDraft()) {
+				model.setRevisionNumber(pkg.getRevisionNumber());
+			} else {
+				model.setRevisionNumber("000");
+			}
 			if (pkg.getMeasureSet().getId() != null) {
 				measureSet = getService().findMeasureSet(pkg.getMeasureSet().getId());
 			}
@@ -1163,6 +1250,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			
 			pkg = new Measure();
 			model.setMeasureStatus("In Progress");
+			model.setRevisionNumber("000");
 			measureSet = new MeasureSet();
 			measureSet.setId(UUID.randomUUID().toString());
 			getService().save(measureSet);
@@ -1233,6 +1321,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			
 		}
 		ManageMeasureDetailModel mDetail = getMeasure(measureId);
+		// Need to check for logic when to mark a measure as completed.
+		//mDetail.setMeasureStatus("Complete");
 		SaveMeasureResult rs = new SaveMeasureResult();
 		int endIndex = versionNumber.indexOf('.');
 		String majorVersionNumber = versionNumber.substring(0, endIndex);
@@ -1266,11 +1356,13 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		Measure measure = null;
 		if (model.getId() != null) {
 			measure = getService().getById(model.getId());
-			if ((measure.getMeasureStatus() != null) && !measure.getMeasureStatus().equalsIgnoreCase(model.getMeasureStatus())) {
+			if ((measure.getMeasureStatus() != null) && !measure.getMeasureStatus().
+					equalsIgnoreCase(model.getMeasureStatus())) {
 				measure.setMeasureStatus(model.getMeasureStatus());
 				getService().save(measure);
 			}
 		}
+		model.setRevisionNumber(measure.getRevisionNumber());
 		logger.info("Saving Measure_Xml");
 		saveMeasureXml(createMeasureXmlModel(model, measure, MEASURE_DETAILS, MEASURE));
 		SaveMeasureResult result = new SaveMeasureResult();
@@ -1283,7 +1375,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @see mat.server.service.MeasureLibraryService#saveMeasureNote(java.lang.String, java.lang.String, java.lang.String, java.lang.String)
 	 */
 	@Override
-	public final void saveMeasureNote(final String noteTitle, final String noteDescription, final String measureId, final String userId) {
+	public final void saveMeasureNote(final String noteTitle, final String noteDescription,
+			final String measureId, final String userId) {
 		try {
 			MeasureNotes measureNote = new MeasureNotes();
 			measureNote.setNoteTitle(noteTitle);
@@ -1326,7 +1419,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			checkForTimingElementsAndAppend(processor);
 			measureXmlModel.setXml(processor.transform(processor.getOriginalDoc()));
 			
-			QualityDataModelWrapper wrapper = getMeasureXMLDAO().createSupplimentalQDM(measureXmlModel.getMeasureId(), false, null);
+			QualityDataModelWrapper wrapper = getMeasureXMLDAO().createSupplimentalQDM(
+					measureXmlModel.getMeasureId(), false, null);
 			// Object to XML for elementLookUp
 			ByteArrayOutputStream streamQDM = XmlProcessor.convertQualityDataDTOToXML(wrapper);
 			// Object to XML for supplementalDataElements
@@ -1337,7 +1431,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			filteredString = removePatternFromXMLString(filteredString, "</measure>", "");
 			// Remove <?xml> and then replace.
 			String filteredStringSupp = removePatternFromXMLString(
-					streamSuppDataEle.toString().substring(streamSuppDataEle.toString().indexOf("<measure>", 0)), "<measure>", "");
+					streamSuppDataEle.toString().substring(streamSuppDataEle.toString().
+							indexOf("<measure>", 0)), "<measure>", "");
 			filteredStringSupp = removePatternFromXMLString(filteredStringSupp, "</measure>", "");
 			// Add Supplemental data to elementLoopUp
 			String result = callAppendNode(measureXmlModel, filteredString, "qdm", "/measure/elementLookUp");
@@ -1441,8 +1536,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 */
 	@Override
 	public final TransferMeasureOwnerShipModel searchUsers(final int startIndex, final int pageSize) {
-		UserService userService = getUserService();
-		List<User> searchResults = userService.searchNonAdminUsers("", startIndex, pageSize);
+		UserService usersService = getUserService();
+		List<User> searchResults = usersService.searchNonAdminUsers("", startIndex, pageSize);
 		logger.info("User search returned " + searchResults.size());
 		
 		TransferMeasureOwnerShipModel result = new TransferMeasureOwnerShipModel();
@@ -1475,14 +1570,17 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		logger.info("In MeasureLibraryServiceImpl.setAdditionalAttrsForMeasureXml()");
 		measureDetailModel.setId(measure.getId());
 		measureDetailModel.setMeasureSetId(measure.getMeasureSet() != null ? measure.getMeasureSet().getId() : null);
-		measureDetailModel.setOrgVersionNumber(MeasureUtility.formatVersionText(String.valueOf(measure.getVersionNumber())));
-		measureDetailModel.setVersionNumber(MeasureUtility.getVersionText(measureDetailModel.getOrgVersionNumber(), measure.isDraft()));
+		measureDetailModel.setOrgVersionNumber(MeasureUtility.formatVersionText(
+				measureDetailModel.getRevisionNumber(), String.valueOf(measure.getVersionNumber())));
+		measureDetailModel.setVersionNumber(MeasureUtility.getVersionText(measureDetailModel.getOrgVersionNumber(),
+				measureDetailModel.getRevisionNumber(), measure.isDraft()));
 		measureDetailModel.setId(UuidUtility.idToUuid(measureDetailModel.getId())); // have
 		// to
 		// change
 		// on
 		// unmarshalling.
-		if (StringUtils.isNotBlank(measureDetailModel.getMeasFromPeriod()) || StringUtils.isNotBlank(measureDetailModel.getMeasToPeriod())) {
+		if (StringUtils.isNotBlank(measureDetailModel.getMeasFromPeriod())
+				|| StringUtils.isNotBlank(measureDetailModel.getMeasToPeriod())) {
 			PeriodModel periodModel = new PeriodModel();
 			periodModel.setUuid(UUID.randomUUID().toString());
 			if (StringUtils.isNotBlank(measureDetailModel.getMeasFromPeriod())) {
@@ -1578,11 +1676,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	/**
 	 * Sets the measure package service.
 	 * 
-	 * @param measurePackageService
+	 * @param measurePackagerService
 	 *            the new measure package service
 	 */
-	public final void setMeasurePackageService(final MeasurePackageService measurePackageService) {
-		this.measurePackageService = measurePackageService;
+	public final void setMeasurePackageService(final MeasurePackageService measurePackagerService) {
+		measurePackageService = measurePackagerService;
 	}
 	
 	/**
@@ -1628,11 +1726,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	/**
 	 * Sets the user service.
 	 * 
-	 * @param userService
+	 * @param usersService
 	 *            the new user service
 	 */
-	public final void setUserService(final UserService userService) {
-		this.userService = userService;
+	public final void setUserService(final UserService usersService) {
+		userService = usersService;
 	}
 	
 	/**
@@ -1650,6 +1748,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		measure.setMeasureScoring(model.getMeasScoring());
 		measure.setVersion(model.getVersionNumber());
 		measure.setDraft(model.isDraft());
+		measure.setRevisionNumber(model.getRevisionNumber());
 		measure.setMeasureStatus(model.getMeasureStatus());
 		measure.seteMeasureId(model.geteMeasureId());
 		if ((model.getFinalizedDate() != null) && !model.getFinalizedDate().equals("")) {
@@ -1711,16 +1810,13 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @param modifyDTO
 	 *            the modify dto
 	 */
-	private void updateElementLookUp(final XmlProcessor processor, final QualityDataSetDTO modifyWithDTO, final QualityDataSetDTO modifyDTO) {
+	private void updateElementLookUp(final XmlProcessor processor, final QualityDataSetDTO modifyWithDTO,
+			final QualityDataSetDTO modifyDTO) {
 		
 		logger.debug(" MeasureLibraryServiceImpl: updateElementLookUp Start :  ");
-		String XPATH_EXPRESSION_ELEMENTLOOKUP = "/measure/elementLookUp/qdm[@uuid='" + modifyDTO.getUuid() + "']";// XPath
-		// Expression
-		// to
-		// find
-		// all
-		// elementRefs in elementLookUp
-		// for to be modified QDM.
+		// XPath Expression to find all elementRefs in elementLookUp for to be modified QDM.
+		String XPATH_EXPRESSION_ELEMENTLOOKUP = "/measure/elementLookUp/qdm[@uuid='"
+				+ modifyDTO.getUuid() + "']";
 		try {
 			NodeList nodesElementLookUp = (NodeList) xPath.evaluate(XPATH_EXPRESSION_ELEMENTLOOKUP, processor.getOriginalDoc(),
 					XPathConstants.NODESET);
@@ -1853,7 +1949,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 *            the measure id
 	 */
 	@Override
-	public final void updateMeasureXML(final QualityDataSetDTO modifyWithDTO, final QualityDataSetDTO modifyDTO, final String measureId) {
+	public final void updateMeasureXML(final QualityDataSetDTO modifyWithDTO,
+			final QualityDataSetDTO modifyDTO, final String measureId) {
 		logger.debug(" MeasureLibraryServiceImpl: updateMeasureXML Start : Measure Id :: " + measureId);
 		MeasureXmlModel model = getMeasureXmlForMeasure(measureId);
 		
@@ -1902,16 +1999,12 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			final QualityDataSetDTO modifyDTO) {
 		
 		logger.debug(" MeasureLibraryServiceImpl: updatePopulationAndStratification Start :  ");
-		String XPATH_EXPRESSION_CLAUSE_ELEMENTREF = "/measure//clause//elementRef[@id='" + modifyDTO.getUuid() + "']"; // XPath
-		// to
-		// find
-		// All
-		// elementRef's
-		// under clause element nodes
-		// for to be modified QDM.
+		// XPath to find All elementRef's under clause element nodes for to be modified QDM.
+		String XPATH_EXPRESSION_CLAUSE_ELEMENTREF = "/measure//clause//elementRef[@id='"
+				+ modifyDTO.getUuid() + "']";
 		try {
-			NodeList nodesClauseWorkSpace = (NodeList) xPath.evaluate(XPATH_EXPRESSION_CLAUSE_ELEMENTREF, processor.getOriginalDoc(),
-					XPathConstants.NODESET);
+			NodeList nodesClauseWorkSpace = (NodeList) xPath.evaluate(XPATH_EXPRESSION_CLAUSE_ELEMENTREF,
+					processor.getOriginalDoc(),	XPathConstants.NODESET);
 			ArrayList<QDSAttributes> attr = (ArrayList<QDSAttributes>) getAllDataTypeAttributes(modifyWithDTO.getDataType());
 			for (int i = 0; i < nodesClauseWorkSpace.getLength(); i++) {
 				Node newNode = nodesClauseWorkSpace.item(i);
@@ -1927,7 +2020,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					for (int j = 0; j < childList.getLength(); j++) {
 						Node childNode = childList.item(j);
 						if (childNode.getAttributes().getNamedItem("qdmUUID") != null) {
-							String childNodeAttrName = childNode.getAttributes().getNamedItem("name").getNodeValue();
+							String childNodeAttrName = childNode.getAttributes().getNamedItem("name").
+									getNodeValue();
 							boolean isRemovable = true;
 							for (QDSAttributes attributes : attr) {
 								if (attributes.getName().equalsIgnoreCase(childNodeAttrName)) {
@@ -1967,15 +2061,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			final QualityDataSetDTO modifyDTO) {
 		
 		logger.debug(" MeasureLibraryServiceImpl: updateSupplementalDataElement Start :  ");
-		String XPATH_EXPRESSION_SDE_ELEMENTREF = "/measure/supplementalDataElements/elementRef[@id='" + modifyDTO.getUuid() + "']";// XPath
-		// to
-		// find
-		// all
-		// elementRefs
-		// in
-		// supplementalDataElements for
-		// to be modified QDM.
-		
+		// XPath to find All elementRef's in supplementalDataElements for to be modified QDM.
+		String XPATH_EXPRESSION_SDE_ELEMENTREF = "/measure/supplementalDataElements/elementRef[@id='"
+				+ modifyDTO.getUuid() + "']";
 		try {
 			NodeList nodesSDE = (NodeList) xPath.evaluate(XPATH_EXPRESSION_SDE_ELEMENTREF, processor.getOriginalDoc(),
 					XPathConstants.NODESET);

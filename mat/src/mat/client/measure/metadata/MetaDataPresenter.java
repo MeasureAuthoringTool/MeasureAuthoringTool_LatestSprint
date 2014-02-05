@@ -7,6 +7,7 @@ import java.util.List;
 import mat.client.Mat;
 import mat.client.MatPresenter;
 import mat.client.MeasureComposerPresenter;
+import mat.client.clause.QDSAppliedListModel;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.codelist.ListBoxCodeProvider;
 import mat.client.event.BackToMeasureLibraryPage;
@@ -25,6 +26,7 @@ import mat.client.shared.ReadOnlyHelper;
 import mat.client.shared.search.SearchView;
 import mat.model.Author;
 import mat.model.MeasureType;
+import mat.model.QualityDataSetDTO;
 import mat.shared.ConstantMessages;
 
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -36,6 +38,7 @@ import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.event.shared.HandlerManager;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.HasValue;
@@ -44,16 +47,17 @@ import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.Widget;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class MetaDataPresenter.
  */
-public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPresenter{
+public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPresenter {
 	
 	
 	/**
 	 * The Interface MetaDataDetailDisplay.
 	 */
-	public static interface MetaDataDetailDisplay extends BaseMetaDataDisplay{
+	public static interface MetaDataDetailDisplay extends BaseMetaDataDisplay {
 		
 		/**
 		 * Gets the measure name.
@@ -351,7 +355,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 * 
 		 * @return the initial patient pop
 		 */
-		public HasValue<String> getInitialPatientPop();
+		public HasValue<String> getInitialPop();
 		
 		/**
 		 * Gets the denominator.
@@ -502,7 +506,44 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 * 
 		 * @return the delete measure
 		 */
-		public Button getDeleteMeasure();	
+		public Button getDeleteMeasure();
+
+		/**
+		 * Gets the measure population exclusions.
+		 *
+		 * @return the measure population exclusions
+		 */
+		HasValue<String> getMeasurePopulationExclusions();
+
+		/**
+		 * Builds the cell table.
+		 *
+		 * @param appliedListModel the applied list model
+		 * @param isEditable the is editable
+		 */
+		public void buildCellTable(QDSAppliedListModel appliedListModel,
+				boolean isEditable);
+
+		/**
+		 * Sets the applied qdm list.
+		 *
+		 * @param result the new applied qdm list
+		 */
+		public void setAppliedQDMList(ArrayList<QualityDataSetDTO> result);	
+		
+		/**
+		 * Gets the qdm selected list.
+		 *
+		 * @return the qdm selected list
+		 */
+		public List<QualityDataSetDTO> getQdmSelectedList();
+		
+		/**
+		 * Sets the qdm selected list.
+		 *
+		 * @param qdmSelectedList the new qdm selected list
+		 */
+		public void setQdmSelectedList(List<QualityDataSetDTO> qdmSelectedList);
 		
 	}
 	
@@ -536,7 +577,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	/**
 	 * The Interface AddEditMeasureTypeDisplay.
 	 */
-	public static interface AddEditMeasureTypeDisplay extends BaseAddEditDisplay<MeasureType>{
+	public static interface AddEditMeasureTypeDisplay extends BaseAddEditDisplay<MeasureType> {
 		
 		/**
 		 * Gets the measure type.
@@ -593,6 +634,9 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	/** The db measure type list. */
 	private List<MeasureType> dbMeasureTypeList = new ArrayList<MeasureType>();
 	
+	/** The db qdm selected list. */
+	private List<QualityDataSetDTO> dbQDMSelectedList = new ArrayList<QualityDataSetDTO>();
+	
 	/** The empty widget. */
 	private SimplePanel emptyWidget = new SimplePanel();
 	
@@ -612,12 +656,13 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	private boolean isSubView = false;
 	
 	/** The measure xml model. */
-	private MeasureXmlModel measureXmlModel;// will hold the measure xml. 02/2013
+	private MeasureXmlModel measureXmlModel; // will hold the measure xml. 02/2013
 	
 	/** The is measure details loaded. */
 	private boolean isMeasureDetailsLoaded = false;
 	
-	
+	/** The service. */
+	private MeasureServiceAsync service = MatContext.get().getMeasureService();
 	
 	/**
 	 * Instantiates a new meta data presenter.
@@ -633,8 +678,9 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	 * @param lp
 	 *            the lp
 	 */
-	public MetaDataPresenter(MetaDataDetailDisplay mDisplay,AddEditAuthorsDisplay aDisplay,AddEditMeasureTypeDisplay mtDisplay,HasVisible pcButtons,ListBoxCodeProvider lp){
-		super(mDisplay,aDisplay,mtDisplay,lp);
+	public MetaDataPresenter(MetaDataDetailDisplay mDisplay, AddEditAuthorsDisplay aDisplay, 
+			AddEditMeasureTypeDisplay mtDisplay, HasVisible pcButtons, ListBoxCodeProvider lp) {
+		super(mDisplay, aDisplay, mtDisplay, lp);
 		previousContinueButtons = pcButtons;
 		this.metaDataDisplay = mDisplay;
 		this.addEditAuthorsDisplay = aDisplay;
@@ -704,7 +750,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 				}
 			}
 		});
-		addEditAuthorsDisplay.getRemoveButton().addClickHandler(new ClickHandler(){
+		addEditAuthorsDisplay.getRemoveButton().addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(final ClickEvent event) {
 			     removeSelectedAuthor();
@@ -730,13 +776,13 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 				if (addEditMeasureTypeDisplay.getMeasureType().equals(
 						MatContext.PLEASE_SELECT)) {
 					//do nothing
-				} else if(!(addEditMeasureTypeDisplay.getMeasureType().startsWith("Other"))) {
-					if(!addEditMeasureTypeDisplay.getMeasureType().equals("")){
+				} else if (!(addEditMeasureTypeDisplay.getMeasureType().startsWith("Other"))) {
+					if (!addEditMeasureTypeDisplay.getMeasureType().equals("")) {
 						addToMeasureTypeList(addEditMeasureTypeDisplay.getMeasureType());
 						addEditMeasureTypeDisplay.getMeasureTypeInputBox().setValue("");
 					}
-				}else{
-					if(!addEditMeasureTypeDisplay.getOtherMeasureType().getValue().equals("")){
+				} else {
+					if (!addEditMeasureTypeDisplay.getOtherMeasureType().getValue().equals("")) {
 						addToMeasureTypeList(addEditMeasureTypeDisplay.getOtherMeasureType().getValue());
 						addEditMeasureTypeDisplay.getOtherMeasureType().setValue("");
 					}
@@ -758,10 +804,9 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			public void onValueChange(ValueChangeEvent<String> event) {
 				String authorValue = event.getValue();
 				String changedAuthorValue = addEditAuthorsDisplay.getAuthor();
-				if(changedAuthorValue.startsWith("Other")){
+				if (changedAuthorValue.startsWith("Other")) {
 					addEditAuthorsDisplay.showTextBox();
-					}
-				else{
+					} else {
 					addEditAuthorsDisplay.hideTextBox();
 				}
 				
@@ -772,10 +817,9 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			@Override
 			public void onValueChange(ValueChangeEvent<String> event) {
 			    String measureType = addEditMeasureTypeDisplay.getMeasureType();
-				if(measureType.startsWith("Other")){
+				if (measureType.startsWith("Other")) {
 					addEditMeasureTypeDisplay.showTextBox();
-					}
-				else{
+					} else {
 					addEditMeasureTypeDisplay.hideTextBox();
 				}
 				
@@ -788,10 +832,9 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 				@Override
 				public void onValueChange(ValueChangeEvent<String> event) {				
 					String value = metaDataDisplay.getMeasureStewardValue();
-					if(value.startsWith("Other")){
+					if (value.startsWith("Other")) {
 						metaDataDisplay.showOtherTextBox();
-						}
-					else{
+						} else {
 						metaDataDisplay.hideOtherTextBox();
 					}
 					
@@ -811,7 +854,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			@Override
 			public void onKeyDown(KeyDownEvent event) {
 				//control-alt-s is save
-				if(event.isAltKeyDown() && event.isControlKeyDown() && event.getNativeKeyCode()==83){
+				if (event.isAltKeyDown() && event.isControlKeyDown() && event.getNativeKeyCode() == 83) {
 					saveMetaDataInformation(true);
 				}
 			}
@@ -821,12 +864,11 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			@Override
 			public void onMeasureSelected(MeasureSelectedEvent event) {
 				isMeasureDetailsLoaded = false;
-				if(event.getMeasureId() != null) {
+				if (event.getMeasureId() != null) {
 					isMeasureDetailsLoaded = true;
 				    //getMeasureDetail();
 					getMeasureAndLogRecentMeasure();
-				}
-				else {
+				} else {
 					displayEmpty();
 				}
 			}
@@ -841,6 +883,55 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		
 		
 		emptyWidget.add(new Label("No Measure Selected"));
+	}
+	
+	//TODO by Ravi
+	
+	/**
+	 * Gets the applied qdm list.
+	 *
+	 * @param checkForSupplementData the check for supplement data
+	 * @return the applied qdm list
+	 */
+	public final void getAppliedQDMList(boolean checkForSupplementData) {
+		String measureId = MatContext.get().getCurrentMeasureId();
+		if ((measureId != null) && !measureId.equals("")) {
+			service.getAppliedQDMFromMeasureXml(measureId,
+					checkForSupplementData,
+					new AsyncCallback<ArrayList<QualityDataSetDTO>>() {
+				
+				private void filterTimingQDMs(
+						ArrayList<QualityDataSetDTO> result) {
+					List<QualityDataSetDTO> timingQDMs = new ArrayList<QualityDataSetDTO>();
+					for (QualityDataSetDTO qdsDTO : result) {
+						if ("Timing Element".equals(qdsDTO
+								.getDataType())) {
+							timingQDMs.add(qdsDTO);
+						}
+					}
+					result.removeAll(timingQDMs);
+				}
+				
+				@Override
+				public void onFailure(final Throwable caught) {
+					Window.alert(MatContext.get().getMessageDelegate()
+							.getGenericErrorMessage());
+				}
+				
+				@Override
+				public void onSuccess(
+						final ArrayList<QualityDataSetDTO> result) {
+					QDSAppliedListModel appliedListModel = new QDSAppliedListModel();
+					filterTimingQDMs(result);
+					appliedListModel.setAppliedQDMs(result);
+					metaDataDisplay.buildCellTable(appliedListModel, editable);
+					metaDataDisplay.setAppliedQDMList(result);
+					
+				}
+			});
+			
+		}
+		
 	}
 	
 	/**
@@ -859,7 +950,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	/**
 	 * Fire back to measure library event.
 	 */
-	private void fireBackToMeasureLibraryEvent(){
+	private void fireBackToMeasureLibraryEvent() {
 		BackToMeasureLibraryPage backToMeasureLibraryPage = new BackToMeasureLibraryPage();
 		MatContext.get().getEventBus().fireEvent(backToMeasureLibraryPage);
 	}
@@ -868,7 +959,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	/**
 	 * Generate and save new emeasureid.
 	 */
-	private void generateAndSaveNewEmeasureid(){
+	private void generateAndSaveNewEmeasureid() {
 		MeasureServiceAsync service = MatContext.get().getMeasureService();
 		service.generateAndSaveMaxEmeasureId(currentMeasureDetail, new AsyncCallback<Integer>() {
 
@@ -882,10 +973,10 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			@Override
 			public void onSuccess(Integer result) {
 				maxEmeasureId = result.intValue();
-				if(maxEmeasureId < 1000000){
+				if (maxEmeasureId < 1000000) {
 					metaDataDisplay.setGenerateEmeasureIdButtonEnabled(false);
-					metaDataDisplay.getEmeasureId().setValue(maxEmeasureId+"");
-					((TextBox)metaDataDisplay.getEmeasureId()).setFocus(true);
+					metaDataDisplay.getEmeasureId().setValue(maxEmeasureId + "");
+					((TextBox) metaDataDisplay.getEmeasureId()).setFocus(true);
 				}
 			}
 			
@@ -920,7 +1011,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
  */
 private void setAuthorsListOnView() {
 		Collections.sort(currentMeasureDetail.getAuthorList(), new Author.Comparator());
-		if(currentMeasureDetail.getAuthorList()!= null){
+		if (currentMeasureDetail.getAuthorList() != null) {
 			currentAuthorsList = new ManageAuthorsModel(currentMeasureDetail.getAuthorList());
 			currentAuthorsList.setPageSize(SearchView.PAGE_SIZE_ALL);
 			addEditAuthorsDisplay.buildDataTable(currentAuthorsList);
@@ -932,9 +1023,9 @@ private void setAuthorsListOnView() {
 	/**
 	 * Sets the measure type on view.
 	 */
-	private void setMeasureTypeOnView(){
+	private void setMeasureTypeOnView() {
 		Collections.sort(currentMeasureDetail.getMeasureTypeList(), new MeasureType.Comparator());
-		if(currentMeasureDetail.getMeasureTypeList()!= null){
+		if (currentMeasureDetail.getMeasureTypeList() != null) {
 			currentMeasureTypeList = new ManageMeasureTypeModel(currentMeasureDetail.getMeasureTypeList());
 			currentMeasureTypeList.setPageSize(SearchView.PAGE_SIZE_ALL);
 			addEditMeasureTypeDisplay.buildDataTable(currentMeasureTypeList);
@@ -946,7 +1037,7 @@ private void setAuthorsListOnView() {
 	 */
 	protected void removeSelectedMeasureType() {
 		List<MeasureType> selectedMt = currentMeasureTypeList.getSelectedMeasureType();
-		for(MeasureType mt: selectedMt){
+		for (MeasureType mt: selectedMt) {
 			currentMeasureDetail.getMeasureTypeList().remove(mt);
 		}
 		metaDataDisplay.setMeasureTypeList(currentMeasureDetail.getMeasureTypeList());
@@ -958,7 +1049,7 @@ private void setAuthorsListOnView() {
 	 */
 	protected void removeSelectedAuthor() {
 		List<Author> selectedAuthor = currentAuthorsList.getSelectedAuthor();
-		for(Author a: selectedAuthor){
+		for (Author a: selectedAuthor){
 			currentMeasureDetail.getAuthorList().remove(a);
 		}
 		metaDataDisplay.setAuthorsList(currentMeasureDetail.getAuthorList());
@@ -985,20 +1076,20 @@ private void setAuthorsListOnView() {
 	/**
 	 * Display detail.
 	 */
-	public void displayDetail(){
+	public void displayDetail() {
 		previousContinueButtons.setVisible(true);
 		prepopulateFields();
 		panel.clear();
-		if(editable){
-			if("0".equals(metaDataDisplay.getEmeasureId().getValue())){
+		if (editable) {
+			if ("0".equals(metaDataDisplay.getEmeasureId().getValue())) {
 				metaDataDisplay.setGenerateEmeasureIdButtonEnabled(true);
 				metaDataDisplay.getEmeasureId().setValue("");
-			}else if(metaDataDisplay.getEmeasureId() != null){
+			} else if (metaDataDisplay.getEmeasureId() != null) {
 				metaDataDisplay.setGenerateEmeasureIdButtonEnabled(false);
 			}
-		}else{
+		} else {
 			metaDataDisplay.setGenerateEmeasureIdButtonEnabled(false);
-			if("0".equals(metaDataDisplay.getEmeasureId().getValue())){
+			if ("0".equals(metaDataDisplay.getEmeasureId().getValue())) {
 				metaDataDisplay.getEmeasureId().setValue("");
 			}
 		}
@@ -1009,7 +1100,7 @@ private void setAuthorsListOnView() {
 	/**
 	 * Back to detail.
 	 */
-	public void backToDetail(){
+	public void backToDetail() {
 		previousContinueButtons.setVisible(true);
 		panel.clear();
 		panel.add(metaDataDisplay.asWidget());
@@ -1033,7 +1124,7 @@ private void setAuthorsListOnView() {
 		metaDataDisplay.getDisclaimer().setValue(currentMeasureDetail.getDisclaimer());
 		metaDataDisplay.getRiskAdjustment().setValue(currentMeasureDetail.getRiskAdjustment());
 		metaDataDisplay.getRateAggregation().setValue(currentMeasureDetail.getRateAggregation());
-		metaDataDisplay.getInitialPatientPop().setValue(currentMeasureDetail.getInitialPatientPop());
+		metaDataDisplay.getInitialPop().setValue(currentMeasureDetail.getInitialPop());
 		metaDataDisplay.getDenominator().setValue(currentMeasureDetail.getDenominator());
 		metaDataDisplay.getDenominatorExclusions().setValue(currentMeasureDetail.getDenominatorExclusions());
 		metaDataDisplay.getNumerator().setValue(currentMeasureDetail.getNumerator());
@@ -1041,12 +1132,12 @@ private void setAuthorsListOnView() {
 		metaDataDisplay.getDenominatorExceptions().setValue(currentMeasureDetail.getDenominatorExceptions());
 		metaDataDisplay.getMeasurePopulation().setValue(currentMeasureDetail.getMeasurePopulation());
 		metaDataDisplay.getMeasureObservations().setValue(currentMeasureDetail.getMeasureObservations());
-
+		metaDataDisplay.getMeasurePopulationExclusions().setValue(currentMeasureDetail.getMeasurePopulationExclusions());
 				
 		metaDataDisplay.getCopyright().setValue(currentMeasureDetail.getCopyright());
-		if(currentMeasureDetail.getEndorseByNQF()!= null && currentMeasureDetail.getEndorseByNQF().equals(true)){
+		if (currentMeasureDetail.getEndorseByNQF() != null && currentMeasureDetail.getEndorseByNQF().equals(true)) {
 			metaDataDisplay.getEndorsebyNQF().setValue(true);
-		}else{
+		} else {
 			metaDataDisplay.getNotEndorsebyNQF().setValue(true);
 		}
 		
@@ -1063,26 +1154,26 @@ private void setAuthorsListOnView() {
 		//US 413. Populate Steward and Steward Other value if any.
 		String steward = currentMeasureDetail.getMeasSteward();
 		metaDataDisplay.getMeasureSteward().setValueMetadata(currentMeasureDetail.getMeasSteward());
-		if(metaDataDisplay.getMeasureSteward().getSelectedIndex() == 0 && steward != null && !steward.equals("")){
+		if (metaDataDisplay.getMeasureSteward().getSelectedIndex() == 0 && steward != null && !steward.equals("")) {
 			steward = "Other";
 			currentMeasureDetail.setMeasStewardOther(currentMeasureDetail.getMeasSteward());
 			metaDataDisplay.getMeasureSteward().setValueMetadata(steward);
 		}
 		boolean setSteward = steward != null && steward.equalsIgnoreCase("Other"); 
-		if(setSteward){
+		if (setSteward) {
 			metaDataDisplay.showOtherTextBox();			
 			metaDataDisplay.getMeasureStewardOther().setValue(currentMeasureDetail.getMeasStewardOther());
 			
-		}else{
+		} else {
 			metaDataDisplay.hideOtherTextBox();
 		}
 		
 		metaDataDisplay.getRationale().setValue(currentMeasureDetail.getRationale());
 		metaDataDisplay.getStratification().setValue(currentMeasureDetail.getStratification());
 		metaDataDisplay.getRiskAdjustment().setValue(currentMeasureDetail.getRiskAdjustment());
-		if(currentMeasureDetail.getAuthorList() != null){
+		if (currentMeasureDetail.getAuthorList() != null) {
 			metaDataDisplay.setAuthorsList(currentMeasureDetail.getAuthorList());
-		}else{
+		} else {
 			List<Author> authorList = new ArrayList<Author>();
 			metaDataDisplay.setAuthorsList(authorList);
 			currentMeasureDetail.setAuthorList(authorList);
@@ -1090,9 +1181,9 @@ private void setAuthorsListOnView() {
 		dbAuthorList.clear();
 		dbAuthorList.addAll(currentMeasureDetail.getAuthorList());
 		authorList = currentMeasureDetail.getAuthorList();
-		if(currentMeasureDetail.getMeasureTypeList()!= null){
+		if (currentMeasureDetail.getMeasureTypeList() != null) {
 			metaDataDisplay.setMeasureTypeList(currentMeasureDetail.getMeasureTypeList());
-		}else{
+		} else {
 			List<MeasureType> measureTypeList = new ArrayList<MeasureType>();
 			metaDataDisplay.setMeasureTypeList(measureTypeList);
 			currentMeasureDetail.setMeasureTypeList(measureTypeList);
@@ -1100,10 +1191,20 @@ private void setAuthorsListOnView() {
 		dbMeasureTypeList.clear();
 		dbMeasureTypeList.addAll(currentMeasureDetail.getMeasureTypeList());
 		measureTypeList = currentMeasureDetail.getMeasureTypeList();
+		if (currentMeasureDetail.getQdsSelectedList() != null) {
+		metaDataDisplay.setQdmSelectedList(currentMeasureDetail.getQdsSelectedList());
+		} else {
+			List<QualityDataSetDTO> qdmList = new ArrayList<QualityDataSetDTO>();
+			metaDataDisplay.setQdmSelectedList(qdmList);
+			currentMeasureDetail.setQdsSelectedList(qdmList);
+		}
+		dbQDMSelectedList.clear();
+		dbQDMSelectedList.addAll(currentMeasureDetail.getQdsSelectedList());
+		getAppliedQDMList(true);
 		editable = MatContext.get().getMeasureLockService().checkForEditPermission();
-		if(currentMeasureDetail.getReferencesList()!= null){
+		if (currentMeasureDetail.getReferencesList() != null) {
 			metaDataDisplay.setReferenceValues(currentMeasureDetail.getReferencesList(), editable);
-		}else{
+		} else {
 			metaDataDisplay.setReferenceValues(new ArrayList<String>(), editable);
 		}
 		metaDataDisplay.setAddEditButtonsVisible(editable);
@@ -1112,9 +1213,10 @@ private void setAuthorsListOnView() {
 		metaDataDisplay.setSaveButtonEnabled(editable);
 		metaDataDisplay.getEmeasureId().setValue(currentMeasureDetail.geteMeasureId()+"");
 		
-		if(currentMeasureDetail.getMeasureOwnerId()!= null && !currentMeasureDetail.getMeasureOwnerId().equalsIgnoreCase(MatContext.get().getLoggedinUserId())){
+		if (currentMeasureDetail.getMeasureOwnerId() != null && !currentMeasureDetail.getMeasureOwnerId()
+				.equalsIgnoreCase(MatContext.get().getLoggedinUserId())) {
 			metaDataDisplay.getDeleteMeasure().setEnabled(false);
-		}else{
+		} else {
 			metaDataDisplay.getDeleteMeasure().setEnabled(true);
 		}
 		
@@ -1126,29 +1228,31 @@ private void setAuthorsListOnView() {
 	 * @param dispSuccessMsg
 	 *            the disp success msg
 	 */
-	public void saveMetaDataInformation(final boolean dispSuccessMsg){
+	public void saveMetaDataInformation(final boolean dispSuccessMsg) {
 		metaDataDisplay.getSaveErrorMsg().clear();
 		metaDataDisplay.getErrorMessageDisplay().clear();
 		metaDataDisplay.getSuccessMessageDisplay().clear();
 		metaDataDisplay.getSaveBtn().setFocus(true);
 		updateModelDetailsFromView();
-		if(MatContext.get().getMeasureLockService().checkForEditPermission()) {
+		if (MatContext.get().getMeasureLockService().checkForEditPermission()) {
 			Mat.showLoadingMessage();
 			MatContext.get().getSynchronizationDelegate().setSavingMeasureDetails(true);
-			MatContext.get().getMeasureService().saveMeasureDetails(currentMeasureDetail, new AsyncCallback<SaveMeasureResult>() {
+			MatContext.get().getMeasureService().saveMeasureDetails(currentMeasureDetail, 
+					new AsyncCallback<SaveMeasureResult>() {
 				
 				@Override
 				public void onSuccess(SaveMeasureResult result) {
 					
-					if(result.isSuccess()) {
+					if (result.isSuccess()) {
 						Mat.hideLoadingMessage();
-						if(dispSuccessMsg){
-							metaDataDisplay.getSuccessMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getChangesSavedMessage());
+						if (dispSuccessMsg) {
+							metaDataDisplay.getSuccessMessageDisplay().setMessage(MatContext.get()
+									.getMessageDelegate().getChangesSavedMessage());
 						}
 						
 						MatContext.get().getSynchronizationDelegate().setSavingMeasureDetails(false);
 						MatContext.get().getMeasureService().getMeasure(MatContext.get().getCurrentMeasureId(), 
-								new AsyncCallback<ManageMeasureDetailModel>(){
+								new AsyncCallback<ManageMeasureDetailModel>() {
 
 									@Override
 									public void onFailure(Throwable caught) {
@@ -1163,11 +1267,11 @@ private void setAuthorsListOnView() {
 									}
 							
 						});
-					}
-					else{
+					} else {
 						Mat.hideLoadingMessage();
 						MatContext.get().getSynchronizationDelegate().setSavingMeasureDetails(false);
-						metaDataDisplay.getErrorMessageDisplay().setMessage(MessageDelegate.getMeasureSaveServerErrorMessage( result.getFailureReason()));
+						metaDataDisplay.getErrorMessageDisplay().setMessage(MessageDelegate
+								.getMeasureSaveServerErrorMessage(result.getFailureReason()));
 					}
 				}
 				
@@ -1184,7 +1288,7 @@ private void setAuthorsListOnView() {
 	/**
 	 * Update model details from view.
 	 */
-	private void updateModelDetailsFromView(){
+	private void updateModelDetailsFromView() {
 		updateModelDetailsFromView(currentMeasureDetail, metaDataDisplay);
 	}
 	
@@ -1196,17 +1300,17 @@ private void setAuthorsListOnView() {
 	 * @param metaDataDisplay
 	 *            the meta data display
 	 */
-	public void updateModelDetailsFromView(ManageMeasureDetailModel currentMeasureDetail, MetaDataDetailDisplay metaDataDisplay){
+	public void updateModelDetailsFromView(ManageMeasureDetailModel currentMeasureDetail, MetaDataDetailDisplay metaDataDisplay) {
 		currentMeasureDetail.setName(metaDataDisplay.getMeasureName().getText());
 		currentMeasureDetail.setShortName(metaDataDisplay.getShortName().getText());
 		currentMeasureDetail.setFinalizedDate(metaDataDisplay.getFinalizedDate().getText());
 		currentMeasureDetail.setClinicalRecomms(metaDataDisplay.getClinicalRecommendation().getValue());
 		currentMeasureDetail.setDefinitions(metaDataDisplay.getDefinitions().getValue());
 		currentMeasureDetail.setDescription(metaDataDisplay.getDescription().getValue());
-		currentMeasureDetail.setDisclaimer (metaDataDisplay.getDisclaimer().getValue());
+		currentMeasureDetail.setDisclaimer(metaDataDisplay.getDisclaimer().getValue());
 		currentMeasureDetail.setRiskAdjustment(metaDataDisplay.getRiskAdjustment().getValue());
 		currentMeasureDetail.setRateAggregation(metaDataDisplay.getRateAggregation().getValue());
-		currentMeasureDetail.setInitialPatientPop(metaDataDisplay.getInitialPatientPop().getValue());
+		currentMeasureDetail.setInitialPop(metaDataDisplay.getInitialPop().getValue());
 		currentMeasureDetail.setDenominator(metaDataDisplay.getDenominator().getValue());
 		currentMeasureDetail.setDenominatorExclusions(metaDataDisplay.getDenominatorExclusions().getValue());
 		currentMeasureDetail.setNumerator(metaDataDisplay.getNumerator().getValue());
@@ -1224,16 +1328,17 @@ private void setAuthorsListOnView() {
 
 		//US 413. Update Steward and Steward Other values from the UI. 		
 		String stewardValue = metaDataDisplay.getMeasureStewardValue();
-		if(nullCheck(stewardValue)){
+		if (nullCheck(stewardValue)) {
 			currentMeasureDetail.setMeasSteward(stewardValue);			
-		}else{
+		} else {
 			currentMeasureDetail.setMeasSteward(null);
 		}
 		currentMeasureDetail.setMeasStewardOther(metaDataDisplay.getMeasureStewardOtherValue());		
 		currentMeasureDetail.setMeasToPeriod(metaDataDisplay.getMeasurementToPeriod());
 		currentMeasureDetail.setSupplementalData(metaDataDisplay.getSupplementalData().getValue());
-		if(nullCheck(metaDataDisplay.getMeasureStatusValue())){
-			currentMeasureDetail.setMeasureStatus(metaDataDisplay.getMeasureStatusValue());}
+		if (nullCheck(metaDataDisplay.getMeasureStatusValue())) {
+			currentMeasureDetail.setMeasureStatus(metaDataDisplay.getMeasureStatusValue());
+			}
 		currentMeasureDetail.setRationale(metaDataDisplay.getRationale().getValue());
 		currentMeasureDetail.setReferencesList(metaDataDisplay.getReferenceValues());
 		currentMeasureDetail.setMeasureSetId(metaDataDisplay.geteMeasureIdentifier().getText());
@@ -1243,10 +1348,13 @@ private void setAuthorsListOnView() {
 		currentMeasureDetail.setVersionNumber(metaDataDisplay.getVersionNumber().getText());
 		currentMeasureDetail.setAuthorList(authorList);
 		currentMeasureDetail.setMeasureTypeList(measureTypeList);
+		currentMeasureDetail.setQdsSelectedList(metaDataDisplay.getQdmSelectedList());
 		currentMeasureDetail.setToCompareAuthor(dbAuthorList);
 		currentMeasureDetail.setToCompareMeasure(dbMeasureTypeList);
+		currentMeasureDetail.setToCompareItemCount(dbQDMSelectedList);
 		currentMeasureDetail.setNqfId(metaDataDisplay.getNqfId().getValue());
-		if(metaDataDisplay.getEmeasureId().getValue() != null && !metaDataDisplay.getEmeasureId().getValue().equals("")){
+		currentMeasureDetail.setMeasurePopulationExclusions(metaDataDisplay.getMeasurePopulationExclusions().getValue());
+		if (metaDataDisplay.getEmeasureId().getValue() != null && !metaDataDisplay.getEmeasureId().getValue().equals("")) {
 			currentMeasureDetail.seteMeasureId(new Integer(metaDataDisplay.getEmeasureId().getValue()));
 		}
 	}
@@ -1260,7 +1368,7 @@ private void setAuthorsListOnView() {
 	 *            the value
 	 * @return true, if successful
 	 */
-	private boolean nullCheck(String value){
+	private boolean nullCheck(String value) {
 		return  !value.equalsIgnoreCase("--Select--") && !value.equals("");
 	}
 	
@@ -1268,7 +1376,7 @@ private void setAuthorsListOnView() {
 	/**
 	 * Display add edit authors.
 	 */
-	private void displayAddEditAuthors(){
+	private void displayAddEditAuthors() {
 		isSubView = true;
 		addEditAuthorsDisplay.setReturnToLink("Return to Previous");
 		currentAuthorsList = new ManageAuthorsModel(currentMeasureDetail.getAuthorList());
@@ -1283,7 +1391,7 @@ private void setAuthorsListOnView() {
 	/**
 	 * Display add edit measure type.
 	 */
-	private void displayAddEditMeasureType(){
+	private void displayAddEditMeasureType() {
 		isSubView = true;
 		addEditMeasureTypeDisplay.setReturnToLink("Return to Previous");
 		currentMeasureTypeList = new ManageMeasureTypeModel(currentMeasureDetail.getMeasureTypeList());
@@ -1302,7 +1410,7 @@ private void setAuthorsListOnView() {
 	 * @param selectedAuthor
 	 *            the selected author
 	 */
-	private void addToAuthorsList(String selectedAuthor){
+	private void addToAuthorsList(String selectedAuthor) {
 		Author author = new Author();
 		author.setAuthorName(selectedAuthor);
 		authorList.add(author);
@@ -1318,7 +1426,7 @@ private void setAuthorsListOnView() {
 	 * @param selectedMeasureType
 	 *            the selected measure type
 	 */
-	private void addToMeasureTypeList(String selectedMeasureType){
+	private void addToMeasureTypeList(String selectedMeasureType) {
 		MeasureType mt = new MeasureType();
 		mt.setDescription(selectedMeasureType);
 		measureTypeList.add(mt);
@@ -1333,19 +1441,19 @@ private void setAuthorsListOnView() {
 	 */
 	@Override
 	public void beforeDisplay() {
-		if(MatContext.get().getCurrentMeasureId() == null ||
-				MatContext.get().getCurrentMeasureId().equals("")) {
+		if (MatContext.get().getCurrentMeasureId() == null 
+				|| MatContext.get().getCurrentMeasureId().equals("")) {
 			displayEmpty();
-		}
-		else {
-			if(!isMeasureDetailsLoaded){// this check is made so that when measure is clicked from Measure library, its not called twice.
+		} else {
+			if (!isMeasureDetailsLoaded) { // this check is made so that when measure is clicked from Measure library, its not called twice.
 				currentMeasureDetail = null;
 				lastRequestTime = System.currentTimeMillis();
 				getMeasureDetail();
-			}else{
+			} else {
 				isMeasureDetailsLoaded = false;
 			}
 		}
+		getAppliedQDMList(true);
 		MeasureComposerPresenter.setSubSkipEmbeddedLink("MetaData");
 		Mat.focusSkipLists("MeasureComposer");
 		clearMessages();
@@ -1384,16 +1492,18 @@ private void setAuthorsListOnView() {
 	 * 
 	 * @return the async call back */
 	private AsyncCallback<ManageMeasureDetailModel> getAsyncCallBack() {
-		return new AsyncCallback<ManageMeasureDetailModel>(){
+		return new AsyncCallback<ManageMeasureDetailModel>() {
 			final long callbackRequestTime = lastRequestTime;
 			@Override
 			public void onFailure(Throwable caught) {
-					metaDataDisplay.getErrorMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-					MatContext.get().recordTransactionEvent(null, null, null, "Unhandled Exception: "+caught.getLocalizedMessage(), 0);
+					metaDataDisplay.getErrorMessageDisplay().setMessage(MatContext.get()
+							.getMessageDelegate().getGenericErrorMessage());
+					MatContext.get().recordTransactionEvent(null, null, null, 
+							"Unhandled Exception: " +caught.getLocalizedMessage(), 0);
 			}
 			@Override
 			public void onSuccess(ManageMeasureDetailModel result) {
-					if(callbackRequestTime == lastRequestTime) {
+					if (callbackRequestTime == lastRequestTime) {
 						currentMeasureDetail = result;
 			//					loadMeasureXml(result.getId());
 						displayDetail();
@@ -1409,23 +1519,25 @@ private void setAuthorsListOnView() {
 	 * @param password
 	 *            the password
 	 */
-	private void checkPasswordForMeasureDeletion(String password){
+	private void checkPasswordForMeasureDeletion(String password) {
 		
-		MatContext.get().getLoginService().isValidPassword(MatContext.get().getLoggedinLoginId(), password, new AsyncCallback<Boolean>() {
+		MatContext.get().getLoginService().isValidPassword(MatContext.get()
+				.getLoggedinLoginId(), password, new AsyncCallback<Boolean>() {
 
 			@Override
 			public void onFailure(Throwable caught) {
 				fireBackToMeasureLibraryEvent();
-				fireSuccessfullDeletionEvent(false,null);
+				fireSuccessfullDeletionEvent(false, null);
 			}
 
 			@Override
 			public void onSuccess(Boolean result) {
-				if(result){
+				if (result) {
 					deleteMeasure();
-				}else{
+				} else {
 					fireBackToMeasureLibraryEvent();
-					fireSuccessfullDeletionEvent(false,MatContext.get().getMessageDelegate().getMeasureDeletionInvalidPwd());
+					fireSuccessfullDeletionEvent(false, MatContext.get()
+							.getMessageDelegate().getMeasureDeletionInvalidPwd());
 				}
 				
 			}
@@ -1436,24 +1548,25 @@ private void setAuthorsListOnView() {
 	/**
 	 * Delete measure.
 	 */
-	private void deleteMeasure(){
+	private void deleteMeasure() {
 		MatContext.get().getMeasureService().saveAndDeleteMeasure(MatContext.get().getCurrentMeasureId(), new AsyncCallback<Void>(){
 
 			@Override
 			public void onFailure(Throwable caught) {
 				fireBackToMeasureLibraryEvent();
 				
-				fireSuccessfullDeletionEvent(false,null);
+				fireSuccessfullDeletionEvent(false, null);
 			}
 
 			@Override
 			public void onSuccess(Void result) {
-				MatContext.get().recordTransactionEvent(MatContext.get().getCurrentMeasureId(), null, "MEASURE_DELETE_EVENT", "Measure Successfully Deleted", ConstantMessages.DB_LOG);
+				MatContext.get().recordTransactionEvent(MatContext.get().getCurrentMeasureId(), null, 
+						"MEASURE_DELETE_EVENT", "Measure Successfully Deleted", ConstantMessages.DB_LOG);
 				// this is set to avoid showing dirty check message if user has modified Measure details and is deleting without saving.
 				currentMeasureDetail.setDeleted(true);
 				MatContext.get().setMeasureDeleted(true);
 				fireBackToMeasureLibraryEvent();
-				fireSuccessfullDeletionEvent(true,MatContext.get().getMessageDelegate().getMeasureDeletionSuccessMgs());
+				fireSuccessfullDeletionEvent(true, MatContext.get().getMessageDelegate().getMeasureDeletionSuccessMgs());
 				
 			}
 			
@@ -1495,7 +1608,7 @@ private void setAuthorsListOnView() {
 	/**
 	 * Clear messages.
 	 */
-	private void  clearMessages(){
+	private void  clearMessages() {
 		metaDataDisplay.getErrorMessageDisplay().clear();
 		metaDataDisplay.getSuccessMessageDisplay().clear();
 	}
@@ -1616,9 +1729,27 @@ private void setAuthorsListOnView() {
 	}
 	
 	/**
+	 * Gets the db qdm selected list.
+	 *
+	 * @return the db qdm selected list
+	 */
+	public List<QualityDataSetDTO> getDbQDMSelectedList() {
+		return dbQDMSelectedList;
+	}
+
+	/**
+	 * Sets the db qdm selected list.
+	 *
+	 * @param dbQDMSelectedList the new db qdm selected list
+	 */
+	public void setDbQDMSelectedList(List<QualityDataSetDTO> dbQDMSelectedList) {
+		this.dbQDMSelectedList = dbQDMSelectedList;
+	}
+	
+	/**
 	 * Sets the focus for save.
 	 */
-	public void setFocusForSave(){
+	public void setFocusForSave() {
 		getMetaDataDisplay().getSaveBtn().setFocus(true);
 	}
 

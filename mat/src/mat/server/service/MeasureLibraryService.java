@@ -366,4 +366,17 @@ public interface MeasureLibraryService {
 	 */
 	ValidateMeasureResult validateMeasureForExport(String key,
 			List<MatValueSet> matValueSetList) throws MatException;
+	
+	/**
+	 * @param model
+	 * @return
+	 */
+	SaveMeasureResult saveMeasureAtPackage(ManageMeasureDetailModel model);
+	
+	/**
+	 * Save SubTree - Append new node if new else update exisiting subTreeNode in measureXml.
+	 * @param measureXmlModel
+	 * @param nodeUUID
+	 */
+	void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel, String nodeUUID);
 }
