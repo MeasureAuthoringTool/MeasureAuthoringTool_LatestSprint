@@ -326,8 +326,11 @@ MeasureService {
 	public SaveMeasureResult saveMeasureAtPackage(ManageMeasureDetailModel model) {
 		return this.getMeasureLibraryService().saveMeasureAtPackage(model);
 	}
+<<<<<<< HEAD
 	@Override
 	public void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel , String nodeUUID) {
 		this.getMeasureLibraryService().saveSubTreeInMeasureXml(measureXmlModel , nodeUUID);
 	}
+=======
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 }

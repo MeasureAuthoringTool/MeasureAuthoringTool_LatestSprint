@@ -113,7 +113,11 @@ public class ClientConstants {
 	public final static String TEXT_CONTACT_US ="Contact Us";
 	
 	/** The contactus url.*/
+<<<<<<< HEAD
 	public static String CONTACTUS_URL="https://nqfdev.telligen.org/web/guest/contact-us";
+=======
+	public static String CONTACTUS_URL="https://nqfdev.telligen.org/web/guest/contact-us-form";
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	
 	
 	

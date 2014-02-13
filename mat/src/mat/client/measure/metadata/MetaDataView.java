@@ -275,6 +275,7 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	
 	/** The save error display. */
 	private ErrorMessageDisplay saveErrorDisplay = new ErrorMessageDisplay();
+<<<<<<< HEAD
 	
 	/** The selection model. */
 	private MultiSelectionModel<QualityDataSetDTO> selectionModel;
@@ -300,6 +301,9 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	/** The qdm selected list. */
 	private  List<QualityDataSetDTO> qdmSelectedList;
 	
+=======
+		
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	
 
 	/**
@@ -480,10 +484,13 @@ public class MetaDataView implements MetaDataDetailDisplay{
 		fPanel.add(addEditMeasureType);
 		fPanel.add(new SpacerWidget());
 		
+<<<<<<< HEAD
 		fPanel.add(LabelBuilder.buildLabel(cellTable, " Items Counted - Optional"));
 		fPanel.add(horzPanel);
 		fPanel.add(new SpacerWidget());
 		
+=======
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		fPanel.add(LabelBuilder.buildLabel(stratificationInput , "Stratification"));
 		fPanel.add(stratificationInput);
 		stratificationInput.addKeyDownHandler(keyDownHandler);
@@ -648,7 +655,10 @@ public class MetaDataView implements MetaDataDetailDisplay{
 		supplementalDataInput.setMaxLength(15000);
 		supplementalDataInput.setSize("500px", "100px");
 		
+<<<<<<< HEAD
 		
+=======
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		initialPopInput.setSize("500px", "100px");
 		initialPopInput.setMaxLength(15000);
 		denominatorInput.setSize("500px", "100px");
@@ -674,6 +684,7 @@ public class MetaDataView implements MetaDataDetailDisplay{
 		generateeMeasureIDButton.setTitle(emeasureIdMSG);
 		eMeasureIdentifierInput.setTitle(emeasureIdMSG);
 		return fPanel;
+<<<<<<< HEAD
 	}
 	
 	//TODO by Ravi
@@ -788,6 +799,8 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	     cellTable.setColumnWidth(2, 10, Unit.PCT);
 		
     return cellTable;
+=======
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	}
 	
 	/*private CellTable<QualityDataSetDTO> addQDMSelectionListTable(CellTable<QualityDataSetDTO> table){
@@ -1135,9 +1148,12 @@ public class MetaDataView implements MetaDataDetailDisplay{
 		return setNameInput;
 	}
 	
+<<<<<<< HEAD
 	/* (non-Javadoc)
 	 * @see mat.client.measure.metadata.MetaDataPresenter.MetaDataDetailDisplay#getMeasurePopulationExclusions()
 	 */
+=======
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	@Override
 	public HasValue<String> getMeasurePopulationExclusions() {
 		return measurePopulationExclusionsInput;
@@ -1473,30 +1489,51 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	 * @param reference
 	 *            the reference
 	 */
+<<<<<<< HEAD
 	private void  addRow(FlexTable reference) {
 		TextAreaWithMaxLength newReferenceBox = createReferenceInput();
 		++counter;
 		String dynamicLabel = "Reference" + counter;
+=======
+	private void  addRow(FlexTable reference){
+		TextAreaWithMaxLength newReferenceBox = createReferenceInput();
+		++counter;
+		String dynamicLabel = "Reference"+counter;
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		Widget newReferenceBoxLabel = LabelBuilder.buildInvisibleLabel(newReferenceBox, dynamicLabel);
 		HorizontalPanel hp = new HorizontalPanel();
 		hp.add(newReferenceBoxLabel);
 		hp.add(newReferenceBox);
+<<<<<<< HEAD
 		Button newremoveButton = new PrimaryButton("Remove", "primaryGreyLeftButton");
+=======
+		Button newremoveButton = new PrimaryButton("Remove","primaryGreyLeftButton");
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		newremoveButton.addClickHandler(new ClickHandler() {
 			
 			@Override
 			public void onClick(ClickEvent event) {
 				clearErrorMsg();
+<<<<<<< HEAD
 				com.google.gwt.user.client.ui.HTMLTable.Cell cell = referenceTable.getCellForEvent(event);
 				int clickedRowIndex = cell.getRowIndex();
 				removeRow(referenceTable, clickedRowIndex);
+=======
+				Cell cell = referenceTable.getCellForEvent(event);
+				int clickedRowIndex = cell.getRowIndex();
+				removeRow(referenceTable,clickedRowIndex);
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 				
 			}
 		});
 		int numRows = referenceTable.getRowCount();
 		referenceTable.setWidget(numRows, 0, hp);
 		//referenceTable.setWidget(numRows, 1, new SimplePanel());
+<<<<<<< HEAD
 		referenceTable.setWidget(numRows, 1, newremoveButton);
+=======
+		referenceTable.setWidget(numRows, 1,newremoveButton);
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		referenceTable.getFlexCellFormatter().setRowSpan(0, 1, numRows + 1);
 		referenceArrayList.add(newReferenceBox);
 	}
@@ -1509,6 +1546,7 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	 * @param rowIndex
 	 *            the row index
 	 */
+<<<<<<< HEAD
 	private void removeRow(FlexTable reference, int rowIndex) {
 		int numRows = reference.getRowCount();
 		if (referenceTable.getWidget(rowIndex, 0) instanceof HorizontalPanel) {
@@ -1516,6 +1554,15 @@ public class MetaDataView implements MetaDataDetailDisplay{
 			TextAreaWithMaxLength areaWithMaxLength = (TextAreaWithMaxLength) horizontalPanel.getWidget(1);
 			referenceArrayList.remove(areaWithMaxLength);
 		} else if (referenceTable.getWidget(rowIndex, 0) instanceof TextAreaWithMaxLength) {
+=======
+	private void removeRow(FlexTable reference,int rowIndex){
+		int numRows = reference.getRowCount();
+		if(referenceTable.getWidget(rowIndex, 0) instanceof HorizontalPanel){
+			HorizontalPanel horizontalPanel =  (HorizontalPanel) referenceTable.getWidget(rowIndex, 0);
+			TextAreaWithMaxLength areaWithMaxLength = (TextAreaWithMaxLength) horizontalPanel.getWidget(1);
+			referenceArrayList.remove(areaWithMaxLength);
+		}else if (referenceTable.getWidget(rowIndex, 0) instanceof TextAreaWithMaxLength){
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			referenceArrayList.remove(referenceTable.getWidget(rowIndex, 0));
 		}
 		referenceTable.removeRow(rowIndex);
@@ -1542,27 +1589,47 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	 */
 	@Override
 	public void setReferenceValues(List<String> values, boolean editable) {
+<<<<<<< HEAD
 		if ((values != null) && !values.isEmpty()) {
+=======
+		if((values != null) && !values.isEmpty()){
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			clearReferences();
 			for (int i = 0; i < values.size(); i++) {
 				TextAreaWithMaxLength newReferenceBox = createReferenceInput();
 				newReferenceBox.setValue(values.get(i));
 				newReferenceBox.setEnabled(editable);
+<<<<<<< HEAD
 				if (i == 0) {
 					referenceTable.setWidget(0, 0, newReferenceBox);
+=======
+				if(i == 0){
+					referenceTable.setWidget(0, 0,newReferenceBox);
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 					referenceTable.setWidget(0, 1, new SimplePanel());
 					referenceTable.setWidget(0, 2, AddRowButton);
 				} else {
 					referenceTable.setWidget(i, 0, newReferenceBox);
+<<<<<<< HEAD
 					if (editable) {
 						Button newRemoveButton = new PrimaryButton("Remove", "primaryGreyLeftButton");
+=======
+					if(editable) {
+						Button newRemoveButton = new PrimaryButton("Remove","primaryGreyLeftButton");
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 						newRemoveButton.addClickHandler(new ClickHandler() {
 							
 							@Override
 							public void onClick(ClickEvent event) {
+<<<<<<< HEAD
 								com.google.gwt.user.client.ui.HTMLTable.Cell cell = referenceTable.getCellForEvent(event);
 								int clickedRowIndex = cell.getRowIndex();
 								removeRow(referenceTable, clickedRowIndex);
+=======
+								Cell cell = referenceTable.getCellForEvent(event);
+								int clickedRowIndex = cell.getRowIndex();
+								removeRow(referenceTable,clickedRowIndex);
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 							}
 						});
 						referenceTable.setWidget(i, 1, new SimplePanel());
@@ -1575,7 +1642,11 @@ public class MetaDataView implements MetaDataDetailDisplay{
 		} else if (values.isEmpty()) {
 			clearReferences();
 			TextAreaWithMaxLength newReferenceBox = createReferenceInput();
+<<<<<<< HEAD
 			referenceTable.setWidget(0, 0, newReferenceBox);
+=======
+			referenceTable.setWidget(0, 0,newReferenceBox);
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			referenceTable.setWidget(0, 1, new SimplePanel());
 			referenceTable.setWidget(0, 2, AddRowButton);
 			referenceArrayList.add(newReferenceBox);
@@ -1589,9 +1660,15 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	 * @param referenceInput
 	 *            the reference input
 	 */
+<<<<<<< HEAD
 	private void buildReferenceTable(TextAreaWithMaxLength referenceInput) {
 		clearReferences();
 		referenceTable.setWidget(0, 0, referenceInput);
+=======
+	private void buildReferenceTable(TextAreaWithMaxLength referenceInput){
+		clearReferences();
+		referenceTable.setWidget(0, 0,referenceInput);
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		referenceArrayList.add(referenceInput);
 		referenceTable.setWidget(0, 1, new SimplePanel());
 		referenceTable.setWidget(0, 2, AddRowButton);
@@ -1601,13 +1678,21 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	/**
 	 * Clear references.
 	 */
+<<<<<<< HEAD
 	private void clearReferences() {
+=======
+	private void clearReferences(){
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		referencePlaceHolder.clear();
 		referenceTable.clear();
 		referenceTable.removeAllRows();
 		referenceArrayList.clear();
 		FlexCellFormatter cellFormatter = referenceTable.getFlexCellFormatter();
+<<<<<<< HEAD
 		cellFormatter.setHorizontalAlignment(0, 1, HasHorizontalAlignment.ALIGN_LEFT);
+=======
+		cellFormatter.setHorizontalAlignment(0, 1,HasHorizontalAlignment.ALIGN_LEFT);
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	}
 	
 	
@@ -1731,7 +1816,11 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	/**
 	 * Local method to clear out the Steward other panel.
 	 */
+<<<<<<< HEAD
 	private void clearOtherPanel() {
+=======
+	private void clearOtherPanel(){
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		measureStewardOtherInput.setValue(null);
 		emptyTextBoxHolder.clear();
 	}
@@ -1830,6 +1919,7 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	/**
 	 * Clear error msg.
 	 */
+<<<<<<< HEAD
 	private void clearErrorMsg() {
 		getSaveErrorMsg().clear();
 	}
@@ -1862,6 +1952,10 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	@Override
 	public List<QualityDataSetDTO> getQdmSelectedList() {
 		return qdmSelectedList;
+=======
+	private void clearErrorMsg(){
+		getSaveErrorMsg().clear();
+>>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	}
  
 	
