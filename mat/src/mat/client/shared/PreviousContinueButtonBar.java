@@ -28,15 +28,9 @@ public class PreviousContinueButtonBar extends Composite implements HasVisible, 
 	 * Sets the page names on state.
 	 */
 	public void setPageNamesOnState(){
-<<<<<<< HEAD
 		if (state <= 0) {
 			state = 0;
 			if (subState == 0) {
-=======
-		if(state<=0){
-			state =0;
-			if(subState == 0){
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 				setPageNames("UNDEFINED", "QDM Elements");
 				buttonPanel.remove(previousButton);
 				buttonPanel.remove(continueButton);
@@ -48,50 +42,26 @@ public class PreviousContinueButtonBar extends Composite implements HasVisible, 
 			buttonPanel.remove(continueButton);
 			buttonPanel.add(previousButton);
 			buttonPanel.add(continueButton);
-<<<<<<< HEAD
 		} else if (state == 2) {
 			setPageNames("QDM Elements", "Population Workspace");
-=======
-		}
-		else if(state ==2){
-			
-			setPageNames("QDM Elements", "Old Measure Packager");
-			
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			buttonPanel.remove(previousButton);
 			buttonPanel.remove(continueButton);
 			buttonPanel.add(previousButton);
 			buttonPanel.add(continueButton);
-<<<<<<< HEAD
 		} else if (state == 3) {
 			state = 3;
 			setPageNames("Clause Workspace", "Old Measure Packager");
-=======
-		}
-		else if(state ==3){
-			
-			state =3;
-			setPageNames("Clause Workspace", "Measure Packager");
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			buttonPanel.remove(previousButton);
 			buttonPanel.remove(continueButton);
 			buttonPanel.add(previousButton);
 			buttonPanel.add(continueButton);
-<<<<<<< HEAD
 		} else if (state == 4) {
 			state = 4;
 			setPageNames("Population Workspace", "Measure Packager");
-=======
-			
-		} else if (state == 4) {
-			state = 4;
-			setPageNames("Clause Workspace", "Measure Notes");
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			buttonPanel.remove(previousButton);
 			buttonPanel.remove(continueButton);
 			buttonPanel.add(previousButton);
 			buttonPanel.add(continueButton);
-<<<<<<< HEAD
 		} else if (state == 5) {
 			state = 5;
 			setPageNames("Old Measure Packager", "Measure Notes");
@@ -101,11 +71,6 @@ public class PreviousContinueButtonBar extends Composite implements HasVisible, 
 			buttonPanel.add(continueButton);
 		} else if (state >= 6) {
 			state = 6;
-=======
-		} else if(state >= 5) {
-			
-			state = 5;
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			setPageNames("Measure Packager", "UNDEFINED");
 			buttonPanel.remove(previousButton);
 			buttonPanel.remove(continueButton);

@@ -119,6 +119,10 @@ public class ClauseWorkspaceContextMenu {
 			public void execute() {
 				xmlTreeDisplay.setDirty(true);
 				popupPanel.hide();
+				if ((xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.LOGICAL_OP_NODE)
+						|| (xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.SUBTREE_REF_NODE)) {
+					xmlTreeDisplay.getCommentArea().setText("");
+				}
 				xmlTreeDisplay.removeNode();
 			}
 		};
@@ -128,6 +132,14 @@ public class ClauseWorkspaceContextMenu {
 			public void execute() {
 				xmlTreeDisplay.setDirty(true);
 				popupPanel.hide();
+				if ((xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.LOGICAL_OP_NODE)
+						|| (xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.SUBTREE_REF_NODE)) {
+					xmlTreeDisplay.getCommentArea().setText("");
+					@SuppressWarnings("unchecked")
+					List<CellTreeNode> childNode = (List<CellTreeNode>) xmlTreeDisplay.getSelectedNode().getParent().
+					getExtraInformation(PopulationWorkSpaceConstants.COMMENTS);
+					xmlTreeDisplay.getCommentArea().setText(childNode.get(0).getNodeText());
+				}
 				xmlTreeDisplay.copy();
 				xmlTreeDisplay.removeNode();
 			}
@@ -493,7 +505,7 @@ public class ClauseWorkspaceContextMenu {
 		popupMenuBar.setAutoOpen(true);
 		menuBar.setAutoOpen(true);
 		//Commented for User story MAT-3167.
-		//createAddMenus(MatContext.get().logicalOps, 
+		//createAddMenus(MatContext.get().logicalOps,
 		//CellTreeNode.LOGICAL_OP_NODE, menuBar);// creating logical Operators Menu 2nd level
 		createAddQDM_MenuItem(menuBar);
 		MenuBar timingMenuBar = new MenuBar(true);

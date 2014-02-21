@@ -85,17 +85,12 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 	/** The button bar. */
 	private PreviousContinueButtonBar buttonBar = new PreviousContinueButtonBar();
 	
-<<<<<<< HEAD
 	/**
 	 * The Clause Workspace presenter.
 	 */
 	private ClauseWorkSpacePresenter clauseWorkSpacePresenter = new ClauseWorkSpacePresenter();
 	/** The Population workspace presenter. */
 	private PopulationWorkspacePresenter populationWorkspacePresenter = new PopulationWorkspacePresenter();
-=======
-	/** The clause workspace presenter. */
-	private ClauseWorkspacePresenter clauseWorkspacePresenter = new ClauseWorkspacePresenter();
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	
 	/** The empty widget. */
 	private SimplePanel emptyWidget = new SimplePanel();
@@ -113,11 +108,7 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 	private MeasureNotesPresenter measureNotesPresenter = new MeasureNotesPresenter(new MeasureNotesView());
 	
 	/** The measure package old presenter. */
-<<<<<<< HEAD
 	private MeasurePackagePresenter_Old measurePackagePresenter_old;
-=======
-	private MeasurePackagePresenter_Old measurePackagePresenter_old ;
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	
 	private MeasurePackagePresenter measurePackagePresenter;
 	
@@ -142,16 +133,10 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 		qdmPresenter = buildQDMPresenter();
 		measureComposerTabLayout = new MatTabLayoutPanel(true);
 		measureComposerTabLayout.setId("measureComposerTabLayout");
-<<<<<<< HEAD
 		measureComposerTabLayout.addPresenter(metaDataPresenter, "Measure Details");
 		measureComposerTabLayout.addPresenter(qdmPresenter, "QDM Elements");
 		measureComposerTabLayout.addPresenter(clauseWorkSpacePresenter, "Clause Workspace");
 		measureComposerTabLayout.addPresenter(populationWorkspacePresenter, "Population Workspace");
-=======
-		measureComposerTabLayout.addPresenter(metaDataPresenter,"Measure Details");
-		measureComposerTabLayout.addPresenter(qdmPresenter,"QDM Elements");
-		measureComposerTabLayout.addPresenter(clauseWorkspacePresenter, "Clause Workspace");
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		measureComposerTabLayout.addPresenter(buildOldMeasurePackageWidget(), "Old Measure Packager");
 		measureComposerTabLayout.addPresenter(buildMeasurePackageWidget(), "Measure Packager");
 		measureComposerTabLayout.addPresenter(measureNotesPresenter, "Measure Notes");
@@ -252,26 +237,17 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 		Command waitForUnlock = new Command() {
 			@Override
 			public void execute() {
-<<<<<<< HEAD
 				if (!MatContext.get().getMeasureLockService().isResettingLock()) {
-=======
-				if(!MatContext.get().getMeasureLockService().isResettingLock()){
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 					measureComposerTabLayout.close();
 					measureComposerTabLayout.updateHeaderSelection(0);
 					measureComposerTabLayout.setSelectedIndex(0);
 					buttonBar.state = measureComposerTabLayout.getSelectedIndex();
 					buttonBar.setPageNamesOnState();
-<<<<<<< HEAD
 				} else {
-=======
-				}else{
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 					DeferredCommand.addCommand(this);
 				}
 			}
 		};
-<<<<<<< HEAD
 		if (MatContext.get().getMeasureLockService().isResettingLock()) {
 			waitForUnlock.execute();
 			//This is done to reset measure composure tab to show "No Measure Selected" as when measure is deleted,it should not show Any sub tabs under MeasureComposure.
@@ -279,27 +255,13 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 				MatContext.get().getCurrentMeasureInfo().setMeasureId("");
 			}
 		} else {
-=======
-		if(MatContext.get().getMeasureLockService().isResettingLock()){
-			waitForUnlock.execute();
-			//This is done to reset measure composure tab to show "No Measure Selected" as when measure is deleted,it should not show Any sub tabs under MeasureComposure.
-			if(MatContext.get().getCurrentMeasureInfo()!=null){
-				MatContext.get().getCurrentMeasureInfo().setMeasureId("");
-			}
-		}
-		else{
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			measureComposerTabLayout.close();
 			measureComposerTabLayout.updateHeaderSelection(0);
 			measureComposerTabLayout.setSelectedIndex(0);
 			buttonBar.state = measureComposerTabLayout.getSelectedIndex();
 			buttonBar.setPageNamesOnState();
 			//This is done to reset measure composure tab to show "No Measure Selected" as when measure is deleted,it should not show Any sub tabs under MeasureComposure.
-<<<<<<< HEAD
 			if (MatContext.get().getCurrentMeasureInfo() != null) {
-=======
-			if(MatContext.get().getCurrentMeasureInfo()!=null){
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 				MatContext.get().getCurrentMeasureInfo().setMeasureId("");
 			}
 		}
@@ -313,13 +275,8 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 	@Override
 	public void beforeDisplay() {
 		String currentMeasureId = MatContext.get().getCurrentMeasureId();
-<<<<<<< HEAD
 		if ((currentMeasureId != null) && !"".equals(currentMeasureId)) {
 			if (MatContext.get().isCurrentMeasureEditable()) {
-=======
-		if((currentMeasureId != null) && !"".equals(currentMeasureId)) {
-			if(MatContext.get().isCurrentMeasureEditable()){
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 				MatContext.get().getMeasureLockService().setMeasureLock();
 			}
 			String heading = MatContext.get().getCurrentMeasureName() + " ";

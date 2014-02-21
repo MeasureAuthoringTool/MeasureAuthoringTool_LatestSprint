@@ -5,9 +5,11 @@ import mat.client.clause.clauseworkspace.view.ClauseWorkspaceContextMenu;
 import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.SuccessMessageDisplay;
 import mat.client.shared.WarningMessageDisplay;
+
 import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.cellview.client.TreeNode;
 import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.Widget;
 
 // TODO: Auto-generated Javadoc
@@ -292,4 +294,32 @@ public interface XmlTreeDisplay {
 	 * @return the clear error display
 	 */
 	public ErrorMessageDisplay getClearErrorDisplay();
+	
+	/**
+	 * @return Button.
+	 */
+	Button getCommentButtons();
+	
+	/**
+	 * @return TextArea.
+	 */
+	mat.client.clause.clauseworkspace.view.XmlTreeView.CommentAreaTextBox getCommentArea();
+	
+	/**
+	 * Success Message Panel for Add Comment.
+	 * @return
+	 */
+	SuccessMessageDisplay getSuccessMessageAddCommentDisplay();
+	
+	void addCommentNodeToSelectedNode();
+	
+	public abstract void updateSuggestOracle();
+
+	public abstract void clearAndAddClauseNamesToListBox();
+
+	public abstract ListBox getClauseNamesListBox();
+
+	public abstract Button getShowClauseButton();
+
+	Button getDeleteClauseButton();
 }

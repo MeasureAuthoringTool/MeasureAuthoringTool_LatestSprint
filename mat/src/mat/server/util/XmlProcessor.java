@@ -45,12 +45,9 @@ import org.xml.sax.SAXException;
  */
 public class XmlProcessor {
 	
-<<<<<<< HEAD
 	/**
 	 * The Constant COHORT.
 	 */
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	private static final String COHORT = "COHORT";
 	
 	/** The Constant MEASUREMENT_END_DATE_OID. */
@@ -89,7 +86,6 @@ public class XmlProcessor {
 	/** The Constant XPATH_MEASURE_ELEMENT_LOOKUP. */
 	private static final String XPATH_MEASURE_ELEMENT_LOOKUP = "/measure/elementLookUp";
 	
-<<<<<<< HEAD
 	/** The Constant XPATH_MEASURE_SUBTREE_LOOKUP. */
 	private static final String XPATH_MEASURE_SUBTREE_LOOKUP = "/measure/subTreeLookUp";
 	
@@ -102,8 +98,6 @@ public class XmlProcessor {
 	/** The Constant XPATH_MEASURE_MEASURE_DETAILS_SCORING. */
 	private static final String XPATH_MEASURE_MEASURE_DETAILS_SCORING = "/measure/measureDetails/scoring";
 	
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	/** The Constant XPATH_MEASURE_ELEMENT_LOOKUP_QDM. */
 	private static final String XPATH_MEASURE_ELEMENT_LOOKUP_QDM = "/measure/elementLookUp/qdm";
 	
@@ -169,6 +163,12 @@ public class XmlProcessor {
 	
 	/** The Constant XPATH_FIND_GROUP_CLAUSE. */
 	public static final String XPATH_FIND_GROUP_CLAUSE = "/measure/measureGrouping/group[packageClause[";
+	
+	/** The Constant XPATH_OLD_MEASURE_ALL_RELATIONALOP_SBOD. */
+	public static final String XPATH_OLD_MEASURE_ALL_RELATIONALOP_SBOD="/measure//*/relationalOp[@type='SBOD']";
+	
+	/** The Constant XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD. */
+	public static final String XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD="/measure//*/relationalOp[@type='EBOD']";
 	
 	/** The constants map. */
 	private static Map<String, String> constantsMap = new HashMap<String, String>();
@@ -309,32 +309,20 @@ public class XmlProcessor {
 		try {
 			logger.info("In replaceNode() method");
 			InputSource newXmlstream = new InputSource(new StringReader(newXml));
-<<<<<<< HEAD
 			Document newDoc = docBuilder.parse(newXmlstream); // Parse the NewXml
-=======
-			Document newDoc = docBuilder.parse(newXmlstream);// Parse the NewXml
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			// which should
 			// be replaced
 			Node newNode = null;
 			Node oldNode = null;
 			NodeList newNodeList = newDoc.getElementsByTagName(nodeName);
 			NodeList oldNodeList = originalDoc.getElementsByTagName(nodeName);
-<<<<<<< HEAD
-=======
-			
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			if (oldNodeList.getLength() > 0) {
 				if (StringUtils.isBlank(parentName)) {
 					oldNode = oldNodeList.item(0);
 				} else {
 					for (int i = 0; i < oldNodeList.getLength(); i++) {
 						if (parentName.equals(oldNodeList.item(i)
-<<<<<<< HEAD
 								.getParentNode().getNodeName())) { // get the old
-=======
-								.getParentNode().getNodeName())) {// get the old
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 							// node with
 							// the
 							// matching
@@ -346,65 +334,36 @@ public class XmlProcessor {
 					}
 				}
 			}
-<<<<<<< HEAD
-=======
-			
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			if (newNodeList.getLength() > 0) {
 				newNode = newNodeList.item(0);
 				for (int i = 0; i < newNodeList.getLength(); i++) {
 					if (parentName.equals(newNodeList.item(i).getParentNode()
-<<<<<<< HEAD
 							.getNodeName())) { // get the new node used to
-=======
-							.getNodeName())) {// get the new node used to
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 						// replace.
 						newNode = newNodeList.item(i);
 						break;
 					}
 				}
-<<<<<<< HEAD
 				if (oldNode != null) { // check if the OriginalXml has the Node
 					// that should be replaced
 					Node nextSibling = oldNode.getNextSibling();
 					Node parentNode = oldNode.getParentNode();
 					parentNode.removeChild(oldNode); // Removing the old child
-=======
-				
-				if (oldNode != null) {// check if the OriginalXml has the Node
-					// that should be replaced
-					Node nextSibling = oldNode.getNextSibling();
-					Node parentNode = oldNode.getParentNode();
-					parentNode.removeChild(oldNode);// Removing the old child
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 					// node
 					if (nextSibling != null) {
 						parentNode.insertBefore(
 								originalDoc.importNode(newNode, true),
-<<<<<<< HEAD
 								nextSibling); // to maintain the order insert
-=======
-								nextSibling);// to maintain the order insert
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 						// before the next sibling if
 						// exists
 					} else {
 						parentNode.appendChild(originalDoc.importNode(newNode,
-<<<<<<< HEAD
 								true)); // insert the new child node to the old
-=======
-								true));// insert the new child node to the old
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 						// child's Parent node,.
 					}
 					logger.info("Replaced old Child Node with new Child Node "
 							+ nodeName);
-<<<<<<< HEAD
 				} else { // if the Original Document doesnt have the Node, then
-=======
-				} else {// if the Original Document doesnt have the Node, then
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 					// insert the new Node under the first child
 					Node importNode = originalDoc.importNode(newNode, true);
 					originalDoc.getFirstChild().appendChild(importNode);
@@ -583,25 +542,13 @@ public class XmlProcessor {
 		ArrayList<QualityDataSetDTO> masterList = new ArrayList<QualityDataSetDTO>();
 		ArrayList<QualityDataSetDTO> supplementalDataList = new ArrayList<QualityDataSetDTO>();
 		javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
-<<<<<<< HEAD
 		if (originalDoc == null) {
 			return map;
 		}
-=======
-		
-		if (originalDoc == null) {
-			return map;
-		}
-		
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		try {
 			NodeList nodesElementLookUpAll = (NodeList) xPath.evaluate(
 					XPATH_MEASURE_ELEMENT_LOOKUP_QDM,
 					originalDoc.getDocumentElement(), XPathConstants.NODESET);
-<<<<<<< HEAD
-=======
-			
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			// Master List of Element Look Up QDM's. This list is used to
 			// populate QDM properties in SDE and QDM List.
 			for (int i = 0; i < nodesElementLookUpAll.getLength(); i++) {
@@ -636,10 +583,6 @@ public class XmlProcessor {
 					dataSetDTO.setSuppDataElement(false);
 				}
 				masterList.add(dataSetDTO);
-<<<<<<< HEAD
-=======
-				
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			}
 			NodeList nodesSupplementalData = (NodeList) xPath.evaluate(
 					XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_ELEMENTREF,
@@ -649,10 +592,6 @@ public class XmlProcessor {
 			if (nodesSupplementalData.getLength() > 0) {
 				StringBuilder expression = new StringBuilder(
 						XPATH_MEASURE_ELEMENT_LOOKUP_QDM.concat("["));
-<<<<<<< HEAD
-=======
-				
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 				// populate supplementDataElement List and create XPATH
 				// expression to find intersection of QDM and SDE.
 				for (int i = 0; i < nodesSupplementalData.getLength(); i++) {
@@ -673,10 +612,6 @@ public class XmlProcessor {
 				xpathUniqueQDM = xpathUniqueQDM.substring(0,
 						xpathUniqueQDM.lastIndexOf(" and")).concat("]");
 				XPathExpression expr = xPath.compile(xpathUniqueQDM);
-<<<<<<< HEAD
-=======
-				
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 				// Intersection List of QDM and SDE. Elements which are
 				// referenced in SDE are filtered out.
 				NodeList nodesFinal = (NodeList) expr.evaluate(
@@ -742,10 +677,6 @@ public class XmlProcessor {
 						}
 					}
 				}
-<<<<<<< HEAD
-=======
-				
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			}
 			map.put("QDM", qdmList);
 			map.put("SDE", supplementalDataList);
@@ -805,15 +736,12 @@ public class XmlProcessor {
 		}
 	}
 	
-<<<<<<< HEAD
 	/**
 	 * Rename ip p_ to_ ip.
 	 *
 	 * @param document the document
 	 * @throws XPathExpressionException the x path expression exception
 	 */
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	public void renameIPP_To_IP(Document document) throws XPathExpressionException {
 		
 		String displayName = "displayName";
@@ -883,6 +811,46 @@ public class XmlProcessor {
 	}
 	
 	/**
+	 * Rename timing conventions.
+	 *
+	 * @param document the document
+	 * @throws XPathExpressionException the x path expression exception
+	 */
+	public void renameTimingConventions(Document document) throws XPathExpressionException {
+		 
+		String displayName = "displayName";
+		String type = "type";
+		String starts_before_or_during="Starts Before Or During";
+		String ends_before_or_during="Ends Before Or During";
+		 
+		 javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
+		
+		 //replace relationalOp attribute values for displayName and type from SBOD to SBE
+		 NodeList nodesRelationalOpsSBOD = (NodeList) xPath.evaluate(XPATH_OLD_MEASURE_ALL_RELATIONALOP_SBOD,
+					originalDoc.getDocumentElement(), XPathConstants.NODESET);
+		 for (int i = 0; i < nodesRelationalOpsSBOD.getLength(); i++) {
+			 Node childNode =  nodesRelationalOpsSBOD.item(i);
+			 String relationalOpDisplayName = childNode.getAttributes().getNamedItem(displayName).getNodeValue();
+			 relationalOpDisplayName = relationalOpDisplayName.replace(starts_before_or_during, "Starts Before End");
+			 childNode.getAttributes().getNamedItem(displayName).setNodeValue(relationalOpDisplayName);
+			 childNode.getAttributes().getNamedItem(type).setNodeValue("SBE");
+		 }
+		 
+		 //replace relationalOp attribute values for displayName and type from EBOD to EBE
+		 NodeList nodesRelationalOpsEBOD = (NodeList) xPath.evaluate(XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD,
+					originalDoc.getDocumentElement(), XPathConstants.NODESET);
+		 for (int i = 0; i < nodesRelationalOpsEBOD.getLength(); i++) {
+			 Node childNode =  nodesRelationalOpsEBOD.item(i);
+			 String relationalOpDisplayName = childNode.getAttributes().getNamedItem(displayName).getNodeValue();
+			 relationalOpDisplayName = relationalOpDisplayName.replace(ends_before_or_during, "Ends Before End");
+			 childNode.getAttributes().getNamedItem(displayName).setNodeValue(relationalOpDisplayName);
+			 childNode.getAttributes().getNamedItem(type).setNodeValue("EBE");
+		 }
+		
+	}
+	
+    
+	/**
 	 * This method looks at the Scoring Type for a measure and adds nodes based
 	 * on the value of Scoring Type.
 	 * 
@@ -893,10 +861,6 @@ public class XmlProcessor {
 	 */
 	public void createNewNodesBasedOnScoring(String scoringType)
 			throws XPathExpressionException {
-<<<<<<< HEAD
-=======
-		
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		List<String> scoreBasedNodes = new ArrayList<String>();
 		if (SCORING_TYPE_CONTVAR.equals(scoringType)) {
 			scoreBasedNodes.add(INITIAL_POPULATIONS);
@@ -934,10 +898,6 @@ public class XmlProcessor {
 					break;
 				}
 			}
-<<<<<<< HEAD
-=======
-			
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			if (!isNodePresent) {
 				String displayName = constantsMap.get(nodeName);
 				Element mainChildElem = createTemplateNode(nodeName,
@@ -946,10 +906,6 @@ public class XmlProcessor {
 				childAppended = true;
 			}
 		}
-<<<<<<< HEAD
-=======
-		
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		/**
 		 * Add Measure Observations node after Populations node if not present
 		 * and scoring type is Continuous Variable.
@@ -964,10 +920,6 @@ public class XmlProcessor {
 				Element mainChildElem = createTemplateNode(nodeName,
 						displayName);
 				measureObservationsNode = mainChildElem;
-<<<<<<< HEAD
-=======
-				
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 				// insert measureObservations element after populations element
 				Node measureNode = populationsNode.getParentNode();
 				Element measureElement = (Element) measureNode;
@@ -975,10 +927,6 @@ public class XmlProcessor {
 						populationsNode.getNextSibling());
 			}
 		}
-<<<<<<< HEAD
-=======
-		
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		// Create stratifications node
 		Node measureStratificationsNode = findNode(originalDoc,
 				XPATH_MEASURE_STRATIFICATIONS);
@@ -1009,10 +957,6 @@ public class XmlProcessor {
 			.insertBefore(supplementaDataElements_Element,
 					measureStratificationsNode.getNextSibling());
 		}
-<<<<<<< HEAD
-=======
-		
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		// Create elementLookUp node
 		if (findNode(originalDoc, XPATH_MEASURE_ELEMENT_LOOKUP) == null) {
 			Element elementLookUp_Element = originalDoc
@@ -1021,7 +965,6 @@ public class XmlProcessor {
 			.insertBefore(elementLookUp_Element,
 					supplementaDataElements_Element.getNextSibling());
 		}
-<<<<<<< HEAD
 		if (findNode(originalDoc, XPATH_MEASURE_SUBTREE_LOOKUP) == null) {
 			Element subTreeLookUp_Element = originalDoc
 					.createElement("subTreeLookUp");
@@ -1045,8 +988,6 @@ public class XmlProcessor {
 						measure_Type_Element.getNextSibling());
 			}
 		}
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		
 		// create Measure Grouping node
 		if (findNode(originalDoc, XPATH_MEASURE_GROUPING) == null) {
@@ -1056,18 +997,9 @@ public class XmlProcessor {
 			.insertBefore(measureGrouping_Element,
 					supplementaDataElements_Element.getNextSibling());
 		}
-<<<<<<< HEAD
 		/*
 		 * All the adding and removing can put the children of 'populations' in
 		 * a random order. Arrange the population nodes in correct order.*/
-=======
-		
-		/*
-		 * All the adding and removing can put the children of 'populations' in
-		 * a random order. Arrange the population nodes in correct order.
-		 */
-		
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		// If no children have been appended, dont go through the process of
 		// re-arranging the
 		// populations node children.
@@ -1084,10 +1016,6 @@ public class XmlProcessor {
 			populationsNode
 			.removeChild(populationsNode.getChildNodes().item(0));
 		}
-<<<<<<< HEAD
-=======
-		
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		// Take the child nodeList & re-arrange it according to this order
 		// "Initial Patient Populations", "Numerators", "Numerator Exclusions",
 		// "Denominators", "Denominator Exclusions",
@@ -1105,10 +1033,6 @@ public class XmlProcessor {
 				populationsNode.appendChild(populationsChildNode);
 			}
 		}
-<<<<<<< HEAD
-=======
-		
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	}
 	
 	/**
@@ -1234,14 +1158,11 @@ public class XmlProcessor {
 		return (NodeList) expr.evaluate(document, XPathConstants.NODESET);
 	}
 	
-<<<<<<< HEAD
 //	public void addEmptyItemCountNode(){
 //		NodeList nodes=originalDoc.getElementsByTagName("scoring");
 //		Element itemCountElement=originalDoc.createElement("itemCount");
 //		nodes.item(0).getParentNode().insertBefore(itemCountElement,null);
 //	}
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	/**
 	 * Gets the original doc.
 	 * 

@@ -508,7 +508,6 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 */
 		public Button getDeleteMeasure();
 
-<<<<<<< HEAD
 		/**
 		 * Gets the measure population exclusions.
 		 *
@@ -545,9 +544,6 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 * @param qdmSelectedList the new qdm selected list
 		 */
 		public void setQdmSelectedList(List<QualityDataSetDTO> qdmSelectedList);
-=======
-		HasValue<String> getMeasurePopulationExclusions();	
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		
 	}
 	
@@ -1358,11 +1354,7 @@ private void setAuthorsListOnView() {
 		currentMeasureDetail.setToCompareItemCount(dbQDMSelectedList);
 		currentMeasureDetail.setNqfId(metaDataDisplay.getNqfId().getValue());
 		currentMeasureDetail.setMeasurePopulationExclusions(metaDataDisplay.getMeasurePopulationExclusions().getValue());
-<<<<<<< HEAD
 		if (metaDataDisplay.getEmeasureId().getValue() != null && !metaDataDisplay.getEmeasureId().getValue().equals("")) {
-=======
-		if(metaDataDisplay.getEmeasureId().getValue() != null && !metaDataDisplay.getEmeasureId().getValue().equals("")){
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 			currentMeasureDetail.seteMeasureId(new Integer(metaDataDisplay.getEmeasureId().getValue()));
 		}
 	}

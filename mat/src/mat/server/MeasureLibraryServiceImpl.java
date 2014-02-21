@@ -6,6 +6,7 @@ import java.io.StringReader;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,6 +34,7 @@ import mat.dao.clause.MeasureDAO;
 import mat.dao.clause.MeasureXMLDAO;
 import mat.dao.clause.QDSAttributesDAO;
 import mat.model.Author;
+import mat.model.LockedUserInfo;
 import mat.model.MatValueSet;
 import mat.model.MeasureNotes;
 import mat.model.MeasureType;
@@ -79,6 +81,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class MeasureLibraryServiceImpl.
  */
@@ -93,6 +96,15 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	/** The Constant MEASURE_DETAILS. */
 	private static final String MEASURE_DETAILS = "measureDetails";
 	
+	private String releaseDate;
+	
+	public String getReleaseDate() {
+		return releaseDate;
+	}
+	public void setReleaseDate(String releaseDate) {
+		this.releaseDate = releaseDate;
+	}
+
 	/**
 	 * Comparator.
 	 * **/
@@ -139,6 +151,36 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		
 	}
+	
+	@Override
+	public boolean checkAndDeleteSubTree(String measureId, String subTreeUUID){
+		logger.info("Inside checkAndDeleteSubTree Method for measure Id " + measureId);
+		
+		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureId);
+		if (((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml()))) {
+			XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
+			try {
+				NodeList subTreeRefNodeList = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), "//subTreeRef[@id='"+subTreeUUID+"']");
+				if(subTreeRefNodeList.getLength() > 0){
+					return false;
+				}
+				
+				Node subTreeNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/subTreeLookUp/subTree[@uuid='"+subTreeUUID+"']");
+				if(subTreeNode != null){
+					Node parentNode = subTreeNode.getParentNode();
+					parentNode.removeChild(subTreeNode);
+				}
+				xmlModel.setXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
+				getService().saveMeasureXml(xmlModel);
+			} catch (XPathExpressionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		return true;
+	}
+	
 	/* (non-Javadoc)
 	 * @see mat.server.service.MeasureLibraryService#saveSubTreeInMeasureXml(mat.client.clause.clauseworkspace.model.MeasureXmlModel, java.lang.String)
 	 */
@@ -629,6 +671,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			final MeasureShareDTO dto) {
 		boolean isOwner = currentUserId.equals(dto.getOwnerUserId());
 		ManageMeasureSearchModel.Result detail = new ManageMeasureSearchModel.Result();
+		Measure measure = getMeasureDAO().find(dto.getMeasureId());
 		detail.setName(dto.getMeasureName());
 		detail.setShortName(dto.getShortName());
 		detail.setScoringType(dto.getScoringType());
@@ -639,6 +682,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		detail.setClonable(isOwner || isSuperUser);
 		detail.setEditable((isOwner || isSuperUser || ShareLevel.MODIFY_ID.equals(dto.getShareLevel())) && dto.isDraft());
 		detail.setExportable(dto.isPackaged());
+		detail.setHQMFR1(measure.getExportedDate() != null && measure.getExportedDate()
+				.before(getFormattedReleaseDate(releaseDate)));
+		detail.setHQMFR2(measure.getExportedDate() != null && (measure.getExportedDate()
+				.after(getFormattedReleaseDate(releaseDate)) 
+				|| measure.getExportedDate().equals(getFormattedReleaseDate(releaseDate))));
 		detail.setSharable(isOwner || isSuperUser);
 		detail.setMeasureLocked(dto.isLocked());
 		detail.setLockedUserInfo(dto.getLockedUserInfo());
@@ -700,10 +748,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			XPATH_EXPRESSION = XPATH_EXPRESSION.concat("'").concat(dataSetDTO.getUuid()).
 					concat("' or /measure//clause//@qdmUUID= '").concat(dataSetDTO.getUuid()).
 					concat("' or /measure/supplementalDataElements//@id='").concat(dataSetDTO.getUuid())
-<<<<<<< HEAD
 					.concat("' or /measure/measureDetails/itemCount//@id='").concat(dataSetDTO.getUuid())
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 					.concat("'");
 			
 			try {
@@ -809,6 +854,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			detail.setId(measure.getId());
 			detail.setDraft(measure.isDraft());
 			detail.setExportable(measure.getExportedDate() != null); // to show export icon.
+			detail.setHQMFR1(measure.getExportedDate() != null && measure.getExportedDate()
+					.before(getFormattedReleaseDate(releaseDate)));
+			detail.setHQMFR2(measure.getExportedDate() != null && (measure.getExportedDate()
+					.after(getFormattedReleaseDate(releaseDate)) 
+					|| measure.getExportedDate().equals(getFormattedReleaseDate(releaseDate))));
 			detail.setStatus(measure.getMeasureStatus());
 			String formattedVersion = MeasureUtility.getVersionText(measure.getVersion(),
 					measure.isDraft());
@@ -819,7 +869,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			detail.setOwnerEmailAddress(measure.getOwner().getEmailAddress());
 			detail.setMeasureSetId(measure.getMeasureSet().getId());
 			detail.setScoringType(measure.getMeasureScoring());
-			detail.setMeasureLocked(getMeasureDAO().isMeasureLocked(measure.getId()));
+			boolean isLocked = getMeasureDAO().isMeasureLocked(measure.getId());
+			detail.setMeasureLocked(isLocked);
+			
 			List<MeasureShareDTO> measureShare = getMeasureDAO().
 					getMeasureShareInfoForMeasureAndUser(measure.getOwner().getId(), measure.getId());
 			if (measureShare.size() > 0) {
@@ -829,6 +881,15 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			} else {
 				detail.setEditable((currentUserId.equals(measure.getOwner().getId()) || isSuperUser)
 						&& measure.isDraft());
+			}
+			if (isLocked && (measure.getLockedUser() != null)) {
+				LockedUserInfo lockedUserInfo = new LockedUserInfo();
+				lockedUserInfo.setUserId(measure.getLockedUser().getId());
+				lockedUserInfo.setEmailAddress(measure.getLockedUser()
+						.getEmailAddress());
+				lockedUserInfo.setFirstName(measure.getLockedUser().getFirstName());
+				lockedUserInfo.setLastName(measure.getLockedUser().getLastName());
+				detail.setLockedUserInfo(lockedUserInfo);
 			}
 			detailModelList.add(detail);
 		}
@@ -1965,7 +2026,13 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					// updateAttributes(processor, modifyWithDTO, modifyDTO);
 				} else {
 					// Update all elementRef's in Populations and Stratification
-					updatePopulationAndStratification(processor, modifyWithDTO, modifyDTO);
+					//updatePopulationAndStratification(processor, modifyWithDTO, modifyDTO);
+					
+					//Update all elementRef's in SubTreeLookUp
+					updateSubTreeLookUp(processor, modifyWithDTO, modifyDTO);
+					
+					//Update all elementRef's in ItemCount
+					updateItemCount(processor, modifyWithDTO, modifyDTO);
 				}
 				
 				// update elementLookUp Tag
@@ -1986,6 +2053,81 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	}
 	
 	/**
+	 * Update sub tree look up.
+	 *
+	 * @param processor the processor
+	 * @param modifyWithDTO the modify with dto
+	 * @param modifyDTO the modify dto
+	 */
+	private void updateSubTreeLookUp(final XmlProcessor processor, final QualityDataSetDTO modifyWithDTO,
+			final QualityDataSetDTO modifyDTO) {
+		
+		logger.debug(" MeasureLibraryServiceImpl: updateSubTreeLookUp Start :  ");
+		// XPath to find All elementRef's under subTreeLookUp element nodes for to be modified QDM.
+		String XPATH_EXPRESSION_SubTreeLookUp_ELEMENTREF = "/measure//subTreeLookUp//elementRef[@id='"
+				+ modifyDTO.getUuid() + "']";
+		try {
+			NodeList nodesClauseWorkSpace = (NodeList) xPath.evaluate(XPATH_EXPRESSION_SubTreeLookUp_ELEMENTREF,
+					processor.getOriginalDoc(),	XPathConstants.NODESET);
+			for (int i = 0; i < nodesClauseWorkSpace.getLength(); i++) {
+				Node newNode = nodesClauseWorkSpace.item(i);
+				String displayName = new String();
+				if (!StringUtils.isBlank(modifyWithDTO.getOccurrenceText())) {
+					displayName = displayName.concat(modifyWithDTO.getOccurrenceText() + " of ");
+				}
+				displayName = displayName.concat(modifyWithDTO.getCodeListName() + " : " + modifyWithDTO.getDataType());
+				
+				newNode.getAttributes().getNamedItem("displayName").setNodeValue(displayName);
+			}
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+			
+		}
+		logger.debug(" MeasureLibraryServiceImpl: updateSubTreeLookUp End :  ");
+	}
+	
+	/**
+	 * Update item count.
+	 *
+	 * @param processor the processor
+	 * @param modifyWithDTO the modify with dto
+	 * @param modifyDTO the modify dto
+	 */
+	private void updateItemCount(final XmlProcessor processor, final QualityDataSetDTO modifyWithDTO,
+			final QualityDataSetDTO modifyDTO) {
+		
+		logger.debug(" MeasureLibraryServiceImpl: updateItemCount Start :  ");
+		// XPath to find All elementRef's under itemCount element nodes for to be modified QDM.
+		String XPATH_EXPRESSION_ItemCount_ELEMENTREF = "/measure//measureDetails//itemCount//elementRef[@id='"
+				+ modifyDTO.getUuid() + "']";
+		try {
+			NodeList nodesItemCount = (NodeList) xPath.evaluate(XPATH_EXPRESSION_ItemCount_ELEMENTREF,
+					processor.getOriginalDoc(),	XPathConstants.NODESET);
+			for (int i = 0; i < nodesItemCount.getLength(); i++) {
+				Node newNode = nodesItemCount.item(i);
+				String instance = new String();
+				String name = new String();
+				String dataType = new String();
+				String oid = new String();
+				if (!StringUtils.isBlank(modifyWithDTO.getOccurrenceText())) {
+					instance = instance.concat(modifyWithDTO.getOccurrenceText() + " of ");
+					newNode.getAttributes().getNamedItem("instance").setNodeValue(instance);
+				}
+				name = modifyWithDTO.getCodeListName();
+				dataType = modifyWithDTO.getDataType();
+				oid = modifyWithDTO.getOid();
+				newNode.getAttributes().getNamedItem("name").setNodeValue(name);
+				newNode.getAttributes().getNamedItem("dataType").setNodeValue(dataType);
+				newNode.getAttributes().getNamedItem("oid").setNodeValue(oid);
+			}
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+			
+		}
+		logger.debug(" MeasureLibraryServiceImpl: updateItemCount End :  ");
+	}
+	
+	/**
 	 * This method updates MeasureXML - ElementRef's under Population and
 	 * Stratification Node
 	 * 
@@ -2003,7 +2145,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 		logger.debug(" MeasureLibraryServiceImpl: updatePopulationAndStratification Start :  ");
 		// XPath to find All elementRef's under clause element nodes for to be modified QDM.
-		String XPATH_EXPRESSION_CLAUSE_ELEMENTREF = "/measure//clause//elementRef[@id='"
+		String XPATH_EXPRESSION_CLAUSE_ELEMENTREF = "/measure//subTreeLookUp//elementRef[@id='"
 				+ modifyDTO.getUuid() + "']";
 		try {
 			NodeList nodesClauseWorkSpace = (NodeList) xPath.evaluate(XPATH_EXPRESSION_CLAUSE_ELEMENTREF,
@@ -2102,5 +2244,19 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			logger.info("Exception validating export for " + key, exc);
 			throw new MatException(exc.getMessage());
 		}
+	}
+	
+	@Override
+	public Date getFormattedReleaseDate(String releaseDate){
+		
+		SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy");
+		Date date = new Date();
+		try {
+			date = formatter.parse(releaseDate);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return date;
 	}
 }

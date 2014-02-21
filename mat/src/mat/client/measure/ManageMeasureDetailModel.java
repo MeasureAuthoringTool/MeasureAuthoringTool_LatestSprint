@@ -193,10 +193,7 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	/** The measure owner id. */
 	private String measureOwnerId;
 	
-<<<<<<< HEAD
 	/** The measure population exclusions. */
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	private String measurePopulationExclusions;
 	
 	/**
@@ -294,14 +291,6 @@ public class ManageMeasureDetailModel implements IsSerializable {
 		this.measureTypeList = measureTypeList;
 	}
 	
-	public String getInitialPop() {
-		return initialPop;
-	}
-
-	public void setInitialPop(String initialPop) {
-		this.initialPop = initialPop;
-	}
-
 	/**
 	 * Gets the initial pop.
 	 *
@@ -784,11 +773,7 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	 *            the str
 	 * @return the string
 	 */
-<<<<<<< HEAD
 	private String doTrim(String str) {
-=======
-	private String doTrim(String str){
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		return (str != null) && (str.trim().length() > 0) ? str.trim() : null;
 	}
 	
@@ -1151,11 +1136,8 @@ public class ManageMeasureDetailModel implements IsSerializable {
 				+ ((measureStatus == null) ? 0 : measureStatus.hashCode());
 		result = (prime * result)
 				+ ((toCompareMeasure == null) ? 0 : toCompareMeasure.hashCode());
-<<<<<<< HEAD
 		result = (prime * result)
 				+ ((toCompareItemCount == null) ? 0 : toCompareItemCount.hashCode());
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		result = (prime * result) + ((name == null) ? 0 : name.hashCode());
 		result = (prime * result) + ((nqfId == null) ? 0 : nqfId.hashCode());
 		result = (prime * result)
@@ -1383,7 +1365,6 @@ public class ManageMeasureDetailModel implements IsSerializable {
 		}
 		if (toCompareMeasure == null) {
 			if (other.toCompareMeasure != null) {
-<<<<<<< HEAD
 				return false;
 			}
 		} else if (!isEqual(toCompareMeasure, other.toCompareMeasure)) {
@@ -1398,13 +1379,6 @@ public class ManageMeasureDetailModel implements IsSerializable {
 			return false;
 		}
 		
-=======
-				return false;
-			}
-		} else if (!isEqual(toCompareMeasure, other.toCompareMeasure)) {
-			return false;
-		}
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 		if (trimToNull(name) == null) {
 			if (trimToNull(other.name) != null) {
 				return false;
@@ -1508,7 +1482,6 @@ public class ManageMeasureDetailModel implements IsSerializable {
 		if (listA.size() != listB.size()) {
 			return false;
 		}
-<<<<<<< HEAD
 		for (int i = 0; i < listA.size(); i++) {
 			if (listA.get(i) instanceof Author) {
 				Author author = (Author) listA.get(i);
@@ -1526,25 +1499,6 @@ public class ManageMeasureDetailModel implements IsSerializable {
 				String val1 = (String) listA.get(i);
 				String val2 = (String) listB.get(i);
 				if (val1.compareTo(val2) != 0) {
-=======
-		for (int i=0; i<listA.size(); i++) {
-			if(listA.get(i) instanceof Author){
-				Author author = (Author) listA.get(i);
-				Author otherAuthor = (Author) listB.get(i);
-				if(author.compare(author, otherAuthor) != 0){
-					return false;
-				}
-			}else if(listA.get(i) instanceof MeasureType){
-				MeasureType measureType = (MeasureType) listA.get(i);
-				MeasureType otherMeasureType = (MeasureType) listB.get(i);
-				if(measureType.compare(measureType, otherMeasureType) != 0){
-					return false;
-				}
-			}else if(listA.get(i) instanceof String){
-				String val1 = (String)listA.get(i);
-				String val2 = (String)listB.get(i);
-				if(val1.compareTo(val2) != 0){
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 					return false;
 				}
 			}
@@ -1606,7 +1560,7 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	public void setToCompareMeasure(List<MeasureType> toCompareMeasure) {
 		this.toCompareMeasure = toCompareMeasure;
 	}
-	
+
 	/**
 	 * Gets the qds selected list.
 	 *
@@ -1872,11 +1826,8 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	}
 	
 	/**
-<<<<<<< HEAD
 	 * Gets the revision number.
 	 *
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	 * @return the revisionNumber
 	 */
 	public String getRevisionNumber() {
@@ -1884,11 +1835,8 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	}
 	
 	/**
-<<<<<<< HEAD
 	 * Sets the revision number.
 	 *
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	 * @param revisionNumber the revisionNumber to set
 	 */
 	public void setRevisionNumber(String revisionNumber) {
@@ -1896,11 +1844,8 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	}
 
 	/**
-<<<<<<< HEAD
 	 * Gets the measure population exclusions.
 	 *
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	 * @return the measurePopulationExclusions
 	 */
 	public String getMeasurePopulationExclusions() {
@@ -1908,11 +1853,8 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	}
 
 	/**
-<<<<<<< HEAD
 	 * Sets the measure population exclusions.
 	 *
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
 	 * @param measurePopulationExclusions the measurePopulationExclusions to set
 	 */
 	public void setMeasurePopulationExclusions(

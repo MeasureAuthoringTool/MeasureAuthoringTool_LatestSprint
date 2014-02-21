@@ -2,6 +2,7 @@ package mat.server;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
@@ -326,11 +327,12 @@ MeasureService {
 	public SaveMeasureResult saveMeasureAtPackage(ManageMeasureDetailModel model) {
 		return this.getMeasureLibraryService().saveMeasureAtPackage(model);
 	}
-<<<<<<< HEAD
 	@Override
 	public void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel , String nodeUUID) {
 		this.getMeasureLibraryService().saveSubTreeInMeasureXml(measureXmlModel , nodeUUID);
 	}
-=======
->>>>>>> 5449365c6907df862ccc28749e86b33023c139ee
+	@Override
+	public boolean checkAndDeleteSubTree(String measureId, String subTreeUUID){
+		return this.getMeasureLibraryService().checkAndDeleteSubTree(measureId, subTreeUUID);
+	}
 }

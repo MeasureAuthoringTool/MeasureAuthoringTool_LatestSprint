@@ -6,11 +6,14 @@ import java.util.List;
 import mat.client.clause.clauseworkspace.model.CellTreeNode;
 import mat.client.clause.clauseworkspace.model.CellTreeNodeImpl;
 import mat.client.shared.MatContext;
+
+import org.apache.commons.lang.StringUtils;
 import com.google.gwt.xml.client.Document;
 import com.google.gwt.xml.client.Element;
 import com.google.gwt.xml.client.NamedNodeMap;
 import com.google.gwt.xml.client.Node;
 import com.google.gwt.xml.client.NodeList;
+import com.google.gwt.xml.client.Text;
 import com.google.gwt.xml.client.XMLParser;
 
 /**
@@ -24,7 +27,6 @@ public class XmlConversionlHelper {
 	/**
 	 * Creates CellTreeNode object which has list of children objects and a
 	 * parent object from the XML.
-	 * 
 	 * @param xml
 	 *            the xml
 	 * @param tagName
@@ -32,21 +34,67 @@ public class XmlConversionlHelper {
 	 * @return CellTreeNode
 	 */
 	public static CellTreeNode createCellTreeNode(String xml, String tagName) {
+		
+		CellTreeNode mainNode = new CellTreeNodeImpl();
+		if ((xml != null) && (xml.trim().length() > 0)) {
+			Document document = XMLParser.parse(xml);
+			mainNode = createCellTreeNode(document, tagName);
+		}
+		return mainNode;
+	}
+	
+	/**
+	 * Creates CellTreeNode object which has list of children objects and a
+	 * parent object from the XML.
+	 * 
+	 * @param document
+	 *            XML DOM object
+	 * @param tagName
+	 *            the tag name
+	 * @return CellTreeNode
+	 */
+	public static CellTreeNode createCellTreeNode(Document doc, String tagName) {
 		Node node = null;
 		CellTreeNode mainNode = new CellTreeNodeImpl();
 		List<CellTreeNode> childs = new ArrayList<CellTreeNode>();
-		Document document = null;
-		if ((xml != null) && (xml.trim().length() > 0)) {
-			document = XMLParser.parse(xml);
-			NodeList nodeList = document.getElementsByTagName(tagName);
-			if (nodeList.getLength() > 0) {
-				node = nodeList.item(0);
-			}
-			if (node != null) {
-				mainNode.setName(tagName);
-				createCellTreeNodeChilds(mainNode, node, childs);
-			}
+						
+		NodeList nodeList = doc.getElementsByTagName(tagName);
+		if (nodeList.getLength() > 0) {
+			node = nodeList.item(0);
 		}
+		if (node != null) {
+			mainNode.setName(tagName);
+			createCellTreeNodeChilds(mainNode, node, childs);
+		}
+		
+		if (node == null) {
+			mainNode.setName(tagName);
+			childs.add(createRootNode(tagName));
+			mainNode.setChilds(childs);
+		}
+		return mainNode;
+	}
+	
+	/**
+	 * Creates CellTreeNode object which has list of children objects and a
+	 * parent object from the XML.
+	 * 
+	 * @param document
+	 *            XML DOM object
+	 * @param tagName
+	 *            the tag name
+	 * @return CellTreeNode
+	 */
+	public static CellTreeNode createCellTreeNode(Node node, String tagName) {
+		
+		CellTreeNode mainNode = new CellTreeNodeImpl();
+		List<CellTreeNode> childs = new ArrayList<CellTreeNode>();
+				
+		if (node != null) {
+			mainNode.setName(tagName);
+			createCellTreeNodeChilds(mainNode, node, childs);
+		}
+		
 		if (node == null) {
 			mainNode.setName(tagName);
 			childs.add(createRootNode(tagName));
@@ -64,26 +112,17 @@ public class XmlConversionlHelper {
 		CellTreeNode mainNode = new CellTreeNodeImpl();
 		List<CellTreeNode> childs = new ArrayList<CellTreeNode>();
 		List<CellTreeNode> parentchilds = new ArrayList<CellTreeNode>();
-		//if ((rootName != null) && (rootName.trim().length() > 0)) {
 		parent.setName(PopulationWorkSpaceConstants.CLAUSE);
 		parent.setLabel(PopulationWorkSpaceConstants.CLAUSE);
 		parent.setNodeType(CellTreeNode.SUBTREE_ROOT_NODE);
-		/*CellTreeNode parentChild = createChild(rootName, rootName, CellTreeNodeImpl.SUBTREE_NODE, parent);
-			parentChild.setUUID(UUIDUtilClient.uuid());
-			parentChild.setOpen(true);
-			parentchilds.add(parentChild);*/
 		parent.setChilds(parentchilds);
 		parent.setOpen(true);
 		childs.add(parent);
 		mainNode.setChilds(childs);
-		
-		//}
 		return mainNode;
 	}
-	
 	/**
 	 * Creates the root node.
-	 * 
 	 * @param tagName
 	 *            the tag name
 	 * @return the cell tree node
@@ -174,11 +213,12 @@ public class XmlConversionlHelper {
 	 * @param childs
 	 *            the childs
 	 */
+	@SuppressWarnings("unchecked")
 	private static void createCellTreeNodeChilds(CellTreeNode parent, Node root, List<CellTreeNode> childs) {
 		String nodeName = root.getNodeName();
 		String nodeValue = root.hasAttributes()
 				? root.getAttributes().getNamedItem(PopulationWorkSpaceConstants.DISPLAY_NAME).getNodeValue() : nodeName;
-				
+		
 				CellTreeNode child = new CellTreeNodeImpl(); //child Object
 				if (nodeValue.length() > 0) {
 					setCellTreeNodeValues(root, parent, child, childs); // Create complete child Object with parent and sub Childs
@@ -197,7 +237,8 @@ public class XmlConversionlHelper {
 					Node node = nodes.item(i);
 					String name = node.getNodeName().replaceAll("\n\r", "").trim();
 					//if(!(name.equalsIgnoreCase("#text") && name.isEmpty())){
-					if ((name.length() > 0) && !name.equalsIgnoreCase("#text") && !name.equalsIgnoreCase("attribute")) {
+					if ((name.length() > 0) && !name.equalsIgnoreCase("#text") && !name.equalsIgnoreCase("attribute")
+							&& !name.equalsIgnoreCase("comment")) {
 						createCellTreeNodeChilds(child, node, childs);
 					}
 					/**
@@ -217,6 +258,22 @@ public class XmlConversionlHelper {
 							cellNode.setExtraInformation(attrib.getNodeName(), attrib.getNodeValue());
 						}
 						attributeList.add(cellNode);
+					} else if (name.equalsIgnoreCase(PopulationWorkSpaceConstants.COMMENTS)) {
+						Object comments = child.getExtraInformation(PopulationWorkSpaceConstants.COMMENTS);
+						if (comments == null) {
+							comments = new ArrayList<CellTreeNode>();
+							child.setExtraInformation(PopulationWorkSpaceConstants.COMMENTS, comments);
+						}
+						List<CellTreeNode> commentList = (List<CellTreeNode>) comments;
+						CellTreeNode cellNode = new CellTreeNodeImpl();
+						if (node.hasChildNodes()) {
+							cellNode.setNodeText(node.getChildNodes().item(0).getNodeValue());
+						} else {
+							cellNode.setNodeText(StringUtils.EMPTY);
+						}
+						cellNode.setNodeType(CellTreeNode.COMMENT_NODE);
+						cellNode.setName(PopulationWorkSpaceConstants.COMMENT_NODE_NAME);
+						commentList.add(cellNode);
 					}
 				}
 	}
@@ -294,7 +351,11 @@ public class XmlConversionlHelper {
 					uuid = node.getAttributes().getNamedItem(PopulationWorkSpaceConstants.UUID).getNodeValue();
 				} else if (nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.LOG_OP)) {
 					cellTreeNodeType = CellTreeNode.LOGICAL_OP_NODE;
-				} else if (nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.RELATIONAL_OP)) {
+				} else if(nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.SUBTREE_NAME)) {
+					cellTreeNodeType = CellTreeNode.SUBTREE_NODE;
+					uuid = node.getAttributes().getNamedItem(PopulationWorkSpaceConstants.UUID).getNodeValue();
+				}
+				else if (nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.RELATIONAL_OP)) {
 					String type = node.getAttributes().getNamedItem(PopulationWorkSpaceConstants.TYPE).getNodeValue();
 					String longName = MatContext.get().operatorMapKeyShort.get(type);
 					if (MatContext.get().relationships.contains(longName)) {
@@ -312,6 +373,9 @@ public class XmlConversionlHelper {
 					}
 				} else if (nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.ELEMENT_REF)) {
 					cellTreeNodeType = CellTreeNode.ELEMENT_REF_NODE;
+					uuid =  node.getAttributes().getNamedItem(PopulationWorkSpaceConstants.ID).getNodeValue();
+				} else if (nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.SUBTREE_REF)) {
+					cellTreeNodeType = CellTreeNode.SUBTREE_REF_NODE;
 					uuid =  node.getAttributes().getNamedItem(PopulationWorkSpaceConstants.ID).getNodeValue();
 				} else if (nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.FUNC_NAME)) {
 					cellTreeNodeType = CellTreeNode.FUNCTIONS_NODE;
@@ -389,6 +453,7 @@ public class XmlConversionlHelper {
 	 *            the document
 	 * @return the node name
 	 */
+	@SuppressWarnings("unchecked")
 	private static Element getNodeName(CellTreeNode cellTreeNode, Document document) {
 		Element element = null;
 		switch (cellTreeNode.getNodeType()) {
@@ -411,43 +476,55 @@ public class XmlConversionlHelper {
 				element = document.createElement(PopulationWorkSpaceConstants.LOG_OP);
 				element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME, cellTreeNode.getName());
 				element.setAttribute(PopulationWorkSpaceConstants.TYPE, toCamelCase(cellTreeNode.getName()));
+				List<CellTreeNode> commentList = (List<CellTreeNode>) cellTreeNode.getExtraInformation(PopulationWorkSpaceConstants.COMMENTS);
+				if (commentList != null) {
+					for (CellTreeNode commentNode:commentList) {
+						Element commentElement = document.createElement(
+								PopulationWorkSpaceConstants.COMMENT_NODE_NAME);
+						Text commentNodeText = document.createTextNode(commentNode.getNodeText());
+						commentElement.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME
+								, commentNode.getName());
+						commentElement.setAttribute(PopulationWorkSpaceConstants.TYPE, commentNode.getName());
+						commentElement.appendChild(commentNodeText);
+						element.appendChild(commentElement);
+						
+					}
+				}
 				break;
 			case CellTreeNode.TIMING_NODE:
 				element = document.createElement(PopulationWorkSpaceConstants.RELATIONAL_OP);
-				
-				@SuppressWarnings("unchecked")
 				HashMap<String, String> map = (HashMap<String, String>) cellTreeNode.getExtraInformation(
 						PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
 				if (map != null) {
-					element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME, 
+					element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME,
 							map.get(PopulationWorkSpaceConstants.DISPLAY_NAME));
 					//String typeValue = ClauseConstants.getTimingOperators().containsKey(map.get(ClauseConstants.TYPE))
-					//	? ClauseConstants.getTimingOperators().get(map.get(ClauseConstants.TYPE)): 
+					//	? ClauseConstants.getTimingOperators().get(map.get(ClauseConstants.TYPE)):
 					//  map.get(ClauseConstants.DISPLAY_NAME);
 					String typeValue = map.get(PopulationWorkSpaceConstants.TYPE);
 					element.setAttribute(PopulationWorkSpaceConstants.TYPE, typeValue);
 					if (map.containsKey(PopulationWorkSpaceConstants.OPERATOR_TYPE)) {
-						element.setAttribute(PopulationWorkSpaceConstants.OPERATOR_TYPE, 
+						element.setAttribute(PopulationWorkSpaceConstants.OPERATOR_TYPE,
 								map.get(PopulationWorkSpaceConstants.OPERATOR_TYPE));
 					}
 					if (map.containsKey(PopulationWorkSpaceConstants.QUANTITY)) {
-						element.setAttribute(PopulationWorkSpaceConstants.QUANTITY, 
+						element.setAttribute(PopulationWorkSpaceConstants.QUANTITY,
 								map.get(PopulationWorkSpaceConstants.QUANTITY));
 					}
 					if (map.containsKey(PopulationWorkSpaceConstants.UNIT)) {
-						element.setAttribute(PopulationWorkSpaceConstants.UNIT, 
+						element.setAttribute(PopulationWorkSpaceConstants.UNIT,
 								map.get(PopulationWorkSpaceConstants.UNIT));
 					}
 				} else {
 					element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME, cellTreeNode.getName());
-					element.setAttribute(PopulationWorkSpaceConstants.TYPE, 
+					element.setAttribute(PopulationWorkSpaceConstants.TYPE,
 							MatContext.get().operatorMapKeyLong.get(cellTreeNode.getName()));
 				}
 				break;
 			case CellTreeNode.RELATIONSHIP_NODE:
 				element = document.createElement(PopulationWorkSpaceConstants.RELATIONAL_OP);
 				element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME, cellTreeNode.getName());
-				element.setAttribute(PopulationWorkSpaceConstants.TYPE, 
+				element.setAttribute(PopulationWorkSpaceConstants.TYPE,
 						MatContext.get().operatorMapKeyLong.get(cellTreeNode.getName()));
 				break;
 			case CellTreeNode.ELEMENT_REF_NODE:
@@ -476,25 +553,25 @@ public class XmlConversionlHelper {
 				HashMap<String, String> functionMap = (HashMap<String, String>) cellTreeNode.getExtraInformation(
 						PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
 				if (functionMap != null) {
-					element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME, 
+					element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME,
 							functionMap.get(PopulationWorkSpaceConstants.DISPLAY_NAME));
-					element.setAttribute(PopulationWorkSpaceConstants.TYPE, 
+					element.setAttribute(PopulationWorkSpaceConstants.TYPE,
 							functionMap.get(PopulationWorkSpaceConstants.TYPE));
 					if (functionMap.containsKey(PopulationWorkSpaceConstants.OPERATOR_TYPE)) {
 						element.setAttribute(PopulationWorkSpaceConstants.OPERATOR_TYPE,
 								functionMap.get(PopulationWorkSpaceConstants.OPERATOR_TYPE));
 					}
 					if (functionMap.containsKey(PopulationWorkSpaceConstants.QUANTITY)) {
-						element.setAttribute(PopulationWorkSpaceConstants.QUANTITY, 
+						element.setAttribute(PopulationWorkSpaceConstants.QUANTITY,
 								functionMap.get(PopulationWorkSpaceConstants.QUANTITY));
 					}
 					if (functionMap.containsKey(PopulationWorkSpaceConstants.UNIT)) {
-						element.setAttribute(PopulationWorkSpaceConstants.UNIT, 
+						element.setAttribute(PopulationWorkSpaceConstants.UNIT,
 								functionMap.get(PopulationWorkSpaceConstants.UNIT));
 					}
 				} else {
 					element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME, cellTreeNode.getName());
-					element.setAttribute(PopulationWorkSpaceConstants.TYPE, 
+					element.setAttribute(PopulationWorkSpaceConstants.TYPE,
 							MatContext.get().operatorMapKeyLong.get(cellTreeNode.getName()));
 				}
 				break;
@@ -505,6 +582,26 @@ public class XmlConversionlHelper {
 				element = document.createElement(PopulationWorkSpaceConstants.SUBTREE_NAME);
 				element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME, cellTreeNode.getName());
 				element.setAttribute(PopulationWorkSpaceConstants.UUID, cellTreeNode.getUUID());
+				break;
+			case CellTreeNode.SUBTREE_REF_NODE:
+				element = document.createElement(PopulationWorkSpaceConstants.SUBTREE_REF);
+				element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME, cellTreeNode.getName());
+				element.setAttribute(PopulationWorkSpaceConstants.ID, cellTreeNode.getUUID());
+				element.setAttribute(PopulationWorkSpaceConstants.TYPE, "subTree");
+				List<CellTreeNode> commentInSubTreeList = (List<CellTreeNode>)
+						cellTreeNode.getExtraInformation(PopulationWorkSpaceConstants.COMMENTS);
+				if (commentInSubTreeList != null) {
+					for (CellTreeNode commentNode:commentInSubTreeList) {
+						Element commentElement = document.createElement(
+								PopulationWorkSpaceConstants.COMMENT_NODE_NAME);
+						Text commentNodeText = document.createTextNode(commentNode.getNodeText());
+						commentElement.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME
+								, commentNode.getName());
+						commentElement.setAttribute(PopulationWorkSpaceConstants.TYPE, commentNode.getName());
+						commentElement.appendChild(commentNodeText);
+						element.appendChild(commentElement);
+					}
+				}
 				break;
 			default:
 				element = document.createElement(cellTreeNode.getName());
