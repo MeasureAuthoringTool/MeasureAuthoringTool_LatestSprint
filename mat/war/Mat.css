@@ -93,7 +93,7 @@ left:50px;
 }
 
 .gwt-TextBoxRed{
-	border: 2px dotted #FF0000 ;
+	border: 2px solid #FF0000 ;
 }
 
 .manageCodeRightForm{
@@ -292,6 +292,58 @@ left:50px;
     font-size: 0;
     border: 0px;
     cursor: text;
+}
+
+.customAddRightButton {
+    background: url("images/addRight.png");
+    background-position:center;
+    background-repeat:no-repeat;
+    background-color:#D3D3D3; 
+    height: 25px;
+    width: 30px;
+    cursor: hand;
+}
+
+.customAddLeftButton {
+    background: url("images/addLeft.png");
+    background-position:center;
+    background-repeat:no-repeat;
+    background-color:#D3D3D3;
+    height: 25px;
+    width: 30px;
+    cursor: hand;
+}
+
+.customAddALlRightButton {
+    background: url("images/addAllRight.png");
+    background-position:center;
+    background-repeat:no-repeat;
+    background-color:#D3D3D3;
+    height: 25px;
+    width: 30px;
+    cursor: hand;
+}
+
+.customAddAllLeftButton {
+    background: url("images/addAllLeft.png");
+    background-position:center;
+    background-repeat:no-repeat;
+    background-color:#D3D3D3;
+    height: 25px;
+    width: 30px;
+    cursor: hand;
+}
+
+.customDeleteButton {
+    background: url("images/trash.png");
+    background-position:center;
+    background-repeat:no-repeat;
+    height: 25px;
+    width: 30px;
+    border: 0px;
+    font-size: 0;
+    cursor: pointer;
+    cursor: hand;
 }
 
 .customCompositeEmptyCell{
@@ -529,12 +581,34 @@ left:50px;
 	float:right;
 }
  .scrollable {
-      height: 250px;
-      width: 850px;
+      height: 200px;
+      width: 200px;
       border: 1px solid #ccc;
       text-align: left;
+      margin-left:14px;
+      margin-right:14px;
+      
  }
-
+ 
+ .measurePackagerSupplementalDatascrollable {
+      height: 200px;
+      width: 200px;
+      border: 1px solid #ccc;
+      text-align: left;
+      margin-right:14px;
+      margin-top:3px;
+ }
+ 
+  .measurePackageCellListscrollable {
+      height: 200px;
+      width: 220px;
+      border: 1px solid #ccc;
+      text-align: left;
+      margin-left:14px;
+      margin-right:14px;
+      margin-top:3px;
+ }
+ 
  .qdmCellList{
  	margin-top:-12px;
  	margin-left:10px;
@@ -1882,11 +1956,25 @@ padding: 2px;
     padding: 0px 0px 8px 0px;
 }
 .valueSetHeader{
-	background-color: #6B97B8; 
+	background-color: #6B97B8;
 	font-size: small;
     font-weight: bold;
     color: white;
     padding: 5px;
+}
+
+ .measureGroupingTableHeader{
+	background-color: #6B97B8;
+	font-size: small;
+    font-weight: bold;
+    color: white;
+    padding: 5px;
+    text-align: left;
+}
+
+.measureGroupPackageName{
+	font-weight:bold;
+	margin-left:15px;
 }
 .valueSetMarginTop{
 	margin-top: 4px;
@@ -1933,3 +2021,37 @@ padding: 2px;
     overflow: hidden;
 }
 
+.newGreySecondaryButton{
+	background: url("images/bg_btnGrey-secondary.png");
+    background-repeat:repeat-x;
+    font-weight: bold;
+    border:1px solid #C0C0C0;
+    -moz-box-sizing:border-box;
+    height: 15px;
+    width: 30px;
+    text-align: center;
+    vertical-align: middle;
+    padding:5px;
+    cursor: pointer;
+}
+
+.newGreySecondaryButton img {
+	padding:1px;
+}
+
+.measurePackageLeftRightPanelHolder{
+	border:1px solid #ADD8E6;
+	-moz-box-sizing:border-box;
+	padding:5px;
+}
+
+.measurePackageLeftRightPanel .newColumn {
+	margin-top: 14px;
+	margin-left: 14px;
+	margin-right: 14px;
+	float: left;
+}
+
+.qdmElementAddButtonPanel{
+	margin-top: 30px;
+}
