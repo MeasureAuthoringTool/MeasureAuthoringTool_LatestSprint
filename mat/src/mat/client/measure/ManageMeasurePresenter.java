@@ -24,6 +24,7 @@ import mat.client.shared.CreateMeasureWidget;
 import mat.client.shared.CustomButton;
 import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.ErrorMessageDisplayInterface;
+import mat.client.shared.FocusableWidget;
 import mat.client.shared.ListBoxMVP;
 import mat.client.shared.MatContext;
 import mat.client.shared.MeasureSearchFilterWidget;
@@ -31,6 +32,7 @@ import mat.client.shared.MessageDelegate;
 import mat.client.shared.MostRecentMeasureWidget;
 import mat.client.shared.PrimaryButton;
 import mat.client.shared.SearchWidget;
+import mat.client.shared.SkipListBuilder;
 import mat.client.shared.SuccessMessageDisplay;
 import mat.client.shared.SuccessMessageDisplayInterface;
 import mat.client.shared.SynchronizationDelegate;
@@ -803,6 +805,13 @@ public class ManageMeasurePresenter implements MatPresenter {
 				SearchResults<TransferMeasureOwnerShipModel.Result> results);
 		
 		/**
+		 * Builds the cell table.
+		 *
+		 * @param results the results
+		 */
+		void buildCellTable( TransferMeasureOwnerShipModel results);
+		
+		/**
 		 * Builds the html for measures.
 		 * 
 		 * @param measureList
@@ -881,6 +890,20 @@ public class ManageMeasurePresenter implements MatPresenter {
 		 * @return the success message display
 		 */
 		public SuccessMessageDisplayInterface getSuccessMessageDisplay();
+		
+		/**
+		 * Gets the search button.
+		 *
+		 * @return the search button
+		 */
+		HasClickHandlers getSearchButton();
+		
+		/**
+		 * Gets the search string.
+		 *
+		 * @return the search string
+		 */
+		HasValue<String> getSearchString();
 	}
 	
 	/**
@@ -1013,6 +1036,25 @@ public class ManageMeasurePresenter implements MatPresenter {
 	
 	/** The is search visible on version. */
 	boolean isSearchVisibleOnVersion = true;
+	
+	/** The sub skip content holder. */
+	private static FocusableWidget subSkipContentHolder;
+	
+	/**
+	 * Sets the sub skip embedded link.
+	 *
+	 * @param name the new sub skip embedded link
+	 */
+	public static void setSubSkipEmbeddedLink(String name) {
+		if (subSkipContentHolder == null) {
+			subSkipContentHolder = new FocusableWidget(SkipListBuilder.buildSkipList("Skip to Sub Content"));
+		}
+		Mat.removeInputBoxFromFocusPanel(subSkipContentHolder.getElement());
+		Widget w = SkipListBuilder.buildSubSkipList(name);
+		subSkipContentHolder.clear();
+		subSkipContentHolder.add(w);
+		subSkipContentHolder.setFocus(true);
+	}
 	
 	/** The listof measures. */
 	List<ManageMeasureSearchModel.Result> listofMeasures = new ArrayList<ManageMeasureSearchModel.Result>();
@@ -1213,7 +1255,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 					@Override
 					public void onClick(ClickEvent event) {
 						// adminSearchDisplay.clearTransferCheckBoxes();
-						displayTransferView(startIndex,
+						transferDisplay.getSearchString().setValue("");
+						displayTransferView("",startIndex,
 								transferDisplay.getPageSize());
 					}
 				});
@@ -1268,7 +1311,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		// screen.This message is commented since loading Please message was
 		// getting removed when search was performed.
 		// Mat.hideLoadingMessage();
-		Mat.focusSkipLists("MainContent");
+		Mat.focusSkipLists("MeasureLibrary");
 	}
 	
 	/**
@@ -1432,9 +1475,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 		panel.setButtonPanel(null, draftDisplay.getZoomButton());
 		draftDisplay.getSearchWidget().setVisible(false);
 		isSearchVisibleOnDraft = false;
-		panel.setHeading("My Measures > Create Draft of Existing Measure", "MainContent");
+		panel.setHeading("My Measures > Create Draft of Existing Measure", "MeasureLibrary");
 		panel.setContent(draftDisplay.asWidget());
-		Mat.focusSkipLists("MainContent");
+		Mat.focusSkipLists("MeasureLibrary");
 	}
 	
 	/**
@@ -1455,7 +1498,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		searchDisplay.getErrorMessageDisplayForBulkExport().clear();
 		currentDetails = new ManageMeasureDetailModel();
 		displayDetailForAdd();
-		Mat.focusSkipLists("MainContent");
+		Mat.focusSkipLists("MeasureLibrary");
 	}
 	
 	/**
@@ -1471,9 +1514,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 		panel.setButtonPanel(null, versionDisplay.getZoomButton());
 		versionDisplay.getSearchWidget().setVisible(false);
 		isSearchVisibleOnVersion = false;
-		panel.setHeading("My Measures > Create Measure Version of Draft", "MainContent");
+		panel.setHeading("My Measures > Create Measure Version of Draft", "MeasureLibrary");
 		panel.setContent(versionDisplay.asWidget());
-		Mat.focusSkipLists("MainContent");
+		Mat.focusSkipLists("MeasureLibrary");
 		clearRadioButtonSelection();
 	}
 	
@@ -1517,7 +1560,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 */
 	private void displayDetailForAdd() {
 		panel.getButtonPanel().clear();
-		panel.setHeading("My Measures > Create New Measure", "MainContent");
+		panel.setHeading("My Measures > Create New Measure", "MeasureLibrary");
 		setDetailsToView();
 		detailDisplay.showMeasureName(false);
 		detailDisplay.showCautionMsg(false);
@@ -1534,9 +1577,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 		detailDisplay.getMeasScoringChoice().setValueMetadata(
 				currentDetails.getMeasScoring());
 		panel.getButtonPanel().clear();
-		panel.setHeading("My Measures > Clone Measure", "MainContent");
+		panel.setHeading("My Measures > Clone Measure", "MeasureLibrary");
 		panel.setContent(detailDisplay.asWidget());
-		Mat.focusSkipLists("MainContent");
+		Mat.focusSkipLists("MeasureLibrary");
 	}
 	
 	/**
@@ -1544,7 +1587,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 */
 	private void displayDetailForEdit() {
 		panel.getButtonPanel().clear();
-		panel.setHeading("My Measures > Edit Measure", "MainContent");
+		panel.setHeading("My Measures > Edit Measure", "MeasureLibrary");
 		detailDisplay.showMeasureName(false);
 		detailDisplay.showCautionMsg(true);
 		setDetailsToView();
@@ -1570,12 +1613,12 @@ public class ManageMeasurePresenter implements MatPresenter {
 			heading = "Measures > History";
 		}
 		panel.getButtonPanel().clear();
-		panel.setHeading(heading, "MainContent");
+		panel.setHeading(heading, "MeasureLibrary");
 		searchHistory(measureId, startIndex, pageSize);
 		historyDisplay.setMeasureId(measureId);
 		historyDisplay.setMeasureName(measureName);
 		panel.setContent(historyDisplay.asWidget());
-		Mat.focusSkipLists("MainContent");
+		Mat.focusSkipLists("MeasureLibrary");
 	}
 	
 	/**
@@ -1583,16 +1626,21 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 */
 	private void displaySearch() {
 		
-		String heading = "";
+		String heading = "Measure Library";
 		int filter;
-		
+		panel.setHeading(heading, "MeasureLibrary");
+		setSubSkipEmbeddedLink("measureserachView_mainPanel");
+		FlowPanel fp = new FlowPanel();
+		fp.getElement().setId("fp_FlowPanel");
+		/*setSubSkipEmbeddedLink("measureserachView_mainPanel");
+		fp.add(subSkipContentHolder);*/
 		if (ClientConstants.ADMINISTRATOR.equalsIgnoreCase(MatContext.get()
 				.getLoggedInUserRole())) {
 			heading = "";
 			filter = 1;// ALL Measures
 			search(adminSearchDisplay.getSearchString().getValue(), 1,
 					Integer.MAX_VALUE, filter);
-			panel.setContent(adminSearchDisplay.asWidget());
+			fp.add(adminSearchDisplay.asWidget());
 		} else {
 			// MAT-1929 : Retain filters at measure library screen
 			searchDisplay.getCreateMeasureWidget().setVisible(false);
@@ -1606,17 +1654,18 @@ public class ManageMeasurePresenter implements MatPresenter {
 			searchRecentMeasures();
 			panel.getButtonPanel().clear();
 			panel.setButtonPanel(searchDisplay.getCreateMeasureButton(), searchDisplay.getZoomButton());
-			panel.setContent(searchDisplay.asWidget());
+			fp.add(searchDisplay.asWidget());
 		}
 		// MAT-1929: Retain filters at measure library screen. commented
 		// resetFilters method to retain filter state.
 		// searchDisplay.getMeasureSearchFilterPanel().resetFilter();
 		
 		//panel.setHeading(heading, "MainContent");
-		panel.setHeading(heading, "MainContent");
+		
 		
 		// panel.setEmbeddedLink("MainContent");
-		Mat.focusSkipLists("MainContent");
+		panel.setContent(fp);
+		Mat.focusSkipLists("MeasureLibrary");
 	}
 	
 	/** Display share.
@@ -1627,22 +1676,22 @@ public class ManageMeasurePresenter implements MatPresenter {
 		getShareDetails(id, 1);
 		shareDisplay.setMeasureName(name);
 		panel.getButtonPanel().clear();
-		panel.setHeading("My Measures > Measure Sharing", "MainContent");
+		panel.setHeading("My Measures > Measure Sharing", "MeasureLibrary");
 		panel.setContent(shareDisplay.asWidget());
-		Mat.focusSkipLists("MainContent");
+		Mat.focusSkipLists("MeasureLibrary");
 	}
 	
 	/**
 	 * Display transfer view.
-	 * 
-	 * @param startIndex
-	 *            the start index
-	 * @param pageSize
-	 *            the page size
+	 *
+	 * @param searchString the search string
+	 * @param startIndex the start index
+	 * @param pageSize the page size
 	 */
-	private void displayTransferView(int startIndex, int pageSize) {
+	private void displayTransferView(String searchString, int startIndex, int pageSize) {
 		final ArrayList<ManageMeasureSearchModel.Result> transferMeasureResults = (ArrayList<Result>) manageMeasureSearchModel
 				.getSelectedTransferResults();
+		pageSize = Integer.MAX_VALUE;
 		adminSearchDisplay.getErrorMessageDisplay().clear();
 		adminSearchDisplay.getErrorMessagesForTransferOS().clear();
 		transferDisplay.getErrorMessageDisplay().clear();
@@ -1651,7 +1700,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			MatContext
 			.get()
 			.getMeasureService()
-			.searchUsers(startIndex, pageSize,
+			.searchUsers(searchString, startIndex, pageSize,
 					new AsyncCallback<TransferMeasureOwnerShipModel>() {
 				
 				@Override
@@ -1667,10 +1716,11 @@ public class ManageMeasurePresenter implements MatPresenter {
 						TransferMeasureOwnerShipModel result) {
 					transferDisplay
 					.buildHTMLForMeasures(transferMeasureResults);
-					transferDisplay.buildDataTable(result);
+					//transferDisplay.buildDataTable(result);
+					transferDisplay.buildCellTable(result);
 					panel.setHeading(
 							"Measure Library Ownership >  Measure Ownership Transfer",
-							"MainContent");
+							"MeasureLibrary");
 					panel.setContent(transferDisplay.asWidget());
 					showAdminSearchingBusy(false);
 					model = result;
@@ -1870,10 +1920,10 @@ public class ManageMeasurePresenter implements MatPresenter {
 		exportDisplay.getErrorMessageDisplay().clear();
 		searchDisplay.getErrorMessageDisplayForBulkExport().clear();
 		panel.getButtonPanel().clear();
-		panel.setHeading("My Measures > Export", "MainContent");
+		panel.setHeading("My Measures > Export", "MeasureLibrary");
 		panel.setContent(exportDisplay.asWidget());
 		exportDisplay.setMeasureName(name);
-		Mat.focusSkipLists("MainContent");
+		Mat.focusSkipLists("MeasureLibrary");
 	}
 	
 	/**
@@ -3257,6 +3307,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 		}
 		((Button) adminSearchDisplay.getSearchButton()).setEnabled(!busy);
 		((TextBox) (adminSearchDisplay.getSearchString())).setEnabled(!busy);
+		((Button) transferDisplay.getSearchButton()).setEnabled(!busy);
+		((TextBox) (transferDisplay.getSearchString())).setEnabled(!busy);
+		
 	}
 	
 	/**
@@ -3372,13 +3425,23 @@ public class ManageMeasurePresenter implements MatPresenter {
 			}
 		});
 		
+		transferDisplay.getSearchButton().addClickHandler(new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				transferDisplay.getSuccessMessageDisplay().clear();
+				displayTransferView(transferDisplay.getSearchString().getValue(),startIndex,
+						transferDisplay.getPageSize());
+				
+			}
+		});
+		
 		transferDisplay.getPageSelectionTool().addPageSelectionHandler(
 				new PageSelectionEventHandler() {
 					@Override
 					public void onPageSelection(PageSelectionEvent event) {
 						int startIndex = (transferDisplay.getPageSize()
 								* (event.getPageNumber() - 1)) + 1;
-						displayTransferView(startIndex,
+						displayTransferView("",startIndex,
 								transferDisplay.getPageSize());
 					}
 				});
@@ -3386,7 +3449,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 				new PageSizeSelectionEventHandler() {
 					@Override
 					public void onPageSizeSelection(PageSizeSelectionEvent event) {
-						displayTransferView(startIndex,
+						displayTransferView("",startIndex,
 								transferDisplay.getPageSize());
 					}
 				});

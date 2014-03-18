@@ -16,6 +16,7 @@ import com.google.gwt.xml.client.NodeList;
 import com.google.gwt.xml.client.Text;
 import com.google.gwt.xml.client.XMLParser;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class XmlConversionlHelper.
  */
@@ -46,11 +47,9 @@ public class XmlConversionlHelper {
 	/**
 	 * Creates CellTreeNode object which has list of children objects and a
 	 * parent object from the XML.
-	 * 
-	 * @param document
-	 *            XML DOM object
-	 * @param tagName
-	 *            the tag name
+	 *
+	 * @param doc the doc
+	 * @param tagName the tag name
 	 * @return CellTreeNode
 	 */
 	public static CellTreeNode createCellTreeNode(Document doc, String tagName) {
@@ -78,11 +77,9 @@ public class XmlConversionlHelper {
 	/**
 	 * Creates CellTreeNode object which has list of children objects and a
 	 * parent object from the XML.
-	 * 
-	 * @param document
-	 *            XML DOM object
-	 * @param tagName
-	 *            the tag name
+	 *
+	 * @param node the node
+	 * @param tagName the tag name
 	 * @return CellTreeNode
 	 */
 	public static CellTreeNode createCellTreeNode(Node node, String tagName) {
@@ -351,6 +348,8 @@ public class XmlConversionlHelper {
 					uuid = node.getAttributes().getNamedItem(PopulationWorkSpaceConstants.UUID).getNodeValue();
 				} else if (nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.LOG_OP)) {
 					cellTreeNodeType = CellTreeNode.LOGICAL_OP_NODE;
+				}  else if (nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.SET_OP)) {
+					cellTreeNodeType = CellTreeNode.SET_OP_NODE;
 				} else if(nodeName.equalsIgnoreCase(PopulationWorkSpaceConstants.SUBTREE_NAME)) {
 					cellTreeNodeType = CellTreeNode.SUBTREE_NODE;
 					uuid = node.getAttributes().getNamedItem(PopulationWorkSpaceConstants.UUID).getNodeValue();
@@ -490,6 +489,11 @@ public class XmlConversionlHelper {
 						
 					}
 				}
+				break;
+			case CellTreeNode.SET_OP_NODE:
+				element = document.createElement(PopulationWorkSpaceConstants.SET_OP);
+				element.setAttribute(PopulationWorkSpaceConstants.DISPLAY_NAME, cellTreeNode.getName());
+				element.setAttribute(PopulationWorkSpaceConstants.TYPE, toCamelCase(cellTreeNode.getName()));
 				break;
 			case CellTreeNode.TIMING_NODE:
 				element = document.createElement(PopulationWorkSpaceConstants.RELATIONAL_OP);

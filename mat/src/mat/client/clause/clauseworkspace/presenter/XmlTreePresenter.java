@@ -3,7 +3,6 @@ package mat.client.clause.clauseworkspace.presenter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
-
 import mat.client.Mat;
 import mat.client.MeasureComposerPresenter;
 import mat.client.clause.clauseworkspace.model.CellTreeNode;
@@ -17,7 +16,6 @@ import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.MatContext;
 import mat.client.shared.SecondaryButton;
 import mat.shared.ConstantMessages;
-
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -117,11 +115,11 @@ public class XmlTreePresenter {
 	 * @param populationWorkSpacePanel
 	 *            the SimplePanel
 	 */
-	public final void loadXmlTree(SimplePanel populationWorkSpacePanel) {
+	public final void loadXmlTree(SimplePanel populationWorkSpacePanel, String panelName) {
 		
 		if (originalXML.length() > 0) {
 			panel = populationWorkSpacePanel;
-			
+			panel.getElement().setAttribute("id", panelName);
 			panel.clear();
 			String xml = originalXML;
 			XmlTreeView xmlTreeView = new XmlTreeView(
@@ -155,7 +153,7 @@ public class XmlTreePresenter {
 		} else {
 			Mat.hideLoadingMessage();
 		}
-		MeasureComposerPresenter.setSubSkipEmbeddedLink("ClauseWorkspaceTree");
+		MeasureComposerPresenter.setSubSkipEmbeddedLink(panelName);
 		Mat.focusSkipLists("MeasureComposer");
 		
 	}
@@ -166,6 +164,7 @@ public class XmlTreePresenter {
 	 */
 	public final void loadClauseWorkSpaceView(SimplePanel clauseWorkSpacePanel) {
 		panel = clauseWorkSpacePanel;
+		panel.getElement().setAttribute("id", "ClauseWorkSpacePanel");
 		CellTreeNode subTree = XmlConversionlHelper.createRootClauseNode();
 		XmlTreeView xmlTreeView = new XmlTreeView(subTree);
 		xmlTreeView.setClauseWorkspaceContextMenu(new ClauseWorkspaceContextMenu(xmlTreeView, popupPanel));
@@ -197,8 +196,11 @@ public class XmlTreePresenter {
 		invokeClearHandler();
 		addShowClauseHandler();
 	}
+	/**
+	 * 
+	 */
 	private void addShowClauseHandler() {
-		this.xmlTreeDisplay.getShowClauseButton().addClickHandler(new ClickHandler() {
+		xmlTreeDisplay.getShowClauseButton().addClickHandler(new ClickHandler() {
 			
 			@Override
 			public void onClick(ClickEvent event) {
@@ -208,18 +210,19 @@ public class XmlTreePresenter {
 					if(selectedIndex != -1){
 						final String selectedClauseName = clauseNamesListBox.getItemText(selectedIndex);
 						final String selectedClauseUUID = clauseNamesListBox.getValue(selectedIndex);
-						System.out.println("Selected clause name and uuid is:"+selectedClauseName+":"+selectedClauseUUID);
+						System.out.println("Selected clause name and uuid is :"
+								+ selectedClauseName + ":" + selectedClauseUUID);
 						
 						final CellTreeNode cellTreeNode = (CellTreeNode) (xmlTreeDisplay
 								.getXmlTree().getRootTreeNode().getChildValue(0));
-												
+						
 						if(cellTreeNode.getChilds().size() > 0){
 							if (xmlTreeDisplay.isDirty()) {
 								isUnsavedData = true;
 								showErrorMessage(xmlTreeDisplay.getErrorMessageDisplay());
 								xmlTreeDisplay.getErrorMessageDisplay().getButtons().get(0).setFocus(true);
 								String auditMessage = getRootNode().toUpperCase() + "_TAB_YES_CLICKED";
-																
+								
 								ClickHandler clickHandler = new ClickHandler() {
 									@Override
 									public void onClick(ClickEvent event) {
@@ -251,11 +254,11 @@ public class XmlTreePresenter {
 							
 						}else{
 							changeClause(cellTreeNode, selectedClauseName, selectedClauseUUID);
-						}						
+						}
 					}
 				}
 			}
-		});		
+		});
 	}
 	
 	private void changeClause(CellTreeNode cellTreeNode, String selectedClauseName, String selectedClauseUUID){
@@ -274,7 +277,7 @@ public class XmlTreePresenter {
 		xmlTreeDisplay.getXmlTree().getRootTreeNode().setChildOpen(0, false);
 		xmlTreeDisplay.getXmlTree().getRootTreeNode().setChildOpen(0, true);
 	}
-
+	
 	/**
 	 * Creates the measure export model.
 	 * 
@@ -361,11 +364,12 @@ public class XmlTreePresenter {
 								rootNode.toUpperCase().concat(" Saved."),
 								ConstantMessages.DB_LOG);
 						final String nodeUUID = cellTreeNode.getChilds().get(0).getUUID();
+						final String nodeName = cellTreeNode.getChilds().get(0).getName();
 						String xml = XmlConversionlHelper.createXmlFromTree(cellTreeNode.getChilds().get(0));
 						System.out.println("Generated XML  :: " + xml);
 						System.out.println("nodeUUID  :: " + nodeUUID);
 						final MeasureXmlModel measureXmlModel = createMeasureXmlModel(xml);
-						service.saveSubTreeInMeasureXml(measureXmlModel, nodeUUID,
+						service.saveSubTreeInMeasureXml(measureXmlModel, nodeName, nodeUUID,
 								new AsyncCallback<Void>() {
 							@Override
 							public void onFailure(final Throwable caught) {
@@ -418,7 +422,7 @@ public class XmlTreePresenter {
 				service.checkAndDeleteSubTree(measureId, clauseUUID, new AsyncCallback<Boolean>() {
 					@Override
 					public void onSuccess(Boolean result) {
-						if(result){
+						if (result) {
 							xmlTreeDisplay
 							.getSuccessMessageDisplay()
 							.setMessage(
@@ -427,9 +431,9 @@ public class XmlTreePresenter {
 							PopulationWorkSpaceConstants.subTreeLookUpNode.remove(clauseName + "~" + clauseUUID);
 							PopulationWorkSpaceConstants.subTreeLookUpName.remove(clauseUUID);
 							xmlTreeDisplay.updateSuggestOracle();
-						}else{
+						} else {
 							xmlTreeDisplay.getErrorMessageDisplay().setMessage(
-							"Unable to delete clause as it is referenced in populations.");
+									"Unable to delete clause as it is referenced in populations.");
 						}
 						
 					}
@@ -442,7 +446,7 @@ public class XmlTreePresenter {
 		xmlTreeDisplay.getCommentButtons().addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
-				xmlTreeDisplay.getSuccessMessageAddCommentDisplay().clear();
+				xmlTreeDisplay.getSuccessMessageDisplay().clear();
 				@SuppressWarnings("unchecked")
 				List<CellTreeNode> commentList = (List<CellTreeNode>) xmlTreeDisplay
 				.getSelectedNode().getExtraInformation(COMMENT);
@@ -455,10 +459,11 @@ public class XmlTreePresenter {
 				node.setNodeType(CellTreeNode.COMMENT_NODE);
 				node.setNodeText(xmlTreeDisplay.getCommentArea().getText());
 				commentList.add(node);
-				
 				xmlTreeDisplay.getSelectedNode().setExtraInformation(COMMENT, commentList);
-				xmlTreeDisplay.getSuccessMessageAddCommentDisplay().setStylePrimaryName("successMessageCommentPanel");
-				xmlTreeDisplay.getSuccessMessageAddCommentDisplay().setMessage("Comment Added");
+				xmlTreeDisplay.refreshCellTreeAfterAddingComment(xmlTreeDisplay.getSelectedNode());
+				
+				xmlTreeDisplay.getSuccessMessageDisplay().setMessage(
+						MatContext.get().getMessageDelegate().getCOMMENT_ADDED_SUCCESSFULLY());
 			}
 		});
 	}

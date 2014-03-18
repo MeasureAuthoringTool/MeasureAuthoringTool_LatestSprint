@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import com.google.gwt.xml.client.Node;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class ClauseConstants.
  */
@@ -22,6 +23,9 @@ public class PopulationWorkSpaceConstants {
 	
 	/** The Constant LOG_OP. */
 	public static final String LOG_OP = "logicalOp";
+	
+	/** The Constant LOG_OP. */
+	public static final String SET_OP = "setOp";
 	
 	/** The Constant LOG_OP. */
 	public static final String CLAUSE = "Clause";
@@ -47,6 +51,7 @@ public class PopulationWorkSpaceConstants {
 	/** The Constant AND. */
 	public static final String AND = "AND";
 	
+	/** The Constant COMMENTS. */
 	public static final String COMMENTS = "COMMENT";
 	
 	/** The Constant MASTER_ROOT_NODE_POPULATION. */
@@ -229,7 +234,10 @@ public class PopulationWorkSpaceConstants {
 	public static Map<String, Node> getElementLookUpNode() {
 		return elementLookUpNode;
 	}
+	
 	/**
+	 * Gets the sub tree look up name.
+	 *
 	 * @return the subTreeLookUpName
 	 */
 	public static Map<String, String> getSubTreeLookUpName() {
@@ -237,6 +245,8 @@ public class PopulationWorkSpaceConstants {
 	}
 	
 	/**
+	 * Gets the sub tree look up node.
+	 *
 	 * @return the subTreeLookUpNode
 	 */
 	public static Map<String, Node> getSubTreeLookUpNode() {

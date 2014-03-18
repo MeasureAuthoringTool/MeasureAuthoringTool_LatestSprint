@@ -7,6 +7,7 @@ import java.util.Map;
 import mat.client.Enableable;
 import mat.client.MatPresenter;
 import mat.client.MeasureComposerPresenter;
+import mat.client.clause.clauseworkspace.presenter.ClauseWorkSpacePresenter;
 import mat.client.clause.clauseworkspace.presenter.PopulationWorkspacePresenter;
 import mat.client.clause.clauseworkspace.presenter.XmlTreePresenter;
 import mat.client.measure.ManageMeasureDetailModel;
@@ -330,15 +331,20 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 		MatContext.get().setErrorTabIndex(-1);
 		
 		MatPresenter previousPresenter = presenterMap.get(selectedIndex);
-		if ((selectedIndex == 3) && (previousPresenter instanceof MeasureComposerPresenter)) {
+		if ((selectedIndex == 1) && (previousPresenter instanceof MeasureComposerPresenter)) {
 			MeasureComposerPresenter composerPresenter = (MeasureComposerPresenter) previousPresenter;
 			if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 0) {
 				MetaDataPresenter metaDataPresenter = composerPresenter.getMetaDataPresenter();
 				validateMeasureDetailsTab(selectedIndex, metaDataPresenter);
-			} else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 3) {
-				int clauseWorkspaceTab = 3;
-				PopulationWorkspacePresenter clauseWorkspacePresenter = (PopulationWorkspacePresenter) 
+			} else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 2) {
+				int clauseWorkspaceTab = 2;
+				ClauseWorkSpacePresenter clauseWorkspacePresenter = (ClauseWorkSpacePresenter)
 						composerPresenter.getMeasureComposerTabLayout().presenterMap.get(clauseWorkspaceTab);
+				validateClauseWorkspaceTab(clauseWorkspacePresenter, selectedIndex);
+			} else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 3) {
+				int populationWorkspaceTab = 3;
+				PopulationWorkspacePresenter clauseWorkspacePresenter = (PopulationWorkspacePresenter)
+						composerPresenter.getMeasureComposerTabLayout().presenterMap.get(populationWorkspaceTab);
 				validateClauseWorkspaceTab(clauseWorkspacePresenter.getSelectedTreePresenter(), selectedIndex);
 			}
 		} else if ((selectedIndex == 0) && (previousPresenter instanceof MetaDataPresenter)) {
@@ -376,7 +382,7 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 			metaDataPresenter.getMetaDataDisplay().getSaveErrorMsg().getButtons().get(0).setFocus(true);
 			handleClickEventsOnUnsavedErrorMsg(selectedIndex, metaDataPresenter.getMetaDataDisplay()
 					.getSaveErrorMsg().getButtons(), metaDataPresenter.getMetaDataDisplay().getSaveErrorMsg(), null);
-		} else { 
+		} else {
 			isUnsavedData = false;
 		}
 	}
@@ -419,7 +425,7 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 	 * @param auditMessage
 	 *            the audit message
 	 */
-	private void handleClickEventsOnUnsavedErrorMsg(int selIndex, List<SecondaryButton> btns, 
+	private void handleClickEventsOnUnsavedErrorMsg(int selIndex, List<SecondaryButton> btns,
 			final ErrorMessageDisplay saveErrorMessage, final String auditMessage) {
 		isUnsavedData = true;
 		ClickHandler clickHandler = new ClickHandler() {
@@ -430,7 +436,7 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 				if ("Yes".equals(button.getText())) { // navigate to the tab select
 					//Audit If Yes is clicked and changes are discarded on clauseWorkspace.
 					if (auditMessage != null) {
-						MatContext.get().recordTransactionEvent(MatContext.get().getCurrentMeasureId(), 
+						MatContext.get().recordTransactionEvent(MatContext.get().getCurrentMeasureId(),
 								null, auditMessage, auditMessage, ConstantMessages.DB_LOG);
 					}
 					saveErrorMessage.clear();

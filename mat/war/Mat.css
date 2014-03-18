@@ -92,6 +92,10 @@ left:50px;
 	vertical-align: middle!important;
 }
 
+.gwt-TextBoxRed{
+	border: 2px dotted #FF0000 ;
+}
+
 .manageCodeRightForm{
 	margin-top: 5%;
 	border: 1px solid;
@@ -232,7 +236,7 @@ left:50px;
 
 
 .customExportButton {
-    background: url("images/g_package_go.gif");
+    background: url("images/g_package_go_v3.png");
     background-position:center;
     background-repeat:no-repeat;
     height: 25px;
@@ -244,7 +248,7 @@ left:50px;
 }
 
 .customExportButtonRed {
-    background: url("images/g_package_go_v4.png");
+    background: url("images/g_package_go.gif");
     background-position:center;
     background-repeat:no-repeat;
     height: 25px;
@@ -603,6 +607,19 @@ left:50px;
     font-weight: bold;
     margin: 2px auto 14px;
     padding: 6px 6px 6px 30px;
+    text-align: left;
+	
+	
+}
+
+.alertMessageDialogBox {
+	 background: no-repeat scroll 6px 50% #FFDDDD;
+    border: 1px solid #FF0000;
+    color: #000000;
+    display: block;
+    font-weight: bold;
+    margin: 2px auto 14px;
+    padding-left: 5px;
     text-align: left;
 	
 	
@@ -1265,6 +1282,14 @@ padding: 2px;
     border:1px solid #C0C0C0;
 }
 
+.umlscontentPanel {
+    padding: 5px;
+    -moz-box-sizing:border-box;
+    background-color:white;
+    border:1px solid #C0C0C0;
+    width:100%;
+}
+
 .qdsContentPanel{
 	padding: 5px;
 	position: relative;
@@ -1734,6 +1759,11 @@ padding: 2px;
 .clauseWorkSpaceInvalidNode{
 	font-weight:bold;
 	color:red;
+}
+
+.populationWorkSpaceCommentNode{
+    font-weight:bold;
+    color:#021D4D;
 }
 
 .gwt-DisclosurePanel .content {

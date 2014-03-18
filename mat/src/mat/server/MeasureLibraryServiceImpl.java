@@ -5,17 +5,19 @@ import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
@@ -61,6 +63,7 @@ import mat.shared.ConstantMessages;
 import mat.shared.DateStringValidator;
 import mat.shared.DateUtility;
 import mat.shared.model.util.MeasureDetailsUtil;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang.StringUtils;
@@ -96,11 +99,21 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	/** The Constant MEASURE_DETAILS. */
 	private static final String MEASURE_DETAILS = "measureDetails";
 	
+	/** The release date. */
 	private String releaseDate;
 	
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#getReleaseDate()
+	 */
 	public String getReleaseDate() {
 		return releaseDate;
 	}
+	
+	/**
+	 * Sets the release date.
+	 *
+	 * @param releaseDate the new release date
+	 */
 	public void setReleaseDate(String releaseDate) {
 		this.releaseDate = releaseDate;
 	}
@@ -152,6 +165,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#checkAndDeleteSubTree(java.lang.String, java.lang.String)
+	 */
 	@Override
 	public boolean checkAndDeleteSubTree(String measureId, String subTreeUUID){
 		logger.info("Inside checkAndDeleteSubTree Method for measure Id " + measureId);
@@ -185,10 +201,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @see mat.server.service.MeasureLibraryService#saveSubTreeInMeasureXml(mat.client.clause.clauseworkspace.model.MeasureXmlModel, java.lang.String)
 	 */
 	@Override
-	public void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel, String nodeUUID) {
+	public void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID) {
 		logger.info("Inside saveSubTreeInMeasureXml Method for measure Id " + measureXmlModel.getMeasureId() + " .");
 		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
 		if (((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml()))) {
+			System.out.println("Measure XML is:"+xmlModel.getXml());
 			XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
 			try {
 				Node subTreeLookUpNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc()
@@ -210,24 +227,40 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				}
 				// If Node already exist's and its a update then existing node will be removed from Parent Node
 				// and updated node will be added.
-				String xPathForSubTree = "/measure/subTreeLookUp/subTree";
+				String xPathForSubTree = "/measure/subTreeLookUp/subTree[@uuid='"+nodeUUID+"']";
 				NodeList subTreeNodeForUUID = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), xPathForSubTree);
-				for (int i = 0; i < subTreeNodeForUUID.getLength(); i++) {
-					Node newNode = subTreeNodeForUUID.item(i);
+				
+				if(subTreeNodeForUUID.getLength() == 0){
+					xmlProcessor.appendNode(measureXmlModel.getXml(), measureXmlModel.getToReplaceNode(), measureXmlModel.getParentNode());
+				}else{
+					Node newNode = subTreeNodeForUUID.item(0);
 					if (newNode.getAttributes().getNamedItem("uuid").getNodeValue().equals(nodeUUID)) {
 						logger.info("Replacing SubTreeNode for UUID " + nodeUUID + " .");
 						xmlProcessor.removeFromParent(newNode);
-						xmlProcessor.setOriginalXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
-						break;
+						xmlProcessor.appendNode(measureXmlModel.getXml(), measureXmlModel.getToReplaceNode(), measureXmlModel.getParentNode());
+						
+						//In case the name of the subTree has changed we need to make sure to find all the subTreeRef tags and change the name in them as well.
+						NodeList subTreeRefNodeList = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), "//subTreeRef[@id='"+nodeUUID+"']");
+						if(subTreeRefNodeList.getLength() > 0){
+							for(int k=0;k<subTreeRefNodeList.getLength();k++){
+								Node subTreeRefNode = subTreeRefNodeList.item(k);
+								subTreeRefNode.getAttributes().getNamedItem("displayName").setNodeValue(nodeName);
+							}							
+						}
 					}
 				}
-				xmlModel.setXml(xmlProcessor.getOriginalXml());
-				String result = callAppendNode(xmlModel, measureXmlModel.getXml()
-						, measureXmlModel.getToReplaceNode(), measureXmlModel.getParentNode());
-				measureXmlModel.setXml(result);
+				xmlProcessor.setOriginalXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
+				
+				measureXmlModel.setXml(xmlProcessor.getOriginalXml());
 				getService().saveMeasureXml(measureXmlModel);
 			} catch (XPathExpressionException exception) {
 				exception.printStackTrace();
+			} catch (SAXException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 		logger.info("End saveSubTreeInMeasureXml Method for measure Id " + measureXmlModel.getMeasureId() + " .");
@@ -744,9 +777,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		XmlProcessor processor = new XmlProcessor(measureXmlModel.getXml());
 		javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
 		for (QualityDataSetDTO dataSetDTO : appliedQDMList) {
-			String XPATH_EXPRESSION = "/measure//clause//@id=";
+			String XPATH_EXPRESSION = "/measure//subTree//elementRef/@id=";
 			XPATH_EXPRESSION = XPATH_EXPRESSION.concat("'").concat(dataSetDTO.getUuid()).
-					concat("' or /measure//clause//@qdmUUID= '").concat(dataSetDTO.getUuid()).
+					concat("' or /measure//subTree//elementRef/attribute/@qdmUUID= '").concat(dataSetDTO.getUuid()).
 					concat("' or /measure/supplementalDataElements//@id='").concat(dataSetDTO.getUuid())
 					.concat("' or /measure/measureDetails/itemCount//@id='").concat(dataSetDTO.getUuid())
 					.concat("'");
@@ -771,7 +804,33 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	public final int generateAndSaveMaxEmeasureId(final ManageMeasureDetailModel measureModel) {
 		MeasurePackageService service = getService();
 		Measure meas = service.getById(measureModel.getId());
-		return service.saveAndReturnMaxEMeasureId(meas);
+		int eMeasureId = service.saveAndReturnMaxEMeasureId(meas);
+		measureModel.seteMeasureId(eMeasureId);
+		saveMaxEmeasureIdinMeasureXML(measureModel);
+		return eMeasureId;
+	}
+	
+    /**
+     * Save max emeasure idin measure xml.
+     *
+     * @param measureModel the measure model
+     */
+    public void saveMaxEmeasureIdinMeasureXML(ManageMeasureDetailModel measureModel){
+		
+		MeasureXmlModel model = getMeasureXmlForMeasure(measureModel.getId());
+		XmlProcessor xmlProcessor = new XmlProcessor(model.getXml());
+		
+		try {
+			
+			xmlProcessor.createEmeasureIdNode(measureModel.geteMeasureId());
+			String newXml = xmlProcessor.transform(xmlProcessor.getOriginalDoc());
+			model.setXml(newXml);
+			
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+		}
+		
+		getService().saveMeasureXml(model);
 	}
 	
 	/**
@@ -1599,9 +1658,15 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @see mat.server.service.MeasureLibraryService#searchUsers(int, int)
 	 */
 	@Override
-	public final TransferMeasureOwnerShipModel searchUsers(final int startIndex, final int pageSize) {
+	public final TransferMeasureOwnerShipModel searchUsers(final String searchText, final int startIndex, final int pageSize) {
 		UserService usersService = getUserService();
-		List<User> searchResults = usersService.searchNonAdminUsers("", startIndex, pageSize);
+		List<User> searchResults;
+		if(searchText.equals("")){
+			searchResults = usersService.searchNonAdminUsers("", startIndex, pageSize);
+		}
+		else{
+			searchResults = usersService.searchNonAdminUsers(searchText, startIndex, pageSize);
+		}
 		logger.info("User search returned " + searchResults.size());
 		
 		TransferMeasureOwnerShipModel result = new TransferMeasureOwnerShipModel();
@@ -2027,13 +2092,13 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				} else {
 					// Update all elementRef's in Populations and Stratification
 					//updatePopulationAndStratification(processor, modifyWithDTO, modifyDTO);
-					
-					//Update all elementRef's in SubTreeLookUp
-					updateSubTreeLookUp(processor, modifyWithDTO, modifyDTO);
-					
-					//Update all elementRef's in ItemCount
-					updateItemCount(processor, modifyWithDTO, modifyDTO);
 				}
+				
+				//Update all elementRef's in SubTreeLookUp
+				updateSubTreeLookUp(processor, modifyWithDTO, modifyDTO);
+				
+				//Update all elementRef's in ItemCount
+				updateItemCount(processor, modifyWithDTO, modifyDTO);
 				
 				// update elementLookUp Tag
 				updateElementLookUp(processor, modifyWithDTO, modifyDTO);
@@ -2246,6 +2311,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#getFormattedReleaseDate(java.lang.String)
+	 */
 	@Override
 	public Date getFormattedReleaseDate(String releaseDate){
 		
