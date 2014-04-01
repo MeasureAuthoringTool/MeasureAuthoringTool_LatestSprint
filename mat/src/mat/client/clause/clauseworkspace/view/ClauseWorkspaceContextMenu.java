@@ -3,11 +3,14 @@ package mat.client.clause.clauseworkspace.view;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
 import mat.client.ImageResources;
 import mat.client.clause.clauseworkspace.model.CellTreeNode;
 import mat.client.clause.clauseworkspace.presenter.PopulationWorkSpaceConstants;
 import mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay;
 import mat.client.shared.MatContext;
+import mat.shared.UUIDUtilClient;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.safehtml.client.SafeHtmlTemplates;
 import com.google.gwt.safehtml.client.SafeHtmlTemplates.Template;
@@ -766,6 +769,22 @@ public class ClauseWorkspaceContextMenu {
 		xmlTreeDisplay.refreshCellTreeAfterAdding(xmlTreeDisplay.getSelectedNode());
 	}
 	
+	/**
+	 * Adds the parent root node type item.
+	 */
+	protected void addMasterRootNodeTypeItem() {
+		String rootNodeName = xmlTreeDisplay.getSelectedNode().getChilds().get(0).getName();
+		int seqNumber = getNextHighestSequence(xmlTreeDisplay.getSelectedNode());
+		String name = rootNodeName.substring(0, rootNodeName.lastIndexOf(" ")) + " " + seqNumber;
+		
+		CellTreeNode rootNode  = xmlTreeDisplay.getSelectedNode().createChild(name, name, CellTreeNode.ROOT_NODE);
+		rootNode.setUUID(UUIDUtilClient.uuid());
+		CellTreeNode clauseNode = rootNode.createChild("Stratum 1", "Stratum 1", CellTreeNode.CLAUSE_NODE);
+		clauseNode.createChild(PopulationWorkSpaceConstants.AND, PopulationWorkSpaceConstants.AND, CellTreeNode.LOGICAL_OP_NODE);
+		
+		xmlTreeDisplay.refreshCellTreeAfterAdding(xmlTreeDisplay.getSelectedNode());
+	}
+	
 	
 	/**
 	 * Adds the common menus.
@@ -881,7 +900,7 @@ public class ClauseWorkspaceContextMenu {
 		SortedSet<Integer> sortedName = new TreeSet<Integer>();
 		Integer lastInt = 0;
 		sortedName.add(lastInt);
-		if (selectedNode.getNodeType() == CellTreeNode.ROOT_NODE) {
+		if (selectedNode.getNodeType() == CellTreeNode.ROOT_NODE || selectedNode.getNodeType() == CellTreeNode.MASTER_ROOT_NODE) {
 			if (selectedNode.hasChildren()) {
 				for (CellTreeNode treeNode : selectedNode.getChilds()) {
 					String clauseNodeName = treeNode.getName().substring(treeNode.getName().lastIndexOf(" ")).trim();

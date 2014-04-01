@@ -1138,9 +1138,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 		if (measureXmlModel == null) {
 			logger.info("Measure XML is null");
-		}else{
-			logger.info("XML ::: " + measureXmlModel.getXml());
 		}
+//		else{
+//			logger.info("XML ::: " + measureXmlModel.getXml());
+//		}
 		return measureXmlModel;
 	}
 	
@@ -1584,6 +1585,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			// Add Supplemental data to supplementalDataElements
 			result = callAppendNode(measureXmlModel, filteredStringSupp, "elementRef", "/measure/supplementalDataElements");
 			measureXmlModel.setXml(result);
+			
+			XmlProcessor processor1 = new XmlProcessor(measureXmlModel.getXml());
+			measureXmlModel.setXml(processor1.checkForStratificationAndAdd());
 			
 		}
 		getService().saveMeasureXml(measureXmlModel);

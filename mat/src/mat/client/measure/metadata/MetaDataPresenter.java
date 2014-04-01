@@ -14,13 +14,16 @@ import mat.client.event.MeasureDeleteEvent;
 import mat.client.event.MeasureEditEvent;
 import mat.client.event.MeasureSelectedEvent;
 import mat.client.measure.ManageMeasureDetailModel;
+import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.service.MeasureServiceAsync;
 import mat.client.measure.service.SaveMeasureResult;
+import mat.client.shared.CustomButton;
 import mat.client.shared.DateBoxWithCalendar;
 import mat.client.shared.HasVisible;
 import mat.client.shared.ListBoxMVP;
 import mat.client.shared.MatContext;
 import mat.client.shared.MessageDelegate;
+import mat.client.shared.PrimaryButton;
 import mat.client.shared.ReadOnlyHelper;
 import mat.client.shared.search.SearchView;
 import mat.model.Author;
@@ -543,6 +546,46 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 */
 		public void setQdmSelectedList(List<QualityDataSetDTO> qdmSelectedList);
 		
+		
+
+		/**
+		 * Builds the component measures cell table.
+		 *
+		 * @param result the result
+		 * @param isEditable the is editable
+		 */
+		void buildComponentMeasuresCellTable(ManageMeasureSearchModel result,
+				boolean isEditable);
+
+		/**
+		 * Gets the component measure selected list.
+		 *
+		 * @return the component measure selected list
+		 */
+		List<ManageMeasureSearchModel.Result> getComponentMeasureSelectedList();
+
+		/**
+		 * Sets the component measure selected list.
+		 *
+		 * @param componentMeasureSelectedList the new component measure selected list
+		 */
+		void setComponentMeasureSelectedList(
+				List<ManageMeasureSearchModel.Result> componentMeasureSelectedList);
+
+		/**
+		 * Gets the search string.
+		 *
+		 * @return the search string
+		 */
+		HasValue<String> getSearchString();
+
+		/**
+		 * Gets the search button.
+		 *
+		 * @return the search button
+		 */
+		PrimaryButton getSearchButton();
+		
 	}
 	
 	/**
@@ -635,6 +678,28 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	/** The db qdm selected list. */
 	private List<QualityDataSetDTO> dbQDMSelectedList = new ArrayList<QualityDataSetDTO>();
 	
+	/** The db component measures selected list. */
+	private List<ManageMeasureSearchModel.Result> dbComponentMeasuresSelectedList = new ArrayList<ManageMeasureSearchModel.Result>();
+	
+	/**
+	 * Gets the db component measures selected list.
+	 *
+	 * @return the db component measures selected list
+	 */
+	public List<ManageMeasureSearchModel.Result> getDbComponentMeasuresSelectedList() {
+		return dbComponentMeasuresSelectedList;
+	}
+
+	/**
+	 * Sets the db component measures selected list.
+	 *
+	 * @param dbComponentMeasuresSelectedList the new db component measures selected list
+	 */
+	public void setDbComponentMeasuresSelectedList(
+			List<ManageMeasureSearchModel.Result> dbComponentMeasuresSelectedList) {
+		this.dbComponentMeasuresSelectedList = dbComponentMeasuresSelectedList;
+	}
+
 	/** The empty widget. */
 	private SimplePanel emptyWidget = new SimplePanel();
 	
@@ -661,6 +726,11 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	
 	/** The service. */
 	private MeasureServiceAsync service = MatContext.get().getMeasureService();
+	
+	
+	/** The manage measure search model. */
+	private ManageMeasureSearchModel manageMeasureSearchModel;
+
 	
 	/**
 	 * Instantiates a new meta data presenter.
@@ -839,6 +909,15 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 				}
 			});
 		
+		metaDataDisplay.getSearchButton().addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				System.out.println("Search String: "+ metaDataDisplay.getSearchString().getValue());
+				searchMeasuresList(metaDataDisplay.getSearchString().getValue(),1,Integer.MAX_VALUE,1);
+			}
+		});
+		
 		metaDataDisplay.getSaveButton().addClickHandler(new ClickHandler(){
 
 			@Override
@@ -847,6 +926,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			}
 			
 		});
+		
 		metaDataDisplay.getFocusPanel().addKeyDownHandler(new KeyDownHandler(){
 			
 			@Override
@@ -884,6 +964,125 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	}
 	
 	//TODO by Ravi
+	
+	/**
+	 * Gets the component measures.
+	 *
+	 * @return the component measures
+	 */
+	public final void getComponentMeasures(){
+		searchMeasuresList(metaDataDisplay.getSearchString().getValue(),1,Integer.MAX_VALUE,1);
+	}
+	
+
+	/**
+	 * Search measures list.
+	 *
+	 * @param searchText the search text
+	 * @param startIndex the start index
+	 * @param pageSize the page size
+	 * @param filter the filter
+	 */
+	private void searchMeasuresList(String searchText, int startIndex, int pageSize,
+			int filter){
+		if(searchText.equalsIgnoreCase("search...")){
+			searchText = "";
+		}
+		showAdminSearchingBusy(true);
+		metaDataDisplay.setSaveButtonEnabled(false);
+		MatContext
+		.get()
+		.getMeasureService()
+		.search(searchText, startIndex, pageSize, filter,
+				new AsyncCallback<ManageMeasureSearchModel>() {
+
+					@Override
+					public void onFailure(Throwable caught) {
+						metaDataDisplay
+						.getErrorMessageDisplay()
+						.setMessage(
+								MatContext
+								.get()
+								.getMessageDelegate()
+								.getGenericErrorMessage());
+						MatContext
+						.get()
+						.recordTransactionEvent(
+								null,
+								null,
+								null,
+								"Unhandled Exception: "
+										+ caught.getLocalizedMessage(),
+										0);
+						showAdminSearchingBusy(false);
+					}
+
+					@Override
+					public void onSuccess(ManageMeasureSearchModel result) {
+						metaDataDisplay.buildComponentMeasuresCellTable(result, editable );
+						showAdminSearchingBusy(false);
+						metaDataDisplay.setSaveButtonEnabled(true);
+					}
+				});
+		
+	}
+	
+	private void showAdminSearchingBusy(boolean busy) {
+		if (busy) {
+			Mat.showLoadingMessage();
+		} else {
+			Mat.hideLoadingMessage();
+		}
+		((Button) metaDataDisplay.getSearchButton()).setEnabled(!busy);
+		((TextBox) (metaDataDisplay.getSearchString())).setEnabled(!busy);
+	}
+
+	
+//	private void search(String searchText, int startIndex, int pageSize,
+//			int filter) {
+//		
+//		MatContext
+//		.get()
+//		.getMeasureService()
+//		.search(searchText, startIndex, pageSize, filter,
+//				new AsyncCallback<ManageMeasureSearchModel>() {
+//			@Override
+//			public void onFailure(Throwable caught) {
+////				detailDisplay
+////				.getErrorMessageDisplay()
+////				.setMessage(
+////						MatContext
+////						.get()
+////						.getMessageDelegate()
+////						.getGenericErrorMessage());
+//				MatContext
+//				.get()
+//				.recordTransactionEvent(
+//						null,
+//						null,
+//						null,
+//						"Unhandled Exception: "
+//								+ caught.getLocalizedMessage(),
+//								0);
+//		
+//			}
+//			
+//			@Override
+//			public void onSuccess(
+//					ManageMeasureSearchModel result) {
+//				
+//				manageMeasureSearchModel = result;
+//				MatContext.get()
+//				.setManageMeasureSearchModel(
+//						manageMeasureSearchModel);
+//				
+//				metaDataDisplay.buildComponentMeasuresCellTable(result, isEditable);
+//				
+//			}
+//		});
+//		
+//	}
+	
 	
 	/**
 	 * Gets the applied qdm list.
@@ -1189,6 +1388,7 @@ private void setAuthorsListOnView() {
 		dbMeasureTypeList.clear();
 		dbMeasureTypeList.addAll(currentMeasureDetail.getMeasureTypeList());
 		measureTypeList = currentMeasureDetail.getMeasureTypeList();
+		
 		if (currentMeasureDetail.getQdsSelectedList() != null) {
 		metaDataDisplay.setQdmSelectedList(currentMeasureDetail.getQdsSelectedList());
 		} else {
@@ -1198,7 +1398,20 @@ private void setAuthorsListOnView() {
 		}
 		dbQDMSelectedList.clear();
 		dbQDMSelectedList.addAll(currentMeasureDetail.getQdsSelectedList());
+		
+		//Component Measures List
+		if (currentMeasureDetail.getComponentMeasuresSelectedList() != null) {
+			metaDataDisplay.setComponentMeasureSelectedList(currentMeasureDetail.getComponentMeasuresSelectedList());
+			} else {
+				List<ManageMeasureSearchModel.Result> componentMeasuresList = new ArrayList<ManageMeasureSearchModel.Result>();
+				metaDataDisplay.setComponentMeasureSelectedList(componentMeasuresList);
+				currentMeasureDetail.setComponentMeasuresSelectedList(componentMeasuresList);
+			}
+		dbComponentMeasuresSelectedList.clear();
+		dbComponentMeasuresSelectedList.addAll(currentMeasureDetail.getComponentMeasuresSelectedList());
+		
 		getAppliedQDMList(true);
+		getComponentMeasures();
 		editable = MatContext.get().getMeasureLockService().checkForEditPermission();
 		if (currentMeasureDetail.getReferencesList() != null) {
 			metaDataDisplay.setReferenceValues(currentMeasureDetail.getReferencesList(), editable);
@@ -1347,9 +1560,11 @@ private void setAuthorsListOnView() {
 		currentMeasureDetail.setAuthorList(authorList);
 		currentMeasureDetail.setMeasureTypeList(measureTypeList);
 		currentMeasureDetail.setQdsSelectedList(metaDataDisplay.getQdmSelectedList());
+		currentMeasureDetail.setComponentMeasuresSelectedList(metaDataDisplay.getComponentMeasureSelectedList());
 		currentMeasureDetail.setToCompareAuthor(dbAuthorList);
 		currentMeasureDetail.setToCompareMeasure(dbMeasureTypeList);
 		currentMeasureDetail.setToCompareItemCount(dbQDMSelectedList);
+		currentMeasureDetail.setToCompareComponentMeasures(dbComponentMeasuresSelectedList);
 		currentMeasureDetail.setNqfId(metaDataDisplay.getNqfId().getValue());
 		currentMeasureDetail.setMeasurePopulationExclusions(metaDataDisplay.getMeasurePopulationExclusions().getValue());
 		if (metaDataDisplay.getEmeasureId().getValue() != null && !metaDataDisplay.getEmeasureId().getValue().equals("")) {
@@ -1452,6 +1667,7 @@ private void setAuthorsListOnView() {
 			}
 		}
 		getAppliedQDMList(true);
+		getComponentMeasures();
 		MeasureComposerPresenter.setSubSkipEmbeddedLink("MetaDataView.containerPanel");
 		Mat.focusSkipLists("MeasureComposer");
 		clearMessages();
@@ -1537,7 +1753,6 @@ private void setAuthorsListOnView() {
 					fireSuccessfullDeletionEvent(false, MatContext.get()
 							.getMessageDelegate().getMeasureDeletionInvalidPwd());
 				}
-				
 			}
 		});
 	}

@@ -129,7 +129,7 @@ public class MessageDelegate {
 	
 	
 	
-
+	
 	/**
 	 * Gets the measure save server error message.
 	 * 
@@ -207,7 +207,7 @@ public class MessageDelegate {
 	 */
 	/** The continuous variable wrong num. */
 	private final String CONTINUOUS_VARIABLE_WRONG_NUM = "For a Continuous Variable measure, a grouping must contain exactly one of each of the following: "
-			+ "Population, Measure Population, and Measure Observation.";
+			+ "Population, Measure Population, and at least one Measure Observation.";
 	
 	/** The delete measure warning message. */
 	private final String DELETE_MEASURE_WARNING_MESSAGE = "Deleting a draft or version of a measure will"
@@ -392,20 +392,32 @@ public class MessageDelegate {
 	 */
 	/** The proportion wrong num. */
 	private final String PROPORTION_WRONG_NUM = "For a Proportion measure, a grouping must contain exactly one of each of the following: "
-			+ "Population and Denominator.";
+			+ "Population, Denominator and Numerator.";
 	
 	/** The ratio may not contain. */
-	private final String RATIO_MAY_NOT_CONTAIN = "For a Ratio measure, a grouping may not contain a Denominator Exception, Measure Observation, or Measure Population.";
+	private final String RATIO_MAY_NOT_CONTAIN = "For a Ratio measure, a grouping may not contain a Denominator Exception, or Measure Population.";
 	
 	/** The ratio too many. */
 	private final String RATIO_TOO_MANY = "For a Ratio measure, a grouping may not contain more than one of each of the following: Denominator Exclusion and Numerator Exclusion.";
 	
+	private final String RATIO_TOO_MANY_POPULATIONS = "For a Ratio measure, a grouping may not contain more than two of the following: Populations.";
 	/*
 	 * RATIO
 	 */
 	/** The ratio wrong num. */
 	private final String RATIO_WRONG_NUM = "For a Ratio measure, a grouping must contain exactly one of each of the following: "
-			+ "Population, Denominator, and Numerator.";
+			+ "Denominator and Numerator.";
+	
+	private final String RATIO_TOO_FEW_POPULATIONS = "For a Ratio measure, a grouping must contain at least one Population.";
+	
+	/**
+	 * @return the rATIO_TOO_FEW_POPULATIONS
+	 */
+	public String getRATIO_TOO_FEW_POPULATIONS() {
+		return RATIO_TOO_FEW_POPULATIONS;
+	}
+	
+	private final String COHORT_WRONG_NUM = "For a Cohort measure, a grouping must contain exactly one Population.";
 	
 	/** The rationale required. */
 	private final String RATIONALE_REQUIRED = "Rationale is required.";
@@ -1892,7 +1904,21 @@ public class MessageDelegate {
 		return COMMENT_ADDED_SUCCESSFULLY;
 	}
 	
+	/**
+	 * @return the cOHORT_WRONG_NUM
+	 */
+	public String getCOHORT_WRONG_NUM() {
+		return COHORT_WRONG_NUM;
+	}
+	
 	public String getComparisonDiloagBoxErrorDisplay() {
 		return COMPARISON_DILOAG_BOX_ERROR_DISPLAY;
+	}
+	
+	/**
+	 * @return the rATIO_TOO_MANY_POPULATIONS
+	 */
+	public String getRATIO_TOO_MANY_POPULATIONS() {
+		return RATIO_TOO_MANY_POPULATIONS;
 	}
 }

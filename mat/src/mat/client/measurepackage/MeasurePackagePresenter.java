@@ -17,6 +17,7 @@ import mat.client.shared.ReadOnlyHelper;
 import mat.client.shared.SuccessMessageDisplayInterface;
 import mat.client.shared.WarningMessageDisplay;
 import mat.model.QualityDataSetDTO;
+import mat.shared.ConstantMessages;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
@@ -47,6 +48,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 	/** The packageOverview. */
 	private MeasurePackageOverview packageOverview;
 	
+	/** The service. */
 	private static  MeasureServiceAsync service = MatContext.get().getMeasureService();
 	
 	/**
@@ -152,37 +154,60 @@ public class MeasurePackagePresenter implements MatPresenter {
 		 */
 		void setViewIsEditable(boolean b,
 				List<MeasurePackageDetail> packages);
+		
 		/**
-		 * @param clauses
+		 * Sets the clauses.
+		 *
+		 * @param clauses the new clauses
 		 */
 		void setClauses(List<MeasurePackageClauseDetail> clauses);
+		
 		/**
-		 * @param name
+		 * Sets the package name.
+		 *
+		 * @param name the new package name
 		 */
 		void setPackageName(String name);
+		
 		/**
-		 * @param list
+		 * Sets the clauses in package.
+		 *
+		 * @param list the new clauses in package
 		 */
 		void setClausesInPackage(List<MeasurePackageClauseDetail> list);
 		
 		/**
-		 * @return
+		 * Gets the package grouping widget.
+		 *
+		 * @return the package grouping widget
 		 */
 		MeasurePackageClauseCellListWidget getPackageGroupingWidget();
+		
 		/**
-		 * @param observer
+		 * Sets the observer.
+		 *
+		 * @param observer the new observer
 		 */
 		void setObserver(Observer observer);
+		
 		/**
-		 * @param appliedListModel
+		 * Sets the applied qdm list.
+		 *
+		 * @param appliedListModel the new applied qdm list
 		 */
 		void setAppliedQdmList(QDSAppliedListModel appliedListModel);
+		
 		/**
-		 * @return
+		 * Gets the creates the new button.
+		 *
+		 * @return the creates the new button
 		 */
 		HasClickHandlers getCreateNewButton();
+		
 		/**
-		 * @param packages
+		 * Builds the cell table.
+		 *
+		 * @param packages the packages
 		 */
 		void buildCellTable(List<MeasurePackageDetail> packages);
 	}
@@ -206,6 +231,8 @@ public class MeasurePackagePresenter implements MatPresenter {
 			@Override
 			public void onClick(final ClickEvent event) {
 				clearMessages();
+				view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
+				view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
 				System.out.println("Overview Object"+ packageOverview.getClauses().size());
 				setNewMeasurePackage();
 			}
@@ -253,24 +280,10 @@ public class MeasurePackagePresenter implements MatPresenter {
 							
 							@Override
 							public void onSuccess(final Void result) {
-								if (!packageOverview.getPackages().contains(
-										currentDetail)) {
-									if ((currentDetail
-											.getPackageClauses() != null)
-											&& (currentDetail.
-													getPackageClauses()
-													.size() > 0)) {
-										packageOverview.getPackages()
-										.add(currentDetail);
-									}
-									packageOverview.setQdmElements(
-											currentDetail
-											.getQdmElements());
-									packageOverview.
-									setSuppDataElements(currentDetail
-											.getSuppDataElements());
-									setOverview(packageOverview);
-								}
+								getMeasurePackageOverview(MatContext.get()
+										.getCurrentMeasureId());
+								view.getPackageSuccessMessageDisplay().setMessage(
+										MatContext.get().getMessageDelegate().getGroupingSavedMessage());
 								view.getSuppDataSuccessMessageDisplay()
 								.setMessage(MatContext.get()
 										.getMessageDelegate()
@@ -279,8 +292,219 @@ public class MeasurePackagePresenter implements MatPresenter {
 						});
 					}
 				});
+		
+		view.getPackageGroupingWidget().getSaveGrouping().addClickHandler(new ClickHandler() {
+			@Override
+			public void onClick(final ClickEvent event) {
+				clearMessages();
+				view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
+				view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
+				updateDetailsFromView();
+				if (isValid()) {
+					MatContext.get().getPackageService()
+					.save(currentDetail, new AsyncCallback<Void>() {
+						@Override
+						public void onFailure(final Throwable caught) {
+							/*view.getQDMErrorMessageDisplay().setMessage(
+								MatContext.get().getMessageDelegate().getUnableToProcessMessage());*/
+							Window.alert("I failed");
+						}
+						
+						@Override
+						public void onSuccess(final Void result) {
+							getMeasurePackageOverview(MatContext.get()
+									.getCurrentMeasureId());
+							view.getPackageSuccessMessageDisplay().setMessage(
+									MatContext.get().getMessageDelegate().getGroupingSavedMessage());
+						}
+					});
+				}
+			}
+		});
+	}
+	/**
+	 * Valid grouping check.
+	 * @return boolean.
+	 */
+	private boolean isValid() {
+		List<MeasurePackageClauseDetail> detailList = view
+				.getPackageGroupingWidget().getGroupingPopulationList();
+		List<String> messages = new ArrayList<String>();
+		
+		String scoring = MatContext.get().getCurrentMeasureScoringType();
+		
+		// TODO refactor this into a common shared class so the server can use
+		// it for validation also
+		if (ConstantMessages.CONTINUOUS_VARIABLE_SCORING
+				.equalsIgnoreCase(scoring)) {
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.POPULATION_CONTEXT_ID) != 1)
+					|| (countDetailsWithType(detailList,
+							ConstantMessages.MEASURE_POPULATION_CONTEXT_ID) != 1)
+							|| (countDetailsWithType(detailList,
+									ConstantMessages.MEASURE_OBSERVATION_CONTEXT_ID) < 1)
+					) {
+				messages.add(MatContext.get().getMessageDelegate()
+						.getContinuousVariableWrongNumMessage());
+			}
+			
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.NUMERATOR_CONTEXT_ID) != 0)
+					|| (countDetailsWithType(detailList,
+							ConstantMessages.NUMERATOR_EXCLUSIONS_CONTEXT_ID) != 0)
+							|| (countDetailsWithType(detailList,
+									ConstantMessages.DENOMINATOR_CONTEXT_ID) != 0)
+									|| (countDetailsWithType(detailList,
+											ConstantMessages.DENOMINATOR_EXCLUSIONS_CONTEXT_ID) != 0)
+											|| (countDetailsWithType(detailList,
+													ConstantMessages.DENOMINATOR_EXCEPTIONS_CONTEXT_ID) != 0)) {
+				messages.add(MatContext.get().getMessageDelegate()
+						.getContinuousVariableMayNotContainMessage());
+			}
+			
+		} else if (ConstantMessages.PROPORTION_SCORING.equalsIgnoreCase(scoring)) { /*
+		 * PROPORTION at least one and only one Population,
+		 * Denominator at least one or more Numerator zero or
+		 * one Denominator Exclusions Denominator Exceptions and
+		 * no Numerator Exclusions, Measure Population, Measure
+		 * Observations
+		 */
+			/*
+			 * at least one and only one Population, Denominator
+			 */
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.POPULATION_CONTEXT_ID) != 1)
+					|| (countDetailsWithType(detailList,
+							ConstantMessages.DENOMINATOR_CONTEXT_ID) != 1)
+							|| (countDetailsWithType(detailList,
+									ConstantMessages.NUMERATOR_CONTEXT_ID) != 1)
+					) {
+				messages.add(MatContext.get().getMessageDelegate()
+						.getProportionWrongNumMessage());
+			}
+			/*
+			 * zero or one Denominator Exclusions, Denominator Exceptions
+			 */
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.DENOMINATOR_EXCLUSIONS_CONTEXT_ID) > 1)
+					|| (countDetailsWithType(detailList,
+							ConstantMessages.DENOMINATOR_EXCEPTIONS_CONTEXT_ID) > 1)) {
+				messages.add(MatContext.get().getMessageDelegate()
+						.getProportionTooManyMessage());
+			}
+			/* no Numerator Exclusions, Measure Population, Measure Observations */
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.MEASURE_POPULATION_CONTEXT_ID) != 0)
+					|| (countDetailsWithType(detailList,
+							ConstantMessages.MEASURE_OBSERVATION_CONTEXT_ID) != 0)) {
+				messages.add(MatContext.get().getMessageDelegate()
+						.getProportionMayNotContainMessage());
+			}
+		} else if (ConstantMessages.RATIO_SCORING.equalsIgnoreCase(scoring)) { /*
+		 * at least one and only one Population, Denominator,
+		 * Numerator, zero or one Denominator Exclusions and no
+		 * Denominator Exceptions, Measure Population
+		 * May contain one or more Measure Observation.
+		 */
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.DENOMINATOR_CONTEXT_ID) != 1)
+					|| (countDetailsWithType(detailList,
+							ConstantMessages.NUMERATOR_CONTEXT_ID) != 1)
+					) {
+				messages.add(MatContext.get().getMessageDelegate()
+						.getRatioWrongNumMessage());
+			}
+			/*
+			 * zero or one Denominator Exclusions
+			 */
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.DENOMINATOR_EXCLUSIONS_CONTEXT_ID) > 1)
+					|| (countDetailsWithType(detailList,
+							ConstantMessages.NUMERATOR_EXCLUSIONS_CONTEXT_ID) > 1)) {
+				messages.add(MatContext.get().getMessageDelegate()
+						.getRatioTooManyMessage());
+			}
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.POPULATION_CONTEXT_ID) < 1)) {
+				messages.add(MatContext.get().getMessageDelegate().getRATIO_TOO_FEW_POPULATIONS());
+			}
+			/*
+			 * Not more than two populations are allowed.
+			 * */
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.POPULATION_CONTEXT_ID) > 2)) {
+				messages.add(MatContext.get().getMessageDelegate().getRATIO_TOO_MANY_POPULATIONS());
+			}
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.DENOMINATOR_EXCEPTIONS_CONTEXT_ID) != 0)
+					|| (countDetailsWithType(detailList,
+							ConstantMessages.MEASURE_POPULATION_CONTEXT_ID) != 0)) {
+				messages.add(MatContext.get().getMessageDelegate()
+						.getRatioMayNotContainMessage());
+			}
+			// In case of two IP's, Denominator and Numerator must contain associations.
+			int iPCount = (countDetailsWithType(detailList,
+					ConstantMessages.POPULATION_CONTEXT_ID));
+			if (iPCount == 2) {
+				for (MeasurePackageClauseDetail detail : detailList) {
+					if ((ConstantMessages.DENOMINATOR_CONTEXT_ID).equals(detail.getType())
+							|| (ConstantMessages.NUMERATOR_CONTEXT_ID).equals(detail.getType())) {
+						if ((detail.getAssociatedPopulationUUID() == null)) {
+							messages.add("For Ratio measures, in case of more than one Population ,"
+									+ " Numerator and Denominator must contain one association.");
+							break;
+						}
+					}
+				}
+			}
+		} else if (ConstantMessages.COHORT_SCORING.equalsIgnoreCase(scoring)) {
+			if ((countDetailsWithType(detailList,
+					ConstantMessages.POPULATION_CONTEXT_ID) != 1)
+					) {
+				messages.add(MatContext.get().getMessageDelegate().getCOHORT_WRONG_NUM());
+			}
+		}
+		if (messages.size() > 0) {
+			view.getPackageErrorMessageDisplay().setMessages(messages);
+		} else {
+			view.getPackageErrorMessageDisplay().clear();
+		}
+		return messages.size() == 0;
 	}
 	
+	/**
+	 * countDetailsWithType.
+	 * @param detailList - List of MeasurePackageClauseDetail.
+	 * @param type - String.
+	 *
+	 * @return Integer.
+	 */
+	private int countDetailsWithType(
+			final List<MeasurePackageClauseDetail> detailList, final String type) {
+		int count = 0;
+		for (MeasurePackageClauseDetail detail : detailList) {
+			if (type.equals(detail.getType())) {
+				count++;
+			}
+		}
+		return count;
+	}
+	/**
+	 * updateDetailsFromView.
+	 */
+	private void updateDetailsFromView() {
+		currentDetail.setMeasureId(MatContext.get().getCurrentMeasureId());
+		currentDetail.setPackageClauses(view.getPackageGroupingWidget().getGroupingPopulationList());
+		currentDetail.setValueSetDate(null);
+	}
+	
+	
+	/**
+	 * Get Applied QDM List for Item Count Table.
+	 *
+	 * @param checkForSupplementData - Boolean.
+	 * @return the applied qdm list
+	 */
 	public final void getAppliedQDMList(boolean checkForSupplementData) {
 		String measureId = MatContext.get().getCurrentMeasureId();
 		if ((measureId != null) && !measureId.equals("")) {
@@ -313,14 +537,10 @@ public class MeasurePackagePresenter implements MatPresenter {
 					filterTimingQDMs(result);
 					appliedListModel.setAppliedQDMs(result);
 					view.setAppliedQdmList(appliedListModel);
-					
 				}
 			});
-			
 		}
-		
 	}
-	
 	/**
 	 * Clear messages.
 	 */
@@ -338,11 +558,11 @@ public class MeasurePackagePresenter implements MatPresenter {
 	 */
 	private void displayEmpty() {
 		panel.clear();
-		panel.add(emptyPanel);
+		//panel.add(emptyPanel);
+		panel.add(view.asWidget());
 		view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
 		view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
 	}
-	
 	/* (non-Javadoc)
 	 * @see mat.client.MatPresenter#beforeClosingDisplay()
 	 */
@@ -353,7 +573,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
 		view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
 	}
-	
 	/* (non-Javadoc)
 	 * @see mat.client.MatPresenter#beforeDisplay()
 	 */
@@ -365,14 +584,14 @@ public class MeasurePackagePresenter implements MatPresenter {
 				&& !MatContext.get().getCurrentMeasureId().equals("")) {
 			getMeasure(MatContext.get().getCurrentMeasureId());
 			getAppliedQDMList(true);
+			view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
+			view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
 		} else {
 			displayEmpty();
 		}
 		MeasureComposerPresenter.setSubSkipEmbeddedLink("MeasurePackage");
 		Mat.focusSkipLists("MeasureComposer");
-		
 	}
-	
 	/* (non-Javadoc)
 	 * @see mat.client.MatPresenter#getWidget()
 	 */
@@ -385,10 +604,9 @@ public class MeasurePackagePresenter implements MatPresenter {
 	
 	/**
 	 * get Measure Package Overview.
-	 * 
-	 * @param measureId
-	 *            - String.
-	 * @return the measure package packageOverview
+	 *
+	 * @param measureId - String.
+	 * @return the measure package overview
 	 */
 	private void getMeasurePackageOverview(final String measureId) {
 		MatContext
@@ -405,7 +623,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 						.getMessageDelegate()
 						.getGenericErrorMessage());
 			}
-			
 			@Override
 			public void onSuccess(final MeasurePackageOverview result) {
 				if ((currentDetail != null)
@@ -417,28 +634,25 @@ public class MeasurePackagePresenter implements MatPresenter {
 					// cached across
 					// measures.
 				}
+				
 				setOverview(result);
 			}
 		});
-		
 		view.setObserver(new MeasurePackagerView.Observer() {
-			
 			@Override
 			public void onEditClicked(MeasurePackageDetail detail) {
+				currentDetail = new MeasurePackageDetail();
 				currentDetail = detail;
 				clearMessages();
 				setMeasurePackageDetailsOnView();
-				
 			}
-			
 			@Override
 			public void onDeleteClicked(MeasurePackageDetail detail) {
-				// TODO Auto-generated method stub
-				
+				clearMessages();
+				deleteMeasurePackage(detail);
 			}
 		});
 	}
-	
 	/**
 	 * Update supp data details from view.
 	 */
@@ -446,17 +660,18 @@ public class MeasurePackagePresenter implements MatPresenter {
 		currentDetail.setSuppDataElements(view.getQDMElementsInSuppElements());
 		currentDetail.setQdmElements(view.getQDMElements());
 	}
-	
 	/**
 	 * set Overview.
 	 * @param result - MeasurePackageOverview.
 	 */
-	private void setOverview(final MeasurePackageOverview result) {
+	private void setOverview(MeasurePackageOverview result) {
 		packageOverview = result;
-		view.setClauses(result.getClauses());
+		List <MeasurePackageClauseDetail> clauseList = new ArrayList<MeasurePackageClauseDetail>(result.getClauses());
+		view.setClauses(clauseList);
 		// QDM elements
 		view.setQDMElements(result.getQdmElements());
-		view.buildCellTable(result.getPackages());
+		List<MeasurePackageDetail> packageList = new ArrayList<MeasurePackageDetail>(result.getPackages());
+		view.buildCellTable(packageList);
 		if (result.getPackages().size() > 0) {
 			if (currentDetail != null) {
 				for (int i = 0; i < result.getPackages().size(); i++) {
@@ -470,16 +685,37 @@ public class MeasurePackagePresenter implements MatPresenter {
 			} else {
 				setMeasurePackage(result.getPackages().get(0).getSequence());
 			}
-			
 		} else {
 			setNewMeasurePackage();
 		}
-		
 		ReadOnlyHelper.setReadOnlyForCurrentMeasure(view.asWidget(),
 				isEditable());
 		view.setViewIsEditable(isEditable(), result.getPackages());
 	}
-	
+	/**
+	 * Delete Measure Package.
+	 * @param pkg - MeasurePackageDetail.
+	 */
+	private void deleteMeasurePackage(final MeasurePackageDetail pkg) {
+		MatContext.get().getPackageService()
+		.delete(pkg, new AsyncCallback<Void>() {
+			@Override
+			public void onFailure(final Throwable caught) {
+				view.getPackageErrorMessageDisplay().setMessage(
+						MatContext.get().getMessageDelegate()
+						.getGenericErrorMessage());
+			}
+			@Override
+			public void onSuccess(final Void result) {
+				packageOverview.getPackages().remove(pkg);
+				if (currentDetail.getSequence().equals(
+						pkg.getSequence())) {
+					currentDetail = null;
+				}
+				setOverview(packageOverview);
+			}
+		});
+	}
 	/**
 	 * Checks if is editable.
 	 *
@@ -525,11 +761,11 @@ public class MeasurePackagePresenter implements MatPresenter {
 		currentDetail.setMeasureId(MatContext.get().getCurrentMeasureId());
 		currentDetail.setSequence(Integer
 				.toString(getMaxSequence(packageOverview) + 1));
-		view.buildCellTable(packageOverview.getPackages());
+		List<MeasurePackageDetail> packageList = new ArrayList<MeasurePackageDetail>(packageOverview.getPackages());
+		view.buildCellTable(packageList);
 		//view.setMeasurePackages(packageOverview.getPackages());
 		setMeasurePackageDetailsOnView();
 	}
-	
 	/**
 	 * Sets the measure package.
 	 *
@@ -544,13 +780,12 @@ public class MeasurePackagePresenter implements MatPresenter {
 			}
 		}
 	}
-	
 	/**
 	 * setMeasurePackageDetailsOnView.
 	 */
 	private void setMeasurePackageDetailsOnView() {
-		List<MeasurePackageClauseDetail> packageClauses = currentDetail
-				.getPackageClauses();
+		List<MeasurePackageClauseDetail> packageClauses = new ArrayList<MeasurePackageClauseDetail>(currentDetail
+				.getPackageClauses());
 		List<MeasurePackageClauseDetail> remainingClauses = removeClauses(
 				packageOverview.getClauses(), packageClauses);
 		view.setPackageName(currentDetail.getPackageName());
@@ -560,6 +795,13 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.setQDMElements(packageOverview.getQdmElements());
 	}
 	
+	/**
+	 * Removes the clauses.
+	 *
+	 * @param master - master List of Clauses.
+	 * @param toRemove - List from where to Remove.
+	 * @return List.
+	 */
 	private List<MeasurePackageClauseDetail> removeClauses(
 			final List<MeasurePackageClauseDetail> master,
 			final List<MeasurePackageClauseDetail> toRemove) {
@@ -583,7 +825,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 		panel.add(view.asWidget());
 		// view.setTabIndex();
 	}
-	
 	/**
 	 * Gets the max sequence.
 	 *
@@ -600,8 +841,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 		}
 		return max;
 	}
-	
-	
 }
 
 

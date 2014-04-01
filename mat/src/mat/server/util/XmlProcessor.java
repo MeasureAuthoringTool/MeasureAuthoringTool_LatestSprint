@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -19,11 +21,13 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.shared.ConstantMessages;
 import mat.shared.UUIDUtilClient;
 import net.sf.saxon.TransformerFactoryImpl;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,8 +43,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
-import com.google.gwt.xml.client.Text;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -159,7 +161,8 @@ public class XmlProcessor {
 	private static final String INITIAL_POPULATIONS = "initialPopulations";
 	
 	/** The Constant XPATH_MEASURE_CLAUSE. */
-	public static final String XPATH_MEASURE_CLAUSE = "/measure/populations/*/clause | /measure/*/clause[@type !='stratum']";
+	//	public static final String XPATH_MEASURE_CLAUSE = "/measure/populations/*/clause | /measure/*/clause[@type !='stratum']";
+	public static final String XPATH_MEASURE_CLAUSE = "/measure/populations/*/clause | /measure/*/clause | /measure/strata/stratification | /measure/strata/Stratification";
 	
 	/** The Constant XPATH_MEASURE_GROUPING. */
 	public static final String XPATH_MEASURE_GROUPING = "/measure/measureGrouping";
@@ -181,6 +184,15 @@ public class XmlProcessor {
 	
 	/** The Constant XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD. */
 	public static final String XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD="/measure//*/relationalOp[@type='EBOD']";
+	
+	/** The Constant XPATH_STRATA. */
+	private static final String XPATH_STRATA = "/measure/strata";
+	
+	/** The Constant STRATIFICATION. */
+	public static final String  STRATIFICATION= "stratification";
+	
+	/** The Constant STRATIFICATION_DISPLAYNAME. */
+	private static final String  STRATIFICATION_DISPLAYNAME= "Stratification 1";
 	
 	/** The constants map. */
 	private static Map<String, String> constantsMap = new HashMap<String, String>();
@@ -717,7 +729,7 @@ public class XmlProcessor {
 			xPathList.add(XPATH_DENOMINATOR_EXCEPTIONS);
 			xPathList.add(XPATH_MEASURE_POPULATIONS);
 			xPathList.add(XPATH_MEASURE_POPULATION_EXCLUSIONS);
-			xPathList.add(XPATH_MEASURE_OBSERVATIONS);
+			/*xPathList.add(XPATH_MEASURE_OBSERVATIONS);*/
 		} else if (PROPOR.equals(scoringType.toUpperCase())) {
 			// Measure Population Exlusions, Measure Populations
 			//xPathList.add(XPATH_NUMERATOR_EXCLUSIONS);
@@ -829,39 +841,39 @@ public class XmlProcessor {
 	 * @throws XPathExpressionException the x path expression exception
 	 */
 	public void renameTimingConventions(Document document) throws XPathExpressionException {
-		 
+		
 		String displayName = "displayName";
 		String type = "type";
 		String starts_before_or_during="Starts Before Or During";
 		String ends_before_or_during="Ends Before Or During";
-		 
-		 javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
 		
-		 //replace relationalOp attribute values for displayName and type from SBOD to SBE
-		 NodeList nodesRelationalOpsSBOD = (NodeList) xPath.evaluate(XPATH_OLD_MEASURE_ALL_RELATIONALOP_SBOD,
-					originalDoc.getDocumentElement(), XPathConstants.NODESET);
-		 for (int i = 0; i < nodesRelationalOpsSBOD.getLength(); i++) {
-			 Node childNode =  nodesRelationalOpsSBOD.item(i);
-			 String relationalOpDisplayName = childNode.getAttributes().getNamedItem(displayName).getNodeValue();
-			 relationalOpDisplayName = relationalOpDisplayName.replace(starts_before_or_during, "Starts Before End");
-			 childNode.getAttributes().getNamedItem(displayName).setNodeValue(relationalOpDisplayName);
-			 childNode.getAttributes().getNamedItem(type).setNodeValue("SBE");
-		 }
-		 
-		 //replace relationalOp attribute values for displayName and type from EBOD to EBE
-		 NodeList nodesRelationalOpsEBOD = (NodeList) xPath.evaluate(XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD,
-					originalDoc.getDocumentElement(), XPathConstants.NODESET);
-		 for (int i = 0; i < nodesRelationalOpsEBOD.getLength(); i++) {
-			 Node childNode =  nodesRelationalOpsEBOD.item(i);
-			 String relationalOpDisplayName = childNode.getAttributes().getNamedItem(displayName).getNodeValue();
-			 relationalOpDisplayName = relationalOpDisplayName.replace(ends_before_or_during, "Ends Before End");
-			 childNode.getAttributes().getNamedItem(displayName).setNodeValue(relationalOpDisplayName);
-			 childNode.getAttributes().getNamedItem(type).setNodeValue("EBE");
-		 }
+		javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
+		
+		//replace relationalOp attribute values for displayName and type from SBOD to SBE
+		NodeList nodesRelationalOpsSBOD = (NodeList) xPath.evaluate(XPATH_OLD_MEASURE_ALL_RELATIONALOP_SBOD,
+				originalDoc.getDocumentElement(), XPathConstants.NODESET);
+		for (int i = 0; i < nodesRelationalOpsSBOD.getLength(); i++) {
+			Node childNode =  nodesRelationalOpsSBOD.item(i);
+			String relationalOpDisplayName = childNode.getAttributes().getNamedItem(displayName).getNodeValue();
+			relationalOpDisplayName = relationalOpDisplayName.replace(starts_before_or_during, "Starts Before End");
+			childNode.getAttributes().getNamedItem(displayName).setNodeValue(relationalOpDisplayName);
+			childNode.getAttributes().getNamedItem(type).setNodeValue("SBE");
+		}
+		
+		//replace relationalOp attribute values for displayName and type from EBOD to EBE
+		NodeList nodesRelationalOpsEBOD = (NodeList) xPath.evaluate(XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD,
+				originalDoc.getDocumentElement(), XPathConstants.NODESET);
+		for (int i = 0; i < nodesRelationalOpsEBOD.getLength(); i++) {
+			Node childNode =  nodesRelationalOpsEBOD.item(i);
+			String relationalOpDisplayName = childNode.getAttributes().getNamedItem(displayName).getNodeValue();
+			relationalOpDisplayName = relationalOpDisplayName.replace(ends_before_or_during, "Ends Before End");
+			childNode.getAttributes().getNamedItem(displayName).setNodeValue(relationalOpDisplayName);
+			childNode.getAttributes().getNamedItem(type).setNodeValue("EBE");
+		}
 		
 	}
 	
-    
+	
 	/**
 	 * This method looks at the Scoring Type for a measure and adds nodes based
 	 * on the value of Scoring Type.
@@ -924,7 +936,8 @@ public class XmlProcessor {
 		 */
 		Node measureObservationsNode = findNode(originalDoc,
 				XPATH_MEASURE_OBSERVATIONS);
-		if (SCORING_TYPE_CONTVAR.equals(scoringType)) {
+		if (SCORING_TYPE_CONTVAR.equals(scoringType)
+				|| RATIO.equals(scoringType)) {
 			if (measureObservationsNode == null) {
 				// Create a new measureObservations element.
 				String nodeName = "measureObservations";
@@ -989,10 +1002,12 @@ public class XmlProcessor {
 			Element itemCount_Element = originalDoc
 					.createElement("itemCount");
 			if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE) == null) {
-			Node scoring_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_SCORING);
-			((Element) scoring_Element.getParentNode())
-			.insertBefore(itemCount_Element,
-					scoring_Element.getNextSibling());
+				Node scoring_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_SCORING);
+				if(scoring_Element != null) {
+					((Element) scoring_Element.getParentNode())
+					.insertBefore(itemCount_Element,
+							scoring_Element.getNextSibling());
+				}
 			} else {
 				Node measure_Type_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE);
 				((Element) measure_Type_Element.getParentNode())
@@ -1083,15 +1098,15 @@ public class XmlProcessor {
 					.createElement("emeasureid");
 			emeasureID_Element.appendChild(originalDoc.createTextNode(Integer.toString(emeasureId)));
 			if (findNode(originalDoc,XPATH_MEASURE_MEASURE_DETAILS_FINALIZEDDATE) == null) {
-			Node guid_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_GUID);
-			((Element) guid_Element.getParentNode())
-			.insertBefore(emeasureID_Element,
-					guid_Element); 
+				Node guid_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_GUID);
+				((Element) guid_Element.getParentNode())
+				.insertBefore(emeasureID_Element,
+						guid_Element);
 			} else {
 				Node finalizeddate_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_FINALIZEDDATE);
 				((Element) finalizeddate_Element.getParentNode())
 				.insertBefore(emeasureID_Element,
-						finalizeddate_Element); 
+						finalizeddate_Element);
 			}
 		}
 	}
@@ -1197,11 +1212,11 @@ public class XmlProcessor {
 		return (NodeList) expr.evaluate(document, XPathConstants.NODESET);
 	}
 	
-//	public void addEmptyItemCountNode(){
-//		NodeList nodes=originalDoc.getElementsByTagName("scoring");
-//		Element itemCountElement=originalDoc.createElement("itemCount");
-//		nodes.item(0).getParentNode().insertBefore(itemCountElement,null);
-//	}
+	//	public void addEmptyItemCountNode(){
+	//		NodeList nodes=originalDoc.getElementsByTagName("scoring");
+	//		Element itemCountElement=originalDoc.createElement("itemCount");
+	//		nodes.item(0).getParentNode().insertBefore(itemCountElement,null);
+	//	}
 	/**
 	 * Gets the original doc.
 	 * 
@@ -1385,5 +1400,81 @@ public class XmlProcessor {
 		
 		return missingTimingElementList;
 	}
-}
+	
+	public String checkForStratificationAndAdd() {
+		if (originalDoc == null) {
+			return "";
+		}
+		try {
+			
+			Node strataNode = findNode(originalDoc, XPATH_STRATA);
+			
+			if(strataNode != null)
+			{
+				if(strataNode.hasChildNodes() && !(strataNode.getChildNodes().item(0).getNodeName().equalsIgnoreCase(STRATIFICATION)))
+				{
+					NodeList childs  = strataNode.getChildNodes();
+					
+					Element stratificationEle = originalDoc
+							.createElement(STRATIFICATION);
+					stratificationEle.setAttribute("displayName",STRATIFICATION_DISPLAYNAME);
+					stratificationEle.setAttribute("uuid",UUIDUtilClient.uuid());
+					stratificationEle.setAttribute("type",STRATIFICATION);
+					
+					List<Node> nCList = new ArrayList<Node>();
+					
+					for(int i=0; i < childs.getLength() ; i++)
+					{
+						nCList.add(childs.item(i));
+						strataNode.removeChild(childs.item(i));
+					}
+					
+					for(Node cNode : nCList)
+					{
+						stratificationEle.appendChild(cNode);
+					}
+					
+					
+					strataNode.appendChild(stratificationEle);
+					
+				}
+			}
+			
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+		}
+		return transform(originalDoc);
+	}
+	
+	public String checkForQdmIDAndUpdate() {
+		if (originalDoc == null) {
+			return "";
+		}
+		javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
+		try {
+			
+			NodeList nodesElementLookUpAll = (NodeList) xPath.evaluate(
+					XPATH_MEASURE_ELEMENT_LOOKUP_QDM,			
+				originalDoc.getDocumentElement(), XPathConstants.NODESET);
+			List<String> idList = new ArrayList<String>();
+			for (int i = 0; i < nodesElementLookUpAll.getLength(); i++) {
+				Node newNode = nodesElementLookUpAll.item(i);
+				
+				String id = newNode.getAttributes().getNamedItem("id").getNodeValue().toString();
+				
+				if(idList.contains(id))
+				{
+					newNode.getAttributes().getNamedItem("id").setNodeValue(UUID.randomUUID().toString().replaceAll("-", ""));
+				}
+				else
+				{
+					idList.add(id);
+				}
+			}
+		}catch (XPathExpressionException e) {
+			e.printStackTrace();
+		}
+		return transform(originalDoc);
+	}
 
+}
