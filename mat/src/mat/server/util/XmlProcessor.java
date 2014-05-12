@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -21,13 +20,11 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.shared.ConstantMessages;
 import mat.shared.UUIDUtilClient;
 import net.sf.saxon.TransformerFactoryImpl;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -96,6 +93,8 @@ public class XmlProcessor {
 	
 	/** The Constant XPATH_MEASURE_MEASURE_DETAILS_ITEM_COUNT. */
 	private static final String XPATH_MEASURE_MEASURE_DETAILS_ITEM_COUNT = "/measure/measureDetails/itemCount";
+	
+	private static final String XPATH_MEASURE_MEASURE_DETAILS_COMPONENT_MEASURES = "/measure/measureDetails/componentMeasures";
 	
 	/** The Constant XPATH_MEASURE_MEASURE_DETAILS_EMEASUREID. */
 	private static final String XPATH_MEASURE_MEASURE_DETAILS_EMEASUREID = "/measure/measureDetails/emeasureid";
@@ -279,7 +278,7 @@ public class XmlProcessor {
 	 */
 	public String appendNode(String newElement, String nodeName,
 			String parentNode) throws SAXException, IOException {
-		logger.info("In appendNode method with newElement ::: " + newElement);
+		logger.info("In appendNode method with newElement ::: ");
 		if ((originalDoc == null) || (newElement == null)) {
 			return "";
 		}
@@ -998,23 +997,61 @@ public class XmlProcessor {
 					supplementaDataElements_Element.getNextSibling());
 		}
 		
-		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_ITEM_COUNT) == null) {
-			Element itemCount_Element = originalDoc
-					.createElement("itemCount");
+		//		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_ITEM_COUNT) == null) {
+		//			Element itemCount_Element = originalDoc
+		//					.createElement("itemCount");
+		//			if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE) == null) {
+		//				Node scoring_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_SCORING);
+		//				if(scoring_Element != null) {
+		//					((Element) scoring_Element.getParentNode())
+		//					.insertBefore(itemCount_Element,
+		//							scoring_Element.getNextSibling());
+		//				}
+		//			} else {
+		//				Node measure_Type_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE);
+		//				((Element) measure_Type_Element.getParentNode())
+		//				.insertBefore(itemCount_Element,
+		//						measure_Type_Element.getNextSibling());
+		//			}
+		//		}
+		
+		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_COMPONENT_MEASURES) == null) {
+			Element componentMeasures_Element = originalDoc
+					.createElement("componentMeasures");
 			if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE) == null) {
 				Node scoring_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_SCORING);
 				if(scoring_Element != null) {
 					((Element) scoring_Element.getParentNode())
-					.insertBefore(itemCount_Element,
+					.insertBefore(componentMeasures_Element,
 							scoring_Element.getNextSibling());
 				}
 			} else {
 				Node measure_Type_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE);
 				((Element) measure_Type_Element.getParentNode())
-				.insertBefore(itemCount_Element,
+				.insertBefore(componentMeasures_Element,
 						measure_Type_Element.getNextSibling());
 			}
 		}
+		
+		
+		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_ITEM_COUNT) == null) {
+			Element itemCount_Element = originalDoc
+					.createElement("itemCount");
+			Node componentMeasures_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_COMPONENT_MEASURES);
+			((Element) componentMeasures_Element.getParentNode())
+			.insertBefore(itemCount_Element,
+					componentMeasures_Element.getNextSibling());
+		}
+		
+		
+		//		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_COMPONENT_MEASURES) == null) {
+		//			Element componentMeasures_Element = originalDoc
+		//					.createElement("componentMeasures");
+		//			Node itemCount_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_ITEM_COUNT);
+		//			((Element) itemCount_Element.getParentNode())
+		//			.insertBefore(componentMeasures_Element,
+		//					itemCount_Element.getNextSibling());
+		//		}
 		
 		// create Measure Grouping node
 		if (findNode(originalDoc, XPATH_MEASURE_GROUPING) == null) {
@@ -1133,12 +1170,15 @@ public class XmlProcessor {
 		clauseChildElem.setAttribute("type", toCamelCase(dispName));
 		clauseChildElem.setAttribute("uuid", UUIDUtilClient.uuid());
 		mainChildElem.appendChild(clauseChildElem);
-		
-		Element logicalOpElem = originalDoc.createElement("logicalOp");
-		logicalOpElem.setAttribute("displayName", "AND");
-		logicalOpElem.setAttribute("type", "and");
-		
-		clauseChildElem.appendChild(logicalOpElem);
+		//logical AND is not required by stratification clause at the
+		//time of creation of new Measure But Population and Measure Observations
+		// clauses will have Logical AND by Default.
+		if(!nodeName.equalsIgnoreCase("strata")){
+			Element logicalOpElem = originalDoc.createElement("logicalOp");
+			logicalOpElem.setAttribute("displayName", "AND");
+			logicalOpElem.setAttribute("type", "and");
+			clauseChildElem.appendChild(logicalOpElem);
+		}
 		mainChildElem.appendChild(clauseChildElem);
 		
 		return mainChildElem;
@@ -1285,7 +1325,7 @@ public class XmlProcessor {
 					stream));
 			marshaller.setMapping(mapping);
 			marshaller.marshal(qualityDataSetDTO);
-			logger.info("Marshalling of QualityDataSetDTO is successful.."
+			logger.debug("Marshalling of QualityDataSetDTO is successful.."
 					+ stream.toString());
 		} catch (Exception e) {
 			if (e instanceof IOException) {
@@ -1329,7 +1369,7 @@ public class XmlProcessor {
 					stream));
 			marshaller.setMapping(mapping);
 			marshaller.marshal(qualityDataSetDTO);
-			logger.info("Marshalling of QualityDataSetDTO is successful in convertQDMOToSuppleDataXML()"
+			logger.debug("Marshalling of QualityDataSetDTO is successful in convertQDMOToSuppleDataXML()"
 					+ stream.toString());
 		} catch (Exception e) {
 			if (e instanceof IOException) {
@@ -1454,8 +1494,8 @@ public class XmlProcessor {
 		try {
 			
 			NodeList nodesElementLookUpAll = (NodeList) xPath.evaluate(
-					XPATH_MEASURE_ELEMENT_LOOKUP_QDM,			
-				originalDoc.getDocumentElement(), XPathConstants.NODESET);
+					XPATH_MEASURE_ELEMENT_LOOKUP_QDM,
+					originalDoc.getDocumentElement(), XPathConstants.NODESET);
 			List<String> idList = new ArrayList<String>();
 			for (int i = 0; i < nodesElementLookUpAll.getLength(); i++) {
 				Node newNode = nodesElementLookUpAll.item(i);
@@ -1476,5 +1516,4 @@ public class XmlProcessor {
 		}
 		return transform(originalDoc);
 	}
-
 }

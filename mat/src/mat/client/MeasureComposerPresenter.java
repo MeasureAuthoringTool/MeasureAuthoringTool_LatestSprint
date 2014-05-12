@@ -8,6 +8,7 @@ import mat.client.event.MeasureSelectedEvent;
 import mat.client.measure.MeasureNotesPresenter;
 import mat.client.measure.MeasureNotesView;
 import mat.client.measure.metadata.AddEditAuthorsView;
+import mat.client.measure.metadata.AddEditComponentMeasuresView;
 import mat.client.measure.metadata.AddEditMeasureTypeView;
 import mat.client.measure.metadata.MetaDataPresenter;
 import mat.client.measure.metadata.MetaDataView;
@@ -36,6 +37,7 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.Widget;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class MeasureComposerPresenter.
  */
@@ -116,6 +118,7 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 	/** The measure package old presenter. */
 	private MeasurePackagePresenter_Old measurePackagePresenter_old;
 	
+	/** The measure package presenter. */
 	private MeasurePackagePresenter measurePackagePresenter;
 	
 	/** The meta data presenter. */
@@ -324,7 +327,8 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 		MetaDataView mdV = new MetaDataView();
 		AddEditAuthorsView aeaV = new AddEditAuthorsView();
 		AddEditMeasureTypeView aemtV = new AddEditMeasureTypeView();
-		MetaDataPresenter mdP = new MetaDataPresenter(mdV, aeaV, aemtV, buttonBar, MatContext.get().getListBoxCodeProvider());
+		AddEditComponentMeasuresView aecmV = new AddEditComponentMeasuresView();
+		MetaDataPresenter mdP = new MetaDataPresenter(mdV, aeaV, aemtV,aecmV, buttonBar, MatContext.get().getListBoxCodeProvider());
 		return mdP;
 	}
 	
