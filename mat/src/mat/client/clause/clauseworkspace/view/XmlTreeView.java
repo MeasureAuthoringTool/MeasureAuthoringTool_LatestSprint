@@ -1240,7 +1240,8 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	 */
 	@Override
 	public void copy() {
-		copiedNode = selectedNode;
+		copiedNode = selectedNode.cloneNode();
+		copiedNode.setParent(selectedNode.getParent());//Setting Parent node
 	}
 	/* (non-Javadoc)
 	 * @see mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay#paste()
@@ -1248,11 +1249,13 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	@Override
 	public void paste() {
 		if (selectedNode != null) {
-			CellTreeNode pasteNode = copiedNode.cloneNode();
+			CellTreeNode pasteNode = copiedNode.cloneNode();//It was calling copiedNode object before
 			selectedNode.appendChild(pasteNode);
 			closeSelectedOpenNodes(cellTree.getRootTreeNode());
 			selectionModel.setSelected(selectedNode, true);
-			copiedNode = pasteNode;
+			CellTreeNode clonedNode = pasteNode.cloneNode();//created new instance for pasted node, prevent from overriding
+			clonedNode.setParent(pasteNode.getParent());//set parent of the cloned node
+			copiedNode = clonedNode;//Assigning pasted value to the copiedNode
 		}
 	}
 	

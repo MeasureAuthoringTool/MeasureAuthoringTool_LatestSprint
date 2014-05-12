@@ -1,6 +1,7 @@
 package mat.client.measurepackage;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import mat.client.Mat;
 import mat.client.MatPresenter;
@@ -11,10 +12,12 @@ import mat.client.measure.service.MeasureServiceAsync;
 import mat.client.measure.service.SaveMeasureResult;
 import mat.client.measurepackage.MeasurePackagerView.Observer;
 import mat.client.measurepackage.service.MeasurePackageSaveResult;
+import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.ErrorMessageDisplayInterface;
 import mat.client.shared.MatContext;
 import mat.client.shared.MeasurePackageClauseCellListWidget;
 import mat.client.shared.ReadOnlyHelper;
+import mat.client.shared.SecondaryButton;
 import mat.client.shared.SuccessMessageDisplayInterface;
 import mat.client.shared.WarningMessageDisplay;
 import mat.model.QualityDataSetDTO;
@@ -40,6 +43,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 	
 	/** The view. */
 	private PackageView view;
+	
 	/** The model. */
 	private ManageMeasureDetailModel model;
 	
@@ -49,8 +53,58 @@ public class MeasurePackagePresenter implements MatPresenter {
 	/** The packageOverview. */
 	private MeasurePackageOverview packageOverview;
 	
+	/** The db package clauses. */
+	private List<MeasurePackageClauseDetail> dbPackageClauses = new ArrayList<MeasurePackageClauseDetail>();
+	
+	/** The db supp data elements. */
+	private List<QualityDataSetDTO> dbSuppDataElements = new ArrayList<QualityDataSetDTO>();
+	
+	/** The is unsaved data. */
+	private boolean isUnsavedData = false;
+	
+	/**
+	 * Gets the db supp data elements.
+	 *
+	 * @return the db supp data elements
+	 */
+	public List<QualityDataSetDTO> getDbSuppDataElements() {
+		Collections.sort(dbSuppDataElements,new QualityDataSetDTO.Comparator());
+		return dbSuppDataElements;
+	}
+
+	/**
+	 * Sets the db supp data elements.
+	 *
+	 * @param dbSuppDataElements the new db supp data elements
+	 */
+	public void setDbSuppDataElements(
+			List<QualityDataSetDTO> dbSuppDataElements) {
+		this.dbSuppDataElements = dbSuppDataElements;
+	}
+
+	/**
+	 * Gets the db package clauses.
+	 *
+	 * @return the db package clauses
+	 */
+	public List<MeasurePackageClauseDetail> getDbPackageClauses() {
+		return dbPackageClauses;
+	}
+
+	/**
+	 * Sets the db package clauses.
+	 *
+	 * @param dbPackageClauses the new db package clauses
+	 */
+	public void setDbPackageClauses(
+			List<MeasurePackageClauseDetail> dbPackageClauses) {
+		this.dbPackageClauses = dbPackageClauses;
+	}
+
 	/** The service. */
 	private static  MeasureServiceAsync service = MatContext.get().getMeasureService();
+	
+	
 	
 	/**
 	 * The Interface View.
@@ -211,6 +265,13 @@ public class MeasurePackagePresenter implements MatPresenter {
 		 * @param packages the packages
 		 */
 		void buildCellTable(List<MeasurePackageDetail> packages);
+		
+		/**
+		 * Gets the save error message display.
+		 *
+		 * @return the save error message display
+		 */
+		ErrorMessageDisplay getSaveErrorMessageDisplay();
 	}
 	
 	/**
@@ -265,7 +326,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 					@Override
 					public void onClick(final ClickEvent event) {
 						clearMessages();
-						updateSuppDataDetailsFromView();
+						updateSuppDataDetailsFromView(currentDetail);
 						MatContext
 						.get()
 						.getPackageService()
@@ -300,7 +361,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 				clearMessages();
 				view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
 				view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
-				updateDetailsFromView();
+				updateDetailsFromView(currentDetail);
 				if (isValid()) {
 					MatContext.get().getPackageService()
 					.save(currentDetail, new AsyncCallback<MeasurePackageSaveResult>() {
@@ -349,11 +410,15 @@ public class MeasurePackagePresenter implements MatPresenter {
 	
 	/**
 	 * updateDetailsFromView.
+	 *
+	 * @param currentDetail the current detail
 	 */
-	private void updateDetailsFromView() {
+	public void updateDetailsFromView(MeasurePackageDetail currentDetail) {
 		currentDetail.setMeasureId(MatContext.get().getCurrentMeasureId());
 		currentDetail.setPackageClauses(view.getPackageGroupingWidget().getGroupingPopulationList());
+		currentDetail.setToComparePackageClauses(dbPackageClauses);
 		currentDetail.setValueSetDate(null);
+		//this.currentDetail = currentDetail;
 	}
 	
 	
@@ -499,10 +564,20 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.setObserver(new MeasurePackagerView.Observer() {
 			@Override
 			public void onEditClicked(MeasurePackageDetail detail) {
+				//updateDetailsFromView(currentDetail);
+				
+				if(!view.getPackageGroupingWidget().getGroupingPopulationList().equals(dbPackageClauses)){
+					
+					showErrorMessage(view.getSaveErrorMessageDisplay());
+					view.getSaveErrorMessageDisplay().getButtons().get(0).setFocus(true);
+					handleClickEventsOnUnsavedErrorMsg(detail,view.getSaveErrorMessageDisplay().getButtons()
+							, view.getSaveErrorMessageDisplay(), null);
+				} else {
 				currentDetail = new MeasurePackageDetail();
 				currentDetail = detail;
 				clearMessages();
 				setMeasurePackageDetailsOnView();
+				}
 			}
 			@Override
 			public void onDeleteClicked(MeasurePackageDetail detail) {
@@ -511,12 +586,70 @@ public class MeasurePackagePresenter implements MatPresenter {
 			}
 		});
 	}
+	
+	
+	/**
+	 * Show error message.
+	 *
+	 * @param errorMessageDisplay the error message display
+	 */
+	private void showErrorMessage(ErrorMessageDisplay errorMessageDisplay) {
+		String msg = MatContext.get().getMessageDelegate().getSaveErrorMsg();
+		List<String> btn = new ArrayList<String>();
+		btn.add("Yes");
+		btn.add("No");
+		errorMessageDisplay.setMessageWithButtons(msg, btn);
+	}
+	
+	/**
+	 * Handle click events on unsaved error msg.
+	 *
+	 * @param detail the detail
+	 * @param btns the btns
+	 * @param saveErrorMessage the save error message
+	 * @param auditMessage the audit message
+	 */
+	private void handleClickEventsOnUnsavedErrorMsg(final MeasurePackageDetail detail, List<SecondaryButton> btns, final ErrorMessageDisplay saveErrorMessage
+			, final String auditMessage) {
+		isUnsavedData = true;
+		ClickHandler clickHandler = new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				isUnsavedData = false;
+				SecondaryButton button = (SecondaryButton) event.getSource();
+				// If Yes - do not navigate, set focus to the Save button on the Page and clear cell tree
+				// // Else -do not navigate, set focus to the Save button on the Page
+				if ("Yes".equals(button.getText())) {
+					saveErrorMessage.clear();
+					currentDetail = new MeasurePackageDetail();
+					currentDetail = detail;
+					clearMessages();
+					setMeasurePackageDetailsOnView();
+					
+				} else if ("No".equals(button.getText())) {
+					saveErrorMessage.clear();
+					view.getPackageGroupingWidget().getSaveGrouping().setFocus(true);
+				}
+			}
+		};
+		for (SecondaryButton secondaryButton : btns) {
+			secondaryButton.addClickHandler(clickHandler);
+		}
+		if (isUnsavedData) {
+			MatContext.get().setErrorTab(true);
+		}
+	}
+	
 	/**
 	 * Update supp data details from view.
+	 *
+	 * @param currentDetail the current detail
 	 */
-	private void updateSuppDataDetailsFromView() {
+	public void updateSuppDataDetailsFromView(MeasurePackageDetail currentDetail) {
 		currentDetail.setSuppDataElements(view.getQDMElementsInSuppElements());
 		currentDetail.setQdmElements(view.getQDMElements());
+		currentDetail.setToCompareSuppDataElements(dbSuppDataElements);
+		
 	}
 	/**
 	 * set Overview.
@@ -651,6 +784,11 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.setClauses(remainingClauses);
 		view.setQDMElementsInSuppElements(packageOverview.getSuppDataElements());
 		view.setQDMElements(packageOverview.getQdmElements());
+		dbPackageClauses.clear();
+		dbPackageClauses.addAll(currentDetail.getPackageClauses());
+		dbSuppDataElements.clear();
+		dbSuppDataElements.addAll(packageOverview.getSuppDataElements());
+		
 	}
 	
 	/**
@@ -698,6 +836,24 @@ public class MeasurePackagePresenter implements MatPresenter {
 			}
 		}
 		return max;
+	}
+	
+	/**
+	 * Gets the current detail.
+	 *
+	 * @return the current detail
+	 */
+	public MeasurePackageDetail getCurrentDetail() {
+		return currentDetail;
+	}
+	
+	/**
+	 * Gets the view.
+	 *
+	 * @return the view
+	 */
+	public PackageView getView() {
+		return view;
 	}
 }
 

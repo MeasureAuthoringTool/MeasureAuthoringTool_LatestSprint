@@ -12,6 +12,8 @@ import mat.client.clause.clauseworkspace.presenter.PopulationWorkspacePresenter;
 import mat.client.clause.clauseworkspace.presenter.XmlTreePresenter;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.metadata.MetaDataPresenter;
+import mat.client.measurepackage.MeasurePackageDetail;
+import mat.client.measurepackage.MeasurePackagePresenter;
 import mat.client.shared.ui.MATTabPanel;
 import mat.shared.ConstantMessages;
 import mat.shared.DynamicTabBarFormatter;
@@ -347,6 +349,14 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 						composerPresenter.getMeasureComposerTabLayout().presenterMap.get(populationWorkspaceTab);
 				validateClauseWorkspaceTab(clauseWorkspacePresenter.getSelectedTreePresenter(), selectedIndex);
 			}
+			else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 5) {
+				int measurePackagerTab = 5;
+				MeasurePackagePresenter measurePackagerPresenter = (MeasurePackagePresenter) 
+						composerPresenter.getMeasureComposerTabLayout().presenterMap.get(measurePackagerTab);
+				validateNewMeasurePackageTab(selectedIndex, measurePackagerPresenter);
+			}
+			
+			
 		} else if ((selectedIndex == 0) && (previousPresenter instanceof MetaDataPresenter)) {
 			MetaDataPresenter metaDataPresenter = (MetaDataPresenter) previousPresenter;
 			validateMeasureDetailsTab(selectedIndex, metaDataPresenter);
@@ -355,6 +365,10 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 			validateClauseWorkspaceTab(clauseWorkspacePresenter.getSelectedTreePresenter(), selectedIndex);
 		} else if (previousPresenter instanceof XmlTreePresenter) {
 			validateClauseWorkspaceTab((XmlTreePresenter) previousPresenter, selectedIndex);
+		}
+		else if (previousPresenter instanceof MeasurePackagePresenter) {
+			MeasurePackagePresenter measurePackagerPresenter = (MeasurePackagePresenter) previousPresenter;
+			validateNewMeasurePackageTab(selectedIndex, measurePackagerPresenter);
 		}
 		return isUnsavedData;
 	}
@@ -388,6 +402,29 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 	}
 	
 	/**
+	 * Validate new measure package tab.
+	 *
+	 * @param selectedIndex the selected index
+	 * @param measurePackagerPresenter the measure packager presenter
+	 */
+	private void validateNewMeasurePackageTab(int selectedIndex, 
+			MeasurePackagePresenter measurePackagerPresenter) {
+		if (!isMeasurePackageDetailsSame(measurePackagerPresenter)) {
+			saveErrorMessage = measurePackagerPresenter.getView().getSaveErrorMessageDisplay();
+			saveErrorMessage.clear();
+			saveButton = measurePackagerPresenter.getView().getPackageGroupingWidget().getSaveGrouping();
+			//saveButton = (PrimaryButton)measurePackagerPresenter.getView().getAddQDMElementsToMeasureButton();
+			showErrorMessage(measurePackagerPresenter.getView().getSaveErrorMessageDisplay());
+			measurePackagerPresenter.getView().getSaveErrorMessageDisplay().getButtons().get(0).setFocus(true);
+			handleClickEventsOnUnsavedErrorMsg(selectedIndex, measurePackagerPresenter.getView().getSaveErrorMessageDisplay().getButtons(), 
+					measurePackagerPresenter.getView().getSaveErrorMessageDisplay(), null);
+		} else {
+			isUnsavedData = false;
+		}
+		
+	}
+	
+	/**
 	 * Validate clause workspace tab.
 	 * 
 	 * @param xmlTreePresenter
@@ -412,6 +449,10 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 			isUnsavedData = false;
 		}
 	}
+	
+	
+	
+	
 	
 	/**
 	 * On Click Events.
@@ -500,6 +541,25 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 			dbData.setToCompareComponentMeasures(metaDataPresenter.getDbComponentMeasuresSelectedList());
 			return pageData.equals(dbData);
 		}
+	}
+	
+	/**
+	 * Checks if is measure package details same.
+	 *
+	 * @param measurePackagePresenter the measure package presenter
+	 * @return true, if is measure package details same
+	 */
+	private boolean isMeasurePackageDetailsSame(MeasurePackagePresenter measurePackagePresenter){
+		
+		MeasurePackageDetail pageData = new MeasurePackageDetail();
+		measurePackagePresenter.updateDetailsFromView(pageData);
+		measurePackagePresenter.updateSuppDataDetailsFromView(pageData);
+		MeasurePackageDetail dbData = measurePackagePresenter.getCurrentDetail();
+		pageData.setToComparePackageClauses(pageData.getPackageClauses());
+		dbData.setToComparePackageClauses(measurePackagePresenter.getDbPackageClauses());
+		pageData.setToCompareSuppDataElements(pageData.getSuppDataElements());
+		dbData.setToCompareSuppDataElements(measurePackagePresenter.getDbSuppDataElements());
+		return pageData.equals(dbData);
 	}
 	
 	

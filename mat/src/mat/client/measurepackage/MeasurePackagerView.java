@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import mat.client.CustomPager;
 import mat.client.clause.QDSAppliedListModel;
+import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.ErrorMessageDisplayInterface;
 import mat.client.shared.LabelBuilder;
 import mat.client.shared.MatButtonCell;
@@ -83,6 +84,9 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 		void onDeleteClicked(MeasurePackageDetail detail);
 	}
 	
+	/**
+	 * The Interface Templates.
+	 */
 	interface Templates extends SafeHtmlTemplates {
 		/**
 		 * The template for this Cell, which includes styles and a value.
@@ -144,19 +148,47 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 	/** The Observer. */
 	private Observer observer;
 	
+	/** The save error message display. */
+	private ErrorMessageDisplay saveErrorMessageDisplay = new ErrorMessageDisplay();
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measurepackage.MeasurePackagePresenter.PackageView#getSaveErrorMessageDisplay()
+	 */
+	@Override
+	public ErrorMessageDisplay getSaveErrorMessageDisplay() {
+		return saveErrorMessageDisplay;
+	}
 	//added for adding cell list
+	/** The qdm cell list. */
 	private CellList<QualityDataSetDTO> qdmCellList;
+	
+	/** The qdm list prov. */
 	private ListDataProvider<QualityDataSetDTO> qdmListProv;
+	
+	/** The qdm population list. */
 	private ArrayList<QualityDataSetDTO> qdmPopulationList = new ArrayList<QualityDataSetDTO>();
+	
+	/** The sup data cell list. */
 	private CellList<QualityDataSetDTO> supDataCellList;
+	
+	/** The sup list prov. */
 	private ListDataProvider<QualityDataSetDTO> supListProv;
+	
+	/** The sup population list. */
 	private ArrayList<QualityDataSetDTO> supPopulationList = new ArrayList<QualityDataSetDTO>();
+	
+	/** The qdm sel model. */
 	private SingleSelectionModel<QualityDataSetDTO> qdmSelModel	=
 			new SingleSelectionModel<QualityDataSetDTO>();
+	
+	/** The sup data sel model. */
 	private SingleSelectionModel<QualityDataSetDTO> supDataSelModel =
 			new SingleSelectionModel<QualityDataSetDTO>();
 	
+	/** The left pager panel. */
 	private ScrollPanel leftPagerPanel = new ScrollPanel();
+	
+	/** The right pager panel. */
 	private ScrollPanel rightPagerPanel = new ScrollPanel();
 	
 	/**
@@ -168,6 +200,7 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 		cellTablePanel.removeStyleName("valueSetSearchPanel");
 		content.getElement().setAttribute("id", "MeasurePackagerContentFlowPanel");
 		createNew.getElement().setAttribute("id", "CreateNewGroupingButton");
+		content.add(saveErrorMessageDisplay);
 		content.add(cellTablePanel);
 		content.add(new SpacerWidget());
 		content.add(createNew);
@@ -321,6 +354,11 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 		return panel;
 	}
 	
+	/**
+	 * Gets the qdm cell list.
+	 *
+	 * @return the qdm cell list
+	 */
 	private CellList<QualityDataSetDTO> getQdmCellList()
 	{
 		//left cell list initialization
@@ -352,6 +390,12 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 		//End
 		return qdmCellList;
 	}
+	
+	/**
+	 * Gets the sup cell list.
+	 *
+	 * @return the sup cell list
+	 */
 	private CellList<QualityDataSetDTO> getSupCellList()
 	{
 		//left cell list initialization
@@ -701,27 +745,45 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 		packageGroupingWidget.getRightPagerPanel().setDisplay(packageGroupingWidget.getRightCellList());
 		packageGroupingWidget.getRightRangeLabelPager().setDisplay(packageGroupingWidget.getRightCellList());
 	}
+	
 	/**
+	 * Gets the package grouping widget.
+	 *
 	 * @return the packageGroupingWidget
 	 */
 	@Override
 	public MeasurePackageClauseCellListWidget getPackageGroupingWidget() {
 		return packageGroupingWidget;
 	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measurepackage.MeasurePackagePresenter.PackageView#setAppliedQdmList(mat.client.clause.QDSAppliedListModel)
+	 */
 	@Override
 	public void setAppliedQdmList(QDSAppliedListModel appliedListModel) {
 		packageGroupingWidget.setAppliedQdmList(appliedListModel.getAppliedQDMs());
 	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measurepackage.MeasurePackagePresenter.PackageView#getCreateNewButton()
+	 */
 	@Override
 	public HasClickHandlers getCreateNewButton() {
 		return createNew;
 	}
+	
 	/**
+	 * Gets the observer.
+	 *
 	 * @return Observer.
 	 */
 	public Observer getObserver() {
 		return observer;
 	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measurepackage.MeasurePackagePresenter.PackageView#setObserver(mat.client.measurepackage.MeasurePackagerView.Observer)
+	 */
 	@Override
 	public void setObserver(Observer observer) {
 		this.observer = observer;
@@ -731,6 +793,10 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 	 *
 	 */
 	class QualityDataSetCell implements Cell<QualityDataSetDTO> {
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.cell.client.Cell#render(com.google.gwt.cell.client.Cell.Context, java.lang.Object, com.google.gwt.safehtml.shared.SafeHtmlBuilder)
+		 */
 		@Override
 		public void render(com.google.gwt.cell.client.Cell.Context context, QualityDataSetDTO value, SafeHtmlBuilder sb) {
 			if (value == null) {
@@ -742,24 +808,44 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 				sb.append(rendered);
 			}
 		}
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.cell.client.Cell#dependsOnSelection()
+		 */
 		@Override
 		public boolean dependsOnSelection() {
 			return false;
 		}
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.cell.client.Cell#getConsumedEvents()
+		 */
 		@Override
 		public Set<String> getConsumedEvents() {
 			return null;
 		}
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.cell.client.Cell#handlesSelection()
+		 */
 		@Override
 		public boolean handlesSelection() {
 			return false;
 		}
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.cell.client.Cell#isEditing(com.google.gwt.cell.client.Cell.Context, com.google.gwt.dom.client.Element, java.lang.Object)
+		 */
 		@Override
 		public boolean isEditing(
 				com.google.gwt.cell.client.Cell.Context context,
 				Element parent, QualityDataSetDTO value) {
 			return false;
 		}
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.cell.client.Cell#onBrowserEvent(com.google.gwt.cell.client.Cell.Context, com.google.gwt.dom.client.Element, java.lang.Object, com.google.gwt.dom.client.NativeEvent, com.google.gwt.cell.client.ValueUpdater)
+		 */
 		@Override
 		public void onBrowserEvent(
 				com.google.gwt.cell.client.Cell.Context context,
@@ -767,12 +853,20 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 				ValueUpdater<QualityDataSetDTO> valueUpdater) {
 			
 		}
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.cell.client.Cell#resetFocus(com.google.gwt.cell.client.Cell.Context, com.google.gwt.dom.client.Element, java.lang.Object)
+		 */
 		@Override
 		public boolean resetFocus(
 				com.google.gwt.cell.client.Cell.Context context,
 				Element parent, QualityDataSetDTO value) {
 			return false;
 		}
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.cell.client.Cell#setValue(com.google.gwt.cell.client.Cell.Context, com.google.gwt.dom.client.Element, java.lang.Object)
+		 */
 		@Override
 		public void setValue(com.google.gwt.cell.client.Cell.Context context,
 				Element parent, QualityDataSetDTO value) {

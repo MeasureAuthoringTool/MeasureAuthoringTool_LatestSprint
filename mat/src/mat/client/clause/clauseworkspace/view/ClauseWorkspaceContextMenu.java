@@ -26,6 +26,7 @@ import com.google.gwt.user.client.ui.MenuItemSeparator;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.xml.client.Node;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class ClauseWorkspaceContextMenu.
  */
@@ -113,7 +114,7 @@ public class ClauseWorkspaceContextMenu {
 	/** The edit qdm menu. */
 	MenuItem editQDMMenu;
 	
-	/** The View Human Readable menu **/
+	/** The View Human Readable menu *. */
 	MenuItem viewHumanReadableMenu;
 	
 	/** The popup menu bar. */
@@ -233,7 +234,7 @@ public class ClauseWorkspaceContextMenu {
 						
 						@Override
 						public void onSuccess(String result) {
-							showHumanReadableDialogBox(result);							
+							showHumanReadableDialogBox(result);
 						}
 									
 
@@ -246,7 +247,6 @@ public class ClauseWorkspaceContextMenu {
 			}
 		};
 		viewHumanReadableMenu = new MenuItem(template.menuTable("View Human Readable", ""), viewHumanReadableCmd);
-		
 	}
 	/**
 	 * Method displays the rightClick options based on the nodeType of the node
@@ -413,13 +413,16 @@ public class ClauseWorkspaceContextMenu {
 		popupMenuBar.addItem(addMenuRHS);
 		popupMenuBar.addSeparator(separator);
 		addCommonMenus();
-		copyMenu.setEnabled(true);
-		if ((xmlTreeDisplay.getCopiedNode() != null)
-				&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE)
-				&& ((xmlTreeDisplay.getSelectedNode().getChilds() == null)
-						|| (xmlTreeDisplay.getSelectedNode().getChilds().size() < 2))) {
-			pasteMenu.setEnabled(true);
-		}
+		//MAT-3887 Disabling copy and paste options to avoid adding the relationship to relationship
+		copyMenu.setEnabled(false);
+//		if ((xmlTreeDisplay.getCopiedNode() != null)
+//				&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE)
+//				&& ((xmlTreeDisplay.getSelectedNode().getChilds() == null)
+//						|| (xmlTreeDisplay.getSelectedNode().getChilds().size() < 2))) {
+//			pasteMenu.setEnabled(true);
+//		}
+		pasteMenu.setEnabled(false);
+		//End MAT-3887
 		if (xmlTreeDisplay.getSelectedNode().getParent().getNodeType() != CellTreeNode.CLAUSE_NODE) {
 			deleteMenu.setEnabled(true);
 		}
@@ -446,6 +449,8 @@ public class ClauseWorkspaceContextMenu {
 		//Commented for User story MAT-3167.
 		/*createAddMenus(MatContext.get().logicalOps, CellTreeNode.LOGICAL_OP_NODE
 				, subMenuBar);*/ // creating logical Operators Menu 2nd level
+		createAddMenus(MatContext.get().setOps, CellTreeNode.SET_OP_NODE
+				, subMenuBar);
 		createAddQDM_MenuItem(subMenuBar);
 		MenuBar timing = new MenuBar(true);
 		subMenuBar.addItem("Timing", timing); //Timing menu 2nd level
@@ -697,6 +702,8 @@ public class ClauseWorkspaceContextMenu {
 		//Commented for User story MAT-3167.
 		//createAddMenus(MatContext.get().logicalOps,
 		//CellTreeNode.LOGICAL_OP_NODE, menuBar);// creating logical Operators Menu 2nd level
+		createAddMenus(MatContext.get().setOps, CellTreeNode.SET_OP_NODE
+				, menuBar);
 		createAddQDM_MenuItem(menuBar);
 		MenuBar timingMenuBar = new MenuBar(true);
 		menuBar.addItem("Timing", timingMenuBar); //Timing menu 2nd level
@@ -996,14 +1003,23 @@ public class ClauseWorkspaceContextMenu {
 		return sortedName.last() + 1;
 	}
 	
+	/**
+	 * Show human readable dialog box.
+	 *
+	 * @param result the result
+	 */
 	private native void showHumanReadableDialogBox(String result) /*-{
-		var humanReadableWindow = window.open("","_blank");
-		if(humanReadableWindow && humanReadableWindow.top){
-			humanReadableWindow.document.write(result);
-		}
-	}-*/;
+	var humanReadableWindow = window.open("","","width=1000,height=700");
+	if(humanReadableWindow && humanReadableWindow.top){
+		//Populate the human readable in the new window.
+		humanReadableWindow.document.write(result);
+		humanReadableWindow.document.title = "Human Readable.";
+	}
+}-*/;
 	
 	/**
+	 * Gets the view human readable menu.
+	 *
 	 * @return MenuItem.
 	 */
 	public MenuItem getViewHumanReadableMenu() {

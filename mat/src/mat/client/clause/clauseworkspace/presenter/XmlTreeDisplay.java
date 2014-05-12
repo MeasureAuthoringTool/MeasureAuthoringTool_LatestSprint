@@ -118,7 +118,7 @@ public interface XmlTreeDisplay {
 	 * @return the copied node
 	 */
 	public CellTreeNode getCopiedNode();
-	
+		
 	/**
 	 * Refresh cell tree after adding.
 	 * 
@@ -144,6 +144,7 @@ public interface XmlTreeDisplay {
 	 *            the new copied node
 	 */
 	public void setCopiedNode(CellTreeNode cellTreeNode);
+	
 	
 	/**
 	 * Sets the dirty.

@@ -301,6 +301,9 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	/** The selection model. */
 	private MultiSelectionModel<QualityDataSetDTO> selectionModel;
 	
+	/** The measure selection model. */
+	private MultiSelectionModel<ManageMeasureSearchModel.Result> measureSelectionModel;
+	
 	/** The cell table. */
 	private CellTable<QualityDataSetDTO> cellTable;
 	
@@ -1172,6 +1175,54 @@ public class MetaDataView implements MetaDataDetailDisplay{
 		measureSearchHeader.getElement().setAttribute("tabIndex", "0");
 		TableCaptionElement caption = elem.createCaption();
 		caption.appendChild(measureSearchHeader.getElement());
+		measureSelectionModel = new MultiSelectionModel<ManageMeasureSearchModel.Result>();
+         MatCheckBoxCell chbxCell = new MatCheckBoxCell(false, true);
+		
+		Column<ManageMeasureSearchModel.Result, Boolean> selectColumn = new Column<ManageMeasureSearchModel.Result, Boolean>(chbxCell) {
+			
+			@Override
+			public Boolean getValue(Result object) {
+				boolean isSelected = false;
+				if (componentMeasureSelectedList!=null && componentMeasureSelectedList.size() > 0) {
+					for (int i = 0; i < componentMeasureSelectedList.size(); i++) {
+						if (componentMeasureSelectedList.get(i).getId().equalsIgnoreCase(object.getId())) {
+							isSelected = true;
+							measureSelectionModel.setSelected(object, isSelected);
+							break;
+						}
+					}
+				} else {
+					isSelected = false;
+					}
+				return isSelected;
+			}
+		};  
+		
+          selectColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, Boolean>() {
+			
+			@Override
+			public void update(int index, Result object, Boolean value) {
+				measureSelectionModel.setSelected(object, value);
+				if(value){
+					componentMeasureSelectedList.add(object);
+				}
+				else{
+					for (int i = 0; i < componentMeasureSelectedList.size(); i++) {
+						if (componentMeasureSelectedList.get(i).getId().equalsIgnoreCase(object.getId())) {
+							componentMeasureSelectedList.remove(i);
+							break;
+						}
+					}
+				}
+				componentMeasuresLabel.setText("Selected Items: " + componentMeasureSelectedList.size());
+			}
+		});
+		
+		//table.addColumn(selectColumn, SafeHtmlUtils.fromSafeConstant("<span title='Select Column'>"
+			//	+ "Select" + "</span>"));
+          componentMeasureCellTable.addColumn(selectColumn, SafeHtmlUtils.fromSafeConstant("<span title='Select'>"
+  				+ "Select" + "</span>"));
+		
 			Column<ManageMeasureSearchModel.Result, SafeHtml> measureNameColumn = 
 					new Column<ManageMeasureSearchModel.Result, SafeHtml>(new SafeHtmlCell()){
 
@@ -1221,6 +1272,7 @@ public class MetaDataView implements MetaDataDetailDisplay{
 	public void buildComponentMeasuresSelectedList(List<ManageMeasureSearchModel.Result> result){
 		horzComponentMeasurePanel.clear(); 
 		componentMeasuresListSPanel.clear();
+		componentMeasuresSelectedListVPanel.clear();
 		componentMeasuresListSPanel.setStyleName("cellTablePanel");
 		if(result.size()>0){
 		componentMeasureCellTable = new CellTable<ManageMeasureSearchModel.Result>();
@@ -1253,7 +1305,16 @@ public class MetaDataView implements MetaDataDetailDisplay{
 		componentMeasureCellTable.getElement().setAttribute("aria-describedby", "componentMeasureListSummary");
 		componentMeasuresListVPanel.add(componentMeasuresListSPanel);
 		horzComponentMeasurePanel.add(componentMeasuresListVPanel);
+		VerticalPanel vPanel = new VerticalPanel();
+		vPanel.setWidth("10px");
+		horzComponentMeasurePanel.add(vPanel);
+		SimplePanel sPanel = new SimplePanel();
+		sPanel.setHeight("75px");
+		componentMeasuresSelectedListVPanel.add(sPanel);
+		componentMeasuresLabel.setText("Selected Items: " + componentMeasureSelectedList.size());
+		componentMeasuresSelectedListVPanel.add(componentMeasuresLabel);
 		horzComponentMeasurePanel.add(componentMeasuresSelectedListVPanel);
+		
 		} else {
 			HTML desc = new HTML("<p> No Component Measures Selected.</p>");
 			componentMeasuresListSPanel.setSize("200px", "75px");

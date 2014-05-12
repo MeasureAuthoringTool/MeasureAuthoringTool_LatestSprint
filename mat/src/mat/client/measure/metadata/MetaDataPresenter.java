@@ -780,7 +780,8 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	}
 	
 	
-	
+	/** The page size. */
+	private int PAGE_SIZE = 25;
 	
 	/** The panel. */
 	private SimplePanel panel = new SimplePanel();
@@ -914,6 +915,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			@Override
 			public void onClick(ClickEvent event) {
 				getMetaDataDisplay().getSaveErrorMsg().clear();
+				addEditComponentMeasuresDisplay.getSearchString().setValue("");
 				if (currentMeasureDetail.getComponentMeasuresSelectedList() != null) {
 					addEditComponentMeasuresDisplay.setComponentMeasureSelectedList(currentMeasureDetail.getComponentMeasuresSelectedList());
 					} else {
@@ -1128,8 +1130,6 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			
 			@Override
 			public void onClick(ClickEvent event) {
-				addEditComponentMeasuresDisplay.getSuccessMessageDisplay().setMessage(MatContext.get()
-						.getMessageDelegate().getCOMPONENT_MEASURES_ADDED_SUCCESSFULLY());
 				currentMeasureDetail.setComponentMeasuresSelectedList(addEditComponentMeasuresDisplay.getComponentMeasureSelectedList());
 				
 			}
@@ -1140,7 +1140,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			@Override
 			public void onClick(ClickEvent event) {
 				
-				searchMeasuresList(addEditComponentMeasuresDisplay.getSearchString().getValue(), 1, Integer.MAX_VALUE, 1);
+				searchMeasuresList(addEditComponentMeasuresDisplay.getSearchString().getValue(), 1, PAGE_SIZE, 1);
 			}
 		});
 		
@@ -1773,10 +1773,11 @@ private void setAuthorsListOnView() {
 	 */
 	private void displayAddEditComponentMeasures() {
 		isSubView = true;
+		clearMessages();
 		VerticalPanel vPanel = new VerticalPanel();
 		//addEditComponentMeasuresDisplay.setReturnToLink("Return to Previous");
 	    //getComponentMeasures();
-		searchMeasuresList("",1,Integer.MAX_VALUE,1);
+		searchMeasuresList("",1,PAGE_SIZE,1);
 		//currentMeasureTypeList = new ManageMeasureTypeModel(currentMeasureDetail.getMeasureTypeList());
 		//currentMeasureTypeList.setPageSize(SearchView.PAGE_SIZE_ALL);
 		
