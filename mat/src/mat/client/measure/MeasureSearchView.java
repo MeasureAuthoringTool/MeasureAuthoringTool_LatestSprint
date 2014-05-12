@@ -4,6 +4,9 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.apache.tools.ant.taskdefs.Sleep;
+
 import mat.client.CustomPager;
 import mat.client.measure.ManageMeasureSearchModel.Result;
 import mat.client.measure.metadata.CustomCheckBox;
@@ -11,6 +14,7 @@ import mat.client.resource.CellTableResource;
 import mat.client.shared.LabelBuilder;
 import mat.client.shared.MatButtonCell;
 import mat.client.shared.MatCheckBoxCell;
+import mat.client.shared.MatContext;
 import mat.client.shared.MatSafeHTMLCell;
 import mat.client.shared.MatSimplePager;
 import mat.client.shared.SpacerWidget;
@@ -42,14 +46,20 @@ import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.HasKeyboardSelectionPolicy.KeyboardSelectionPolicy;
 import com.google.gwt.user.cellview.client.Header;
 import com.google.gwt.user.cellview.client.RowStyles;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
+import com.google.gwt.view.client.AsyncDataProvider;
+import com.google.gwt.view.client.HasData;
 import com.google.gwt.view.client.ListDataProvider;
 import com.google.gwt.view.client.MultiSelectionModel;
+import com.google.gwt.view.client.Range;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class MeasureSearchView.
  * @author jnarang
@@ -80,6 +90,8 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 	private String cellTableEvenRow = "cellTableEvenRow";
 	/** The cell table odd row. */
 	private String cellTableOddRow = "cellTableOddRow";
+	
+	private int index;
 	/**
 	 * Measure Library Table Title.
 	 */
@@ -288,32 +300,60 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 				});
 				table.addColumn(editColumn, SafeHtmlUtils.fromSafeConstant("<span title='Edit'>" + "Edit" + "</span>"));
 				//Share
-				Cell<String> shareButton = new MatButtonCell("Click to view sharable", "customShareButton");
-				Column<Result, String> shareColumn = new Column<ManageMeasureSearchModel.Result, String>(shareButton) {
-					@Override
-					public String getValue(ManageMeasureSearchModel.Result object) {
-						return "Share";
-					}
+				
+				Column<ManageMeasureSearchModel.Result, SafeHtml> shareColumn =
+					new Column<ManageMeasureSearchModel.Result, SafeHtml>(
+							new ClickableSafeHtmlCell()) {
+                           
+								@Override
+								public SafeHtml getValue(Result object) {
+									SafeHtmlBuilder sb = new SafeHtmlBuilder();
+									String title ="Click to view sharable";
+									String cssClass = "customShareButton" ;
+									if(object.isSharable()){
+										sb.appendHtmlConstant("<button type=\"button\" title='"
+												+ title + "' tabindex=\"0\" class=\" " + cssClass + "\"></button>");
+									}
+									return sb.toSafeHtml();
+								}
+					
 				};
-				shareColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, String>() {
+
+				shareColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, SafeHtml>() {
 					@Override
-					public void update(int index, ManageMeasureSearchModel.Result object, String value) {
-						observer.onShareClicked(object);
+					public void update(int index, ManageMeasureSearchModel.Result object, SafeHtml value) {
+						if(object.isSharable())
+							observer.onShareClicked(object);
 					}
+
+					
 				});
 				table.addColumn(shareColumn, SafeHtmlUtils.fromSafeConstant("<span title='Share'>" + "Share" + "</span>"));
 				//Clone
-				Cell<String> cloneButton = new MatButtonCell("Click to view cloneable", "customCloneButton");
-				Column<Result, String> cloneColumn = new Column<ManageMeasureSearchModel.Result, String>(cloneButton) {
-					@Override
-					public String getValue(ManageMeasureSearchModel.Result object) {
-						return "Clone";
-					}
+				
+				Column<ManageMeasureSearchModel.Result, SafeHtml> cloneColumn =
+					new Column<ManageMeasureSearchModel.Result, SafeHtml>(
+							new ClickableSafeHtmlCell()) {
+                           
+								@Override
+								public SafeHtml getValue(Result object) {
+									SafeHtmlBuilder sb = new SafeHtmlBuilder();
+									String title ="Click to view cloneable";
+									String cssClass = "customCloneButton" ;
+									if(object.isSharable()){
+										sb.appendHtmlConstant("<button type=\"button\" title='"
+												+ title + "' tabindex=\"0\" class=\" " + cssClass + "\"></button>");
+									}
+									return sb.toSafeHtml();
+								}
+					
 				};
-				cloneColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, String>() {
+
+				cloneColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, SafeHtml>() {
 					@Override
-					public void update(int index, ManageMeasureSearchModel.Result object, String value) {
-						observer.onCloneClicked(object);
+					public void update(int index, ManageMeasureSearchModel.Result object, SafeHtml value) {
+						if(object.isClonable())
+							observer.onCloneClicked(object);
 					}
 				});
 				table.addColumn(cloneColumn, SafeHtmlUtils.fromSafeConstant("<span title='Clone'>" + "Clone" + "</span>"));
@@ -442,7 +482,7 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 	
 	
 	/**
-	 *
+	 * Clear bulk export check boxes.
 	 */
 	public void clearBulkExportCheckBoxes(){
 		List<Result> displayedItems = new ArrayList<Result>();
@@ -452,29 +492,116 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 		}
 		observer.onClearAllBulkExportClicked();
 	}
+	
 	/**
 	 * Builds the cell table.
 	 *
 	 * @param results the results
+	 * @param filter the filter
+	 * @param searchText the search text
 	 */
-	public void buildCellTable(ManageMeasureSearchModel results) {
+//	public void buildCellTable(ManageMeasureSearchModel results) {
+//		cellTablePanel.clear();
+//		cellTablePanel.setStyleName("cellTablePanel");
+//		if((results.getData()!=null) && (results.getData().size() > 0)){
+//			table = new CellTable<ManageMeasureSearchModel.Result>(PAGE_SIZE,
+//					(Resources) GWT.create(CellTableResource.class));
+//			table.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
+//			ListDataProvider<ManageMeasureSearchModel.Result> sortProvider = new ListDataProvider<ManageMeasureSearchModel.Result>();
+//			selectedMeasureList = new ArrayList<Result>();
+//			selectedMeasureList.addAll(results.getData());
+//			table.setRowData(selectedMeasureList);
+//			table.setPageSize(PAGE_SIZE);
+//			table.redraw();
+//			table.setRowCount(selectedMeasureList.size(), true);
+//			sortProvider.refresh();
+//			sortProvider.getList().addAll(results.getData());
+//			table = addColumnToTable();
+//			sortProvider.addDataDisplay(table);
+//			CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
+//			MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
+//			spager.setPageStart(0);
+//			buildCellTableCssStyle();
+//			spager.setDisplay(table);
+//			spager.setPageSize(PAGE_SIZE);
+//			table.setWidth("100%");
+//			table.setColumnWidth(0, 25.0, Unit.PCT);
+//			table.setColumnWidth(1, 20.0, Unit.PCT);
+//			table.setColumnWidth(2, 23.0, Unit.PCT);
+//			table.setColumnWidth(3, 2.0, Unit.PCT);
+//			table.setColumnWidth(4, 2.0, Unit.PCT);
+//			table.setColumnWidth(5, 2.0, Unit.PCT);
+//			table.setColumnWidth(6, 2.0, Unit.PCT);
+//			table.setColumnWidth(7, 22.0, Unit.PCT);
+//			Label invisibleLabel = (Label) LabelBuilder.buildInvisibleLabel("measureSearchSummary",
+//					"In the following Measure List table, Measure Name is given in first column,"
+//							+ " Version in second column, Finalized Date in third column,"
+//							+ "History in fourth column, Edit in fifth column, Share in sixth column"
+//							+ "Clone in seventh column and Export in eight column.");
+//			table.getElement().setAttribute("id", "MeasureSearchCellTable");
+//			table.getElement().setAttribute("aria-describedby", "measureSearchSummary");
+//			cellTablePanel.add(invisibleLabel);
+//			cellTablePanel.add(table);
+//			cellTablePanel.add(new SpacerWidget());
+//			cellTablePanel.add(spager);
+//		}
+//		
+//		else{
+//			Label measureSearchHeader = new Label(getMeasureListLabel());
+//			measureSearchHeader.getElement().setId("measureSearchHeader_Label");
+//			measureSearchHeader.setStyleName("recentSearchHeader");
+//			measureSearchHeader.getElement().setAttribute("tabIndex", "0");
+//			HTML desc = new HTML("<p> No "+ getMeasureListLabel()+".</p>");
+//			cellTablePanel.add(measureSearchHeader);
+//			cellTablePanel.add(new SpacerWidget());
+//			cellTablePanel.add(desc);
+//			
+//		}
+//	}
+	
+	public void buildCellTable(ManageMeasureSearchModel results,final int filter, final String searchText) {
 		cellTablePanel.clear();
 		cellTablePanel.setStyleName("cellTablePanel");
 		if((results.getData()!=null) && (results.getData().size() > 0)){
 			table = new CellTable<ManageMeasureSearchModel.Result>(PAGE_SIZE,
 					(Resources) GWT.create(CellTableResource.class));
 			table.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
-			ListDataProvider<ManageMeasureSearchModel.Result> sortProvider = new ListDataProvider<ManageMeasureSearchModel.Result>();
 			selectedMeasureList = new ArrayList<Result>();
 			selectedMeasureList.addAll(results.getData());
 			table.setRowData(selectedMeasureList);
+			table.setRowCount(results.getResultsTotal(), true);
 			table.setPageSize(PAGE_SIZE);
 			table.redraw();
-			table.setRowCount(selectedMeasureList.size(), true);
-			sortProvider.refresh();
-			sortProvider.getList().addAll(results.getData());
+		    AsyncDataProvider<ManageMeasureSearchModel.Result> provider = new AsyncDataProvider<ManageMeasureSearchModel.Result>() {
+		      @Override
+		      protected void onRangeChanged(HasData<ManageMeasureSearchModel.Result> display) {
+		        final int start = display.getVisibleRange().getStart();
+		        index = start;
+		        AsyncCallback<ManageMeasureSearchModel> callback = new AsyncCallback<ManageMeasureSearchModel>() {
+		          @Override
+		          public void onFailure(Throwable caught) {
+		            Window.alert(caught.getMessage());
+		          }
+		          @Override
+		          public void onSuccess(ManageMeasureSearchModel result) {
+		        	  List<ManageMeasureSearchModel.Result> manageMeasureSearchList = 
+		        			  new ArrayList<ManageMeasureSearchModel.Result>();		        	  
+		        	  manageMeasureSearchList.addAll(result.getData());
+		        	  selectedMeasureList = manageMeasureSearchList;
+		        	  buildCellTableCssStyle();
+		            updateRowData(start, manageMeasureSearchList);
+		          }
+		        };
+		        
+		        MatContext
+				.get()
+				.getMeasureService()
+				.search(searchText,start + 1, start + PAGE_SIZE, filter,callback);
+		      }
+		    };
+		 
 			table = addColumnToTable();
-			sortProvider.addDataDisplay(table);
+			provider.addDataDisplay(table);
 			CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
 			MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
 			spager.setPageStart(0);
@@ -515,9 +642,8 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 			
 		}
 	}
-	/**
-	 * 
-	 */
+	
+	
 	private void buildCellTableCssStyle() {
 		cellTableCssStyle = new ArrayList<String>();
 		for (int i = 0; i < selectedMeasureList.size(); i++) {
@@ -526,6 +652,9 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 		table.setRowStyles(new RowStyles<ManageMeasureSearchModel.Result>() {
 			@Override
 			public String getStyleNames(ManageMeasureSearchModel.Result rowObject, int rowIndex) {
+				if(rowIndex > PAGE_SIZE - 1){
+					rowIndex = rowIndex - index;
+				}
 				if (rowIndex != 0) {
 					if (cellTableCssStyle.get(rowIndex) == null) {
 						if (even) {
@@ -566,6 +695,51 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 			}
 		});
 	}
+	
+	
+	/**
+	 * Builds the cell table css style.
+	 */
+//	private void buildCellTableCssStyle() {
+//		
+//		table.setRowStyles(new RowStyles<ManageMeasureSearchModel.Result>() {
+//			int index = 0;
+//			@Override
+//			public String getStyleNames(ManageMeasureSearchModel.Result rowObject, int rowIndex) {
+//				if(index > 25){
+//					index=0;
+//				}
+//				if(rowIndex > PAGE_SIZE - 1){
+//					rowIndex = index;
+//					index++;
+//				}
+//				if (rowIndex != 0) {
+//						if (even) {
+//							if (rowObject.getMeasureSetId().equalsIgnoreCase(
+//									selectedMeasureList.get(rowIndex - 1).getMeasureSetId())) {
+//								even = true;
+//								return cellTableOddRow;
+//							} else {
+//								even = false;
+//								return cellTableEvenRow;
+//							}
+//						} else {
+//							if (rowObject.getMeasureSetId().equalsIgnoreCase(
+//									selectedMeasureList.get(rowIndex - 1).getMeasureSetId())) {
+//								even = false;
+//								return cellTableEvenRow;
+//							} else {
+//								even = true;
+//								return cellTableOddRow;
+//							}
+//						}
+//				} else {
+//						even = true;
+//						return cellTableOddRow;
+//				}
+//			}
+//		});
+//	}
 	/* (non-Javadoc)
 	 * @see mat.client.shared.search.SearchView#asWidget()
 	 */
@@ -638,14 +812,19 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 	public String getMeasureListLabel() {
 		return measureListLabel;
 	}
+	
 	/**
-	 *Set measureListLabel.
-	 * @param measureListLabel
+	 * Set measureListLabel.
+	 *
+	 * @param measureListLabel the new measure list label
 	 */
 	public void setMeasureListLabel(String measureListLabel) {
 		this.measureListLabel = measureListLabel;
 	}
+	
 	/**
+	 * Convert timestamp to string.
+	 *
 	 * @param ts - Timestamp.
 	 * @return String.
 	 */

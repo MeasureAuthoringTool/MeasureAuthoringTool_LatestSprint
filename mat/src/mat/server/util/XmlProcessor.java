@@ -179,22 +179,24 @@ public class XmlProcessor {
 	public static final String XPATH_FIND_GROUP_CLAUSE = "/measure/measureGrouping/group[packageClause[";
 	
 	/** The Constant XPATH_OLD_MEASURE_ALL_RELATIONALOP_SBOD. */
-	public static final String XPATH_OLD_MEASURE_ALL_RELATIONALOP_SBOD="/measure//*/relationalOp[@type='SBOD']";
+	public static final String XPATH_OLD_MEASURE_ALL_RELATIONALOP_SBOD = "/measure//*/relationalOp[@type='SBOD']";
 	
 	/** The Constant XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD. */
-	public static final String XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD="/measure//*/relationalOp[@type='EBOD']";
+	public static final String XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD = "/measure//*/relationalOp[@type='EBOD']";
 	
 	/** The Constant XPATH_STRATA. */
 	private static final String XPATH_STRATA = "/measure/strata";
 	
 	/** The Constant STRATIFICATION. */
-	public static final String  STRATIFICATION= "stratification";
+	public static final String  STRATIFICATION = "stratification";
 	
 	/** The Constant STRATIFICATION_DISPLAYNAME. */
-	private static final String  STRATIFICATION_DISPLAYNAME= "Stratification 1";
+	private static final String  STRATIFICATION_DISPLAYNAME = "Stratification 1";
 	
 	/** The constants map. */
 	private static Map<String, String> constantsMap = new HashMap<String, String>();
+	/** The constants map. */
+	private static Map<String, String> topNodeOperatorMap = new HashMap<String, String>();
 	
 	/** The Constant logger. */
 	private static final Log logger = LogFactory.getLog(XmlProcessor.class);
@@ -236,10 +238,19 @@ public class XmlProcessor {
 		constantsMap.put("Measure Populations", "Measure Population");
 		constantsMap.put("Measure Population Exclusions", "Measure Population Exclusions");
 		constantsMap.put("Numerator Exclusions", "Numerator Exclusions");
+		
+		topNodeOperatorMap.put("measureObservations", "and");
+		topNodeOperatorMap.put("initialPopulations", "and");
+		topNodeOperatorMap.put("numerators", "and");
+		topNodeOperatorMap.put("denominators", "and");
+		topNodeOperatorMap.put("measurePopulations", "and");
+		topNodeOperatorMap.put("denominatorExclusions", "or");
+		topNodeOperatorMap.put("numeratorExclusions", "or");
+		topNodeOperatorMap.put("denominatorExceptions", "or");
+		topNodeOperatorMap.put("measurePopulationExclusions", "or");
 	}
 	/**
 	 * Instantiates a new xml processor.
-	 * 
 	 * @param originalXml
 	 *            the original xml
 	 */
@@ -374,11 +385,10 @@ public class XmlProcessor {
 					parentNode.removeChild(oldNode); // Removing the old child
 					// node
 					if (nextSibling != null) {
+						// to maintain the order insert before the next sibling if exists
 						parentNode.insertBefore(
 								originalDoc.importNode(newNode, true),
-								nextSibling); // to maintain the order insert
-						// before the next sibling if
-						// exists
+								nextSibling);
 					} else {
 						parentNode.appendChild(originalDoc.importNode(newNode,
 								true)); // insert the new child node to the old
@@ -843,33 +853,33 @@ public class XmlProcessor {
 		
 		String displayName = "displayName";
 		String type = "type";
-		String starts_before_or_during="Starts Before Or During";
-		String ends_before_or_during="Ends Before Or During";
-		
+		String startsBeforeOrDuring = "Starts Before Or During";
+		String endsBeforeOrDuring = "Ends Before Or During";
+		String startBeforeEnd = "Starts Before End";
+		String endsBeforeEnd = "Ends Before End";
+		String sBE = "SBE";
+		String eBE = "EBE";
 		javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
-		
 		//replace relationalOp attribute values for displayName and type from SBOD to SBE
 		NodeList nodesRelationalOpsSBOD = (NodeList) xPath.evaluate(XPATH_OLD_MEASURE_ALL_RELATIONALOP_SBOD,
 				originalDoc.getDocumentElement(), XPathConstants.NODESET);
 		for (int i = 0; i < nodesRelationalOpsSBOD.getLength(); i++) {
 			Node childNode =  nodesRelationalOpsSBOD.item(i);
 			String relationalOpDisplayName = childNode.getAttributes().getNamedItem(displayName).getNodeValue();
-			relationalOpDisplayName = relationalOpDisplayName.replace(starts_before_or_during, "Starts Before End");
+			relationalOpDisplayName = relationalOpDisplayName.replace(startsBeforeOrDuring, startBeforeEnd);
 			childNode.getAttributes().getNamedItem(displayName).setNodeValue(relationalOpDisplayName);
-			childNode.getAttributes().getNamedItem(type).setNodeValue("SBE");
+			childNode.getAttributes().getNamedItem(type).setNodeValue(sBE);
 		}
-		
 		//replace relationalOp attribute values for displayName and type from EBOD to EBE
 		NodeList nodesRelationalOpsEBOD = (NodeList) xPath.evaluate(XPATH_OLD_MEASURE_ALL_RELATIONALOP_EBOD,
 				originalDoc.getDocumentElement(), XPathConstants.NODESET);
 		for (int i = 0; i < nodesRelationalOpsEBOD.getLength(); i++) {
 			Node childNode =  nodesRelationalOpsEBOD.item(i);
 			String relationalOpDisplayName = childNode.getAttributes().getNamedItem(displayName).getNodeValue();
-			relationalOpDisplayName = relationalOpDisplayName.replace(ends_before_or_during, "Ends Before End");
+			relationalOpDisplayName = relationalOpDisplayName.replace(endsBeforeOrDuring, endsBeforeEnd);
 			childNode.getAttributes().getNamedItem(displayName).setNodeValue(relationalOpDisplayName);
-			childNode.getAttributes().getNamedItem(type).setNodeValue("EBE");
+			childNode.getAttributes().getNamedItem(type).setNodeValue(eBE);
 		}
-		
 	}
 	
 	
@@ -972,94 +982,62 @@ public class XmlProcessor {
 			}
 		}
 		// Create supplementalDataElements node
-		Node supplementaDataElements_Element = findNode(originalDoc,
+		Node supplementaDataElementsElement = findNode(originalDoc,
 				XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS);
-		if (supplementaDataElements_Element == null) {
-			supplementaDataElements_Element = originalDoc
+		if (supplementaDataElementsElement == null) {
+			supplementaDataElementsElement = originalDoc
 					.createElement("supplementalDataElements");
 			((Element) measureStratificationsNode.getParentNode())
-			.insertBefore(supplementaDataElements_Element,
+			.insertBefore(supplementaDataElementsElement,
 					measureStratificationsNode.getNextSibling());
 		}
 		// Create elementLookUp node
 		if (findNode(originalDoc, XPATH_MEASURE_ELEMENT_LOOKUP) == null) {
-			Element elementLookUp_Element = originalDoc
+			Element elementLookUpElement = originalDoc
 					.createElement("elementLookUp");
-			((Element) supplementaDataElements_Element.getParentNode())
-			.insertBefore(elementLookUp_Element,
-					supplementaDataElements_Element.getNextSibling());
+			((Element) supplementaDataElementsElement.getParentNode())
+			.insertBefore(elementLookUpElement,
+					supplementaDataElementsElement.getNextSibling());
 		}
 		if (findNode(originalDoc, XPATH_MEASURE_SUBTREE_LOOKUP) == null) {
-			Element subTreeLookUp_Element = originalDoc
+			Element subTreeLookUpElement = originalDoc
 					.createElement("subTreeLookUp");
-			((Element) supplementaDataElements_Element.getParentNode())
-			.insertBefore(subTreeLookUp_Element,
-					supplementaDataElements_Element.getNextSibling());
+			((Element) supplementaDataElementsElement.getParentNode())
+			.insertBefore(subTreeLookUpElement,
+					supplementaDataElementsElement.getNextSibling());
 		}
-		
-		//		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_ITEM_COUNT) == null) {
-		//			Element itemCount_Element = originalDoc
-		//					.createElement("itemCount");
-		//			if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE) == null) {
-		//				Node scoring_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_SCORING);
-		//				if(scoring_Element != null) {
-		//					((Element) scoring_Element.getParentNode())
-		//					.insertBefore(itemCount_Element,
-		//							scoring_Element.getNextSibling());
-		//				}
-		//			} else {
-		//				Node measure_Type_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE);
-		//				((Element) measure_Type_Element.getParentNode())
-		//				.insertBefore(itemCount_Element,
-		//						measure_Type_Element.getNextSibling());
-		//			}
-		//		}
-		
 		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_COMPONENT_MEASURES) == null) {
-			Element componentMeasures_Element = originalDoc
+			Element componentMeasureElement = originalDoc
 					.createElement("componentMeasures");
 			if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE) == null) {
-				Node scoring_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_SCORING);
-				if(scoring_Element != null) {
-					((Element) scoring_Element.getParentNode())
-					.insertBefore(componentMeasures_Element,
-							scoring_Element.getNextSibling());
+				Node scoringElement = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_SCORING);
+				if (scoringElement != null) {
+					((Element) scoringElement.getParentNode())
+					.insertBefore(componentMeasureElement,
+							scoringElement.getNextSibling());
 				}
 			} else {
-				Node measure_Type_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE);
-				((Element) measure_Type_Element.getParentNode())
-				.insertBefore(componentMeasures_Element,
-						measure_Type_Element.getNextSibling());
+				Node measureTypeElement = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_MEASURETYPE);
+				((Element) measureTypeElement.getParentNode())
+				.insertBefore(componentMeasureElement,
+						measureTypeElement.getNextSibling());
 			}
 		}
-		
-		
 		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_ITEM_COUNT) == null) {
-			Element itemCount_Element = originalDoc
+			Element itemCountElement = originalDoc
 					.createElement("itemCount");
-			Node componentMeasures_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_COMPONENT_MEASURES);
-			((Element) componentMeasures_Element.getParentNode())
-			.insertBefore(itemCount_Element,
-					componentMeasures_Element.getNextSibling());
+			Node componentMeasuresElement = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_COMPONENT_MEASURES);
+			((Element) componentMeasuresElement.getParentNode())
+			.insertBefore(itemCountElement,
+					componentMeasuresElement.getNextSibling());
 		}
-		
-		
-		//		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_COMPONENT_MEASURES) == null) {
-		//			Element componentMeasures_Element = originalDoc
-		//					.createElement("componentMeasures");
-		//			Node itemCount_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_ITEM_COUNT);
-		//			((Element) itemCount_Element.getParentNode())
-		//			.insertBefore(componentMeasures_Element,
-		//					itemCount_Element.getNextSibling());
-		//		}
-		
 		// create Measure Grouping node
 		if (findNode(originalDoc, XPATH_MEASURE_GROUPING) == null) {
-			Element measureGrouping_Element = originalDoc
+			Element measureGroupingElement = originalDoc
 					.createElement("measureGrouping");
-			((Element) supplementaDataElements_Element.getParentNode())
-			.insertBefore(measureGrouping_Element,
-					supplementaDataElements_Element.getNextSibling());
+			((Element) supplementaDataElementsElement.getParentNode())
+			.insertBefore(measureGroupingElement,
+					supplementaDataElementsElement.getNextSibling());
 		}
 		/*
 		 * All the adding and removing can put the children of 'populations' in
@@ -1131,19 +1109,19 @@ public class XmlProcessor {
 	public void createEmeasureIdNode(int emeasureId) throws XPathExpressionException, DOMException{
 		
 		if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_EMEASUREID) == null) {
-			Element emeasureID_Element = originalDoc
+			Element emeasureIDElement = originalDoc
 					.createElement("emeasureid");
-			emeasureID_Element.appendChild(originalDoc.createTextNode(Integer.toString(emeasureId)));
-			if (findNode(originalDoc,XPATH_MEASURE_MEASURE_DETAILS_FINALIZEDDATE) == null) {
-				Node guid_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_GUID);
-				((Element) guid_Element.getParentNode())
-				.insertBefore(emeasureID_Element,
-						guid_Element);
+			emeasureIDElement.appendChild(originalDoc.createTextNode(Integer.toString(emeasureId)));
+			if (findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_FINALIZEDDATE) == null) {
+				Node guidElement = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_GUID);
+				((Element) guidElement.getParentNode())
+				.insertBefore(emeasureIDElement,
+						guidElement);
 			} else {
-				Node finalizeddate_Element = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_FINALIZEDDATE);
-				((Element) finalizeddate_Element.getParentNode())
-				.insertBefore(emeasureID_Element,
-						finalizeddate_Element);
+				Node finalizedDateElement = findNode(originalDoc, XPATH_MEASURE_MEASURE_DETAILS_FINALIZEDDATE);
+				((Element) finalizedDateElement.getParentNode())
+				.insertBefore(emeasureIDElement,
+						finalizedDateElement);
 			}
 		}
 	}
@@ -1173,11 +1151,16 @@ public class XmlProcessor {
 		//logical AND is not required by stratification clause at the
 		//time of creation of new Measure But Population and Measure Observations
 		// clauses will have Logical AND by Default.
-		if(!nodeName.equalsIgnoreCase("strata")){
-			Element logicalOpElem = originalDoc.createElement("logicalOp");
-			logicalOpElem.setAttribute("displayName", "AND");
-			logicalOpElem.setAttribute("type", "and");
-			clauseChildElem.appendChild(logicalOpElem);
+		if (!nodeName.equalsIgnoreCase("strata")) {
+			if (topNodeOperatorMap.containsKey(nodeName)) {
+				String nodeTopLogicalOperator = topNodeOperatorMap.get(nodeName);
+				if (nodeTopLogicalOperator != null) {
+					Element logicalOpElem = originalDoc.createElement("logicalOp");
+					logicalOpElem.setAttribute("displayName", nodeTopLogicalOperator.toUpperCase());
+					logicalOpElem.setAttribute("type", nodeTopLogicalOperator);
+					clauseChildElem.appendChild(logicalOpElem);
+				}
+			}
 		}
 		mainChildElem.appendChild(clauseChildElem);
 		
@@ -1441,45 +1424,35 @@ public class XmlProcessor {
 		return missingTimingElementList;
 	}
 	
+	/**
+	 * @return Xml String.
+	 */
 	public String checkForStratificationAndAdd() {
 		if (originalDoc == null) {
 			return "";
 		}
 		try {
-			
 			Node strataNode = findNode(originalDoc, XPATH_STRATA);
-			
-			if(strataNode != null)
-			{
-				if(strataNode.hasChildNodes() && !(strataNode.getChildNodes().item(0).getNodeName().equalsIgnoreCase(STRATIFICATION)))
-				{
+			if (strataNode != null) {
+				if (strataNode.hasChildNodes() && !(strataNode.getChildNodes().item(0)
+						.getNodeName().equalsIgnoreCase(STRATIFICATION))) {
 					NodeList childs  = strataNode.getChildNodes();
-					
 					Element stratificationEle = originalDoc
 							.createElement(STRATIFICATION);
-					stratificationEle.setAttribute("displayName",STRATIFICATION_DISPLAYNAME);
-					stratificationEle.setAttribute("uuid",UUIDUtilClient.uuid());
-					stratificationEle.setAttribute("type",STRATIFICATION);
-					
+					stratificationEle.setAttribute("displayName", STRATIFICATION_DISPLAYNAME);
+					stratificationEle.setAttribute("uuid", UUIDUtilClient.uuid());
+					stratificationEle.setAttribute("type", STRATIFICATION);
 					List<Node> nCList = new ArrayList<Node>();
-					
-					for(int i=0; i < childs.getLength() ; i++)
-					{
+					for (int i = 0; i < childs.getLength(); i++) {
 						nCList.add(childs.item(i));
 						strataNode.removeChild(childs.item(i));
 					}
-					
-					for(Node cNode : nCList)
-					{
+					for (Node cNode : nCList) {
 						stratificationEle.appendChild(cNode);
 					}
-					
-					
 					strataNode.appendChild(stratificationEle);
-					
 				}
 			}
-			
 		} catch (XPathExpressionException e) {
 			e.printStackTrace();
 		}

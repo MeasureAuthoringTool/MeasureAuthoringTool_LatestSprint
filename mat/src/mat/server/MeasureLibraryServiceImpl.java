@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
@@ -20,6 +21,7 @@ import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
+import mat.client.measure.ManageMeasureSearchModel.Result;
 import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.MeasureNotesModel;
 import mat.client.measure.NqfModel;
@@ -102,6 +104,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	/* (non-Javadoc)
 	 * @see mat.server.service.MeasureLibraryService#getReleaseDate()
 	 */
+	@Override
 	public String getReleaseDate() {
 		return releaseDate;
 	}
@@ -953,9 +956,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			detail.setScoringType(measure.getMeasureScoring());
 			boolean isLocked = getMeasureDAO().isMeasureLocked(measure.getId());
 			detail.setMeasureLocked(isLocked);
-			
+			// Prod issue fixed - Measure Shared with Regular users not loaded as editable measures.
 			List<MeasureShareDTO> measureShare = getMeasureDAO().
-					getMeasureShareInfoForMeasureAndUser(measure.getOwner().getId(), measure.getId());
+					getMeasureShareInfoForMeasureAndUser(currentUserId, measure.getId());
 			if (measureShare.size() > 0) {
 				detail.setEditable(((currentUserId.equals(measure.getOwner().getId()) || isSuperUser
 						|| ShareLevel.MODIFY_ID.equals(
@@ -1141,7 +1144,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		if (measureXmlModel == null) {
 			logger.info("Measure XML is null");
 		} else {
-					logger.debug("XML ::: " + measureXmlModel.getXml());
+			logger.debug("XML ::: " + measureXmlModel.getXml());
 		}
 		return measureXmlModel;
 	}
@@ -1626,18 +1629,51 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				detailModelList.add(detail);
 			}
 		} else {
-			List<MeasureShareDTO> measureList = getService().searchWithFilter(searchText, startIndex, pageSize, filter);
+			List<MeasureShareDTO> measureList = getService().searchWithFilter(searchText, 1, Integer.MAX_VALUE, filter);
+			List<MeasureShareDTO> measureTotalList = measureList;
+			
+			searchModel.setResultsTotal(measureTotalList.size());
+			if (pageSize < measureTotalList.size()) {
+				measureList =  measureTotalList.subList(startIndex-1, pageSize);
+			}
+			else if(pageSize > measureList.size()) {
+				measureList = measureTotalList.subList(startIndex - 1, measureList.size());
+			}
 			searchModel.setStartIndex(startIndex);
-			searchModel.setResultsTotal((int) getService().count(filter));
 			List<ManageMeasureSearchModel.Result> detailModelList = new ArrayList<ManageMeasureSearchModel.Result>();
 			searchModel.setData(detailModelList);
 			for (MeasureShareDTO dto : measureList) {
 				ManageMeasureSearchModel.Result detail = extractMeasureSearchModelDetail(currentUserId, isSuperUser, dto);
 				detailModelList.add(detail);
 			}
+			updateMeasureFamily(detailModelList);
 		}
 		
 		return searchModel;
+	}
+	
+	/**
+	 * Update measure family.
+	 *
+	 * @param detailModelList the detail model list
+	 */
+	public void updateMeasureFamily(List<ManageMeasureSearchModel.Result> detailModelList){
+		boolean isFamily=false;
+		if((detailModelList!=null) & (detailModelList.size()>0)){
+			for(int i=0;i<detailModelList.size();i++){
+				if(i>0){
+					if(detailModelList.get(i).getMeasureSetId().equalsIgnoreCase(
+							detailModelList.get(i-1).getMeasureSetId())) {
+						detailModelList.get(i).setMeasureFamily(!isFamily);
+					} else {
+						detailModelList.get(i).setMeasureFamily(isFamily);
+					}
+				}
+				else{
+					detailModelList.get(i).setMeasureFamily(isFamily);
+				}
+			}
+		}
 	}
 	
 	/* (non-Javadoc)
@@ -2396,5 +2432,17 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			e.printStackTrace();
 		}
 		return date;
+	}
+	
+	@Override
+	public String getHumanReadableForNode(final String measureId, final String populationSubXML){
+		String humanReadableHTML = "";
+		try {
+			humanReadableHTML = getService().getHumanReadableForNode(measureId, populationSubXML);			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return humanReadableHTML;
 	}
 }

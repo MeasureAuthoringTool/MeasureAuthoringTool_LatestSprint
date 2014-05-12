@@ -10,20 +10,25 @@ import mat.client.codelist.HasListBox;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.MeasureSearchView;
 import mat.client.measure.ManageMeasureSearchModel.Result;
+import mat.client.measure.MeasureSearchView.Observer;
 import mat.client.resource.CellTableResource;
 import mat.client.shared.ErrorMessageDisplayInterface;
 import mat.client.shared.LabelBuilder;
 import mat.client.shared.MatButtonCell;
 import mat.client.shared.MatCheckBoxCell;
+import mat.client.shared.MatContext;
 import mat.client.shared.MatSafeHTMLCell;
 import mat.client.shared.MatSimplePager;
 import mat.client.shared.MeasureSearchFilterWidget;
 import mat.client.shared.PrimaryButton;
+import mat.client.shared.SearchWidget;
 import mat.client.shared.SpacerWidget;
+import mat.client.shared.SuccessMessageDisplay;
 import mat.client.shared.SuccessMessageDisplayInterface;
 import mat.client.shared.search.SearchResults;
 import mat.client.shared.search.SearchView;
 import mat.client.util.CellTableUtility;
+import mat.model.QualityDataSetDTO;
 import mat.shared.ClickableSafeHtmlCell;
 
 import com.google.gwt.cell.client.Cell;
@@ -47,6 +52,8 @@ import com.google.gwt.user.cellview.client.Header;
 import com.google.gwt.user.cellview.client.RowStyles;
 import com.google.gwt.user.cellview.client.CellTable.Resources;
 import com.google.gwt.user.cellview.client.HasKeyboardSelectionPolicy.KeyboardSelectionPolicy;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTML;
@@ -57,8 +64,11 @@ import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
+import com.google.gwt.view.client.AsyncDataProvider;
+import com.google.gwt.view.client.HasData;
 import com.google.gwt.view.client.ListDataProvider;
 import com.google.gwt.view.client.MultiSelectionModel;
+import com.google.gwt.view.client.Range;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -80,7 +90,7 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 	private VerticalPanel cellTablePanel = new VerticalPanel();
 	
 	/** The Constant PAGE_SIZE. */
-	private static final int PAGE_SIZE = 10;
+	private static final int PAGE_SIZE = 25;
 	
 	/** The table. */
 	private CellTable<ManageMeasureSearchModel.Result> table;
@@ -92,6 +102,9 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 	private MeasureSearchFilterWidget measureSearchFilterWidget = new MeasureSearchFilterWidget("measureLibrarySearchWidget",
 			"measureLibraryFilterDisclosurePanel");
 	
+	/** The search widget. */
+	private SearchWidget searchWidget = new SearchWidget();
+	
 	/** The even. */
 	private Boolean even;
 	/** The cell table css style. */
@@ -101,17 +114,46 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 	/** The cell table odd row. */
 	private String cellTableOddRow = "cellTableOddRow";
 	
+	/** The observer. */
+	private Observer observer;
+	
+	/** The component measure selected list. */
+	private  List<ManageMeasureSearchModel.Result> componentMeasureSelectedList;
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.metadata.MetaDataPresenter.AddEditComponentMeasuresDisplay#getComponentMeasureSelectedList()
+	 */
+	@Override
+	public List<ManageMeasureSearchModel.Result> getComponentMeasureSelectedList() {
+		return componentMeasureSelectedList;
+	}
+
+    /* (non-Javadoc)
+     * @see mat.client.measure.metadata.MetaDataPresenter.AddEditComponentMeasuresDisplay#setComponentMeasureSelectedList(java.util.List)
+     */
+    @Override
+	public void setComponentMeasureSelectedList(
+			List<ManageMeasureSearchModel.Result> componentMeasureSelectedList) {
+		this.componentMeasureSelectedList = componentMeasureSelectedList;
+	}
+
 	/** The selection model. */
 	private MultiSelectionModel<ManageMeasureSearchModel.Result> selectionModel;
 	
 	/** The return button. */
-	protected Button returnButton = new PrimaryButton();
+	protected Button returnButton = new PrimaryButton("Return to Previous");
+	
+	/** The addto component measures. */
+	protected Button addtoComponentMeasures = new PrimaryButton("Add to ComponentMeasures List");
+	
+	/** The success messages. */
+	private SuccessMessageDisplay successMessages = new SuccessMessageDisplay();
 	
 	/**
 	 * Instantiates a new adds the edit component measures view.
 	 */
 	public AddEditComponentMeasuresView(){
-		
+		successMessages.setMessage("");
 		HorizontalPanel mainHorizontalPanel = new HorizontalPanel();
 		mainHorizontalPanel.getElement().setId("panel_MainHorizontalPanel");
 		searchInput.getElement().setId("searchInput_TextBox");
@@ -122,12 +164,12 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 		VerticalPanel measureFilterVP = new VerticalPanel();
 		measureFilterVP.setWidth("100px");
 		measureFilterVP.getElement().setId("panel_measureFilterVP");
-		measureFilterVP.add(measureSearchFilterWidget);
-		mainHorizontalPanel.add(panel);
+		measureFilterVP.add(searchWidget);
 		mainHorizontalPanel.add(measureFilterVP);
 		mainPanel.add(mainHorizontalPanel);
 		mainPanel.add(new SpacerWidget());
 		mainPanel.add(new SpacerWidget());
+        mainPanel.add(getAddtoComponentMeasuresBtn());
 	}
 	
 	
@@ -147,7 +189,7 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 	 * @return the cell table
 	 */
 	private CellTable<ManageMeasureSearchModel.Result> addColumnToTable() {
-		Label measureSearchHeader = new Label("My Measures");
+		Label measureSearchHeader = new Label("All Measures");
 		measureSearchHeader.getElement().setId("measureSearchHeader_Label");
 		measureSearchHeader.setStyleName("recentSearchHeader");
 		com.google.gwt.dom.client.TableElement elem = table.getElement().cast();
@@ -156,20 +198,69 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 		caption.appendChild(measureSearchHeader.getElement());
 		selectionModel = new MultiSelectionModel<ManageMeasureSearchModel.Result>();
 		table.setSelectionModel(selectionModel);
-		
+		Header<SafeHtml> selectionColumnHeader = new Header<SafeHtml>(new ClickableSafeHtmlCell()) {
+			private String cssClass = "transButtonWidth";
+			private String title = "Click to Clear All";
+			@Override
+			public SafeHtml getValue() {
+				SafeHtmlBuilder sb = new SafeHtmlBuilder();
+				sb.appendHtmlConstant("<span>Select</span><button type=\"button\" title='"
+						+ title + "' tabindex=\"0\" class=\" " + cssClass + "\">"
+						+ "<span class='textCssStyle'>(Clear)</span></button>");
+				return sb.toSafeHtml();
+			}
+		};
+		selectionColumnHeader.setUpdater(new ValueUpdater<SafeHtml>() {
+			@Override
+			public void update(SafeHtml value) {
+				clearAllCheckBoxes();
+			}
+		});
 		MatCheckBoxCell chbxCell = new MatCheckBoxCell(false, true);
 		
 		Column<ManageMeasureSearchModel.Result, Boolean> selectColumn = new Column<ManageMeasureSearchModel.Result, Boolean>(chbxCell) {
 			
 			@Override
 			public Boolean getValue(Result object) {
-				
-				return false;
+				boolean isSelected = false;
+				if (componentMeasureSelectedList!=null && componentMeasureSelectedList.size() > 0) {
+					for (int i = 0; i < componentMeasureSelectedList.size(); i++) {
+						if (componentMeasureSelectedList.get(i).getId().equalsIgnoreCase(object.getId())) {
+							isSelected = true;
+							selectionModel.setSelected(object, isSelected);
+							break;
+						}
+					}
+				} else {
+					isSelected = false;
+					}
+				return isSelected;
 			}
 		};  
 		
-		table.addColumn(selectColumn, SafeHtmlUtils.fromSafeConstant("<span title='Select Column'>"
-				+ "Select" + "</span>"));
+		selectColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, Boolean>() {
+			
+			@Override
+			public void update(int index, Result object, Boolean value) {
+				selectionModel.setSelected(object, value);
+				if(value){
+					componentMeasureSelectedList.add(object);
+				}
+				else{
+					for (int i = 0; i < componentMeasureSelectedList.size(); i++) {
+						if (componentMeasureSelectedList.get(i).getId().equalsIgnoreCase(object.getId())) {
+							componentMeasureSelectedList.remove(i);
+							break;
+						}
+					}
+				}
+				
+			}
+		});
+		
+		//table.addColumn(selectColumn, SafeHtmlUtils.fromSafeConstant("<span title='Select Column'>"
+			//	+ "Select" + "</span>"));
+		table.addColumn(selectColumn, selectionColumnHeader);
 		
 		Column<ManageMeasureSearchModel.Result, SafeHtml> measureName = new Column<ManageMeasureSearchModel.Result, SafeHtml>(
 				new ClickableSafeHtmlCell()) {
@@ -212,10 +303,10 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 	 * @see mat.client.measure.metadata.BaseMetaDataPresenter.BaseAddEditDisplay#buildCellTable(mat.client.measure.ManageMeasureSearchModel)
 	 */
 	@Override
-	public void buildCellTable(ManageMeasureSearchModel result) {
-		
+	public void buildCellTable(ManageMeasureSearchModel result,String searchText) {
 		cellTablePanel.clear();
 		cellTablePanel.setStyleName("cellTablePanel");
+		cellTablePanel.setWidth("900px");
 		if((result.getData()!=null) && (result.getData().size() > 0)){
 			table = new CellTable<ManageMeasureSearchModel.Result>(PAGE_SIZE,
 					(Resources) GWT.create(CellTableResource.class));
@@ -223,12 +314,25 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 			ListDataProvider<ManageMeasureSearchModel.Result> sortProvider = new ListDataProvider<ManageMeasureSearchModel.Result>();
 			selectedMeasureList = new ArrayList<Result>();
 			selectedMeasureList.addAll(result.getData());
-			table.setRowData(selectedMeasureList);
 			table.setPageSize(PAGE_SIZE);
 			table.redraw();
-			table.setRowCount(selectedMeasureList.size(), true);
-			sortProvider.refresh();
-			sortProvider.getList().addAll(result.getData());
+			if((searchText=="") && (componentMeasureSelectedList!=null) 
+					&& (componentMeasureSelectedList.size()>0)){
+				updateComponentMeasuresSelectedList(result.getData());
+				List<ManageMeasureSearchModel.Result> componentMeasureSelectedList = new ArrayList<ManageMeasureSearchModel.Result>();
+				componentMeasureSelectedList.addAll(swapComponentMeasuresList(result.getData()));
+				selectedMeasureList.addAll(componentMeasureSelectedList);
+				table.setRowData(componentMeasureSelectedList);
+				table.setRowCount(componentMeasureSelectedList.size(), true);
+				sortProvider.refresh();
+				sortProvider.getList().addAll(componentMeasureSelectedList);
+			}
+			else{
+				table.setRowData(selectedMeasureList);
+				table.setRowCount(selectedMeasureList.size(), true);
+				sortProvider.refresh();
+				sortProvider.getList().addAll(result.getData());
+			}
 			table = addColumnToTable();
 			sortProvider.addDataDisplay(table);
 			CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
@@ -238,10 +342,10 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 			spager.setDisplay(table);
 			spager.setPageSize(PAGE_SIZE);
 			table.setWidth("100%");
-			table.setColumnWidth(0, 25.0, Unit.PCT);
-			table.setColumnWidth(1, 20.0, Unit.PCT);
-			table.setColumnWidth(2, 25.0, Unit.PCT);
-			table.setColumnWidth(3, 25.0, Unit.PCT);
+			table.setColumnWidth(0, 20.0, Unit.PCT);
+			table.setColumnWidth(1, 40.0, Unit.PCT);
+			table.setColumnWidth(2, 20.0, Unit.PCT);
+			table.setColumnWidth(3, 20.0, Unit.PCT);
 			Label invisibleLabel = (Label) LabelBuilder.buildInvisibleLabel("measureSearchSummary",
 					"In the following Measure List table, Measure Name is given in first column,"
 							+ " Version in second column, Finalized Date in third column,"
@@ -254,11 +358,9 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 			cellTablePanel.add(new SpacerWidget());
 			cellTablePanel.add(spager);
 			mainPanel.add(cellTablePanel);
-		}
-		
-		else{
-//			Label measureSearchHeader = new Label(getMeasureListLabel());
-			Label measureSearchHeader = new Label("My Measures");
+			
+		} else {
+			Label measureSearchHeader = new Label("All Measures");
 			measureSearchHeader.getElement().setId("measureSearchHeader_Label");
 			measureSearchHeader.setStyleName("recentSearchHeader");
 			measureSearchHeader.getElement().setAttribute("tabIndex", "0");
@@ -267,8 +369,15 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 			cellTablePanel.add(new SpacerWidget());
 			cellTablePanel.add(desc);
 			mainPanel.add(cellTablePanel);
-			
 		}
+		SimplePanel addMeasureBtnPanel = new SimplePanel();
+		addMeasureBtnPanel.addStyleName("marginTop");
+		addMeasureBtnPanel.add(getAddtoComponentMeasuresBtn());
+		SimplePanel addSuccessMsgPanel = new SimplePanel();
+		addSuccessMsgPanel.addStyleName("marginTop");
+		addSuccessMsgPanel.add(successMessages);
+		mainPanel.add(addSuccessMsgPanel);
+		mainPanel.add(addMeasureBtnPanel);
 	}
 	
 	/**
@@ -321,6 +430,56 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 				}
 			}
 		});
+	}
+	
+	/**
+	 * Clear all check boxes.
+	 */
+	public void clearAllCheckBoxes(){
+		List<Result> displayedItems = new ArrayList<Result>();
+		displayedItems.addAll(componentMeasureSelectedList);
+		componentMeasureSelectedList.clear();
+		for (ManageMeasureSearchModel.Result msg : displayedItems) {
+			selectionModel.setSelected(msg, false);
+		}
+		//observer.onClearAllCheckBoxesClicked();
+	}
+	
+	/**
+	 * Swap component measures list.
+	 *
+	 * @param componentMeasureList the component measure list
+	 * @return the list
+	 */
+	private  List<ManageMeasureSearchModel.Result> swapComponentMeasuresList(List<ManageMeasureSearchModel.Result> componentMeasureList){
+		List<ManageMeasureSearchModel.Result> measuresSelectedList = new ArrayList<ManageMeasureSearchModel.Result>();
+		measuresSelectedList.addAll(componentMeasureSelectedList);
+		for(int i=0;i<componentMeasureList.size();i++){
+			if(!componentMeasureSelectedList.contains(componentMeasureList.get(i))){
+				measuresSelectedList.add(componentMeasureList.get(i));
+			}
+		}
+		
+		return measuresSelectedList;
+	}
+	
+	/**
+	 * Update component measures selected list.
+	 *
+	 * @param componentMeasureList the component measure list
+	 */
+	private void updateComponentMeasuresSelectedList(List<ManageMeasureSearchModel.Result> componentMeasureList) {
+		if (componentMeasureSelectedList.size() != 0) {
+			for (int i = 0; i < componentMeasureSelectedList.size(); i++) {
+				for (int j = 0; j < componentMeasureList.size(); j++) {
+					if (componentMeasureSelectedList.get(i).getId().equalsIgnoreCase(componentMeasureList.get(j).getId())) {
+						componentMeasureSelectedList.set(i, componentMeasureList.get(j));
+						break;
+					}
+				}
+			}
+		}
+		
 	}
 
 	/* (non-Javadoc)
@@ -379,7 +538,7 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 	@Override
 	public SuccessMessageDisplayInterface getSuccessMessageDisplay() {
 		// TODO Auto-generated method stub
-		return null;
+		return successMessages;
 	}
 
 	/* (non-Javadoc)
@@ -469,7 +628,7 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 	@Override
 	public HasClickHandlers getReturnButton() {
 		// TODO Auto-generated method stub
-		return null;
+		return returnButton;
 	}
 
 	/* (non-Javadoc)
@@ -477,7 +636,9 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 	 */
 	@Override
 	public void setReturnToLink(String s) {	
-		
+		returnButton.setText(s);
+		returnButton.setTitle(s);
+		mainPanel.add(returnButton);
 	}
 	
 	/**
@@ -504,7 +665,15 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 		}
 		return tsStr;
 	}
-
+	
+	/**
+	 * Gets the observer.
+	 *
+	 * @return the observer
+	 */
+	public Observer getObserver() {
+		return observer;
+	}
 
 	/* (non-Javadoc)
 	 * @see mat.client.measure.metadata.MetaDataPresenter.AddEditComponentMeasuresDisplay#getSelectedFilter()
@@ -513,6 +682,49 @@ public class AddEditComponentMeasuresView implements MetaDataPresenter.AddEditCo
 	public int getSelectedFilter() {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.metadata.MetaDataPresenter.AddEditComponentMeasuresDisplay#getRetButton()
+	 */
+	public Button getRetButton(){
+		return returnButton;
+	}
+	
+//	@Override
+//	public HasClickHandlers getReturnButtonHandlers(){
+//		return returnButton;
+//	}
+	
+	/* (non-Javadoc)
+ * @see mat.client.measure.metadata.MetaDataPresenter.AddEditComponentMeasuresDisplay#getAddtoComponentMeasuresBtn()
+ */
+public Button getAddtoComponentMeasuresBtn(){
+		return addtoComponentMeasures;
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.metadata.MetaDataPresenter.AddEditComponentMeasuresDisplay#getAddtoComponentMeasuresButtonHandler()
+	 */
+	@Override
+	public HasClickHandlers getAddtoComponentMeasuresButtonHandler(){
+		return addtoComponentMeasures;
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.metadata.MetaDataPresenter.AddEditComponentMeasuresDisplay#getSearchButton()
+	 */
+	@Override
+	public HasClickHandlers getSearchButton(){
+		return searchWidget.getSearchButton();
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.metadata.MetaDataPresenter.AddEditComponentMeasuresDisplay#getSearchString()
+	 */
+	@Override
+	public HasValue<String> getSearchString(){
+		return searchWidget.getSearchInput();
 	}
 
 }

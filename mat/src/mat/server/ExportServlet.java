@@ -7,10 +7,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import mat.model.MeasureNotes;
 import mat.model.User;
 import mat.model.clause.Measure;
@@ -22,6 +24,7 @@ import mat.server.service.SimpleEMeasureService.ExportResult;
 import mat.server.service.UserService;
 import mat.shared.FileNameUtility;
 import mat.shared.InCorrectUserRoleException;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -47,6 +50,9 @@ public class ExportServlet extends HttpServlet {
 	
 	/** The Constant ZIP. */
 	private static final String ZIP = "zip";
+	
+	/** Human readable for Subtree Node **/
+	private static final String SUBTREE_HTML = "subtreeHTML";
 	
 	/** The Constant CODELIST. */
 	private static final String CODELIST = "codelist";
@@ -77,6 +83,9 @@ public class ExportServlet extends HttpServlet {
 	
 	/** The Constant TYPE_PARAM. */
 	private static final String TYPE_PARAM = "type";
+	
+	/** The Constant XML_PARAM. */
+	private static final String XML_PARAM = "xml";
 	
 	/** The Constant FORMAT_PARAM. */
 	private static final String FORMAT_PARAM = "format";
@@ -178,6 +187,11 @@ public class ExportServlet extends HttpServlet {
 				resp.getOutputStream().write(export.zipbarr);
 				resp.getOutputStream().close();
 				export.zipbarr = null;
+			} else if (SUBTREE_HTML.equals(format)){
+				String nodeXML = req.getParameter(XML_PARAM);
+				System.out.println("Export servlet received node xml:"+nodeXML +" and Measure ID:"+id);
+				export = getService().getHumanReadableForNode(id,nodeXML);
+				resp.setHeader(CONTENT_TYPE, TEXT_HTML);
 			} else if (VALUESET.equals(format)) {
 				export = getService().getValueSetXLS(id);
 				 if (measure.getExportedDate().before(measureLibraryService.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
@@ -218,7 +232,7 @@ public class ExportServlet extends HttpServlet {
 					resp.getOutputStream().write(csvFileString.getBytes());
 					resp.getOutputStream().close();
 				}
-			} else if ("exportMeasureNotesForMeasure".equals(format)) {
+			} else if (EXPORT_MEASURE_NOTES_FOR_MEASURE.equals(format)) {
 				String csvFileString = generateCSVToExportMeasureNotes(id);
 				Format formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 				String measureNoteDate = formatter.format(new Date());
