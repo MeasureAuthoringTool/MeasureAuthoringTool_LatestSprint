@@ -17,7 +17,9 @@ import java.util.UUID;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.DTO.MeasureNoteDTO;
+import mat.client.clause.clauseworkspace.model.CellTreeNode;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
@@ -63,6 +65,7 @@ import mat.shared.ConstantMessages;
 import mat.shared.DateStringValidator;
 import mat.shared.DateUtility;
 import mat.shared.model.util.MeasureDetailsUtil;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang.StringUtils;
@@ -1087,6 +1090,36 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 	}
 	
+	@Override
+     public void updateComponentMeasuresOnDeletion(String measureId){
+		MeasureXmlModel xmlModel = getMeasureXmlForMeasure(measureId);
+		if(xmlModel!=null){
+    	 XmlProcessor processor = new XmlProcessor(xmlModel.getXml());
+     	 String XPATH_EXPRESSION_COMPONENT_MEASURES = "/measure//measureDetails//componentMeasures//measure";
+    	 try {
+			NodeList nodeList = (NodeList) xPath.evaluate(XPATH_EXPRESSION_COMPONENT_MEASURES,
+						processor.getOriginalDoc(),	XPathConstants.NODESET);
+			for(int i = 0; i<nodeList.getLength() ; i++){
+				Node newNode = nodeList.item(i);
+				String id = newNode.getAttributes().getNamedItem("id").getNodeValue();
+				boolean isDeleted = getService().getMeasure(id);
+				if(!isDeleted){
+					nodeList.item(i).getParentNode().removeChild(newNode);
+				}
+				
+			}
+			
+			xmlModel.setXml(processor.transform(processor.getOriginalDoc()));
+			getService().saveMeasureXml(xmlModel);
+			
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+  
+	}
+	
 	/**
 	 * Gets the measure dao.
 	 * 
@@ -1394,6 +1427,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				// delete any groupings for that measure and save.
 				getMeasurePackageService().deleteExistingPackages(pkg.getId());
 			}
+			//updateComponentMeasures(model);
+			
 		} else {
 			// creating a new measure.
 			
@@ -1422,6 +1457,48 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		result.setId(pkg.getId());
 		saveMeasureXml(createMeasureXmlModel(model, pkg, MEASURE_DETAILS, MEASURE));
 		return result;
+	}
+	
+	
+	/**
+	 * Update component measures.
+	 *
+	 * @param model the model
+	 */
+	private void updateComponentMeasures(ManageMeasureDetailModel model) {
+		
+		logger.debug(" MeasureLibraryServiceImpl: updateComponentMeasures Start :  ");
+		
+		List<Measure> measureList = getMeasureDAO().find();
+		for (Measure measure : measureList) {
+		// XPath to find All measures under componentMeasure nodes when measure is modified.
+		MeasureXmlModel xmlModel = getMeasureXmlForMeasure(measure.getId());
+		
+			XmlProcessor processor = new XmlProcessor(xmlModel.getXml());
+		
+		String XPATH_EXPRESSION_COMPONENT_MEASURES_MEASURE = "/measure//measureDetails//componentMeasures//measure[@id='"
+				+ model.getId() + "']";
+		NodeList nodesItemCount;
+		try {
+			nodesItemCount = (NodeList) xPath.evaluate(XPATH_EXPRESSION_COMPONENT_MEASURES_MEASURE,
+					processor.getOriginalDoc(),	XPathConstants.NODESET);
+			for (int i = 0; i < nodesItemCount.getLength(); i++) {
+				Node newNode = nodesItemCount.item(i);
+				String name = new String();
+				name = model.getName();
+				newNode.getAttributes().getNamedItem("name").setNodeValue(name);
+			}
+			if(nodesItemCount.getLength()>0){
+				xmlModel.setXml(processor.transform(processor.getOriginalDoc()));
+				getService().saveMeasureXml(xmlModel);
+			}
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+			
+		}
+		
+		}
+		logger.debug(" MeasureLibraryServiceImpl: updateComponentMeasures End :  ");
 	}
 	
 	/* (non-Javadoc)
@@ -2257,6 +2334,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		logger.debug(" MeasureLibraryServiceImpl: updateItemCount End :  ");
 	}
 	
+	
+	
+	
 	/**
 	 * This method updates MeasureXML - ElementRef's under Population and
 	 * Stratification Node
@@ -2434,6 +2514,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		return date;
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#getHumanReadableForNode(java.lang.String, java.lang.String)
+	 */
 	@Override
 	public String getHumanReadableForNode(final String measureId, final String populationSubXML){
 		String humanReadableHTML = "";
@@ -2445,4 +2528,137 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		return humanReadableHTML;
 	}
+
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#getComponentMeasures(java.util.List)
+	 */
+	@Override
+	public ManageMeasureSearchModel getComponentMeasures(List<String> measureIds) {
+		ManageMeasureSearchModel searchModel = new ManageMeasureSearchModel();
+		List<Measure> measureList = getService().getComponentMeasuresInfo(measureIds);
+		List<ManageMeasureSearchModel.Result> detailModelList = new ArrayList<ManageMeasureSearchModel.Result>();
+		searchModel.setData(detailModelList);
+		for (Measure measure : measureList) {
+			ManageMeasureSearchModel.Result detail = extractManageMeasureSearchModelDetail(measure);
+			detailModelList.add(detail);
+		}
+		return searchModel;
+	}
+	
+	/**
+	 * Extract manage measure search model detail.
+	 *
+	 * @param measure the measure
+	 * @return the manage measure search model. result
+	 */
+	private ManageMeasureSearchModel.Result extractManageMeasureSearchModelDetail(Measure measure){
+		ManageMeasureSearchModel.Result detail = new ManageMeasureSearchModel.Result();
+		detail.setName(measure.getDescription());
+		detail.setId(measure.getId());
+		String formattedVersion = MeasureUtility.getVersionText(measure.getVersion(), measure.isDraft());
+		detail.setVersion(formattedVersion);
+		detail.setFinalizedDate(measure.getFinalizedDate());
+		return detail;
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#validatePackageGrouping(mat.client.measure.ManageMeasureDetailModel)
+	 */
+	@Override
+	public boolean validatePackageGrouping(ManageMeasureDetailModel model) {
+		boolean flag=false;
+		logger.debug(" MeasureLibraryServiceImpl: validatePackageGrouping Start :  ");
+		
+		
+		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(model.getId());
+		if (((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml()))) {
+			System.out.println("MEASURE_XML: "+xmlModel.getXml());	
+			
+			flag = validateMeasureXmlInpopulationWorkspace(xmlModel);
+		}
+		
+		return flag;
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#validateMeasureXmlInpopulationWorkspace(mat.client.clause.clauseworkspace.model.MeasureXmlModel)
+	 */
+	@Override
+	public boolean validateMeasureXmlInpopulationWorkspace(MeasureXmlModel measureXmlModel) {
+		boolean flag=false;
+		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
+		if ((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml())) {
+			XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
+			 String XPATH_POPULATIONS = "/measure/populations";
+			 System.out.println("MEASURE_XML: "+xmlModel.getXml() );
+			try {
+				NodeList nodesSDE = (NodeList) xPath.evaluate(XPATH_POPULATIONS, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
+				
+					Node newNode = nodesSDE.item(0);
+					NodeList populationsChildList = newNode.getChildNodes();
+					for (int i = 0; i < populationsChildList.getLength(); i++) {
+						Node childNode =populationsChildList.item(i);
+						NodeList childsList = childNode.getChildNodes();
+						
+						if(childsList.getLength()>0){
+							for(int j=0;j<childsList.getLength();j++){
+								Node subChildNode =childsList.item(j);
+								flag=validateNode(subChildNode,flag);
+								if(flag){
+									break;
+								}
+					
+							}
+					
+						}
+						 flag=validateNode(childNode, flag);
+						 if(flag){
+							break;
+						}
+				}
+					
+			} catch (XPathExpressionException e) {
+				
+				e.printStackTrace();
+			}
+			
+	 } 
+	return flag;
+	}
+
+	/**
+	 * Validate node.
+	 *
+	 * @param newNode the new node
+	 * @param flag the flag
+	 * @return true, if successful
+	 */
+	private boolean validateNode(Node newNode, boolean flag) {
+		if (!((newNode.getNodeName()== "logicalOp") 
+				|| (newNode.getNodeName()== "clause") 
+							|| (newNode.getNodeName() == "subTreeRef")
+										|| (newNode.getNodeName() == "initialPopulations")
+												|| (newNode.getNodeName() == "measurePopulations")
+														|| (newNode.getNodeName() == "numerators")
+												
+				|| (newNode.getNodeName() == "measurePopulationExclusions")
+							|| (newNode.getNodeName() == "denominators")
+										|| (newNode.getNodeName() == "denominatorExclusions")
+												|| (newNode.getNodeName() == "numeratorExclusions")
+														|| (newNode.getNodeName() == "denominatorExceptions")
+																|| (newNode.getNodeName() == "comment"))) {
+			
+					flag =true;	 
+			}
+			if(newNode.getFirstChild()!=null){
+					Node node =newNode.getFirstChild(); 
+					flag = validateNode(node, flag);			
+			}
+		
+		return flag;
+		
+	}	
+	
 }
+

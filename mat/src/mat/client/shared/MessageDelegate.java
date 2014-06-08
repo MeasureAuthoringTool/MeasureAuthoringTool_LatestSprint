@@ -20,7 +20,7 @@ public class MessageDelegate {
 	/**
 	 * The Constant NO_MARKUP_ALLOWED
 	 */
-	public static final String NO_MARKUP_ALLOWED = "No markup text allowed in any textfields.";
+	public static final String NO_MARKUP_ALLOWED = "No markup text allowed in any text fields.";
 	
 	/** The Constant CODE_LIST_ADDED. */
 	public static final String CODE_LIST_ADDED = "Code has been successfully added to the value set.";
@@ -59,7 +59,7 @@ public class MessageDelegate {
 	public static final String LOGIN_ID_REQUIRED = "User ID is required.";
 	
 	/** The Constant EMAIL_ID_INCORRECT_FORMAT. */
-	public static final String EMAIL_ID_INCORRECT_FORMAT = "Email Address has incorrect format.";
+	public static final String EMAIL_ID_INCORRECT_FORMAT = "Email Address has an incorrect format.";
 	
 	/** The Constant LOGIN_USER_REQUIRED. */
 	public static final String LOGIN_USER_REQUIRED = "User Name is required.";
@@ -138,7 +138,7 @@ public class MessageDelegate {
 	/**
 	 * Ratio Measure - Association Required for Numerator/Denominator in case of more than 1 IP.
 	 */
-	public static final String RATIO_NUM_DENO_ASSOCIATION_REQUIRED = "For Ratio measures, in case of more than one Population ,"
+	public static final String RATIO_NUM_DENO_ASSOCIATION_REQUIRED = "For Ratio measures, in case of more than one Population, "
 			+ " Numerator and Denominator must contain one association.";
 	
 	
@@ -175,16 +175,16 @@ public class MessageDelegate {
 	private final String ABV_NAME_REQUIRED = "Abbreviated Name is required.";
 	
 	/** The account locked. */
-	private final String ACCOUNT_LOCKED = "Your account has been locked.Please Contact Helpdesk.";
+	private final String ACCOUNT_LOCKED = "Your account has been locked. Please contact Support.";
 	
 	/** The ACCOUN t_ locke d2. */
-	private final String ACCOUNT_LOCKED2 = "Your account has been locked. Please contact the Helpdesk.";
+	private final String ACCOUNT_LOCKED2 = "Your account has been locked. Please contact Support.";
 	
 	/** The account revoked. */
-	private final String ACCOUNT_REVOKED = "Your account has been revoked. Please contact the Helpdesk.";
+	private final String ACCOUNT_REVOKED = "Your account has been revoked. Please contact Support.";
 	
 	/** The account termination. */
-	private final String ACCOUNT_TERMINATION = "Your account has been Terminated.Please Contact Helpdesk for more information.";
+	private final String ACCOUNT_TERMINATION = "Your account has been terminated. Please contact Support for more information.";
 	
 	/** The all password fields required. */
 	private final String ALL_PASSWORD_FIELDS_REQUIRED = "All password fields are required.";
@@ -199,12 +199,27 @@ public class MessageDelegate {
 	/** The clause work space validation success. */
 	private final String CLAUSE_WORK_SPACE_VALIDATION_SUCCESS = "Measure logic validation successful.";
 	
+	/** The clause work space validation error. */
+	private final String POPULATION_WORK_SPACE_VALIDATION_ERROR = "Measure logic is incorrect."
+			+ " Logic must only contain Clauses and Logical operators.";	
+
+	/** The clause work space validation success. */
+	private final String POPULATION_WORK_SPACE_VALIDATION_SUCCESS = " Measure Logic validation successful.";
+	
 	/** The code list required. */
 	private final String CODE_LIST_REQUIRED = "Value Set is required.";
 	
 	/** The code required. */
 	private final String CODE_REQUIRED = "Code is required.";
 	
+	public String getPOPULATION_WORK_SPACE_VALIDATION_ERROR() {
+		return POPULATION_WORK_SPACE_VALIDATION_ERROR;
+	}
+
+	public String getPOPULATION_WORK_SPACE_VALIDATION_SUCCESS() {
+		return POPULATION_WORK_SPACE_VALIDATION_SUCCESS;
+	}
+
 	/** The code system required. */
 	private final String CODE_SYSTEM_REQUIRED = "Code System is required.";
 	
@@ -531,7 +546,7 @@ public class MessageDelegate {
 	
 	private final String COMPARISON_DILOAG_BOX_ERROR_DISPLAY="Please enter Quantity field.";
 	
-	private final String COMPONENT_MEASURES_ADDED_SUCCESSFULLY="Changes added to Component measure list. Please click on save to confirm changes.";
+	private final String COMPONENT_MEASURES_ADDED_SUCCESSFULLY="Component Measures updated successfully. Changes must be saved on the previous page.";
 	
 	public String getCOMPONENT_MEASURES_ADDED_SUCCESSFULLY() {
 		return COMPONENT_MEASURES_ADDED_SUCCESSFULLY;

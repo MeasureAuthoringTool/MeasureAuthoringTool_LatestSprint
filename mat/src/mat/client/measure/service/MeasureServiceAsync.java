@@ -13,6 +13,7 @@ import mat.client.measure.TransferMeasureOwnerShipModel;
 import mat.model.MatValueSet;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
+import mat.server.util.XmlProcessor;
 
 import com.google.gwt.user.client.rpc.AsyncCallback;
 
@@ -435,9 +436,56 @@ public interface MeasureServiceAsync {
 	void checkAndDeleteSubTree(String measureId, String subTreeUUID,
 			AsyncCallback<Boolean> callback);
 
+	/**
+	 * Checks if is sub tree referred in logic.
+	 *
+	 * @param measureId the measure id
+	 * @param subTreeUUID the sub tree uuid
+	 * @param callback the callback
+	 */
 	void isSubTreeReferredInLogic(String measureId, String subTreeUUID,
 			AsyncCallback<Boolean> callback);
 
+	/**
+	 * Gets the human readable for node.
+	 *
+	 * @param measureId the measure id
+	 * @param populationSubXML the population sub xml
+	 * @param callback the callback
+	 * @return the human readable for node
+	 */
 	void getHumanReadableForNode(String measureId, String populationSubXML,
 			AsyncCallback<String> callback);
+	
+	/**
+	 * Gets the component measures.
+	 *
+	 * @param measureIds the measure ids
+	 * @param callback the callback
+	 * @return the component measures
+	 */
+	void getComponentMeasures(List<String> measureIds, AsyncCallback<ManageMeasureSearchModel> callback);
+
+	/**
+	 * Validate package grouping.
+	 *
+	 * @param model the model
+	 * @param asyncCallback the async callback
+	 */
+	void validatePackageGrouping(ManageMeasureDetailModel model,
+			AsyncCallback<Boolean> asyncCallback);
+
+	/**
+	 * Validate measure xmlinpopulation workspace.
+	 *
+	 * @param measureXmlModel the measure xml model
+	 * @param asyncCallback the async callback
+	 * @return 
+	 */
+	void validateMeasureXmlinpopulationWorkspace(
+			MeasureXmlModel measureXmlModel, AsyncCallback<Boolean> asyncCallback);
+	
+	
+	void updateComponentMeasuresFromXml(String measureId, AsyncCallback<Void> asyncCallback);
+			
 }

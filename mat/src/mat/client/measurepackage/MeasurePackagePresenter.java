@@ -2,14 +2,17 @@ package mat.client.measurepackage;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import mat.client.Mat;
 import mat.client.MatPresenter;
 import mat.client.MeasureComposerPresenter;
 import mat.client.clause.QDSAppliedListModel;
+import mat.client.event.MeasureSelectedEvent;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.service.MeasureServiceAsync;
 import mat.client.measure.service.SaveMeasureResult;
+import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.measurepackage.MeasurePackagerView.Observer;
 import mat.client.measurepackage.service.MeasurePackageSaveResult;
 import mat.client.shared.ErrorMessageDisplay;
@@ -21,6 +24,8 @@ import mat.client.shared.SecondaryButton;
 import mat.client.shared.SuccessMessageDisplayInterface;
 import mat.client.shared.WarningMessageDisplay;
 import mat.model.QualityDataSetDTO;
+import mat.server.util.XmlProcessor;
+import mat.shared.ConstantMessages;
 import mat.shared.MeasurePackageClauseValidator;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -36,8 +41,7 @@ import com.google.gwt.user.client.ui.Widget;
  * The Class MeasurePackagePresenter.
  */
 public class MeasurePackagePresenter implements MatPresenter {
-	/** The empty panel. */
-	private SimplePanel emptyPanel = new SimplePanel();
+
 	/** The panel. */
 	private SimplePanel panel = new SimplePanel();
 	
@@ -306,7 +310,25 @@ public class MeasurePackagePresenter implements MatPresenter {
 			public void onClick(ClickEvent event) {
 				clearMessages();
 				((Button) view.getPackageMeasureButton()).setEnabled(false);
-				MatContext.get().getMeasureService().saveMeasureAtPackage(model, new AsyncCallback<SaveMeasureResult>() {
+				//MatContext.get().getMeasureService().saveMeasureAtPackage(model, new AsyncCallback<SaveMeasureResult>()
+
+				MatContext.get().getMeasureService().updateComponentMeasuresFromXml(model.getId(), new AsyncCallback<Void>() {
+
+					@Override
+					public void onFailure(Throwable caught) {
+						
+						System.out.println(" Updation of Component Measures on Creation of Measure Packager: "+caught.getStackTrace());
+					}
+
+					@Override
+					public void onSuccess(Void result) {
+						view.getPackageSuccessMessageDisplay().setMessage("Component Measures Updated");
+						
+					}
+				});
+				
+				
+				MatContext.get().getMeasureService().validatePackageGrouping(model, new AsyncCallback<Boolean>(){
 					
 					@Override
 					public void onFailure(Throwable caught) {
@@ -314,9 +336,33 @@ public class MeasurePackagePresenter implements MatPresenter {
 					}
 					
 					@Override
-					public void onSuccess(SaveMeasureResult result) {
+					public void onSuccess(Boolean result) {
+						if(!result){
+							view.getPackageSuccessMessageDisplay().setMessage("Validation Successful");
+							
+							MatContext.get().getMeasureService().saveMeasureAtPackage(model, new AsyncCallback<SaveMeasureResult>() {
+								
+								@Override
+								public void onFailure(Throwable caught) {
+									((Button) view.getPackageMeasureButton()).setEnabled(true);
+								}
+								
+								@Override
+								public void onSuccess(SaveMeasureResult result) {
+									((Button) view.getPackageMeasureButton()).setEnabled(true);
+								}
+							});	
+							
+						}else{
+							view.getPackageErrorMessageDisplay().
+							setMessage("Unable to create measure package. Please verify measure logic in population workspace.");
+							
+						}
 						((Button) view.getPackageMeasureButton()).setEnabled(true);
+						
 					}
+
+					
 				});
 			}
 		});
@@ -418,7 +464,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 		currentDetail.setPackageClauses(view.getPackageGroupingWidget().getGroupingPopulationList());
 		currentDetail.setToComparePackageClauses(dbPackageClauses);
 		currentDetail.setValueSetDate(null);
-		//this.currentDetail = currentDetail;
 	}
 	
 	
@@ -471,7 +516,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.getPackageSuccessMessageDisplay().clear();
 		view.getSuppDataSuccessMessageDisplay().clear();
 		view.getPackageErrorMessageDisplay().clear();
-		//view.getMeasureErrorMessageDisplay().clear();
 		view.getMeasurePackageSuccessMsg().clear();
 		view.getErrorMessageDisplay().clear();
 		view.getMeasurePackageWarningMsg().clear();
@@ -481,7 +525,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 	 */
 	private void displayEmpty() {
 		panel.clear();
-		//panel.add(emptyPanel);
 		panel.add(view.asWidget());
 		view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
 		view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
@@ -564,9 +607,8 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.setObserver(new MeasurePackagerView.Observer() {
 			@Override
 			public void onEditClicked(MeasurePackageDetail detail) {
-				//updateDetailsFromView(currentDetail);
 				
-				if(!view.getPackageGroupingWidget().getGroupingPopulationList().equals(dbPackageClauses)){
+				if(!checkIfDirty(detail)){
 					
 					showErrorMessage(view.getSaveErrorMessageDisplay());
 					view.getSaveErrorMessageDisplay().getButtons().get(0).setFocus(true);
@@ -587,6 +629,25 @@ public class MeasurePackagePresenter implements MatPresenter {
 		});
 	}
 	
+	
+	/**
+	 * Check if dirty.
+	 *
+	 * @param detail the detail
+	 * @return true, if successful
+	 */
+	public boolean checkIfDirty(MeasurePackageDetail detail){
+		
+		if (currentDetail.getPackageClauses() == null) {
+			if (dbPackageClauses != null) {
+				return false;
+			}
+		} else if (!currentDetail.isEqual(currentDetail.getPackageClauses(),
+				dbPackageClauses)) {
+			return false;
+		} 
+		return true;
+	}
 	
 	/**
 	 * Show error message.
@@ -754,7 +815,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 				.toString(getMaxSequence(packageOverview) + 1));
 		List<MeasurePackageDetail> packageList = new ArrayList<MeasurePackageDetail>(packageOverview.getPackages());
 		view.buildCellTable(packageList);
-		//view.setMeasurePackages(packageOverview.getPackages());
 		setMeasurePackageDetailsOnView();
 	}
 	/**
@@ -767,9 +827,24 @@ public class MeasurePackagePresenter implements MatPresenter {
 			if (detail.getSequence().equals(measurePackageId)) {
 				currentDetail = detail;
 				setMeasurePackageDetailsOnView();
+				getItemCountListFromView(currentDetail.getPackageClauses());
 				break;
 			}
 		}
+	}
+	
+	/**
+	 * Gets the item count list from view.
+	 *
+	 * @param packageClauses the package clauses
+	 * @return the item count list from view
+	 */
+	public void getItemCountListFromView(List<MeasurePackageClauseDetail> packageClauses){
+		for(int i=0; i<dbPackageClauses.size(); i++){
+			dbPackageClauses.get(i).getDbItemCountList().addAll(packageClauses.get(i).getItemCountList());
+			dbPackageClauses.get(i).setDbAssociatedPopulationUUID(packageClauses.get(i).getAssociatedPopulationUUID());
+		}
+		
 	}
 	/**
 	 * setMeasurePackageDetailsOnView.

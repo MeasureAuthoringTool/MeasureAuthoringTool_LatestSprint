@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import mat.client.clause.clauseworkspace.model.CellTreeNode;
 import mat.client.clause.clauseworkspace.model.CellTreeNodeImpl;
 import mat.client.clause.clauseworkspace.presenter.PopulationWorkSpaceConstants;
@@ -20,7 +21,9 @@ import mat.client.shared.SpacerWidget;
 import mat.client.shared.SuccessMessageDisplay;
 import mat.client.shared.WarningMessageDisplay;
 import mat.shared.UUIDUtilClient;
+
 import org.apache.commons.lang.StringUtils;
+
 import com.google.gwt.cell.client.AbstractCell;
 import com.google.gwt.cell.client.Cell.Context;
 import com.google.gwt.cell.client.ValueUpdater;
@@ -160,9 +163,9 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	/** The save btn. */
 	private Button saveBtn = new PrimaryButton("Save", "primaryButton");
 	
-	/** The validate btn. */
+	/** The validate btn populationWorkspace. */
 	//Commented Validate Button from Population Work Space as part of Mat-3162
-	//	private Button validateBtn = new SecondaryButton("Validate");
+	private Button validateBtnPopulationWorkspace = new SecondaryButton("Validate");//Uncomented
 	
 	/** The save btn. */
 	private Button saveBtnClauseWorkSpace = new PrimaryButton("Save", "primaryButton");
@@ -322,9 +325,9 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		vp.add(successMessageDisplay);
 		savePanel.add(saveBtn);
 		//Commented Validate Button from Population Work Space as part of Mat-3162
-		//validateBtn.setTitle("Validate");
-		//savePanel.add(validateBtn);
-		//vp.add(warningMessageDisplay);
+		validateBtnPopulationWorkspace.setTitle("Validate");//uncommented
+		savePanel.add(validateBtnPopulationWorkspace);// uncommented
+		vp.add(warningMessageDisplay);//uncommented
 		vp.add(savePanel);
 		bottomSavePanel.add(vp);
 		SimplePanel errPanel = new SimplePanel();
@@ -1052,7 +1055,9 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 						setCommentsBoxReadOnly(true);
 					}
 				} else {
-					addCommentPanel.setVisible(false);
+					if(addCommentPanel != null) {
+						addCommentPanel.setVisible(false);
+					}
 					if ((value.getNodeType() == CellTreeNodeImpl.LOGICAL_OP_NODE)
 							|| (value.getNodeType() == CellTreeNodeImpl.SUBTREE_REF_NODE)) {
 						addCommentPanel.setVisible(true);
@@ -1528,6 +1533,48 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 			}
 		}
 	}
+	/* (non-Javadoc)
+	 * @see mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay#validateCellTreeNodesPopulationWorkspace(com.google.gwt.user.cellview.client.TreeNode)
+	 */
+	@Override
+	public boolean validateCellTreeNodesPopulationWorkspace(TreeNode treeNode) {		
+		if (treeNode != null) {
+			closeNodes(treeNode);
+			for (int i = 0; i < treeNode.getChildCount(); i++) {
+				//TreeNode subTree = null;
+				CellTreeNode node =(CellTreeNode) treeNode.getChildValue(i);
+				if(!validateCellTreeNodesPopulationWorkspace(node)){
+					isValid = false;
+					break;
+				}
+			}
+		}
+		
+		return isValid;
+	}
+	
+	public boolean validateCellTreeNodesPopulationWorkspace(CellTreeNode cellTreeNode){
+		boolean isValid = true;
+		int nodeType = cellTreeNode.getNodeType();
+		if (!((nodeType == CellTreeNode.LOGICAL_OP_NODE) || (nodeType == CellTreeNode.SUBTREE_REF_NODE) 
+				|| (nodeType == CellTreeNode.ROOT_NODE) || (nodeType == CellTreeNode.MASTER_ROOT_NODE) 
+				|| (nodeType == CellTreeNode.CLAUSE_NODE) )) {
+				editNode(false, cellTreeNode);
+				isValid = false;
+		}
+		
+		List<CellTreeNode> children = cellTreeNode.getChilds();
+		if(children != null && children.size() > 0){
+			for(CellTreeNode node:children){
+				if(!validateCellTreeNodesPopulationWorkspace(node)){
+					isValid = false;
+				}
+			}
+		}
+		
+		return isValid;
+	}
+	
 	
 	/* (non-Javadoc)
 	 * @see mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay#validateCellTreeNodes(com.google.gwt.user.cellview.client.TreeNode)
@@ -1547,10 +1594,10 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 					subTree = treeNode.setChildOpen(i, true, true);
 					if ((subTree != null) && (subTree.getChildCount() == 2)) {
 						if (!node.getValidNode()) {
-							editNode(true, node, subTree);
+							editNode(true, node);
 						}
 					} else {
-						editNode(false, node, subTree);
+						editNode(false, node);
 						if (isValid) {
 							isValid = false;
 						}
@@ -1601,7 +1648,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	 * @see mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay#editNode(boolean, mat.client.clause.clauseworkspace.model.CellTreeNode, com.google.gwt.user.cellview.client.TreeNode)
 	 */
 	@Override
-	public void editNode(boolean isValideNodeValue, CellTreeNode node, TreeNode subTree) {
+	public void editNode(boolean isValideNodeValue, CellTreeNode node) {
 		node.setValidNode(isValideNodeValue);
 		selectedNode = node;
 		closeParentOpenNodes(cellTree.getRootTreeNode());
@@ -1774,6 +1821,19 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	@Override
 	public CommentAreaTextBox getCommentArea() {
 		return commentArea;
+	}
+
+	//added by hari
+	/**
+	 * @return the ValidateBtnPopulationWorkspace
+	 */
+	/* (non-Javadoc)
+	 * @see mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay#getValidateBtnPopulationWorkspace()
+	 */
+	@Override
+	public Button getValidateBtnPopulationWorkspace() {
+		
+		return validateBtnPopulationWorkspace;
 	}
 	
 	

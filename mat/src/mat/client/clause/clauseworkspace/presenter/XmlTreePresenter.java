@@ -49,7 +49,7 @@ public class XmlTreePresenter {
 	
 	
 	/** The is unsaved data. */
-	private boolean isUnsavedData = false;
+//	private boolean isUnsavedData = false;
 	/**
 	 * Pop up Panel for Right Context Menu.
 	 */
@@ -154,7 +154,8 @@ public class XmlTreePresenter {
 			panel.clear();
 			panel.add(xmlTreeDisplay.asWidget());
 			invokeSaveHandler();
-			invokeValidateHandler();
+			//invokeValidateHandler();
+			invokeValidateHandlerPopulationWorkspace();//added to handle the validate button
 		} else {
 			Mat.hideLoadingMessage();
 		}
@@ -219,7 +220,11 @@ public class XmlTreePresenter {
 						.getXmlTree().getRootTreeNode().getChildValue(0));
 				boolean checkIfUsedInLogic = true;
 				
-				if(cellTreeNode.getChilds().size() > 0){
+				if(!MatContext.get().getMeasureLockService().checkForEditPermission()){
+					//If the measure is Read Only, the disable the Delete Clause button.
+					xmlTreeDisplay.getDeleteClauseButton().setEnabled(false);
+					checkIfUsedInLogic = false;
+				}else if(cellTreeNode.getChilds().size() > 0){
 					CellTreeNode childNode = cellTreeNode.getChilds().get(0);
 					String nodeName = childNode.getName();
 					if(nodeName.equals(selectedItemName)){
@@ -228,7 +233,7 @@ public class XmlTreePresenter {
 						checkIfUsedInLogic = false;
 					}
 				}
-				
+								
 				if(checkIfUsedInLogic){
 					service.isSubTreeReferredInLogic(measureId, selectedItemUUID, new AsyncCallback<Boolean>() {
 	
@@ -271,7 +276,7 @@ public class XmlTreePresenter {
 						
 						if(cellTreeNode.getChilds().size() > 0){
 							if (xmlTreeDisplay.isDirty()) {
-								isUnsavedData = true;
+								//isUnsavedData = true;
 								showErrorMessage(xmlTreeDisplay.getErrorMessageDisplay());
 								xmlTreeDisplay.getErrorMessageDisplay().getButtons().get(0).setFocus(true);
 								String auditMessage = getRootNode().toUpperCase() + "_TAB_YES_CLICKED";
@@ -279,7 +284,7 @@ public class XmlTreePresenter {
 								ClickHandler clickHandler = new ClickHandler() {
 									@Override
 									public void onClick(ClickEvent event) {
-										isUnsavedData = false;
+										//isUnsavedData = false;
 										SecondaryButton button = (SecondaryButton) event.getSource();
 										// If Yes - do not navigate, set focus to the Save button on the Page and clear cell tree
 										// // Else -do not navigate, set focus to the Save button on the Page
@@ -298,9 +303,9 @@ public class XmlTreePresenter {
 								for (SecondaryButton secondaryButton : xmlTreeDisplay.getErrorMessageDisplay().getButtons()) {
 									secondaryButton.addClickHandler(clickHandler);
 								}
-								if (isUnsavedData) {
-									MatContext.get().setErrorTab(true);
-								}
+//								if (isUnsavedData) {
+//									MatContext.get().setErrorTab(true);
+//								}
 							}else{
 								changeClause(cellTreeNode, selectedClauseName, selectedClauseUUID);
 							}
@@ -546,12 +551,76 @@ public class XmlTreePresenter {
 		}
 		System.out.println("PopulationWorkSpaceConstants.subTreeLookUpName:"+PopulationWorkSpaceConstants.subTreeLookUpName);
 	}
+	/**
+	 * Invoke validate handler on population workspace.
+	 */
+	final void invokeValidateHandlerPopulationWorkspace() {
+	xmlTreeDisplay.getValidateBtnPopulationWorkspace().addClickHandler(new ClickHandler() {
+		@Override
+		public void onClick(final ClickEvent event) {
+			if (xmlTreeDisplay.getXmlTree() != null) {
+				xmlTreeDisplay.clearMessages();
+				xmlTreeDisplay.setValid(true);
+				xmlTreeDisplay.addCommentNodeToSelectedNode();
+				CellTreeNode cellTreeNode = (CellTreeNode) xmlTreeDisplay
+						.getXmlTree().getRootTreeNode().getChildValue(0);
+				/*final MeasureXmlModel measureXmlModel = createMeasureExportModel(XmlConversionlHelper
+						.createXmlFromTree(cellTreeNode));
+				service.validateMeasureXmlinpopulationWorkspace(measureXmlModel, new AsyncCallback<Boolean>() {
+					@Override
+					public void onFailure(final Throwable caught) {
+						System.out.println("failure");
+					}
+					@Override
+					public void onSuccess(Boolean result) {
+						if (result) {
+							xmlTreeDisplay.closeNodes(xmlTreeDisplay.getXmlTree()
+									.getRootTreeNode());
+							xmlTreeDisplay.openAllNodes(xmlTreeDisplay.getXmlTree()
+									.getRootTreeNode());
+							xmlTreeDisplay.getWarningMessageDisplay().
+							setMessage(MatContext.get().getMessageDelegate().getPOPULATION_WORK_SPACE_VALIDATION_ERROR());
+						} else {
+							xmlTreeDisplay.closeNodes(xmlTreeDisplay.getXmlTree()
+									.getRootTreeNode());
+							xmlTreeDisplay.getSuccessMessageDisplay().setMessage(
+									MatContext.get().getMessageDelegate().
+									getPOPULATION_WORK_SPACE_VALIDATION_SUCCESS());
+						}
+						
+					}
+					
+				});*/
+				
+				boolean result = xmlTreeDisplay
+						.validateCellTreeNodesPopulationWorkspace(xmlTreeDisplay.getXmlTree()
+								.getRootTreeNode());
+				if (!result) {
+					xmlTreeDisplay.closeNodes(xmlTreeDisplay.getXmlTree()
+							.getRootTreeNode());
+					xmlTreeDisplay.openAllNodes(xmlTreeDisplay.getXmlTree()
+							.getRootTreeNode());
+					xmlTreeDisplay.getWarningMessageDisplay().
+					setMessage(MatContext.get().getMessageDelegate().getPOPULATION_WORK_SPACE_VALIDATION_ERROR());
+				} else {
+					xmlTreeDisplay.closeNodes(xmlTreeDisplay.getXmlTree()
+							.getRootTreeNode());
+					xmlTreeDisplay.getSuccessMessageDisplay().setMessage(
+							MatContext.get().getMessageDelegate().
+							getPOPULATION_WORK_SPACE_VALIDATION_SUCCESS());
+				}
+			}
+		}
+	});
+}
+
 	
 	/**
 	 * Invoke validate handler.
 	 */
 	final void invokeValidateHandler() {
 		//Commented Validate Button from Population Work Space as part of Mat-3162
+		//Uncommented start
 		/*xmlTreeDisplay.getValidateBtn().addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(final ClickEvent event) {
@@ -594,6 +663,8 @@ public class XmlTreePresenter {
 					} else {
 						xmlTreeDisplay.closeNodes(xmlTreeDisplay.getXmlTree()
 								.getRootTreeNode());
+						xmlTreeDisplay.openAllNodes(xmlTreeDisplay.getXmlTree()
+								.getRootTreeNode());
 						xmlTreeDisplay.getSuccessMessageDisplay().setMessage(
 								MatContext.get().getMessageDelegate().
 								getCLAUSE_WORK_SPACE_VALIDATION_SUCCESS());
@@ -612,14 +683,14 @@ public class XmlTreePresenter {
 			public void onClick(ClickEvent event) {
 				xmlTreeDisplay.clearMessages();
 				if (xmlTreeDisplay.isDirty()) {
-					isUnsavedData = true;
+				//	isUnsavedData = true;
 					showErrorMessage(xmlTreeDisplay.getErrorMessageDisplay());
 					xmlTreeDisplay.getErrorMessageDisplay().getButtons().get(0).setFocus(true);
 					String auditMessage = getRootNode().toUpperCase() + "_TAB_YES_CLICKED";
 					handleClickEventsOnUnsavedErrorMsg(xmlTreeDisplay.getErrorMessageDisplay().getButtons()
 							, xmlTreeDisplay.getErrorMessageDisplay(), auditMessage);
 				} else {
-					isUnsavedData = false;
+				//	isUnsavedData = false;
 					xmlTreeDisplay.setDirty(false);
 					panel.clear();
 					loadClauseWorkSpaceView(panel);
@@ -650,11 +721,11 @@ public class XmlTreePresenter {
 	 */
 	private void handleClickEventsOnUnsavedErrorMsg(List<SecondaryButton> btns, final ErrorMessageDisplay saveErrorMessage
 			, final String auditMessage) {
-		isUnsavedData = true;
+	//	isUnsavedData = true;
 		ClickHandler clickHandler = new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
-				isUnsavedData = false;
+				//isUnsavedData = false;
 				SecondaryButton button = (SecondaryButton) event.getSource();
 				// If Yes - do not navigate, set focus to the Save button on the Page and clear cell tree
 				// // Else -do not navigate, set focus to the Save button on the Page
@@ -671,9 +742,9 @@ public class XmlTreePresenter {
 		for (SecondaryButton secondaryButton : btns) {
 			secondaryButton.addClickHandler(clickHandler);
 		}
-		if (isUnsavedData) {
-			MatContext.get().setErrorTab(true);
-		}
+//		if (isUnsavedData) {
+//			MatContext.get().setErrorTab(true);
+//		}
 	}
 	
 	/**

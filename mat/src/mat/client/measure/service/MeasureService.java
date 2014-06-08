@@ -14,7 +14,9 @@ import mat.client.shared.MatException;
 import mat.model.MatValueSet;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
+import mat.server.util.XmlProcessor;
 
+import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 
@@ -383,7 +385,48 @@ public interface MeasureService extends RemoteService {
 	 */
 	boolean checkAndDeleteSubTree(String measureId, String subTreeUUID);
 
+	/**
+	 * Checks if is sub tree referred in logic.
+	 *
+	 * @param measureId the measure id
+	 * @param subTreeUUID the sub tree uuid
+	 * @return true, if is sub tree referred in logic
+	 */
 	boolean isSubTreeReferredInLogic(String measureId, String subTreeUUID);
 
+	/**
+	 * Gets the human readable for node.
+	 *
+	 * @param measureId the measure id
+	 * @param populationSubXML the population sub xml
+	 * @return the human readable for node
+	 */
 	String getHumanReadableForNode(String measureId, String populationSubXML);
+	
+	/**
+	 * Gets the component measures.
+	 *
+	 * @param measureIds the measure ids
+	 * @return the component measures
+	 */
+	ManageMeasureSearchModel getComponentMeasures(List<String> measureIds);
+
+	/**
+	 * Validate package grouping.
+	 *
+	 * @param model the model
+	 * @return true, if successful
+	 */
+	boolean validatePackageGrouping(ManageMeasureDetailModel model);
+
+	/**
+	 * Validate measure xmlinpopulation workspace.
+	 *
+	 * @param measureXmlModel the measure xml model
+	 * @return true, if successful
+	 */
+	boolean validateMeasureXmlinpopulationWorkspace(
+			MeasureXmlModel measureXmlModel);
+	
+	void updateComponentMeasuresFromXml(String measureId);
 }

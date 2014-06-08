@@ -40,7 +40,7 @@ import com.google.gwt.user.client.ui.Widget;
 public class ComparisonDialogBox {
 	
 	/** The dialog box. */
-	public static DialogBox dialogBox = new DialogBox(true,true);
+	public static DialogBox dialogBox = new DialogBox(false,true);
 	
 	
 	/**
@@ -212,9 +212,9 @@ public class ComparisonDialogBox {
 			@Override
 			public void onChange(ChangeEvent event) {
 				hPanel.clear();
+				hPanel.removeStyleName("alertMessageDialogBox");
+				quantity.removeStyleName("gwt-TextBoxRed");
 				if (listAllOperator.getValue().contains("Select")){
-					dialogContents.remove(0);
-					quantity.removeStyleName("gwt-TextBoxRed");
 					quantity.setEnabled(false);
 					listAllUnits.setEnabled(false);
 				}
@@ -254,7 +254,7 @@ public class ComparisonDialogBox {
 			}
 		});
 		save.getElement().setId("save_Button");
-		// Add a Close button at the bottom of the dialog
+		// Add a Close button at the bottom of the dialog box
 		Button closeButton = new Button("Cancel", new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {

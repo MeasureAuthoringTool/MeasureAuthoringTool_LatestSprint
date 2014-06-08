@@ -553,17 +553,6 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 * @param qdmSelectedList the new qdm selected list
 		 */
 		public void setQdmSelectedList(List<QualityDataSetDTO> qdmSelectedList);
-		
-		
-
-		/**
-		 * Builds the component measures cell table.
-		 *
-		 * @param result the result
-		 * @param isEditable the is editable
-		 */
-		void buildComponentMeasuresCellTable(ManageMeasureSearchModel result,
-				boolean isEditable);
 
 		/**
 		 * Gets the component measure selected list.
@@ -619,8 +608,9 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 * Builds the component measures selected list.
 		 *
 		 * @param result the result
+		 * @param editable the editable
 		 */
-		void buildComponentMeasuresSelectedList(List<ManageMeasureSearchModel.Result> result);
+		void buildComponentMeasuresSelectedList(List<ManageMeasureSearchModel.Result> result, boolean editable);
 		
 	}
 	
@@ -733,8 +723,6 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 */
 		HasClickHandlers getAddtoComponentMeasuresButtonHandler();
 
-		//HasClickHandlers getReturnButtonHandlers();
-
 		/**
 		 * Gets the search button.
 		 *
@@ -749,21 +737,6 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 */
 		HasValue<String> getSearchString();
 		
-		/**
-		 * Sets the component measure selected list.
-		 *
-		 * @param componentMeasureSelectedList the new component measure selected list
-		 */
-		public void setComponentMeasureSelectedList(
-				List<ManageMeasureSearchModel.Result> componentMeasureSelectedList);
-		
-		/**
-		 * Gets the component measure selected list.
-		 *
-		 * @return the component measure selected list
-		 */
-		public List<ManageMeasureSearchModel.Result> getComponentMeasureSelectedList();
-		
 		/* (non-Javadoc)
 		 * @see mat.client.measure.metadata.BaseMetaDataPresenter.BaseAddEditDisplay#getSuccessMessageDisplay()
 		 */
@@ -775,6 +748,13 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 		 * @return the addto component measures btn
 		 */
 		public Button getAddtoComponentMeasuresBtn();
+
+		/**
+		 * Gets the component measures list.
+		 *
+		 * @return the component measures list
+		 */
+		List<Result> getComponentMeasuresList();
 
 
 	}
@@ -874,6 +854,9 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	
 	/** The manage measure search model. */
 	private ManageMeasureSearchModel manageMeasureSearchModel;
+	
+	/** The is component measures selected. */
+	private boolean isComponentMeasuresSelected = false;
 
 	
 	/**
@@ -916,12 +899,6 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			public void onClick(ClickEvent event) {
 				getMetaDataDisplay().getSaveErrorMsg().clear();
 				addEditComponentMeasuresDisplay.getSearchString().setValue("");
-				if (currentMeasureDetail.getComponentMeasuresSelectedList() != null) {
-					addEditComponentMeasuresDisplay.setComponentMeasureSelectedList(currentMeasureDetail.getComponentMeasuresSelectedList());
-					} else {
-						List<ManageMeasureSearchModel.Result> componentMeasuresList = new ArrayList<ManageMeasureSearchModel.Result>();
-						addEditComponentMeasuresDisplay.setComponentMeasureSelectedList(componentMeasuresList);
-					}
 				displayAddEditComponentMeasures();
 			}
 		});
@@ -1089,6 +1066,7 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 
 			@Override
 			public void onClick(ClickEvent event) {
+				isComponentMeasuresSelected = false;
 				saveMetaDataInformation(true);
 			}
 			
@@ -1130,8 +1108,8 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 			
 			@Override
 			public void onClick(ClickEvent event) {
-				currentMeasureDetail.setComponentMeasuresSelectedList(addEditComponentMeasuresDisplay.getComponentMeasureSelectedList());
-				
+				addEditComponentMeasuresDisplay.getSuccessMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getCOMPONENT_MEASURES_ADDED_SUCCESSFULLY());
+				metaDataDisplay.setComponentMeasureSelectedList(addEditComponentMeasuresDisplay.getComponentMeasuresList());
 			}
 		});
 	    
@@ -1155,7 +1133,38 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 	 * @return the component measures
 	 */
 	public final void getComponentMeasures(){
-		metaDataDisplay.buildComponentMeasuresSelectedList(currentMeasureDetail.getComponentMeasuresSelectedList());
+		currentMeasureDetail.setComponentMeasuresSelectedList(metaDataDisplay.getComponentMeasureSelectedList());
+		List<String> listIds = new ArrayList<String>();
+		for(int i = 0;i<currentMeasureDetail.getComponentMeasuresSelectedList().size();i++){
+			listIds.add(currentMeasureDetail.getComponentMeasuresSelectedList().get(i).getId());
+		}
+		if((listIds!=null) && (listIds.size()>0)){
+			MatContext
+			.get()
+			.getMeasureService().getComponentMeasures(listIds, new AsyncCallback<ManageMeasureSearchModel>() {
+
+				@Override
+				public void onFailure(Throwable caught) {
+					
+				}
+
+				@Override
+				public void onSuccess(ManageMeasureSearchModel result) {
+					List<ManageMeasureSearchModel.Result> measureSelectedList = result.getData();
+					currentMeasureDetail.setComponentMeasuresSelectedList(measureSelectedList);
+//					if(!isComponentMeasuresSelected){
+//						dbComponentMeasuresSelectedList.clear();
+//						dbComponentMeasuresSelectedList.addAll(currentMeasureDetail.getComponentMeasuresSelectedList());
+//						isComponentMeasuresSelected = true;
+//					}
+					metaDataDisplay.buildComponentMeasuresSelectedList(measureSelectedList, editable);
+				}
+			});
+		} else {
+			metaDataDisplay.buildComponentMeasuresSelectedList(currentMeasureDetail.getComponentMeasuresSelectedList(),
+					editable);
+		}
+
 	}
 	
 	
@@ -1202,19 +1211,12 @@ public class MetaDataPresenter extends BaseMetaDataPresenter implements MatPrese
 
 					@Override
 					public void onSuccess(ManageMeasureSearchModel result) {
-						//List<ManageMeasureSearchModel.Result> list = new ArrayList<ManageMeasureSearchModel.Result>();
-						///.addAll(result.getData());
-						//ComponentMeasuresDialogBox.showComponentMeasuresDialogBox(metaDataDisplay.asComponentMeasuresWidget(), list);
-						//metaDataDisplay.buildComponentMeasuresCellTable(result, editable );
 						showAdminSearchingBusy(false);
-						result.setSelectedExportIds(new ArrayList<String>());
-						result.setSelectedExportResults(new ArrayList<Result>());
 						manageMeasureSearchModel = result;
-						//metaDataDisplay.setSaveButtonEnabled(true);
-						addEditComponentMeasuresDisplay.buildCellTable(result,searchText);
+						addEditComponentMeasuresDisplay.buildCellTable(manageMeasureSearchModel,searchText,
+								currentMeasureDetail.getComponentMeasuresSelectedList());
 					}
 				});
-		
 	}
 	
 	/**
@@ -1549,7 +1551,7 @@ private void setAuthorsListOnView() {
 		}
 		dbQDMSelectedList.clear();
 		dbQDMSelectedList.addAll(currentMeasureDetail.getQdsSelectedList());
-		
+		getAppliedQDMList(true);
 		//Component Measures List
 		if (currentMeasureDetail.getComponentMeasuresSelectedList() != null) {
 			metaDataDisplay.setComponentMeasureSelectedList(currentMeasureDetail.getComponentMeasuresSelectedList());
@@ -1558,11 +1560,9 @@ private void setAuthorsListOnView() {
 				metaDataDisplay.setComponentMeasureSelectedList(componentMeasuresList);
 				currentMeasureDetail.setComponentMeasuresSelectedList(componentMeasuresList);
 			}
+		getComponentMeasures();
 		dbComponentMeasuresSelectedList.clear();
 		dbComponentMeasuresSelectedList.addAll(currentMeasureDetail.getComponentMeasuresSelectedList());
-		
-		getAppliedQDMList(true);
-		getComponentMeasures();
 		editable = MatContext.get().getMeasureLockService().checkForEditPermission();
 		if (currentMeasureDetail.getReferencesList() != null) {
 			metaDataDisplay.setReferenceValues(currentMeasureDetail.getReferencesList(), editable);
@@ -1775,16 +1775,9 @@ private void setAuthorsListOnView() {
 		isSubView = true;
 		clearMessages();
 		VerticalPanel vPanel = new VerticalPanel();
-		//addEditComponentMeasuresDisplay.setReturnToLink("Return to Previous");
-	    //getComponentMeasures();
 		searchMeasuresList("",1,PAGE_SIZE,1);
-		//currentMeasureTypeList = new ManageMeasureTypeModel(currentMeasureDetail.getMeasureTypeList());
-		//currentMeasureTypeList.setPageSize(SearchView.PAGE_SIZE_ALL);
-		
-		//addEditMeasureTypeDisplay.buildDataTable(currentMeasureTypeList);
 		panel.clear();
 		panel.setStyleName("contentWithHeadingPanel");
-		//svPanel.setStyleName("contentPanel");
 		vPanel.add(addEditComponentMeasuresDisplay.asWidget());
 		vPanel.add(new SpacerWidget());
 		vPanel.add(new SpacerWidget());

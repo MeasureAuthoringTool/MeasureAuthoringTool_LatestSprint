@@ -18,6 +18,7 @@ import mat.model.MatValueSet;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
 import mat.server.service.MeasureLibraryService;
+import mat.server.util.XmlProcessor;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -324,6 +325,9 @@ MeasureService {
 		return this.getMeasureLibraryService().validateMeasureForExport(key, matValueSetList);
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#getHumanReadableForNode(java.lang.String, java.lang.String)
+	 */
 	@Override
 	public String getHumanReadableForNode(String measureId, String populationSubXML){
 		return this.getMeasureLibraryService().getHumanReadableForNode(measureId, populationSubXML);
@@ -360,4 +364,39 @@ MeasureService {
 	public boolean isSubTreeReferredInLogic(String measureId, String subTreeUUID){
 		return this.getMeasureLibraryService().isSubTreeReferredInLogic(measureId, subTreeUUID);
 	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#getComponentMeasures(java.util.List)
+	 */
+	@Override
+	public ManageMeasureSearchModel getComponentMeasures(List<String> measureIds){
+		return getMeasureLibraryService().getComponentMeasures(measureIds);
+	}
+
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#validatePackageGrouping(mat.client.measure.ManageMeasureDetailModel)
+	 */
+	@Override
+	public boolean validatePackageGrouping(
+			ManageMeasureDetailModel model) {
+		return this.getMeasureLibraryService().validatePackageGrouping(
+				model);
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#validateMeasureXmlinpopulationWorkspace(mat.client.clause.clauseworkspace.model.MeasureXmlModel)
+	 */
+	@Override
+	public boolean validateMeasureXmlinpopulationWorkspace(
+			MeasureXmlModel measureXmlModel) {
+		return this.getMeasureLibraryService().validateMeasureXmlInpopulationWorkspace(measureXmlModel);
+	}
+
+	@Override
+	public void updateComponentMeasuresFromXml(String measureId) {
+		// TODO Auto-generated method stub
+		 this.getMeasureLibraryService().updateComponentMeasuresOnDeletion(measureId);
+	}
+	
 }

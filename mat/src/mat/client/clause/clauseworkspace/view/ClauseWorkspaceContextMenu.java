@@ -225,7 +225,7 @@ public class ClauseWorkspaceContextMenu {
 				CellTreeNode selectedNode = xmlTreeDisplay.getSelectedNode();
 				if(selectedNode.getNodeType() == CellTreeNode.CLAUSE_NODE){
 					String xmlForPopulationNode = XmlConversionlHelper.createXmlFromTree(selectedNode);
-					System.out.println("XML for populations node:"+xmlForPopulationNode);
+					final String populationName = selectedNode.getName();
 					String measureId = MatContext.get().getCurrentMeasureId();
 //					String url = GWT.getModuleBaseURL() + "export?id=" +measureId+ "&xml=" + xmlForPopulationNode+ "&format=subtreeHTML";
 //					Window.open(url + "&type=open", "_blank", "");
@@ -234,7 +234,7 @@ public class ClauseWorkspaceContextMenu {
 						
 						@Override
 						public void onSuccess(String result) {
-							showHumanReadableDialogBox(result);
+							showHumanReadableDialogBox(result,populationName);
 						}
 									
 
@@ -459,6 +459,7 @@ public class ClauseWorkspaceContextMenu {
 		subMenuBar.addItem("Functions", functions); //functions menu 2nd level
 		createAddMenus(MatContext.get().functions, CellTreeNode.FUNCTIONS_NODE
 				, functions); // functions sub menus 3rd level
+		createAddClauseMenuItem(subMenuBar);
 		addMenu = new MenuItem("Add", subMenuBar); // 1st level menu
 		popupMenuBar.addItem(addMenu);
 		popupMenuBar.addSeparator(separator);
@@ -511,6 +512,7 @@ public class ClauseWorkspaceContextMenu {
 		subMenuBar.addItem("Relationship", relSetOpMenuBar); //functions menu 2nd level
 		createAddMenus(MatContext.get().relationships, CellTreeNode.RELATIONSHIP_NODE
 				, relSetOpMenuBar); // Timing sub menus 3rd level
+		createAddClauseMenuItem(subMenuBar);
 		addMenu = new MenuItem("Add", subMenuBar); // 1st level menu
 		popupMenuBar.addItem(addMenu);
 		popupMenuBar.addSeparator(separator);
@@ -537,6 +539,24 @@ public class ClauseWorkspaceContextMenu {
 			popupMenuBar.addItem(editMenu);
 		}
 	}
+	
+	/**
+	 * Creates the add clause menu item.
+	 *
+	 * @param menuBar - MenuBar.
+	 */
+	private void createAddClauseMenuItem(MenuBar menuBar) {
+		Command addClauseCmd = new Command() {
+			@Override
+			public void execute() {
+				popupPanel.hide();
+				SubTreeDialogBox.showSubTreeDialogBox(xmlTreeDisplay, true);
+			}
+		};
+		MenuItem item = new MenuItem("Clause", true, addClauseCmd);
+		menuBar.addItem(item);
+	}
+	
 	/**
 	 * Element Ref Node Pop Up Menu Items.
 	 * @param popupPanel - PopupPanel.
@@ -648,7 +668,7 @@ public class ClauseWorkspaceContextMenu {
 				showQDMAttributePopup(cellTreeNode);
 			}
 		};
-		MenuItem item = new MenuItem(template.menuTable("Edit Attributes", ""), addQDMAttributeCmd);
+		MenuItem item = new MenuItem(template.menuTable("Edit Attribute", ""), addQDMAttributeCmd);
 		menuBar.addItem(item);
 		checkForTimingElementDataType(cellTreeNode, item);
 	}
@@ -711,6 +731,7 @@ public class ClauseWorkspaceContextMenu {
 		MenuBar functionsMenuBar = new MenuBar(true);
 		menuBar.addItem("Functions", functionsMenuBar); //functions menu 2nd level
 		createAddMenus(MatContext.get().functions, CellTreeNode.FUNCTIONS_NODE, functionsMenuBar); // functions sub menus 3rd level
+		createAddClauseMenuItem(menuBar);
 		return menuBar;
 	}
 	
@@ -1007,13 +1028,14 @@ public class ClauseWorkspaceContextMenu {
 	 * Show human readable dialog box.
 	 *
 	 * @param result the result
+	 * @param populationName 
 	 */
-	private native void showHumanReadableDialogBox(String result) /*-{
+	private native void showHumanReadableDialogBox(String result, String populationName) /*-{
 	var humanReadableWindow = window.open("","","width=1000,height=700");
 	if(humanReadableWindow && humanReadableWindow.top){
 		//Populate the human readable in the new window.
 		humanReadableWindow.document.write(result);
-		humanReadableWindow.document.title = "Human Readable.";
+		humanReadableWindow.document.title = populationName;
 	}
 }-*/;
 	
