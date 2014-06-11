@@ -54,7 +54,7 @@ MeasureService {
 	 * @see mat.client.measure.service.MeasureService#createAndSaveElementLookUp(java.util.ArrayList, java.lang.String)
 	 */
 	@Override
-	public void createAndSaveElementLookUp(ArrayList<QualityDataSetDTO> list,
+	public void createAndSaveElementLookUp(List<QualityDataSetDTO> list,
 			String measureID) {
 		this.getMeasureLibraryService().createAndSaveElementLookUp(list, measureID);
 	}
@@ -96,7 +96,7 @@ MeasureService {
 	 * @see mat.client.measure.service.MeasureService#getAppliedQDMFromMeasureXml(java.lang.String, boolean)
 	 */
 	@Override
-	public ArrayList<QualityDataSetDTO> getAppliedQDMFromMeasureXml(
+	public List<QualityDataSetDTO> getAppliedQDMFromMeasureXml(
 			String measureId, boolean checkForSupplementData) {
 		return this.getMeasureLibraryService().getAppliedQDMFromMeasureXml(measureId, checkForSupplementData);
 	}
@@ -390,9 +390,12 @@ MeasureService {
 	@Override
 	public boolean validateMeasureXmlinpopulationWorkspace(
 			MeasureXmlModel measureXmlModel) {
-		return this.getMeasureLibraryService().validateMeasureXmlInpopulationWorkspace(measureXmlModel);
+		return this.getMeasureLibraryService().validateMeasureXmlAtCreateMeasurePackager(measureXmlModel);
 	}
 
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#updateComponentMeasuresFromXml(java.lang.String)
+	 */
 	@Override
 	public void updateComponentMeasuresFromXml(String measureId) {
 		// TODO Auto-generated method stub

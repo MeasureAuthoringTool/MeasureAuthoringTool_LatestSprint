@@ -228,7 +228,7 @@ public interface XmlTreeDisplay {
 	 *            the tree node
 	 * @return true, if successful
 	 */
-	boolean validateCellTreeNodes(TreeNode treeNode);
+	String validateCellTreeNodes(TreeNode treeNode);
 	
 	/**
 	 * Close nodes.
@@ -378,4 +378,6 @@ public interface XmlTreeDisplay {
 	public abstract Button getButtonExpandClauseWorkSpace();
 
 	void editNode(boolean isValideNodeValue, CellTreeNode node);
+	
+	public void setClauseEnabled(boolean isClauseOpen); 
 }

@@ -64,7 +64,7 @@ public interface MeasureLibraryService {
 	 * @param measureID
 	 *            the measure id
 	 */
-	void createAndSaveElementLookUp(ArrayList<QualityDataSetDTO> list,
+	void createAndSaveElementLookUp(List<QualityDataSetDTO> list,
 			String measureID);
 	
 	/**
@@ -452,8 +452,13 @@ public interface MeasureLibraryService {
 	 * @param measureXmlModel the measure xml model
 	 * @return the object
 	 */
-	boolean validateMeasureXmlInpopulationWorkspace(
+	boolean validateMeasureXmlAtCreateMeasurePackager(
 			MeasureXmlModel measureXmlModel);
 	
+	/**
+	 * Update component measures on deletion.
+	 *
+	 * @param measureId the measure id
+	 */
 	void updateComponentMeasuresOnDeletion(String measureId);
 }

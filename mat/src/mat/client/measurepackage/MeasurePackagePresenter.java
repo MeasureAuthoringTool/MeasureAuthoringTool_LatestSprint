@@ -63,9 +63,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 	/** The db supp data elements. */
 	private List<QualityDataSetDTO> dbSuppDataElements = new ArrayList<QualityDataSetDTO>();
 	
-	/** The is unsaved data. */
-	private boolean isUnsavedData = false;
-	
 	/**
 	 * Gets the db supp data elements.
 	 *
@@ -311,59 +308,10 @@ public class MeasurePackagePresenter implements MatPresenter {
 				clearMessages();
 				((Button) view.getPackageMeasureButton()).setEnabled(false);
 				//MatContext.get().getMeasureService().saveMeasureAtPackage(model, new AsyncCallback<SaveMeasureResult>()
-
-				MatContext.get().getMeasureService().updateComponentMeasuresFromXml(model.getId(), new AsyncCallback<Void>() {
-
-					@Override
-					public void onFailure(Throwable caught) {
-						
-						System.out.println(" Updation of Component Measures on Creation of Measure Packager: "+caught.getStackTrace());
-					}
-
-					@Override
-					public void onSuccess(Void result) {
-						view.getPackageSuccessMessageDisplay().setMessage("Component Measures Updated");
-						
-					}
-				});
 				
+				//Validate Package Grouping at the time of creating measure Package.
+				validatePackageGrouping();
 				
-				MatContext.get().getMeasureService().validatePackageGrouping(model, new AsyncCallback<Boolean>(){
-					
-					@Override
-					public void onFailure(Throwable caught) {
-						((Button) view.getPackageMeasureButton()).setEnabled(true);
-					}
-					
-					@Override
-					public void onSuccess(Boolean result) {
-						if(!result){
-							view.getPackageSuccessMessageDisplay().setMessage("Validation Successful");
-							
-							MatContext.get().getMeasureService().saveMeasureAtPackage(model, new AsyncCallback<SaveMeasureResult>() {
-								
-								@Override
-								public void onFailure(Throwable caught) {
-									((Button) view.getPackageMeasureButton()).setEnabled(true);
-								}
-								
-								@Override
-								public void onSuccess(SaveMeasureResult result) {
-									((Button) view.getPackageMeasureButton()).setEnabled(true);
-								}
-							});	
-							
-						}else{
-							view.getPackageErrorMessageDisplay().
-							setMessage("Unable to create measure package. Please verify measure logic in population workspace.");
-							
-						}
-						((Button) view.getPackageMeasureButton()).setEnabled(true);
-						
-					}
-
-					
-				});
 			}
 		});
 		
@@ -390,8 +338,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 							public void onSuccess(final Void result) {
 								getMeasurePackageOverview(MatContext.get()
 										.getCurrentMeasureId());
-								view.getPackageSuccessMessageDisplay().setMessage(
-										MatContext.get().getMessageDelegate().getGroupingSavedMessage());
 								view.getSuppDataSuccessMessageDisplay()
 								.setMessage(MatContext.get()
 										.getMessageDelegate()
@@ -478,10 +424,10 @@ public class MeasurePackagePresenter implements MatPresenter {
 		if ((measureId != null) && !measureId.equals("")) {
 			service.getAppliedQDMFromMeasureXml(measureId,
 					checkForSupplementData,
-					new AsyncCallback<ArrayList<QualityDataSetDTO>>() {
+					new AsyncCallback<List<QualityDataSetDTO>>() {
 				
 				private void filterTimingQDMs(
-						ArrayList<QualityDataSetDTO> result) {
+						List<QualityDataSetDTO> result) {
 					List<QualityDataSetDTO> timingQDMs = new ArrayList<QualityDataSetDTO>();
 					for (QualityDataSetDTO qdsDTO : result) {
 						if ("Timing Element".equals(qdsDTO
@@ -500,7 +446,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 				
 				@Override
 				public void onSuccess(
-						final ArrayList<QualityDataSetDTO> result) {
+						final List<QualityDataSetDTO> result) {
 					QDSAppliedListModel appliedListModel = new QDSAppliedListModel();
 					filterTimingQDMs(result);
 					appliedListModel.setAppliedQDMs(result);
@@ -608,8 +554,9 @@ public class MeasurePackagePresenter implements MatPresenter {
 			@Override
 			public void onEditClicked(MeasurePackageDetail detail) {
 				
-				if(!checkIfDirty(detail)){
-					
+				if(!currentDetail.isEqual(view.getPackageGroupingWidget().getGroupingPopulationList(),
+						dbPackageClauses)){
+					view.getSaveErrorMessageDisplay().clear();
 					showErrorMessage(view.getSaveErrorMessageDisplay());
 					view.getSaveErrorMessageDisplay().getButtons().get(0).setFocus(true);
 					handleClickEventsOnUnsavedErrorMsg(detail,view.getSaveErrorMessageDisplay().getButtons()
@@ -628,27 +575,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 			}
 		});
 	}
-	
-	
-	/**
-	 * Check if dirty.
-	 *
-	 * @param detail the detail
-	 * @return true, if successful
-	 */
-	public boolean checkIfDirty(MeasurePackageDetail detail){
 		
-		if (currentDetail.getPackageClauses() == null) {
-			if (dbPackageClauses != null) {
-				return false;
-			}
-		} else if (!currentDetail.isEqual(currentDetail.getPackageClauses(),
-				dbPackageClauses)) {
-			return false;
-		} 
-		return true;
-	}
-	
 	/**
 	 * Show error message.
 	 *
@@ -672,11 +599,9 @@ public class MeasurePackagePresenter implements MatPresenter {
 	 */
 	private void handleClickEventsOnUnsavedErrorMsg(final MeasurePackageDetail detail, List<SecondaryButton> btns, final ErrorMessageDisplay saveErrorMessage
 			, final String auditMessage) {
-		isUnsavedData = true;
 		ClickHandler clickHandler = new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
-				isUnsavedData = false;
 				SecondaryButton button = (SecondaryButton) event.getSource();
 				// If Yes - do not navigate, set focus to the Save button on the Page and clear cell tree
 				// // Else -do not navigate, set focus to the Save button on the Page
@@ -695,9 +620,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 		};
 		for (SecondaryButton secondaryButton : btns) {
 			secondaryButton.addClickHandler(clickHandler);
-		}
-		if (isUnsavedData) {
-			MatContext.get().setErrorTab(true);
 		}
 	}
 	
@@ -929,6 +851,68 @@ public class MeasurePackagePresenter implements MatPresenter {
 	 */
 	public PackageView getView() {
 		return view;
+	}
+	
+	/**
+	 * Validate package grouping.
+	 */
+	private void validatePackageGrouping(){
+		
+		MatContext.get().getMeasureService().validatePackageGrouping(model, new AsyncCallback<Boolean>(){
+			
+			@Override
+			public void onFailure(Throwable caught) {
+				((Button) view.getPackageMeasureButton()).setEnabled(true);
+			}
+			
+			@Override
+			public void onSuccess(Boolean result) {
+				if(!result){
+					//view.getPackageSuccessMessageDisplay().setMessage("Validation Successful");
+					
+					MatContext.get().getMeasureService().saveMeasureAtPackage(model, new AsyncCallback<SaveMeasureResult>() {
+						
+						@Override
+						public void onFailure(Throwable caught) {
+							((Button) view.getPackageMeasureButton()).setEnabled(true);
+						}
+						
+						@Override
+						public void onSuccess(SaveMeasureResult result) {
+							updateComponentMeasuresFromXml();
+							((Button) view.getPackageMeasureButton()).setEnabled(true);
+						}
+					});	
+					
+				} else {
+					view.getPackageErrorMessageDisplay().
+					setMessage("Unable to create measure package. Please validate your measure logic in both Population Workspace and clause workspace tabs");
+					
+				}
+				((Button) view.getPackageMeasureButton()).setEnabled(true);
+			}
+
+		});
+		
+	}
+	
+	/**
+	 * Update component measures from xml.
+	 */
+	private void updateComponentMeasuresFromXml(){
+		
+		MatContext.get().getMeasureService().updateComponentMeasuresFromXml(model.getId(), new AsyncCallback<Void>() {
+
+			@Override
+			public void onFailure(Throwable caught) {
+				System.out.println(" Updation of Component Measures on Creation of Measure Packager: " + caught.getStackTrace());
+			}
+
+			@Override
+			public void onSuccess(Void result) {
+				//view.getPackageSuccessMessageDisplay().setMessage("Component Measures Updated");
+			}
+		});
 	}
 }
 

@@ -19,7 +19,6 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import mat.DTO.MeasureNoteDTO;
-import mat.client.clause.clauseworkspace.model.CellTreeNode;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
@@ -333,15 +332,18 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	@Override
 	public void checkForTimingElementsAndAppend(XmlProcessor xmlProcessor) {
 		
-		List<String> missingTimingElementOIDList = xmlProcessor.checkForTimingElements();
+		String missingMeasurementPeriod = xmlProcessor.checkForTimingElements();
 		
-		if (missingTimingElementOIDList.isEmpty()) {
+		if (missingMeasurementPeriod.isEmpty()) {
 			logger.info("All timing elements present in the measure.");
 			return;
 		}
-		logger.info("Found the following timing elements missing:" + missingTimingElementOIDList);
+		logger.info("Found the following timing elements missing:" + missingMeasurementPeriod);
 		
-		QualityDataModelWrapper wrapper = getMeasureXMLDAO().createTimingElementQDMs(missingTimingElementOIDList);
+		List<String> missingOIDList = new ArrayList<String>();
+		missingOIDList.add(missingMeasurementPeriod);
+	
+		QualityDataModelWrapper wrapper = getMeasureXMLDAO().createTimingElementQDMs(missingOIDList);
 		
 		// Object to XML for elementLookUp
 		ByteArrayOutputStream streamQDM = XmlProcessor.convertQualityDataDTOToXML(wrapper);
@@ -538,7 +540,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @see mat.server.service.MeasureLibraryService#createAndSaveElementLookUp(java.util.ArrayList, java.lang.String)
 	 */
 	@Override
-	public final void createAndSaveElementLookUp(final ArrayList<QualityDataSetDTO> list, final String measureID) {
+	public final void createAndSaveElementLookUp(final List<QualityDataSetDTO> list, final String measureID) {
 		QualityDataModelWrapper wrapper = new QualityDataModelWrapper();
 		wrapper.setQualityDataDTO(list);
 		ByteArrayOutputStream stream = createQDMXML(wrapper);
@@ -1090,23 +1092,28 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#updateComponentMeasuresOnDeletion(java.lang.String)
+	 */
 	@Override
      public void updateComponentMeasuresOnDeletion(String measureId){
 		MeasureXmlModel xmlModel = getMeasureXmlForMeasure(measureId);
 		if(xmlModel!=null){
     	 XmlProcessor processor = new XmlProcessor(xmlModel.getXml());
-     	 String XPATH_EXPRESSION_COMPONENT_MEASURES = "/measure//measureDetails//componentMeasures//measure";
+     	 String XPATH_EXPRESSION_COMPONENT_MEASURES = "/measure//measureDetails//componentMeasures";
     	 try {
-			NodeList nodeList = (NodeList) xPath.evaluate(XPATH_EXPRESSION_COMPONENT_MEASURES,
+			NodeList parentNodeList = (NodeList) xPath.evaluate(XPATH_EXPRESSION_COMPONENT_MEASURES,
 						processor.getOriginalDoc(),	XPathConstants.NODESET);
+			Node parentNode = parentNodeList.item(0);
+			NodeList nodeList = parentNode.getChildNodes();
+			
 			for(int i = 0; i<nodeList.getLength() ; i++){
 				Node newNode = nodeList.item(i);
 				String id = newNode.getAttributes().getNamedItem("id").getNodeValue();
 				boolean isDeleted = getService().getMeasure(id);
 				if(!isDeleted){
-					nodeList.item(i).getParentNode().removeChild(newNode);
+					parentNode.removeChild(newNode);
 				}
-				
 			}
 			
 			xmlModel.setXml(processor.transform(processor.getOriginalDoc()));
@@ -2567,6 +2574,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	@Override
 	public boolean validatePackageGrouping(ManageMeasureDetailModel model) {
 		boolean flag=false;
+		
 		logger.debug(" MeasureLibraryServiceImpl: validatePackageGrouping Start :  ");
 		
 		
@@ -2574,7 +2582,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		if (((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml()))) {
 			System.out.println("MEASURE_XML: "+xmlModel.getXml());	
 			
-			flag = validateMeasureXmlInpopulationWorkspace(xmlModel);
+			flag = validateMeasureXmlAtCreateMeasurePackager(xmlModel);
 		}
 		
 		return flag;
@@ -2584,39 +2592,82 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @see mat.server.service.MeasureLibraryService#validateMeasureXmlInpopulationWorkspace(mat.client.clause.clauseworkspace.model.MeasureXmlModel)
 	 */
 	@Override
-	public boolean validateMeasureXmlInpopulationWorkspace(MeasureXmlModel measureXmlModel) {
+	public boolean validateMeasureXmlAtCreateMeasurePackager(MeasureXmlModel measureXmlModel) {
 		boolean flag=false;
+		boolean isInValidAttribute = false;
 		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
 		if ((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml())) {
 			XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
 			 String XPATH_POPULATIONS = "/measure/populations";
-			 System.out.println("MEASURE_XML: "+xmlModel.getXml() );
+			 
+			 String XPATH_QDMELEMENT = "/measure//subTreeLookUp//elementRef/@id";
+			 String XPATH_TIMING_ELEMENT = "/measure//subTreeLookUp//relationalOp";
+			 
+			 
+			 System.out.println("MEASURE_XML: "+xmlModel.getXml());
 			try {
 				NodeList nodesSDE = (NodeList) xPath.evaluate(XPATH_POPULATIONS, xmlProcessor.getOriginalDoc(),
 						XPathConstants.NODESET);
 				
+				NodeList nodesSDE_qdmElementId = (NodeList) xPath.evaluate(XPATH_QDMELEMENT, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
+				NodeList nodesSDE_timingElement = (NodeList) xPath.evaluate(XPATH_TIMING_ELEMENT, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
+				
+				for (int n = 0; n <nodesSDE_timingElement.getLength() && !flag; n++) {
+					
+					Node timingElementchildNode =nodesSDE_timingElement.item(n);
+					flag = validateTimingNode(timingElementchildNode, flag);	
+					if(flag)
+						break;
+					
+				}
+				
+				for (int m = 0; m <nodesSDE_qdmElementId.getLength() && !flag; m++) {
+					String id = nodesSDE_qdmElementId.item(m).getNodeValue();
+					String xpathForAttribute ="/measure//subTreeLookUp//elementRef[@id='"+id+"']/attribute";
+					Node attributeNode = (Node)xPath.evaluate(xpathForAttribute, xmlProcessor.getOriginalDoc(),XPathConstants.NODE);
+					if(attributeNode!=null){
+						String attributeName = attributeNode.getAttributes().getNamedItem("name").getNodeValue();
+						if(attributeName.equalsIgnoreCase("Anatomical Structure")){
+							isInValidAttribute = true;
+						}
+					}
+						
+					
+					String XPATH_QDMLOOKUP = "/measure/elementLookUp/qdm[@uuid='"+id+"']";
+					Node qdmNode = (Node)xPath.evaluate(XPATH_QDMLOOKUP, xmlProcessor.getOriginalDoc(),XPathConstants.NODE);
+					flag = !validateQdmNode(qdmNode, isInValidAttribute);
+						
+					if(flag){
+						break;
+					}
+				}
+				
 					Node newNode = nodesSDE.item(0);
 					NodeList populationsChildList = newNode.getChildNodes();
-					for (int i = 0; i < populationsChildList.getLength(); i++) {
-						Node childNode =populationsChildList.item(i);
-						NodeList childsList = childNode.getChildNodes();
 						
-						if(childsList.getLength()>0){
-							for(int j=0;j<childsList.getLength();j++){
-								Node subChildNode =childsList.item(j);
-								flag=validateNode(subChildNode,flag);
-								if(flag){
-									break;
+							for (int i = 0; i <populationsChildList.getLength() && !flag; i++) {
+							Node childNode =populationsChildList.item(i);
+							NodeList childsList = childNode.getChildNodes();
+							
+							if(childsList.getLength()>0){
+								for(int j=0; j <childsList.getLength() && !flag; j++){
+									Node subChildNode =childsList.item(j);
+									flag=validateNode(subChildNode,flag);
+									if(flag){
+										break;
+									}
+						
 								}
-					
+						
 							}
-					
+							 flag=validateNode(childNode, flag);
+							 if(flag){
+								break;
+							}
 						}
-						 flag=validateNode(childNode, flag);
-						 if(flag){
-							break;
-						}
-				}
+				
 					
 			} catch (XPathExpressionException e) {
 				
@@ -2626,7 +2677,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 } 
 	return flag;
 	}
-
+	
+	
 	/**
 	 * Validate node.
 	 *
@@ -2635,30 +2687,86 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @return true, if successful
 	 */
 	private boolean validateNode(Node newNode, boolean flag) {
-		if (!((newNode.getNodeName()== "logicalOp") 
-				|| (newNode.getNodeName()== "clause") 
-							|| (newNode.getNodeName() == "subTreeRef")
-										|| (newNode.getNodeName() == "initialPopulations")
-												|| (newNode.getNodeName() == "measurePopulations")
-														|| (newNode.getNodeName() == "numerators")
-												
-				|| (newNode.getNodeName() == "measurePopulationExclusions")
-							|| (newNode.getNodeName() == "denominators")
-										|| (newNode.getNodeName() == "denominatorExclusions")
-												|| (newNode.getNodeName() == "numeratorExclusions")
-														|| (newNode.getNodeName() == "denominatorExceptions")
-																|| (newNode.getNodeName() == "comment"))) {
+		String nodeName = newNode.getNodeName().trim();
+		if (!((nodeName == "logicalOp") 
+				|| (nodeName == "clause") 
+				|| (nodeName == "subTreeRef")
+				|| (nodeName == "initialPopulations")
+				|| (nodeName == "measurePopulations")
+				|| (nodeName == "numerators")	
+				|| (nodeName == "measurePopulationExclusions")
+				|| (nodeName == "denominators")
+				|| (nodeName == "denominatorExclusions")
+				|| (nodeName == "numeratorExclusions")
+				|| (nodeName == "denominatorExceptions")
+				|| (nodeName == "comment"))) {
 			
 					flag =true;	 
 			}
-			if(newNode.getFirstChild()!=null){
+			if(newNode.getFirstChild()!=null && (newNode.getNodeName() != "comment") && !flag){
 					Node node =newNode.getFirstChild(); 
 					flag = validateNode(node, flag);			
 			}
 		
 		return flag;
 		
-	}	
+	}
 	
+	
+	/**
+	 * Validate qdm node.
+	 *
+	 * @param qdmchildNode the qdmchild node
+	 * @param isInValidAttribute the is in valid attribute
+	 * @return true, if successful
+	 */
+	private boolean validateQdmNode(Node qdmchildNode, boolean isInValidAttribute) {
+		boolean flag = true;
+		String dataTypeValue = qdmchildNode.getAttributes().getNamedItem("datatype").getNodeValue();
+		String qdmName = qdmchildNode.getAttributes().getNamedItem("name").getNodeValue();
+		
+		if((dataTypeValue.equalsIgnoreCase("Diagnostic Study, Result"))
+				|| (dataTypeValue.equalsIgnoreCase("Functional Status, Result"))
+				|| (dataTypeValue.equalsIgnoreCase("Laboratory Test, Result"))
+				|| (dataTypeValue.equalsIgnoreCase("Procedure, Result")	)
+				|| (dataTypeValue.equalsIgnoreCase("Physical Exam, Finding")	)
+				|| (dataTypeValue.equalsIgnoreCase("Intervention, Result")	)){
+			
+				flag=false;
+				
+			}else if(dataTypeValue.equalsIgnoreCase("Timing Element")){
+				if(qdmName.equalsIgnoreCase("Measurement Start Date") || qdmName.equalsIgnoreCase("Measurement End Date")){
+					flag = false;
+				}
+			}
+			else if((dataTypeValue.equalsIgnoreCase("Device, Applied")
+					|| dataTypeValue.equalsIgnoreCase("Physical Exam, Order")
+					|| dataTypeValue.equalsIgnoreCase("Physical Exam, Recommended")
+					|| dataTypeValue.equalsIgnoreCase("Physical Exam, Performed")) && isInValidAttribute){
+				
+				flag = false;
+				
+			}
+		return flag;
+		
+	}
+	
+	/**
+	 * Validate timing node.
+	 *
+	 * @param qdmchildNode the qdmchild node
+	 * @param flag the flag
+	 * @return true, if successful
+	 */
+	private boolean validateTimingNode(Node timingElementchildNode, boolean flag) {
+		int childCount = timingElementchildNode.getChildNodes().getLength();
+		if(childCount != 2){
+			flag = true;
+		}
+		return flag;
+	}
+
+	
+		
 }
 

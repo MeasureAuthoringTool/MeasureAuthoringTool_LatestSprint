@@ -1,5 +1,8 @@
 package mat.server.simplexml;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.xml.xpath.XPathExpressionException;
 
 import mat.server.util.XmlProcessor;
@@ -27,6 +30,18 @@ public class HumanReadableGenerator {
 		//replace the <subTree> tags in 'populationSubXML' with the appropriate subTree tags from 'simpleXML'.
 		try {
 			XmlProcessor populationXMLProcessor = expandSubTrees(populationSubXML, measureXML);
+			
+			if(populationXMLProcessor == null){
+				htmlDocument = createBaseHumanReadableDocument();
+				Element bodyElement = htmlDocument.body();
+				Element mainDivElement = bodyElement.appendElement("div");
+				Element mainListElement = mainDivElement.appendElement(HTML_UL);
+				Element populationListElement = mainListElement.appendElement(HTML_LI);
+				populationListElement.appendText("Human readable encountered problems. " +
+						"Most likely you have included a clause with clause which is causing an infinite loop.");
+				return htmlDocument.toString();
+			}
+			
 			String name = getPopulationClauseName(populationXMLProcessor);
 			
 			htmlDocument = createBaseHumanReadableDocument();
@@ -64,20 +79,108 @@ public class HumanReadableGenerator {
 			//For each <subTreeRef> node replace it by actual <subTree> node from 'simpleXML' 
 			for(int i=0;i<subTreeRefNodeList.getLength();i++){
 				Node subTreeRefNode = subTreeRefNodeList.item(i);
+				Node firstChildNode = subTreeRefNode.getFirstChild();
+				Node commentNode = null;
+				if(firstChildNode != null && "comment".equals(firstChildNode.getNodeName())){
+					commentNode = firstChildNode.cloneNode(true);
+				}
 				String subTreeId = subTreeRefNode.getAttributes().getNamedItem("id").getNodeValue();
 				System.out.println("subTreeId:"+subTreeId);
 				
-				Node subTreeNode = measureXMLProcessor.findNode(measureXMLProcessor.getOriginalDoc(), "/measure/subTreeLookUp/subTree[@uuid='"+subTreeId+"']");
+				Node subTreeNode = resolveMainSubTreeNode(measureXMLProcessor, 
+						subTreeId);
 				
-				//replace the 'subTreeRefNode' with 'subTreeNode'
-				Node subTreeRefNodeParent = subTreeRefNode.getParentNode();								
-				Node subTreeNodeImportedClone = populationXMLProcessor.getOriginalDoc().importNode(subTreeNode, true);
-				subTreeRefNodeParent.replaceChild(subTreeNodeImportedClone, subTreeRefNode);
+				if(subTreeNode != null){
+					replaceSubTreeNode(populationXMLProcessor,
+							subTreeRefNode, commentNode, subTreeNode);
+				}else{
+					return null;
+				}
 			}
 		}
 		
 		System.out.println("Inflated popualtion tree: "+populationXMLProcessor.transform(populationXMLProcessor.getOriginalDoc()));	
 		return populationXMLProcessor;
+	}
+
+	/**
+	 * @param measureXMLProcessor
+	 * @param subTreeId
+	 * @return
+	 * @throws XPathExpressionException
+	 */
+	private static Node resolveMainSubTreeNode(XmlProcessor measureXMLProcessor,
+			String subTreeId) throws XPathExpressionException {
+		Node subTreeNode = measureXMLProcessor.findNode(measureXMLProcessor.getOriginalDoc(), "/measure/subTreeLookUp/subTree[@uuid='"+subTreeId+"']");
+		//Node subTreeNodeClone = subTreeNode.cloneNode(true);
+		//find all <subTreeRef> tags in 'subTreeNode' 
+		NodeList subTreeRefNodeList = measureXMLProcessor.findNodeList(measureXMLProcessor.getOriginalDoc(), 
+				"/measure/subTreeLookUp/subTree[@uuid='"+subTreeId+"']//subTreeRef");
+		
+		//resolve for each subTreeRef with subTree (clause within clause)
+		for(int i=0;i<subTreeRefNodeList.getLength();i++){
+			Node subTreeRefNode = subTreeRefNodeList.item(i);
+			//Node subTreeRefNodeClone = subTreeRefNode.cloneNode(true);
+			List<String> childSubTreeRefList = new ArrayList<String>();
+			childSubTreeRefList.add(subTreeId);
+			if(!resolveChildSubTreeNode(measureXMLProcessor,subTreeRefNode,childSubTreeRefList)){
+				return null;
+			}
+			
+//			replaceSubTreeNode(measureXMLProcessor, subTreeRefNode, null, subTreeNode );
+		}
+		
+		
+		return subTreeNode;
+	}
+
+	private static boolean resolveChildSubTreeNode(
+			XmlProcessor measureXMLProcessor, Node subTreeRefNode,
+			List<String> childSubTreeRefList) throws XPathExpressionException {
+		
+		String subTreeId = subTreeRefNode.getAttributes().getNamedItem("id").getNodeValue();
+		System.out.println("sub subTreeId:"+subTreeId);
+		if(!childSubTreeRefList.contains(subTreeId)){
+			childSubTreeRefList.add(subTreeId);
+			Node subTreeNode = measureXMLProcessor.findNode(measureXMLProcessor.getOriginalDoc(), "/measure/subTreeLookUp/subTree[@uuid='"+subTreeId+"']");
+			//Node subTreeNodeClone = subTreeNode.cloneNode(true);
+			
+			//find all <subTreeRef> tags in 'subTreeNode' 
+			NodeList subTreeRefNodeList = measureXMLProcessor.findNodeList(measureXMLProcessor.getOriginalDoc(), 
+					"/measure/subTreeLookUp/subTree[@uuid='"+subTreeId+"']//subTreeRef");
+			for(int i=0;i<subTreeRefNodeList.getLength();i++){
+				Node childSubTreeRefNode = subTreeRefNodeList.item(i);
+				//Node childSubTreeRefNodeClone = childSubTreeRefNode.cloneNode(true);
+				if(!resolveChildSubTreeNode(measureXMLProcessor,childSubTreeRefNode,childSubTreeRefList)){
+					return false;
+				}
+				//replaceSubTreeNode(measureXMLProcessor, childSubTreeRefNode, null, subTreeNode);
+			}
+			replaceSubTreeNode(measureXMLProcessor, subTreeRefNode, null, subTreeNode );
+		}else{
+			System.out.println("Found a chain of Clauses. Abort Human readable generation.");
+			System.out.println(childSubTreeRefList);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * @param xmlProcessor
+	 * @param subTreeRefNode
+	 * @param commentNode
+	 * @param subTreeNode
+	 */
+	private static void replaceSubTreeNode(
+			XmlProcessor xmlProcessor, Node subTreeRefNode,
+			Node commentNode, Node subTreeNode) {
+		//replace the 'subTreeRefNode' with 'subTreeNode'
+		Node subTreeRefNodeParent = subTreeRefNode.getParentNode();								
+		Node subTreeNodeImportedClone = xmlProcessor.getOriginalDoc().importNode(subTreeNode, true);
+		if(commentNode != null){
+			subTreeNodeImportedClone.insertBefore(commentNode, subTreeNodeImportedClone.getFirstChild());
+		}
+		subTreeRefNodeParent.replaceChild(subTreeNodeImportedClone, subTreeRefNode);
 	}
 	
 	private static String getPopulationClauseName(
@@ -129,6 +232,13 @@ public class HumanReadableGenerator {
 				parseChild(childNodes.item(i), ulElement, item);				
 			}
 		}else if(COMMENT.equals(nodeName)){
+			String commentValue = item.getTextContent();
+			if(commentValue != null && commentValue.trim().length() > 0){
+				Element liElement = parentListElement.appendElement(HTML_LI);
+				liElement.attr("style","list-style-type: none");
+				Element italicElement = liElement.appendElement("i");
+				italicElement.appendText("# "+item.getTextContent());
+			}
 			return;
 		}else if(SUB_TREE.equals(nodeName)){
 			NodeList childNodes = item.getChildNodes();
@@ -215,7 +325,7 @@ public class HumanReadableGenerator {
 			parseChild(childNodes.item(0),liElement,item);
 			Element newLiElement = liElement;
 			if(LOGICAL_OP.equals(childNodes.item(0).getNodeName()) || SET_OP.equals(childNodes.item(0).getNodeName())){
-				newLiElement = liElement.children().last();
+				newLiElement = liElement.children().last().appendElement(HTML_LI);
 			}
 			newLiElement.appendText(item.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue().toLowerCase()+" ");
 			parseChild(childNodes.item(1),newLiElement,item);
@@ -225,20 +335,19 @@ public class HumanReadableGenerator {
 	/**
 	 * This method is used to get the correct text to add to human readable depending on the 
 	 * type of node. 
-	 * @param parentNode
+	 * @param node
 	 */
-	private static String getNodeText(Node parentNode) {
-		String parentNodeName = parentNode.getNodeName();
+	private static String getNodeText(Node node) {
+		String nodeName = node.getNodeName();
 		String name = "";
-		if(LOGICAL_OP.equals(parentNodeName)){
-		    name = parentNode.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue().toUpperCase();
+		if(LOGICAL_OP.equals(nodeName)){
+		    name = node.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue().toUpperCase();
 			name += ": ";
-		}else if(SET_OP.equals(parentNodeName)){
-			name = parentNode.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue().toUpperCase();
+		}else if(SET_OP.equals(nodeName)){
+			name = node.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue().toUpperCase();
 			name += " of ";
-		}else if(ELEMENT_REF.equals(parentNodeName)){
-			//TODO: Write code to take <attributes> into account.
-			name = parentNode.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue();
+		}else if(ELEMENT_REF.equals(nodeName)){
+			name = node.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue();
 			if(name.endsWith(" : Timing Element")){
 				name = name.substring(0,name.indexOf(" : Timing Element"));
 			}else {
@@ -247,9 +356,86 @@ public class HumanReadableGenerator {
 					name = nameArr[1].trim()+": "+nameArr[0].trim();
 				}
 			}
+			//TODO: Write code to take <attributes> into account.
+			if(node.hasChildNodes()){
+				NodeList childNodes = node.getChildNodes();
+				for(int j=0;j<childNodes.getLength();j++){
+					Node childNode = childNodes.item(j);
+					if(childNode.getNodeName().equals("attribute")){
+						String attributeText = getAttributeText(childNode);						
+						name += attributeText;
+					}
+				}
+			}
+			
 			name = "\"" + name + "\" ";
 		}
 		return name;
+	}
+	
+	private static String getAttributeText(Node attributeNode){
+		String attributeText = "";
+		String attributeName = attributeNode.getAttributes().getNamedItem("name").getNodeValue();
+		String modeName = attributeNode.getAttributes().getNamedItem("mode").getNodeValue();
+		
+		if("Check if Present".equals(modeName)){
+			attributeText = " ("+attributeName+")";
+		}else if("Less Than Or Equal To".equals(modeName)){
+			String comparisonValue = attributeNode.getAttributes().getNamedItem("comparisonValue").getNodeValue();
+			attributeText = " (" + attributeName + " <= " + comparisonValue + " " + getUnitString(attributeNode) + ")";
+		}else if("Greater Than Or Equal To".equals(modeName)){
+			String comparisonValue = attributeNode.getAttributes().getNamedItem("comparisonValue").getNodeValue();
+			attributeText = " (" + attributeName + " >= " + comparisonValue + " " + getUnitString(attributeNode) + ")";
+		}else if("Equal To".equals(modeName)){
+			String comparisonValue = attributeNode.getAttributes().getNamedItem("comparisonValue").getNodeValue();
+			attributeText = " (" + attributeName + " = " + comparisonValue + " " + getUnitString(attributeNode) + ")";
+		}else if("Greater Than".equals(modeName)){
+			String comparisonValue = attributeNode.getAttributes().getNamedItem("comparisonValue").getNodeValue();
+			attributeText = " (" + attributeName + " > " + comparisonValue + " " + getUnitString(attributeNode) + ")";
+		}else if("Less Than".equals(modeName)){
+			String comparisonValue = attributeNode.getAttributes().getNamedItem("comparisonValue").getNodeValue();
+			attributeText = " (" + attributeName + " < " + comparisonValue + " " + getUnitString(attributeNode) + ")";
+		}
+		return attributeText;
+	}
+	
+	private static String getUnitString(Node attributeNode) {
+		String unitValue = "";
+		
+		Node unitNode = attributeNode.getAttributes().getNamedItem("unit");
+		if(unitNode != null){
+			unitValue = attributeNode.getAttributes().getNamedItem("unit").getNodeValue();
+		}
+		
+		if(unitValue.equals("celsius")){
+			unitValue = "\u2103";
+		}
+		else if(unitValue.equals("years")|| unitValue.equals("year")){
+			unitValue = "year(s)";
+		}
+		else if (unitValue.equals("month") || unitValue.equals("months")){
+			unitValue = "month(s)";
+		}
+		else if (unitValue.equals("day") || unitValue.equals("days")){
+			unitValue = "day(s)";
+		}
+		else if(unitValue.equals("hour") || unitValue.equals("hours")){
+			unitValue = "hour(s)";
+		}
+		else if(unitValue.equals("week") || unitValue.equals("weeks")){
+			unitValue = "week(s)";
+		}
+		else if(unitValue.equals("minute") || unitValue.equals("minutes")){
+			unitValue = "minute(s)";
+		}
+		else if(unitValue.equals("quarter") || unitValue.equals("quarters")){
+			unitValue = "quarter(s)";
+		}
+		else if(unitValue.equals("second") || unitValue.equals("seconds")){
+			unitValue = "second(s)";
+		}
+		
+		return unitValue;
 	}
 
 	private static String getFunctionText(Node item) {

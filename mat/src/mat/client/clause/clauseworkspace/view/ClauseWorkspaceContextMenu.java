@@ -148,6 +148,7 @@ public class ClauseWorkspaceContextMenu {
 		xmlTreeDisplay = treeDisplay;
 		xmlTreeDisplay.setDirty(false);
 		popupPanel = popPanel;
+		popupPanel.setWidth("200px");
 		Command copyCmd = new Command() {
 			@Override
 			public void execute() {
@@ -286,9 +287,38 @@ public class ClauseWorkspaceContextMenu {
 			case CellTreeNode.SUBTREE_ROOT_NODE:
 				subTreeRootNodePopUpMenuItems(popupPanel);
 				break;
+			case CellTreeNode.SUBTREE_REF_NODE:
+				subTreeNodePopupMenuItems(popupPanel);
+				break;
 			default:
 				break;
 		}
+	}
+	/**
+	 * Generates popup menu for right click on a node of type 'CLAUSE_NODE'
+	 */
+	private void subTreeNodePopupMenuItems(final PopupPanel popupPanel) {
+		subMenuBar = new MenuBar(true);
+		popupMenuBar.setAutoOpen(true);
+		subMenuBar.setAutoOpen(true);
+		addCommonMenus();
+		addMoveUpMenu(popupPanel);
+		popupMenuBar.addItem(moveUpMenu);
+		moveUpMenu.setEnabled(checkIfTopChildNode());
+		addMoveDownMenu(popupPanel);
+		popupMenuBar.addItem(moveDownMenu);
+		moveDownMenu.setEnabled(checkIfLastChildNode());
+		deleteMenu.setEnabled(true);
+		Command editClauseCmd = new Command() {
+			@Override
+			public void execute() {
+				popupPanel.hide();
+				//To edit the Clause element
+				SubTreeDialogBox.showSubTreeDialogBox(xmlTreeDisplay, false, true);
+			}
+		};
+		editMenu = new MenuItem("Edit", true, editClauseCmd);
+		popupMenuBar.addItem(editMenu);
 	}
 	/**
 	 * Sub Tree Root Node Pop up Menu Items.
@@ -382,14 +412,14 @@ public class ClauseWorkspaceContextMenu {
 	 * @param popupPanel - PopupPanel
 	 */
 	private void relationalOpNodePopUpMenuItems(PopupPanel popupPanel) {
-		MenuBar subMenuBarRelLHS = createMenuBarWithTimingFuncAndQDM();
+		MenuBar subMenuBarRelLHS = createMenuBarWithTimingFuncAndQDM(false);
 		MenuBar relAssociationMenuBar = new MenuBar(true);
 		
 		//subMenuBarRelLHS.addItem("Relationship", relAssociationMenuBar); //Relationship menu 2nd level
 		createAddMenus(MatContext.get().relationships, CellTreeNode.RELATIONSHIP_NODE
 				, relAssociationMenuBar); // Relationship sub menus 3rd level
 		addMenuLHS = new MenuItem("Add LHS", subMenuBarRelLHS); //LHS Sub Menu
-		MenuBar subMenuBarRelRHS = createMenuBarWithTimingFuncAndQDM();
+		MenuBar subMenuBarRelRHS = createMenuBarWithTimingFuncAndQDM(false);
 		MenuBar relAssociationMenuBarRHS = new MenuBar(true);
 		//subMenuBarRelRHS.addItem("Relationship", relAssociationMenuBar); //Relationship menu 2nd level
 		createAddMenus(MatContext.get().relationships, CellTreeNode.RELATIONSHIP_NODE
@@ -449,19 +479,52 @@ public class ClauseWorkspaceContextMenu {
 		//Commented for User story MAT-3167.
 		/*createAddMenus(MatContext.get().logicalOps, CellTreeNode.LOGICAL_OP_NODE
 				, subMenuBar);*/ // creating logical Operators Menu 2nd level
-		createAddMenus(MatContext.get().setOps, CellTreeNode.SET_OP_NODE
-				, subMenuBar);
-		createAddQDM_MenuItem(subMenuBar);
-		MenuBar timing = new MenuBar(true);
-		subMenuBar.addItem("Timing", timing); //Timing menu 2nd level
-		createAddMenus(MatContext.get().timings, CellTreeNode.TIMING_NODE, timing); // Timing sub menus 3rd level
-		MenuBar functions = new MenuBar(true);
-		subMenuBar.addItem("Functions", functions); //functions menu 2nd level
-		createAddMenus(MatContext.get().functions, CellTreeNode.FUNCTIONS_NODE
-				, functions); // functions sub menus 3rd level
-		createAddClauseMenuItem(subMenuBar);
-		addMenu = new MenuItem("Add", subMenuBar); // 1st level menu
-		popupMenuBar.addItem(addMenu);
+		
+		if(xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ALL") || 
+				xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ANY")){
+			MenuBar subMenuBarLHS = createMenuBarWithOnlyQDM();
+			addMenuLHS = new MenuItem("Add LHS", subMenuBarLHS); //LHS Sub Menu
+			
+			MenuBar subMenuBarRHS = createMenuBarWithTimingFuncAndQDM(true);
+			MenuBar relSetOpMenuBar = new MenuBar(true);
+			subMenuBarRHS.addItem("Relationship", relSetOpMenuBar); //functions menu 2nd level
+			createAddMenus(MatContext.get().relationships, CellTreeNode.RELATIONSHIP_NODE
+					, relSetOpMenuBar); 
+			addMenuRHS = new MenuItem("Add RHS", subMenuBarRHS); //RHS Sub Menu
+			
+			//Disable  RHS by default.
+			if (xmlTreeDisplay.getSelectedNode().getChilds() == null) {
+				addMenuRHS.setEnabled(false);
+			}
+			//Disable LHS when One element is added and disable RHS when two elements are added.
+			if (xmlTreeDisplay.getSelectedNode().getChilds() != null) {
+				if (xmlTreeDisplay.getSelectedNode().getChilds().size() >= 1) {
+					addMenuLHS.setEnabled(false);
+				}
+				if ((xmlTreeDisplay.getSelectedNode().getChilds().size() == 0)
+						|| (xmlTreeDisplay.getSelectedNode().getChilds().size() >= 2)) {
+					addMenuRHS.setEnabled(false);
+				}
+			}
+			popupMenuBar.addItem(addMenuLHS);
+			popupMenuBar.addItem(addMenuRHS);
+			
+		} else {//Menu Items for functions other than SATISFIES ALL and SATISFIES ANY
+			createAddMenus(MatContext.get().setOps, CellTreeNode.SET_OP_NODE
+					, subMenuBar);	
+			createAddQDM_MenuItem(subMenuBar);
+			MenuBar timing = new MenuBar(true);
+			subMenuBar.addItem("Timing", timing); //Timing menu 2nd level
+			createAddMenus(MatContext.get().timings, CellTreeNode.TIMING_NODE, timing); // Timing sub menus 3rd level
+			MenuBar functions = new MenuBar(true);
+			subMenuBar.addItem("Functions", functions); //functions menu 2nd level
+			createAddMenus(MatContext.get().functions, CellTreeNode.FUNCTIONS_NODE
+					, functions); // functions sub menus 3rd level
+			createAddClauseMenuItem(subMenuBar);
+			addMenu = new MenuItem("Add", subMenuBar); // 1st level menu
+			popupMenuBar.addItem(addMenu);
+		}
+		
 		popupMenuBar.addSeparator(separator);
 		addCommonMenus();
 		copyMenu.setEnabled(true);
@@ -550,7 +613,7 @@ public class ClauseWorkspaceContextMenu {
 			@Override
 			public void execute() {
 				popupPanel.hide();
-				SubTreeDialogBox.showSubTreeDialogBox(xmlTreeDisplay, true);
+				SubTreeDialogBox.showSubTreeDialogBox(xmlTreeDisplay, true,true);
 			}
 		};
 		MenuItem item = new MenuItem("Clause", true, addClauseCmd);
@@ -590,9 +653,9 @@ public class ClauseWorkspaceContextMenu {
 	 * @param popupPanel - PopupPanel.
 	 */
 	private void timingNodePopUpMenuItems(final PopupPanel popupPanel) {
-		MenuBar subMenuBarLHS = createMenuBarWithTimingFuncAndQDM();
+		MenuBar subMenuBarLHS = createMenuBarWithTimingFuncAndQDM(true);
 		addMenuLHS = new MenuItem("Add LHS", subMenuBarLHS); //LHS Sub Menu
-		MenuBar subMenuBarRHS = createMenuBarWithTimingFuncAndQDM();
+		MenuBar subMenuBarRHS = createMenuBarWithTimingFuncAndQDM(true);
 		addMenuRHS = new MenuItem("Add RHS", subMenuBarRHS); //RHS Sub Menu
 		//Disable  RHS by default.
 		if (xmlTreeDisplay.getSelectedNode().getChilds() == null) {
@@ -715,7 +778,7 @@ public class ClauseWorkspaceContextMenu {
 	 * 
 	 * @return the menu bar
 	 */
-	protected MenuBar createMenuBarWithTimingFuncAndQDM() {
+	protected MenuBar createMenuBarWithTimingFuncAndQDM(boolean addClauseMenuItem) {
 		MenuBar menuBar = new MenuBar(true);
 		popupMenuBar.setAutoOpen(true);
 		menuBar.setAutoOpen(true);
@@ -731,7 +794,9 @@ public class ClauseWorkspaceContextMenu {
 		MenuBar functionsMenuBar = new MenuBar(true);
 		menuBar.addItem("Functions", functionsMenuBar); //functions menu 2nd level
 		createAddMenus(MatContext.get().functions, CellTreeNode.FUNCTIONS_NODE, functionsMenuBar); // functions sub menus 3rd level
-		createAddClauseMenuItem(menuBar);
+		if(addClauseMenuItem){
+			createAddClauseMenuItem(menuBar);
+		}
 		return menuBar;
 	}
 	
@@ -1028,7 +1093,7 @@ public class ClauseWorkspaceContextMenu {
 	 * Show human readable dialog box.
 	 *
 	 * @param result the result
-	 * @param populationName 
+	 * @param populationName the population name
 	 */
 	private native void showHumanReadableDialogBox(String result, String populationName) /*-{
 	var humanReadableWindow = window.open("","","width=1000,height=700");
@@ -1047,4 +1112,18 @@ public class ClauseWorkspaceContextMenu {
 	public MenuItem getViewHumanReadableMenu() {
 		return viewHumanReadableMenu;
 	}
+	
+	/**
+	 * Creates the menu bar with only qdm.
+	 *
+	 * @return the menu bar
+	 */
+	protected MenuBar createMenuBarWithOnlyQDM() {
+		MenuBar menuBar = new MenuBar(true);
+		popupMenuBar.setAutoOpen(true);
+		menuBar.setAutoOpen(true);
+		createAddQDM_MenuItem(menuBar);
+		return menuBar;
+	}
+	
 }
