@@ -2,14 +2,14 @@ package mat.client.measurepackage;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
+
 import mat.client.Mat;
 import mat.client.MatPresenter;
 import mat.client.MeasureComposerPresenter;
 import mat.client.clause.QDSAppliedListModel;
-import mat.client.event.MeasureSelectedEvent;
 import mat.client.measure.ManageMeasureDetailModel;
+import mat.client.measure.metadata.CustomCheckBox;
 import mat.client.measure.service.MeasureServiceAsync;
 import mat.client.measure.service.SaveMeasureResult;
 import mat.client.measure.service.ValidateMeasureResult;
@@ -23,10 +23,13 @@ import mat.client.shared.ReadOnlyHelper;
 import mat.client.shared.SecondaryButton;
 import mat.client.shared.SuccessMessageDisplayInterface;
 import mat.client.shared.WarningMessageDisplay;
+import mat.client.umls.service.VSACAPIServiceAsync;
+import mat.client.umls.service.VsacApiResult;
+import mat.model.MatValueSet;
 import mat.model.QualityDataSetDTO;
-import mat.server.util.XmlProcessor;
-import mat.shared.ConstantMessages;
 import mat.shared.MeasurePackageClauseValidator;
+
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
@@ -62,6 +65,9 @@ public class MeasurePackagePresenter implements MatPresenter {
 	
 	/** The db supp data elements. */
 	private List<QualityDataSetDTO> dbSuppDataElements = new ArrayList<QualityDataSetDTO>();
+	
+	/** The is measure package success. */
+	private boolean isMeasurePackageExportSuccess = false;
 	
 	/**
 	 * Gets the db supp data elements.
@@ -273,7 +279,30 @@ public class MeasurePackagePresenter implements MatPresenter {
 		 * @return the save error message display
 		 */
 		ErrorMessageDisplay getSaveErrorMessageDisplay();
+		/**
+		 * Gets the include vsac data.
+		 * 
+		 * @return the include vsac data
+		 */
+		CustomCheckBox getIncludeVSACData();
+		/**
+		 * Gets the measure error message display.
+		 *
+		 * @return the measure error message display
+		 */
+		ErrorMessageDisplayInterface getMeasureErrorMessageDisplay();
+		
+		/**
+		 * Gets the package measure and export button.
+		 *
+		 * @return the package measure and export button
+		 */
+		HasClickHandlers getPackageMeasureAndExportButton();
 	}
+	
+	/** The vsacapi service async. */
+	VSACAPIServiceAsync vsacapiServiceAsync = MatContext.get()
+			.getVsacapiServiceAsync();
 	
 	/**
 	 * Instantiates a new measure package presenter.
@@ -307,11 +336,23 @@ public class MeasurePackagePresenter implements MatPresenter {
 			public void onClick(ClickEvent event) {
 				clearMessages();
 				((Button) view.getPackageMeasureButton()).setEnabled(false);
+				isMeasurePackageExportSuccess = false;
 				//MatContext.get().getMeasureService().saveMeasureAtPackage(model, new AsyncCallback<SaveMeasureResult>()
 				
 				//Validate Package Grouping at the time of creating measure Package.
 				validatePackageGrouping();
 				
+			}
+		});
+		
+       view.getPackageMeasureAndExportButton().addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				clearMessages();
+				((Button) view.getPackageMeasureButton()).setEnabled(false);
+				isMeasurePackageExportSuccess = true;
+				validatePackageGrouping();
 			}
 		});
 		
@@ -426,16 +467,16 @@ public class MeasurePackagePresenter implements MatPresenter {
 					checkForSupplementData,
 					new AsyncCallback<List<QualityDataSetDTO>>() {
 				
-				private void filterTimingQDMs(
+				private void filterTimingAndAttributeQDMs(
 						List<QualityDataSetDTO> result) {
-					List<QualityDataSetDTO> timingQDMs = new ArrayList<QualityDataSetDTO>();
+					List<QualityDataSetDTO> timingAndAttributeQDMs = new ArrayList<QualityDataSetDTO>();
 					for (QualityDataSetDTO qdsDTO : result) {
 						if ("Timing Element".equals(qdsDTO
-								.getDataType())) {
-							timingQDMs.add(qdsDTO);
+								.getDataType()) || "attribute".equals(qdsDTO.getDataType())) {
+							timingAndAttributeQDMs.add(qdsDTO);
 						}
 					}
-					result.removeAll(timingQDMs);
+					result.removeAll(timingAndAttributeQDMs);
 				}
 				
 				@Override
@@ -448,7 +489,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 				public void onSuccess(
 						final List<QualityDataSetDTO> result) {
 					QDSAppliedListModel appliedListModel = new QDSAppliedListModel();
-					filterTimingQDMs(result);
+					filterTimingAndAttributeQDMs(result);
 					appliedListModel.setAppliedQDMs(result);
 					view.setAppliedQdmList(appliedListModel);
 				}
@@ -465,6 +506,9 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.getMeasurePackageSuccessMsg().clear();
 		view.getErrorMessageDisplay().clear();
 		view.getMeasurePackageWarningMsg().clear();
+		view.getMeasureErrorMessageDisplay().clear();
+		view.getSaveErrorMessageDisplay().clear();
+		
 	}
 	/**
 	 * Display Empty.
@@ -474,6 +518,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 		panel.add(view.asWidget());
 		view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
 		view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
+		view.getIncludeVSACData().setValue(false);
 	}
 	/* (non-Javadoc)
 	 * @see mat.client.MatPresenter#beforeClosingDisplay()
@@ -484,6 +529,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 		packageOverview = null;
 		view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
 		view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
+		view.getIncludeVSACData().setValue(false);
 	}
 	/* (non-Javadoc)
 	 * @see mat.client.MatPresenter#beforeDisplay()
@@ -498,6 +544,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 			getAppliedQDMList(true);
 			view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
 			view.getPackageGroupingWidget().getDisclosurePanelItemCountTable().setVisible(false);
+			view.getIncludeVSACData().setValue(false);
 		} else {
 			displayEmpty();
 		}
@@ -869,29 +916,63 @@ public class MeasurePackagePresenter implements MatPresenter {
 			public void onSuccess(Boolean result) {
 				if(!result){
 					//view.getPackageSuccessMessageDisplay().setMessage("Validation Successful");
-					
-					MatContext.get().getMeasureService().saveMeasureAtPackage(model, new AsyncCallback<SaveMeasureResult>() {
-						
-						@Override
-						public void onFailure(Throwable caught) {
-							((Button) view.getPackageMeasureButton()).setEnabled(true);
-						}
-						
-						@Override
-						public void onSuccess(SaveMeasureResult result) {
-							updateComponentMeasuresFromXml();
-							((Button) view.getPackageMeasureButton()).setEnabled(true);
-						}
-					});	
+					saveMeasureAtPackage();
 					
 				} else {
-					view.getPackageErrorMessageDisplay().
+					view.getMeasurePackageWarningMsg().
 					setMessage("Unable to create measure package. Please validate your measure logic in both Population Workspace and clause workspace tabs");
 					
 				}
 				((Button) view.getPackageMeasureButton()).setEnabled(true);
 			}
 
+		});
+		
+	}
+	
+	/**
+	 * Save measure at package.
+	 */
+	private void saveMeasureAtPackage(){
+		
+		MatContext.get().getMeasureService().saveMeasureAtPackage(model, new AsyncCallback<SaveMeasureResult>() {
+			
+			@Override
+			public void onFailure(Throwable caught) {
+				((Button) view.getPackageMeasureButton()).setEnabled(true);
+			}
+			
+			/**
+			 * On success.
+			 *
+			 * @param result the result
+			 */
+			@Override
+			public void onSuccess(SaveMeasureResult result) {
+				updateComponentMeasuresFromXml();
+				//added by hari
+				if (result.isSuccess()) {
+					Mat.showLoadingMessage();
+					String measureId = MatContext.get()
+							.getCurrentMeasureId();
+					if (view.getIncludeVSACData().getValue().equals(Boolean.TRUE)) {
+						updateValueSetsBeforePackaging(measureId);
+					} else {
+						validateMeasureAndExport(measureId, null);
+					}
+				} else {
+					((Button) view.getPackageMeasureButton()).setEnabled(true);
+					if (result.getFailureReason()
+							== SaveMeasureResult.INVALID_VALUE_SET_DATE) {
+						String message = MatContext.get()
+								.getMessageDelegate()
+								.getValueSetDateInvalidMessage();
+						view.getErrorMessageDisplay().setMessage(message);
+					}
+				}
+				
+				((Button) view.getPackageMeasureButton()).setEnabled(true);
+			}
 		});
 		
 	}
@@ -914,6 +995,129 @@ public class MeasurePackagePresenter implements MatPresenter {
 			}
 		});
 	}
+	/**
+	 * Service call to VSAC to update Measure Xml before invoking simple xml and value set sheet generation.
+	 * @param measureId - String.
+	 */
+	private void updateValueSetsBeforePackaging(final String measureId) {
+		vsacapiServiceAsync.updateAllVSACValueSetsAtPackage(measureId,
+				new AsyncCallback<VsacApiResult>() {
+			
+			@Override
+			public void onFailure(final Throwable caught) {
+			}
+			
+			@Override
+			public void onSuccess(final VsacApiResult result) {
+				validateMeasureAndExport(measureId,
+						result);
+			}
+		});
+	}
+	
+	/**
+	 * Service Call to generate Simple Xml and value set sheet.
+	 * @param measureId - String.
+	 * @param updateVsacResult - VsacApiResult.
+	 */
+	private void validateMeasureAndExport(final String measureId,
+			final VsacApiResult updateVsacResult) {
+		List<MatValueSet> vsacResponse = null;
+		if (updateVsacResult != null) {
+			vsacResponse = updateVsacResult.getVsacResponse();
+		}
+		
+		MatContext.get().getMeasureService()
+		.validateMeasureForExport(measureId, vsacResponse,
+				new AsyncCallback<ValidateMeasureResult>() {
+			@Override
+			public void onFailure(final Throwable caught) {
+				// O&M 17
+				((Button) view.getPackageMeasureButton())
+				.setEnabled(true);
+				Mat.hideLoadingMessage();
+				view.getPackageErrorMessageDisplay().setMessage(
+						MatContext.get().getMessageDelegate().getUnableToProcessMessage());
+			}
+			
+			@Override
+			public void onSuccess(final ValidateMeasureResult result) {
+				// O&M 17
+				((Button) view.getPackageMeasureButton()).setEnabled(true);
+				
+				Mat.hideLoadingMessage();
+				if (updateVsacResult != null) {
+					if (result.isValid() && updateVsacResult.isSuccess()) {
+						if(updateVsacResult.getRetrievalFailedOIDs().size() > 0){
+							if (isMeasurePackageExportSuccess) {
+								saveExport();
+							} else {
+								view.getMeasurePackageSuccessMsg()
+								.setAmberMessage(MatContext.get().getMessageDelegate()
+										.getPackageSuccessAmberMessage());
+							}
+							
+						} else {
+							
+							if (isMeasurePackageExportSuccess) {
+								saveExport();
+							} else {
+								view.getMeasurePackageSuccessMsg()
+								.setMessage(MatContext.get().getMessageDelegate()
+										.getPackageSuccessMessage());
+							}
+						}
+						
+					} else if (result.isValid() && !updateVsacResult.isSuccess()) {
+						if (updateVsacResult.getFailureReason()
+								== VsacApiResult.UMLS_NOT_LOGGEDIN) {
+							
+							if (isMeasurePackageExportSuccess) {
+								saveExport();
+							} else {
+							view.getMeasurePackageWarningMsg()
+							.setMessage(MatContext.get().getMessageDelegate()
+									.getMEASURE_PACKAGE_UMLS_NOT_LOGGED_IN());
+							}
+						}else if(VsacApiResult.VSAC_REQUEST_TIMEOUT == updateVsacResult.getFailureReason()){
+							view.getMeasureErrorMessageDisplay()
+							.setMessage(MatContext.get().getMessageDelegate()
+									.getMEASURE_PACKAGE_VSAC_TIMEOUT());
+						}
+					} else {
+						view.getMeasureErrorMessageDisplay()
+						.setMessages(result.getValidationMessages());
+					}
+				} else {
+					if (result.isValid()) {
+						//to Export the Measure.
+						if (isMeasurePackageExportSuccess) {
+							saveExport();
+						} else {
+							view.getMeasurePackageSuccessMsg()
+							.setMessage(MatContext.get().getMessageDelegate()
+									.getPackageSuccessMessage());
+						}
+					} else {
+						view.getMeasureErrorMessageDisplay()
+						.setMessages(result.getValidationMessages());
+					}
+				}
+			}
+		});
+	}
+	
+	/**
+	 * Save export.
+	 */
+	private void saveExport() {
+		String url = GWT.getModuleBaseURL() + "export?id=" + model.getId()
+				+ "&format=zip";
+		Window.open(url + "&type=save", "_self", "");
+	}
+	
 }
+
+
 
 

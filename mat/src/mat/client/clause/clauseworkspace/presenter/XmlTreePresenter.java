@@ -42,6 +42,8 @@ import com.google.gwt.xml.client.XMLParser;
  * The Class XmlTreePresenter.
  */
 public class XmlTreePresenter {
+	
+	/** The Constant COMMENT. */
 	private static final String COMMENT = "COMMENT";
 	/**
 	 * Cell Tree Node Size to remove show more.
@@ -116,9 +118,9 @@ public class XmlTreePresenter {
 	
 	/**
 	 * Load xml tree.
-	 * 
-	 * @param populationWorkSpacePanel
-	 *            the SimplePanel
+	 *
+	 * @param populationWorkSpacePanel the SimplePanel
+	 * @param panelName the panel name
 	 */
 	public final void loadXmlTree(SimplePanel populationWorkSpacePanel, String panelName) {
 		
@@ -205,38 +207,44 @@ public class XmlTreePresenter {
 	}
 	
 	
-	public final ScrollPanel loadClauseLogic(){
-		XmlTreeDisplay clauseTreeDisplay;
-		ScrollPanel simplePanel = new ScrollPanel();
-		simplePanel.getElement().setAttribute("id", "ClauseLogic");
-		CellTreeNode subTree = XmlConversionlHelper.createRootClauseNode();
-		XmlTreeView xmlTreeView = new XmlTreeView(subTree);
-		CellTree.Resources resource = GWT.create(TreeResources.class);
-		CellTree cellTree = new CellTree(xmlTreeView, null, resource); // CellTree
-		// Creation
-		cellTree.setDefaultNodeSize(NODESIZE);  // this will get rid of the show
-		// more link on the bottom of the
-		// Tree
-		xmlTreeView.createClauseWorkSpacePageView(cellTree); // Page Layout
-		cellTree.setTabIndex(0);
-		// This will open the tree by default.
-		TreeNode treeNode = cellTree.getRootTreeNode();
-		for (int i = 0; i < treeNode.getChildCount(); i++) {
-			if (((CellTreeNode) treeNode.getChildValue(i)).getNodeType()
-					== CellTreeNode.SUBTREE_ROOT_NODE) {
-				treeNode.setChildOpen(i, true, true);
-			}
-		}
-		setRootNode(cellTree.getRootTreeNode().toString());
-		clauseTreeDisplay = xmlTreeView;
-		clauseTreeDisplay.setEnabled(MatContext.get().getMeasureLockService()
-				.checkForEditPermission());
-		simplePanel.clear();
-		simplePanel.add(clauseTreeDisplay.asWidget());
-		return simplePanel;
-	}
 	/**
-	 * 
+	 * Load clause logic.
+	 *
+	 * @return the scroll panel
+	 */
+//	public final ScrollPanel loadClauseLogic(){
+//		XmlTreeDisplay clauseTreeDisplay;
+//		ScrollPanel simplePanel = new ScrollPanel();
+//		simplePanel.getElement().setAttribute("id", "ClauseLogic");
+//		CellTreeNode subTree = XmlConversionlHelper.createRootClauseNode();
+//		XmlTreeView xmlTreeView = new XmlTreeView(subTree);
+//		CellTree.Resources resource = GWT.create(TreeResources.class);
+//		CellTree cellTree = new CellTree(xmlTreeView, null, resource); // CellTree
+//		// Creation
+//		cellTree.setDefaultNodeSize(NODESIZE);  // this will get rid of the show
+//		// more link on the bottom of the
+//		// Tree
+//		xmlTreeView.createClauseWorkSpacePageView(cellTree); // Page Layout
+//		cellTree.setTabIndex(0);
+//		// This will open the tree by default.
+//		TreeNode treeNode = cellTree.getRootTreeNode();
+//		for (int i = 0; i < treeNode.getChildCount(); i++) {
+//			if (((CellTreeNode) treeNode.getChildValue(i)).getNodeType()
+//					== CellTreeNode.SUBTREE_ROOT_NODE) {
+//				treeNode.setChildOpen(i, true, true);
+//			}
+//		}
+//		setRootNode(cellTree.getRootTreeNode().toString());
+//		clauseTreeDisplay = xmlTreeView;
+//		clauseTreeDisplay.setEnabled(MatContext.get().getMeasureLockService()
+//				.checkForEditPermission());
+//		simplePanel.clear();
+//		simplePanel.add(clauseTreeDisplay.asWidget());
+//		return simplePanel;
+//	}
+	
+	/**
+	 * Adds the clause handler.
 	 */
 	private void addClauseHandler() {
 		
@@ -310,6 +318,7 @@ public class XmlTreePresenter {
 						if(cellTreeNode.getChilds().size() > 0){
 							if (xmlTreeDisplay.isDirty()) {
 								//isUnsavedData = true;
+								xmlTreeDisplay.getErrorMessageDisplay().clear();
 								showErrorMessage(xmlTreeDisplay.getErrorMessageDisplay());
 								xmlTreeDisplay.getErrorMessageDisplay().getButtons().get(0).setFocus(true);
 								String auditMessage = getRootNode().toUpperCase() + "_TAB_YES_CLICKED";
@@ -352,6 +361,13 @@ public class XmlTreePresenter {
 		});
 	}
 	
+	/**
+	 * Change clause.
+	 *
+	 * @param cellTreeNode the cell tree node
+	 * @param selectedClauseName the selected clause name
+	 * @param selectedClauseUUID the selected clause uuid
+	 */
 	private void changeClause(CellTreeNode cellTreeNode, String selectedClauseName, String selectedClauseUUID){
 		
 		if(cellTreeNode.getChilds().size() > 0){

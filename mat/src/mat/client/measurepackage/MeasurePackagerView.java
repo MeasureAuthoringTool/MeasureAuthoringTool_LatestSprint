@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import mat.client.CustomPager;
 import mat.client.clause.QDSAppliedListModel;
+import mat.client.measure.metadata.CustomCheckBox;
 import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.ErrorMessageDisplayInterface;
 import mat.client.shared.LabelBuilder;
@@ -117,8 +118,8 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 	private SuccessMessageDisplay measurePackageSuccessMsg = new SuccessMessageDisplay();
 	/** The measure package warning msg. */
 	private WarningMessageDisplay measurePackageWarningMsg = new WarningMessageDisplay();
-	/** The package success messages. */
-	private SuccessMessageDisplay packageSuccessMessages = new SuccessMessageDisplay();
+	/** The measure error messages. */
+	private ErrorMessageDisplay measureErrorMessages = new ErrorMessageDisplay();
 	/** The supp data success messages. */
 	private SuccessMessageDisplay suppDataSuccessMessages = new SuccessMessageDisplay();
 	/** The package measure. */
@@ -150,6 +151,10 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 	
 	/** The save error message display. */
 	private ErrorMessageDisplay saveErrorMessageDisplay = new ErrorMessageDisplay();
+	
+	/** The include vsac data. */
+	private CustomCheckBox includeVSACData = new CustomCheckBox("Select 'Include VSAC value set data' to create "
+			+ "a measure package with VSAC data.", "Include VSAC value set data", true);
 	
 	/* (non-Javadoc)
 	 * @see mat.client.measurepackage.MeasurePackagePresenter.PackageView#getSaveErrorMessageDisplay()
@@ -191,6 +196,10 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 	/** The right pager panel. */
 	private ScrollPanel rightPagerPanel = new ScrollPanel();
 	
+	/** The package measure and export. */
+	private PrimaryButton packageMeasureAndExport = new PrimaryButton(
+			"Create Package and Export", "primaryButton");
+	
 	/**
 	 * Constructor.
 	 */
@@ -210,11 +219,19 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 		content.add(new SpacerWidget());
 		content.add(topQDMElementContainer);
 		content.add(new SpacerWidget());
+		content.add(new SpacerWidget());	
+		content.add(includeVSACData);
+		content.add(new SpacerWidget());
 		content.add(new SpacerWidget());
 		content.add(measurePackageSuccessMsg);
 		content.add(measurePackageWarningMsg);
+		content.add(measureErrorMessages);
 		packageMeasure.setTitle("Create Measure Package");
+		packageMeasureAndExport.getElement().setId("Create Measure Package and Export");
+		packageMeasureAndExport.setTitle("Create Measure Package and Export");
+		packageMeasureAndExport.setStyleName("primaryButton floatRightButtonPanel");
 		content.add(packageMeasure);
+		content.add(packageMeasureAndExport);
 		content.add(new SpacerWidget());
 		content.add(new SpacerWidget());
 		content.setStyleName("contentPanel");
@@ -622,6 +639,7 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 			createNew.setEnabled(b);
 		}
 		packageMeasure.setEnabled(b);
+		packageMeasureAndExport.setEnabled(b);
 		addQDMElementsToMeasure.setEnabled(b);
 		packageGroupingWidget.getSaveGrouping().setEnabled(b);
 		addAllQDMLeft.setEnabled(b);
@@ -872,5 +890,33 @@ public class MeasurePackagerView implements MeasurePackagePresenter.PackageView 
 		}
 		
 	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measurepackage.MeasurePackagePresenter.PackageView#getIncludeVSACData()
+	 */
+	@Override
+	public CustomCheckBox getIncludeVSACData() {
+		return includeVSACData;
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measurepackage.MeasurePackagePresenter.PackageView#getMeasureErrorMessageDisplay()
+	 */
+	@Override
+	public final ErrorMessageDisplayInterface getMeasureErrorMessageDisplay() {
+		return measureErrorMessages;
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.client.measurepackage.MeasurePackagePresenter.PackageView#getPackageMeasureAndExportButton()
+	 */
+	@Override
+	public HasClickHandlers getPackageMeasureAndExportButton() {
+		// TODO Auto-generated method stub
+		return packageMeasureAndExport;
+	}
+	
+	
+	
 	
 }

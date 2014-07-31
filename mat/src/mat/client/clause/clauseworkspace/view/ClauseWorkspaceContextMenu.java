@@ -224,7 +224,7 @@ public class ClauseWorkspaceContextMenu {
 				System.out.println("View Human Readable clicked...");
 				popupPanel.hide();
 				CellTreeNode selectedNode = xmlTreeDisplay.getSelectedNode();
-				if(selectedNode.getNodeType() == CellTreeNode.CLAUSE_NODE){
+				if(selectedNode.getNodeType() == CellTreeNode.CLAUSE_NODE || selectedNode.getNodeType() == CellTreeNode.SUBTREE_NODE){
 					String xmlForPopulationNode = XmlConversionlHelper.createXmlFromTree(selectedNode);
 					final String populationName = selectedNode.getName();
 					String measureId = MatContext.get().getCurrentMeasureId();
@@ -264,6 +264,7 @@ public class ClauseWorkspaceContextMenu {
 		deleteMenu.setEnabled(false);
 		pasteMenu.setEnabled(false);
 		cutMenu.setEnabled(false);
+		viewHumanReadableMenu.setEnabled(false);
 		showHideExpandMenu();
 		switch (xmlTreeDisplay.getSelectedNode().getNodeType()) {
 			case CellTreeNode.TIMING_NODE:
@@ -294,8 +295,11 @@ public class ClauseWorkspaceContextMenu {
 				break;
 		}
 	}
+	
 	/**
-	 * Generates popup menu for right click on a node of type 'CLAUSE_NODE'
+	 * Generates popup menu for right click on a node of type 'CLAUSE_NODE'.
+	 *
+	 * @param popupPanel the popup panel
 	 */
 	private void subTreeNodePopupMenuItems(final PopupPanel popupPanel) {
 		subMenuBar = new MenuBar(true);
@@ -319,6 +323,7 @@ public class ClauseWorkspaceContextMenu {
 		};
 		editMenu = new MenuItem("Edit", true, editClauseCmd);
 		popupMenuBar.addItem(editMenu);
+		checkIsParentSatisfy();
 	}
 	/**
 	 * Sub Tree Root Node Pop up Menu Items.
@@ -404,6 +409,9 @@ public class ClauseWorkspaceContextMenu {
 		};
 		MenuItem editSubTreeMenu = new MenuItem("Edit", true, editSubTreeCmd);
 		popupMenuBar.addItem(editSubTreeMenu);
+		
+		popupMenuBar.addItem(viewHumanReadableMenu);
+		viewHumanReadableMenu.setEnabled(true);
 	}
 	
 	
@@ -467,6 +475,7 @@ public class ClauseWorkspaceContextMenu {
 		editMenu = new MenuItem("Edit", true, subMenuBarEdit);
 		popupMenuBar.addItem(editMenu);
 		cutMenu.setEnabled(true);
+		checkIsParentSatisfy();
 	}
 	/**
 	 * Function Node Pop Up Menu Items.
@@ -493,17 +502,13 @@ public class ClauseWorkspaceContextMenu {
 			addMenuRHS = new MenuItem("Add RHS", subMenuBarRHS); //RHS Sub Menu
 			
 			//Disable  RHS by default.
-			if (xmlTreeDisplay.getSelectedNode().getChilds() == null) {
+			if (xmlTreeDisplay.getSelectedNode().getChilds() == null || xmlTreeDisplay.getSelectedNode().getChilds().size() == 0 ) {
 				addMenuRHS.setEnabled(false);
 			}
 			//Disable LHS when One element is added and disable RHS when two elements are added.
 			if (xmlTreeDisplay.getSelectedNode().getChilds() != null) {
 				if (xmlTreeDisplay.getSelectedNode().getChilds().size() >= 1) {
 					addMenuLHS.setEnabled(false);
-				}
-				if ((xmlTreeDisplay.getSelectedNode().getChilds().size() == 0)
-						|| (xmlTreeDisplay.getSelectedNode().getChilds().size() >= 2)) {
-					addMenuRHS.setEnabled(false);
 				}
 			}
 			popupMenuBar.addItem(addMenuLHS);
@@ -551,6 +556,12 @@ public class ClauseWorkspaceContextMenu {
 		};
 		editMenu = new MenuItem("Edit", true, editFunctionsCmd);
 		popupMenuBar.addItem(editMenu);
+		if(xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ALL") || 
+				xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ANY"))
+			editMenu.setEnabled(false);
+		else
+			editMenu.setEnabled(true);
+		checkIsParentSatisfy();
 	}
 	/**
 	 * Set Op Node Pop up Menu Items.
@@ -601,6 +612,7 @@ public class ClauseWorkspaceContextMenu {
 			editMenu = new MenuItem("Edit", true, subMenuBar);
 			popupMenuBar.addItem(editMenu);
 		}
+		checkIsParentSatisfy();
 	}
 	
 	/**
@@ -647,6 +659,41 @@ public class ClauseWorkspaceContextMenu {
 		addMoveDownMenu(popupPanel);
 		popupMenuBar.addItem(moveDownMenu);
 		moveDownMenu.setEnabled(checkIfLastChildNode());
+		checkIsParentSatisfy();
+	}
+	
+	
+	/**
+	 * Check is parent satisfy.
+	 */
+	private void checkIsParentSatisfy(){
+		if((xmlTreeDisplay.getSelectedNode().getParent().getLabel().equalsIgnoreCase("SATISFIES ALL") || 
+				xmlTreeDisplay.getSelectedNode().getParent().getLabel().equalsIgnoreCase("SATISFIES ANY"))){
+			deleteMenu.setEnabled(checkIfTopChildNode());
+			cutMenu.setEnabled(checkIfTopChildNode());
+			if( xmlTreeDisplay.getSelectedNode().getNodeType() != CellTreeNode.ELEMENT_REF_NODE)
+				pasteMenu.setEnabled(checkIfTopChildNode());
+//			if( xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.FUNCTIONS_NODE){
+//				if(xmlTreeDisplay.getSelectedNode().getParent().getChilds() != null && xmlTreeDisplay.getSelectedNode().getParent().getChilds().size() > 1)
+//					pasteMenu.setEnabled(true);
+//				else
+//					pasteMenu.setEnabled(false);
+//			}
+			moveUpMenu.setEnabled(checkIfTopChildNodeForSatisfy());
+			moveDownMenu.setEnabled(checkIfLastChildNodeForSatisfy());
+		}
+		if(xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ALL") || 
+				xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ANY")){
+			
+			
+			if(xmlTreeDisplay.getCopiedNode() != null
+					&& xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE &&
+					xmlTreeDisplay.getSelectedNode().getChilds() != null && xmlTreeDisplay.getSelectedNode().getChilds().size() >=1)
+				pasteMenu.setEnabled(true);
+			else
+				pasteMenu.setEnabled(false);
+			
+		}
 	}
 	/**
 	 * Timing Node Pop Up Menu Items.
@@ -702,6 +749,7 @@ public class ClauseWorkspaceContextMenu {
 		editMenu = new MenuItem("Edit", true, editCmd);
 		popupMenuBar.addItem(editMenu);
 		cutMenu.setEnabled(true);
+		checkIsParentSatisfy();
 	}
 	
 	/**
@@ -775,7 +823,8 @@ public class ClauseWorkspaceContextMenu {
 	
 	/**
 	 * Creates the menu bar with timing func and qdm.
-	 * 
+	 *
+	 * @param addClauseMenuItem the add clause menu item
 	 * @return the menu bar
 	 */
 	protected MenuBar createMenuBarWithTimingFuncAndQDM(boolean addClauseMenuItem) {
@@ -1040,6 +1089,49 @@ public class ClauseWorkspaceContextMenu {
 		}
 		return true;
 	}
+	
+	
+	
+	/**
+	 * Check if top child node for satisfy.
+	 *
+	 * @return true, if successful
+	 */
+	private final boolean checkIfTopChildNodeForSatisfy() {
+		CellTreeNode selectedNode = xmlTreeDisplay.getSelectedNode();
+		CellTreeNode parentNode = selectedNode.getParent();
+		if ((parentNode.getChilds() == null) || (parentNode.getChilds().size() <= 2)) {
+			return false;
+		}
+		for (int i = 0; i <= parentNode.getChilds().size(); i++) {
+			if (selectedNode.equals(selectedNode.getParent().getChilds().get(i))) {
+				return i > 1;
+			}
+		}
+		return true;
+	}
+	
+	
+	/**
+	 * Check if last child node for satisfy.
+	 *
+	 * @return true, if successful
+	 */
+	private final boolean checkIfLastChildNodeForSatisfy() {
+		CellTreeNode selectedNode = xmlTreeDisplay.getSelectedNode();
+		CellTreeNode parentNode = selectedNode.getParent();
+		if ((parentNode.getChilds() == null) || (parentNode.getChilds().size() <= 2)) {
+			return false;
+		}
+		for (int i = 0; i <= parentNode.getChilds().size(); i++) {
+			if(i == 0 && selectedNode.equals(selectedNode.getParent().getChilds().get(i)))
+				return false;
+			if (selectedNode.equals(selectedNode.getParent().getChilds().get(i))) {
+				return !(i == (parentNode.getChilds().size() - 1));
+			}
+		}
+		return true;
+	}
 	/**
 	 * Move down menu is set to enabled if the selected node is not the last child of its parent node.
 	 * @return boolean.
@@ -1096,7 +1188,7 @@ public class ClauseWorkspaceContextMenu {
 	 * @param populationName the population name
 	 */
 	private native void showHumanReadableDialogBox(String result, String populationName) /*-{
-	var humanReadableWindow = window.open("","","width=1000,height=700");
+	var humanReadableWindow = window.open("","","width=1000,height=700,scrollbars=yes,resizable=yes");
 	if(humanReadableWindow && humanReadableWindow.top){
 		//Populate the human readable in the new window.
 		humanReadableWindow.document.write(result);

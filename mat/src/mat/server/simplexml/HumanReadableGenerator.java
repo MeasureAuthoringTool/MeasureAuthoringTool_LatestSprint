@@ -7,6 +7,7 @@ import javax.xml.xpath.XPathExpressionException;
 
 import mat.server.util.XmlProcessor;
 
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
@@ -14,6 +15,8 @@ import org.w3c.dom.NodeList;
 
 public class HumanReadableGenerator {
 
+	private static final String ELEMENT_LOOK_UP = "elementLookUp";
+	private static final String FUNCTIONAL_OP = "functionalOp";
 	private static final String DISPLAY_NAME = "displayName";
 	private static final String ELEMENT_REF = "elementRef";
 	private static final String RELATIONAL_OP = "relationalOp";
@@ -24,14 +27,15 @@ public class HumanReadableGenerator {
 	private static final String COMMENT = "comment";
 	private static final String LOGICAL_OP = "logicalOp";
 
-	public static String generateHTMLForPopulation(String measureId, String populationSubXML,
+	public static String generateHTMLForPopulationOrSubtree(String measureId, String subXML,
 			String measureXML) {
 		org.jsoup.nodes.Document htmlDocument = null;
 		//replace the <subTree> tags in 'populationSubXML' with the appropriate subTree tags from 'simpleXML'.
 		try {
-			XmlProcessor populationXMLProcessor = expandSubTrees(populationSubXML, measureXML);
+			System.out.println("Original subXML:"+subXML);
+			XmlProcessor populationOrSubtreeXMLProcessor = expandSubTreesAndImportQDMs(subXML, measureXML, true);
 			
-			if(populationXMLProcessor == null){
+			if(populationOrSubtreeXMLProcessor == null){
 				htmlDocument = createBaseHumanReadableDocument();
 				Element bodyElement = htmlDocument.body();
 				Element mainDivElement = bodyElement.appendElement("div");
@@ -42,18 +46,23 @@ public class HumanReadableGenerator {
 				return htmlDocument.toString();
 			}
 			
-			String name = getPopulationClauseName(populationXMLProcessor);
+			boolean isPopulation = checkIfPopulation(populationOrSubtreeXMLProcessor);
+			String name = getPopulationOrSubtreeName(populationOrSubtreeXMLProcessor,isPopulation);
 			
 			htmlDocument = createBaseHumanReadableDocument();
 			Element bodyElement = htmlDocument.body();
 			Element mainDivElement = bodyElement.appendElement("div");
 			Element mainListElement = mainDivElement.appendElement(HTML_UL);
-			Element populationListElement = mainListElement.appendElement(HTML_LI);
+			Element populationOrSubtreeListElement = mainListElement.appendElement(HTML_LI);
 			
-			Element boldPopulationNameElement = populationListElement.appendElement("b");
-			boldPopulationNameElement.appendText(name + " =");
+			Element boldNameElement = populationOrSubtreeListElement.appendElement("b");
+			boldNameElement.appendText(name + " =");
 			
-			parsePopulationAndBuildHTML(populationXMLProcessor, populationListElement);
+			if(!isPopulation){
+				populationOrSubtreeListElement.appendElement("br");
+			}
+			
+			parseAndBuildHTML(populationOrSubtreeXMLProcessor, populationOrSubtreeListElement);
 		} catch (XPathExpressionException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -66,13 +75,27 @@ public class HumanReadableGenerator {
 		return returnHTML;
 	}
 
-	private static XmlProcessor expandSubTrees(String populationSubXML, String measureXML) throws XPathExpressionException {
+	private static boolean checkIfPopulation(XmlProcessor populationOrSubtreeXMLProcessor) {
+		boolean returnFlag = false;
+		Node  node = populationOrSubtreeXMLProcessor.getOriginalDoc().getFirstChild();
+		String nodeName = node.getNodeName();
+		if("clause".equals(nodeName)){
+			returnFlag = true;
+		}
+		return returnFlag;
+	}
+
+	private static XmlProcessor expandSubTreesAndImportQDMs(String subXML, String measureXML,boolean isImportElementLookup) throws XPathExpressionException {
 		
-		XmlProcessor populationXMLProcessor = new XmlProcessor(populationSubXML);
+		XmlProcessor populationOrSubtreeXMLProcessor = new XmlProcessor(subXML);
 		XmlProcessor measureXMLProcessor = new XmlProcessor(measureXML);
 		
+		return expandSubTreesAndImportQDMs(populationOrSubtreeXMLProcessor, measureXMLProcessor, isImportElementLookup);
+	}
+	
+	private static XmlProcessor expandSubTreesAndImportQDMs(XmlProcessor populationOrSubtreeXMLProcessor, XmlProcessor measureXMLProcessor, boolean isImportElementLookup) throws XPathExpressionException {
 		//find all <subTreeRef> tags in 'populationSubXML'
-		NodeList subTreeRefNodeList = populationXMLProcessor.findNodeList(populationXMLProcessor.getOriginalDoc(), "//subTreeRef");
+		NodeList subTreeRefNodeList = populationOrSubtreeXMLProcessor.findNodeList(populationOrSubtreeXMLProcessor.getOriginalDoc(), "//subTreeRef");
 		
 		if(subTreeRefNodeList.getLength() > 0){
 			
@@ -91,16 +114,22 @@ public class HumanReadableGenerator {
 						subTreeId);
 				
 				if(subTreeNode != null){
-					replaceSubTreeNode(populationXMLProcessor,
+					replaceSubTreeNode(populationOrSubtreeXMLProcessor,
 							subTreeRefNode, commentNode, subTreeNode);
 				}else{
 					return null;
 				}
 			}
 		}
+		if(isImportElementLookup){
+			//import <elementLookUp> tag to populationOrSubtreeXMLProcessor
+			Node elementLookUpNode = measureXMLProcessor.findNode(measureXMLProcessor.getOriginalDoc(), "//elementLookUp");
+			Node importedElementLookUpNode = populationOrSubtreeXMLProcessor.getOriginalDoc().importNode(elementLookUpNode, true);
+			populationOrSubtreeXMLProcessor.getOriginalDoc().getFirstChild().appendChild(importedElementLookUpNode);
+		}
 		
-		System.out.println("Inflated popualtion tree: "+populationXMLProcessor.transform(populationXMLProcessor.getOriginalDoc()));	
-		return populationXMLProcessor;
+		System.out.println("Inflated popualtion tree: "+populationOrSubtreeXMLProcessor.transform(populationOrSubtreeXMLProcessor.getOriginalDoc()));	
+		return populationOrSubtreeXMLProcessor;
 	}
 
 	/**
@@ -126,11 +155,8 @@ public class HumanReadableGenerator {
 			if(!resolveChildSubTreeNode(measureXMLProcessor,subTreeRefNode,childSubTreeRefList)){
 				return null;
 			}
-			
 //			replaceSubTreeNode(measureXMLProcessor, subTreeRefNode, null, subTreeNode );
 		}
-		
-		
 		return subTreeNode;
 	}
 
@@ -162,6 +188,7 @@ public class HumanReadableGenerator {
 			System.out.println(childSubTreeRefList);
 			return false;
 		}
+		childSubTreeRefList.remove(subTreeId);
 		return true;
 	}
 
@@ -183,11 +210,15 @@ public class HumanReadableGenerator {
 		subTreeRefNodeParent.replaceChild(subTreeNodeImportedClone, subTreeRefNode);
 	}
 	
-	private static String getPopulationClauseName(
-			XmlProcessor populationXMLProcessor) {
+	private static String getPopulationOrSubtreeName(
+			XmlProcessor populationOrSubtreeXMLProcessor, boolean isPopulation) {
 		String name = "";
 		try {
-			name = populationXMLProcessor.findNode(populationXMLProcessor.getOriginalDoc(), "//clause/@displayName").getNodeValue();
+			if(isPopulation){
+				name = populationOrSubtreeXMLProcessor.findNode(populationOrSubtreeXMLProcessor.getOriginalDoc(), "//clause/@displayName").getNodeValue();
+			}else{
+				name = populationOrSubtreeXMLProcessor.findNode(populationOrSubtreeXMLProcessor.getOriginalDoc(), "//subTree/@displayName").getNodeValue();
+			}
 		} catch (DOMException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -198,38 +229,51 @@ public class HumanReadableGenerator {
 		return name;
 	}
 	
-	private static void parsePopulationAndBuildHTML(
-			XmlProcessor populationXMLProcessor, Element populationListElement) {
+	private static void parseAndBuildHTML(
+			XmlProcessor populationOrSubtreeXMLProcessor, Element populationOrSubtreeListElement) {
 		
 		try {
-			Node clauseNode = populationXMLProcessor.findNode(populationXMLProcessor.getOriginalDoc(), "//clause");
+			Node rootNode = populationOrSubtreeXMLProcessor.getOriginalDoc().getFirstChild();
+			parseAndBuildHTML(populationOrSubtreeXMLProcessor, populationOrSubtreeListElement, rootNode);			
+		} catch (DOMException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	}
+	
+	private static void parseAndBuildHTML(
+			XmlProcessor populationOrSubtreeXMLProcessor, Element populationOrSubtreeListElement, Node clauseNode) {
+		
+		try {
 			NodeList childNodes = clauseNode.getChildNodes();
 			for(int i = 0;i < childNodes.getLength(); i++){
-				parseChild(childNodes.item(i),populationListElement,clauseNode);
+				parseChild(childNodes.item(i),populationOrSubtreeListElement,clauseNode,populationOrSubtreeXMLProcessor);
 			}			
 		} catch (DOMException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} 
 	}
 	
-	private static void parseChild(Node item, Element parentListElement, Node parentNode) {
+	private static void parseChild(Node item, Element parentListElement, Node parentNode, XmlProcessor populationOrSubtreeXMLProcessor) {
 		String nodeName = item.getNodeName();
-		
+		System.out.println("parseChild:"+nodeName);
 		if(LOGICAL_OP.equals(nodeName)){
 			
-			if(LOGICAL_OP.equals(parentNode.getNodeName()) || SET_OP.equals(parentNode.getNodeName())){
+			if(LOGICAL_OP.equals(parentNode.getNodeName()) ){
 				Element liElement = parentListElement.appendElement(HTML_LI);				
-				liElement.appendText(getNodeText(parentNode));
+				if(LOGICAL_OP.equals(parentNode.getNodeName())){
+					liElement.appendText(getNodeText(parentNode, populationOrSubtreeXMLProcessor));
+				}
 			}
 			
 			Element ulElement = parentListElement.appendElement(HTML_UL);
 			NodeList childNodes = item.getChildNodes();
+			if(childNodes.getLength() == 0){
+				ulElement.appendElement(HTML_LI).appendText("None");
+			}
 			for (int i=0; i< childNodes.getLength(); i++){
-				parseChild(childNodes.item(i), ulElement, item);				
+				parseChild(childNodes.item(i), ulElement, item, populationOrSubtreeXMLProcessor);				
 			}
 		}else if(COMMENT.equals(nodeName)){
 			String commentValue = item.getTextContent();
@@ -243,27 +287,38 @@ public class HumanReadableGenerator {
 		}else if(SUB_TREE.equals(nodeName)){
 			NodeList childNodes = item.getChildNodes();
 			for (int i=0; i< childNodes.getLength(); i++){
-				parseChild(childNodes.item(i), parentListElement,parentNode);				
+				parseChild(childNodes.item(i), parentListElement,parentNode, populationOrSubtreeXMLProcessor);				
 			}
 		}else if(SET_OP.equals(nodeName)){
 			//Element liElement = parentListElement.appendElement(HTML_LI);
-			if(LOGICAL_OP.equals(parentNode.getNodeName()) || SET_OP.equals(parentNode.getNodeName())){
+			if(LOGICAL_OP.equals(parentNode.getNodeName()) ){
 				Element liElement = parentListElement.appendElement(HTML_LI);
-				liElement.appendText(getNodeText(parentNode));
+				if(LOGICAL_OP.equals(parentNode.getNodeName())){
+					liElement.appendText(getNodeText(parentNode, populationOrSubtreeXMLProcessor));
+					parentListElement = liElement.appendElement(HTML_UL);
+				}
 			}
 			//Element ulElement = liElement.appendElement(HTML_UL);
+			if(parentListElement.nodeName().equals(HTML_UL)){
+				parentListElement.appendElement(HTML_LI).appendText(getNodeText(item, populationOrSubtreeXMLProcessor));
+			}else{
+				parentListElement.appendText(getNodeText(item, populationOrSubtreeXMLProcessor));
+			}
 			Element ulElement = parentListElement.appendElement(HTML_UL);
 			NodeList childNodes = item.getChildNodes();
 			for (int i=0; i< childNodes.getLength(); i++){
-				parseChild(childNodes.item(i), ulElement,item);				
+				parseChild(childNodes.item(i), ulElement,item, populationOrSubtreeXMLProcessor);				
 			}
 		}else if(RELATIONAL_OP.equals(nodeName)){
 			if(LOGICAL_OP.equals(parentNode.getNodeName()) || SET_OP.equals(parentNode.getNodeName())){
 				Element liElement = parentListElement.appendElement(HTML_LI);
-				liElement.appendText(getNodeText(parentNode));
-				getRelationalOpText(item, liElement);
+				//liElement.appendText(getNodeText(parentNode, populationOrSubtreeXMLProcessor));
+				if(LOGICAL_OP.equals(parentNode.getNodeName())){
+					liElement.appendText(getNodeText(parentNode, populationOrSubtreeXMLProcessor));
+				}
+				getRelationalOpText(item, liElement, populationOrSubtreeXMLProcessor);
 			}else{
-				getRelationalOpText(item, parentListElement);
+				getRelationalOpText(item, parentListElement, populationOrSubtreeXMLProcessor);
 				/**
 				 * A relationalOp can have 2 children. First evaluate the LHS child, then add the name of the relationalOp and finally
 				 * evaluate the RHS child.
@@ -279,33 +334,56 @@ public class HumanReadableGenerator {
 		}else if(ELEMENT_REF.equals(nodeName)){
 			if(LOGICAL_OP.equals(parentNode.getNodeName()) || SET_OP.equals(parentNode.getNodeName())){
 				Element liElement = parentListElement.appendElement(HTML_LI);
-				liElement.appendText(getNodeText(parentNode)+getNodeText(item));
+				//liElement.appendText(getNodeText(parentNode, populationOrSubtreeXMLProcessor)+getNodeText(item, populationOrSubtreeXMLProcessor));
+				if(LOGICAL_OP.equals(parentNode.getNodeName())){
+					liElement.appendText(getNodeText(parentNode, populationOrSubtreeXMLProcessor)+getNodeText(item, populationOrSubtreeXMLProcessor));
+				}else{
+					liElement.appendText(getNodeText(item, populationOrSubtreeXMLProcessor));
+				}
 			}else{
-				parentListElement.appendText(getNodeText(item));
+				parentListElement.appendText(getNodeText(item,populationOrSubtreeXMLProcessor));
 			}
-		}else if("functionalOp".equals(nodeName)){
+		}else if(FUNCTIONAL_OP.equals(nodeName)){
 			if(LOGICAL_OP.equals(parentNode.getNodeName()) || SET_OP.equals(parentNode.getNodeName())){
 				Element liElement = parentListElement.appendElement(HTML_LI);
-				liElement.appendText(" "+getNodeText(parentNode));
+				//liElement.appendText(" "+getNodeText(parentNode, populationOrSubtreeXMLProcessor));
+				if(LOGICAL_OP.equals(parentNode.getNodeName())){
+					liElement.appendText(" "+getNodeText(parentNode, populationOrSubtreeXMLProcessor));
+				}
 				liElement.appendText(getFunctionText(item));
 				NodeList childNodes = item.getChildNodes();
-				for (int i=0; i< childNodes.getLength(); i++){
-					parseChild(childNodes.item(i), liElement,item);				
+				if(childNodes.getLength() == 1 && ELEMENT_REF.equals(childNodes.item(0).getNodeName())){
+					parseChild(childNodes.item(0), liElement,item, populationOrSubtreeXMLProcessor);
+				}else{
+					Element ulElement = liElement.appendElement(HTML_UL);
+					for (int i=0; i< childNodes.getLength(); i++){
+						parseChild(childNodes.item(i), ulElement.appendElement(HTML_LI),item, populationOrSubtreeXMLProcessor);				
+					}
 				}
 			}else{
 				parentListElement.appendText(getFunctionText(item));
 				NodeList childNodes = item.getChildNodes();
-				for (int i=0; i< childNodes.getLength(); i++){
-					parseChild(childNodes.item(i), parentListElement,item);				
+				if(childNodes.getLength() == 1 && ELEMENT_REF.equals(childNodes.item(0).getNodeName())){
+					parseChild(childNodes.item(0), parentListElement,item, populationOrSubtreeXMLProcessor);
+				}else{
+					Element ulElement = parentListElement.appendElement(HTML_UL);
+					for (int i=0; i< childNodes.getLength(); i++){
+						parseChild(childNodes.item(i), ulElement.appendElement(HTML_LI),item, populationOrSubtreeXMLProcessor);				
+					}
 				}
 			}
 			
+		}else if(ELEMENT_LOOK_UP.equals(nodeName) || "itemCount".equals(nodeName)){
+			//ignore
 		}
 		else {
 			Element liElement = parentListElement.appendElement(HTML_LI);
 			
-			if(LOGICAL_OP.equals(parentNode.getNodeName()) || SET_OP.equals(parentNode.getNodeName())){
-				liElement.appendText(" "+getNodeText(parentNode));
+			if(LOGICAL_OP.equals(parentNode.getNodeName()) ){
+				//liElement.appendText(" "+getNodeText(parentNode, populationOrSubtreeXMLProcessor));
+				if(LOGICAL_OP.equals(parentNode.getNodeName())){
+					liElement.appendText(" "+getNodeText(parentNode, populationOrSubtreeXMLProcessor));
+				}
 			}
 			liElement.appendText(item.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue() + " ");
 		}
@@ -314,21 +392,28 @@ public class HumanReadableGenerator {
 	/**
 	 * @param item
 	 * @param liElement
+	 * @param populationOrSubtreeXMLProcessor 
 	 */
-	private static void getRelationalOpText(Node item, Element liElement) {
+	private static void getRelationalOpText(Node item, Element liElement, XmlProcessor populationOrSubtreeXMLProcessor) {
 		/**
 		 * A relationalOp can have 2 children. First evaluate the LHS child, then add the name of the relationalOp and finally
 		 * evaluate the RHS child.
 		 */
 		NodeList childNodes = item.getChildNodes();
 		if(childNodes.getLength() == 2){
-			parseChild(childNodes.item(0),liElement,item);
+			parseChild(childNodes.item(0),liElement,item, populationOrSubtreeXMLProcessor);
 			Element newLiElement = liElement;
-			if(LOGICAL_OP.equals(childNodes.item(0).getNodeName()) || SET_OP.equals(childNodes.item(0).getNodeName())){
-				newLiElement = liElement.children().last().appendElement(HTML_LI);
+//			if(LOGICAL_OP.equals(childNodes.item(0).getNodeName()) || SET_OP.equals(childNodes.item(0).getNodeName())){
+//				newLiElement = liElement.children().last().appendElement(HTML_LI);
+//			}
+			
+			if(!ELEMENT_REF.equals(childNodes.item(1).getNodeName())){
+				newLiElement.appendElement(HTML_LI).appendText(item.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue().toLowerCase()+" ");
+				newLiElement = liElement.appendElement(HTML_UL).appendElement(HTML_LI);
+			}else{
+				newLiElement.appendText(item.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue().toLowerCase()+" ");
 			}
-			newLiElement.appendText(item.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue().toLowerCase()+" ");
-			parseChild(childNodes.item(1),newLiElement,item);
+			parseChild(childNodes.item(1),newLiElement,item, populationOrSubtreeXMLProcessor);
 		}
 	}
 
@@ -336,8 +421,9 @@ public class HumanReadableGenerator {
 	 * This method is used to get the correct text to add to human readable depending on the 
 	 * type of node. 
 	 * @param node
+	 * @param populationOrSubtreeXMLProcessor 
 	 */
-	private static String getNodeText(Node node) {
+	private static String getNodeText(Node node, XmlProcessor populationOrSubtreeXMLProcessor) {
 		String nodeName = node.getNodeName();
 		String name = "";
 		if(LOGICAL_OP.equals(nodeName)){
@@ -345,7 +431,7 @@ public class HumanReadableGenerator {
 			name += ": ";
 		}else if(SET_OP.equals(nodeName)){
 			name = node.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue().toUpperCase();
-			name += " of ";
+			name += " of: ";
 		}else if(ELEMENT_REF.equals(nodeName)){
 			name = node.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue();
 			if(name.endsWith(" : Timing Element")){
@@ -362,7 +448,7 @@ public class HumanReadableGenerator {
 				for(int j=0;j<childNodes.getLength();j++){
 					Node childNode = childNodes.item(j);
 					if(childNode.getNodeName().equals("attribute")){
-						String attributeText = getAttributeText(childNode);						
+						String attributeText = getAttributeText(childNode, populationOrSubtreeXMLProcessor);						
 						name += attributeText;
 					}
 				}
@@ -373,7 +459,7 @@ public class HumanReadableGenerator {
 		return name;
 	}
 	
-	private static String getAttributeText(Node attributeNode){
+	private static String getAttributeText(Node attributeNode, XmlProcessor populationOrSubtreeXMLProcessor){
 		String attributeText = "";
 		String attributeName = attributeNode.getAttributes().getNamedItem("name").getNodeValue();
 		String modeName = attributeNode.getAttributes().getNamedItem("mode").getNodeValue();
@@ -395,6 +481,23 @@ public class HumanReadableGenerator {
 		}else if("Less Than".equals(modeName)){
 			String comparisonValue = attributeNode.getAttributes().getNamedItem("comparisonValue").getNodeValue();
 			attributeText = " (" + attributeName + " < " + comparisonValue + " " + getUnitString(attributeNode) + ")";
+		}else if("Value Set".equals(modeName)){
+			String qdmUUIDValue = attributeNode.getAttributes().getNamedItem("qdmUUID").getNodeValue();
+			//find the qdm tag using qdmUUIDValue 
+			try {
+				Node qdmNodeNameAttribute = populationOrSubtreeXMLProcessor.findNode(attributeNode.getOwnerDocument(), "//elementLookUp/qdm[@uuid='"+qdmUUIDValue+"']/@name");
+				if(qdmNodeNameAttribute != null){
+					attributeText = " (" + attributeName + ": " + qdmNodeNameAttribute.getNodeValue() + ")";
+				}else{
+					attributeText = "";
+				}
+			} catch (XPathExpressionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				attributeText = "";
+			}
+			
+			
 		}
 		return attributeText;
 	}
@@ -439,11 +542,38 @@ public class HumanReadableGenerator {
 	}
 
 	private static String getFunctionText(Node item) {
-		if(!"functionalOp".equals(item.getNodeName())){
+		if(!FUNCTIONAL_OP.equals(item.getNodeName())){
 			return "";
 		}
 		
-		return item.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue() + " of ";
+		String typeAttribute = item.getAttributes().getNamedItem("type").getNodeValue();
+		String functionDisplayName = item.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue();
+		
+		if("AGE AT".equals(typeAttribute)){
+			functionDisplayName = item.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue() + " ";
+		}else if(functionDisplayName.startsWith("AVG")){
+			functionDisplayName = functionDisplayName.replaceFirst("AVG", "Average") + " of";
+		}else if(functionDisplayName.startsWith("COUNT")){
+			functionDisplayName = functionDisplayName.replaceFirst("COUNT", "Count") + " of";
+		}else if(functionDisplayName.startsWith("DATEDIFF")){
+			functionDisplayName = functionDisplayName.replaceFirst("DATEDIFF", "Difference between dates") + " of";
+		}else if(functionDisplayName.startsWith("MAX")){
+			functionDisplayName = functionDisplayName.replaceFirst("MAX", "Maximum") + " of";
+		}else if(functionDisplayName.startsWith("MIN")){
+			functionDisplayName = functionDisplayName.replaceFirst("MIN", "Min") + " of";
+		}else if(functionDisplayName.startsWith("MEDIAN")){
+			functionDisplayName = functionDisplayName.replaceFirst("MEDIAN", "Median") + " of";
+		}else if(functionDisplayName.startsWith("SUM")){
+			functionDisplayName = functionDisplayName.replaceFirst("SUM", "Sum") + " of";
+		}else if(functionDisplayName.startsWith("TIMEDIFF")){
+			functionDisplayName = functionDisplayName.replaceFirst("TIMEDIFF", "Time difference") + " of";;
+		}else if(functionDisplayName.startsWith("FOURTH")){
+			functionDisplayName = functionDisplayName.replaceFirst("FOURTH", "Fourth");
+		}else if(functionDisplayName.startsWith("FIFTH")){
+			functionDisplayName = functionDisplayName.replaceFirst("FIFTH", "Fifth");
+		}		
+		
+		return functionDisplayName+": ";
 	}
 
 	/**
@@ -474,6 +604,187 @@ public class HumanReadableGenerator {
 	private static void appendStyleNode(Element head) {
 		String styleTagString = MATCssUtil.getCSS();
 		head.append(styleTagString);
+	}
+
+	public static String generateHTMLForMeasure(String measureId,
+			String simpleXmlStr) {
+		String humanReadableHTML = "";
+		try {
+			org.jsoup.nodes.Document humanReadableHTMLDocument = HeaderHumanReadableGenerator.generateHeaderHTMLForMeasure(simpleXmlStr);
+			XmlProcessor simpleXMLProcessor = resolveSubTreesInPopulations(simpleXmlStr);
+			generateHumanReadable(humanReadableHTMLDocument, simpleXMLProcessor);
+			humanReadableHTML = humanReadableHTMLDocument.toString();
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
+		return humanReadableHTML;
+	}
+
+	private static void generateHumanReadable(
+			Document humanReadableHTMLDocument, XmlProcessor simpleXMLProcessor) throws XPathExpressionException {
+		
+		generateTableOfContents(humanReadableHTMLDocument, simpleXMLProcessor);
+		generatePopulationCriteriaHumanReadable(humanReadableHTMLDocument, simpleXMLProcessor);
+		generateDataCriteria(humanReadableHTMLDocument, simpleXMLProcessor);
+		generateSupplementalData(humanReadableHTMLDocument, simpleXMLProcessor);
+	}
+	
+	private static void generateTableOfContents(
+			Document humanReadableHTMLDocument,XmlProcessor simpleXMLProcessor) {
+		Element bodyElement = humanReadableHTMLDocument.body();
+		
+		bodyElement.append("<h2><a name=\"toc\">Table of Contents</a></h2>");
+		Element tocULElement = bodyElement.appendElement(HTML_UL);
+		
+		Element populationCriteriaLI = tocULElement.appendElement(HTML_LI);
+		populationCriteriaLI.append("<a href=\"#d1e405\">Population criteria</a>");
+		
+		//TODO:code to decide if we need to add 'Measure observations'
+		
+		Element dataCriteriaLI = tocULElement.appendElement(HTML_LI);
+		dataCriteriaLI.append("<a href=\"#d1e647\">Data criteria (QDM Data Elements)</a>");
+		
+		//TODO:code to decide if we need to add 'Reporting Stratification'
+		
+		Element supplementalCriteriaLI = tocULElement.appendElement(HTML_LI);
+		supplementalCriteriaLI.append("<a href=\"#d1e767\">Supplemental Data Elements</a>");
+		
+		bodyElement.append("<hr align=\"left\" color=\"teal\" size=\"2\" width=\"80%\">");
+		
+	}
+
+	private static void generateDataCriteria(
+			Document humanReadableHTMLDocument, XmlProcessor simpleXMLProcessor) {
+		
+		Element bodyElement = humanReadableHTMLDocument.body();
+		bodyElement.append("<h3><a name=\"d1e647\" href=\"#toc\">Data criteria (QDM Data Elements)</a></h3>");
+			
+		Element mainDivElement = bodyElement.appendElement("div");
+		Element mainListElement = mainDivElement.appendElement(HTML_UL);
+		
+	}
+	
+	private static void generateSupplementalData(
+			Document humanReadableHTMLDocument, XmlProcessor simpleXMLProcessor) {
+		
+		Element bodyElement = humanReadableHTMLDocument.body();
+		bodyElement.append("<h3><a name=\"d1e767\" href=\"#toc\">Supplemental Data Elements</a></h3>");
+			
+		Element mainDivElement = bodyElement.appendElement("div");
+		Element mainListElement = mainDivElement.appendElement(HTML_UL);
+		
+		
+	}
+
+	private static void generatePopulationCriteriaHumanReadable(
+			Document humanReadableHTMLDocument, XmlProcessor simpleXMLProcessor) throws XPathExpressionException {
+		
+		Element bodyElement = humanReadableHTMLDocument.body();
+		bodyElement.append("<h3><a name=\"d1e405\" href=\"#toc\">Population criteria</a></h3>");
+			
+		Element mainDivElement = bodyElement.appendElement("div");
+		Element mainListElement = mainDivElement.appendElement(HTML_UL);
+			
+		NodeList groupNodeList = simpleXMLProcessor.findNodeList(simpleXMLProcessor.getOriginalDoc(), "/measure/measureGrouping/group");
+		
+		for(int i=0;i<groupNodeList.getLength();i++){
+			
+			if(groupNodeList.getLength() > 1){
+				mainListElement.append("<br><b>------ Population Criteria "+ (i+1) +" ------</b><br><br>");
+			}
+			
+			Node groupNode = groupNodeList.item(i);
+						
+			NodeList clauseNodeList = groupNode.getChildNodes();
+			for(int j=0;j<clauseNodeList.getLength();j++){
+				Node clauseNode = clauseNodeList.item(j);
+				if("clause".equals(clauseNode.getNodeName())){
+					Element populationListElement = mainListElement.appendElement(HTML_LI);
+					Element boldNameElement = populationListElement.appendElement("b");
+					String populationName = getPopulationName(clauseNode.getAttributes().getNamedItem("type").getNodeValue());
+					if (groupNodeList.getLength() > 1){
+						populationName += " " + (i+1);
+					}
+					boldNameElement.appendText(populationName+" =");
+					parseAndBuildHTML(simpleXMLProcessor, populationListElement,clauseNode);
+				}
+			}
+		}
+	}
+
+	private static String getPopulationName(String nodeValue) {
+		String populationName = "";
+		if("initialPopulation".equals(nodeValue)){
+			populationName = "Initial Population";
+		}else if("measurePopulation".equals(nodeValue)){
+			populationName = "Measure Population";
+		}else if("measurePopulationExclusions".equals(nodeValue)){
+			populationName = "Measure Population Exclusions";
+		}else if("measureObservation".equals(nodeValue)){
+			populationName = "Measure Observation";
+		}else if("stratification".equals(nodeValue)){
+			populationName = "Stratification";
+		}else if("denominator".equals(nodeValue)){
+			populationName = "Denominator";
+		}else if("denominatorExclusions".equals(nodeValue)){
+			populationName = "Denominator Exclusions";
+		}else if("denominatorExceptions".equals(nodeValue)){
+			populationName = "Denominator Exceptions";
+		}else if("numerator".equals(nodeValue)){
+			populationName = "Numerator";
+		}else if("numeratorExclusions".equals(nodeValue)){
+			populationName = "Numerator Exclusions";
+		}
+		return populationName;
+	}
+
+	private static XmlProcessor resolveSubTreesInPopulations(String simpleXmlStr) {
+		XmlProcessor simpleXMLProcessor = new XmlProcessor(simpleXmlStr);		
+		
+		try {
+			NodeList clauseNodeList = simpleXMLProcessor.findNodeList(simpleXMLProcessor.getOriginalDoc(), "/measure/measureGrouping/group/clause");
+			Object[][] nodeArr = new Object[clauseNodeList.getLength()][2];
+			for(int i=0;i<clauseNodeList.getLength();i++){
+				Node clauseNode = clauseNodeList.item(i);
+				String clauseNodeXMLString = simpleXMLProcessor.transform(clauseNode);
+				
+				System.out.println("");
+				System.out.println("clauseNode XML String:"+clauseNodeXMLString);
+				System.out.println("");
+				
+				XmlProcessor clauseXMLProcessor = new XmlProcessor(clauseNodeXMLString);
+				clauseXMLProcessor = expandSubTreesAndImportQDMs(clauseXMLProcessor, simpleXMLProcessor, false);
+				System.out.println();
+				Node expandedClauseNode = clauseXMLProcessor.getOriginalDoc().getFirstChild();
+				
+				nodeArr[i][0] = clauseNode;
+				nodeArr[i][1] = expandedClauseNode;
+			}
+			
+			for(int j=0;j<nodeArr.length;j++){
+				Node clauseNode = (Node) nodeArr[j][0];
+				Node expandedClauseNode = (Node) nodeArr[j][1];
+				
+				Node importedClauseNode = simpleXMLProcessor.getOriginalDoc().importNode(expandedClauseNode, true);
+				Node parentNode = clauseNode.getParentNode();
+				parentNode.replaceChild(importedClauseNode, clauseNode);
+			}
+			removeNode("/measure/subTreeLookUp",simpleXMLProcessor);
+			System.out.println("Expanded simple xml:"+simpleXMLProcessor.transform(simpleXMLProcessor.getOriginalDoc()));
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return simpleXMLProcessor;
+	}
+	
+	private static void removeNode(String nodeXPath, XmlProcessor xmlProcessor) throws XPathExpressionException {
+		Node node = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), nodeXPath);
+		if(node != null){
+			Node parentNode = node.getParentNode();
+			parentNode.removeChild(node);
+		}
 	}
 
 }

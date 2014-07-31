@@ -253,7 +253,11 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	/** The set error type. */
 	private String setErrorType;
 	
+	/** The is clause open. */
 	private boolean isClauseOpen;
+	
+	/** The is editable. */
+	private boolean isEditable;
 	/**
 	 * Instantiates a new xml tree view.
 	 * 
@@ -326,7 +330,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		VerticalPanel vp = new VerticalPanel();
 		HorizontalPanel savePanel = new HorizontalPanel();
 		savePanel.getElement().setId("savePanel_VerticalPanel");
-		savePanel.add(new SpacerWidget());
+		//savePanel.add(new SpacerWidget());
 		vp.add(successMessageDisplay);
 		savePanel.add(saveBtn);
 		//Commented Validate Button from Population Work Space as part of Mat-3162
@@ -510,7 +514,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	public void createClauseLogicPageView(CellTree cellTree) {
 		this.cellTree = cellTree;
 		mainPanel.clear();
-		mainPanel.setStyleName("div-wrapper"); //main div
+		//mainPanel.setStyleName("div-wrapper"); //main div
 		SimplePanel leftPanel = new SimplePanel();
 		leftPanel.getElement().setId("leftPanel_SimplePanelCW");
 		leftPanel.setStyleName("div-first bottomPadding10px"); //left side div which will  have tree
@@ -1146,6 +1150,8 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 			switch (cellTreeNode.getNodeType()) {
 				case CellTreeNode.ROOT_NODE:
 					return "cellTreeRootNode";
+				case CellTreeNode.SUBTREE_REF_NODE:
+					return "populationWorkSpaceCommentNode";
 				default:
 					break;
 			}
@@ -1289,6 +1295,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		saveBtn.setEnabled(enabled);
 		saveBtnClauseWorkSpace.setEnabled(enabled);
 		deleteClauseButton.setEnabled(enabled);
+		isEditable = enabled;
 	}
 	/* (non-Javadoc)
 	 * @see mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay#getSelectedNode()
@@ -1456,7 +1463,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		if (!(id.toLowerCase()).contains("treenode".toLowerCase())) {
 			return;
 		}
-		if (selectedNode != null) {
+		if (selectedNode != null && isEditable) {
 			short nodeType = selectedNode.getNodeType();
 			if (event.isControlKeyDown()) {
 				if (keyCode == PopulationWorkSpaceConstants.COPY_C) { //COPY
@@ -1669,7 +1676,11 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 					
 					subTree = treeNode.setChildOpen(i, true, true);
 					String nodeName = node.getName();
-					
+					List<CellTreeNode> attributeList = (List<CellTreeNode>)node.getExtraInformation("attributes");
+					if(attributeList!=null && attributeList.size()>0){
+						CellTreeNode attributeNode = attributeList.get(0);
+						attributeValue = attributeNode.getExtraInformation("name").toString();	
+					}
 					String[] nodeArr = nodeName.split(":");
 					String nodeDataType = "";
 					if(nodeArr.length == 2){
@@ -1706,13 +1717,8 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 						}
 					}
 					
-					else if(dataTypeAttributeRemovedList.contains(nodeDataType)){
-							List<CellTreeNode> attributeList = (List<CellTreeNode>)node.getExtraInformation("attributes");
-							if(attributeList!=null && attributeList.size()>0){
-								CellTreeNode attributeNode = attributeList.get(0);
-								attributeValue = attributeNode.getExtraInformation("name").toString();	
+					else if(dataTypeAttributeRemovedList.contains(nodeDataType) && attributeValue.equalsIgnoreCase("Anatomical Structure")){
 							
-							if(attributeValue.equalsIgnoreCase("Anatomical Structure")){
 							editNode(false, node);
 							if(!setErrorType.equalsIgnoreCase("inValidAtOtherNode")){
 							setErrorType = "inValidAtQDMNode";
@@ -1721,8 +1727,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 									isValid = false;
 								
 								}
-							}
-						}
+							
 					}
 					else if(!node.getValidNode()){
 						editNode(true, node);
@@ -1731,7 +1736,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 				}
 				
 				if ((node.getNodeType()== CellTreeNode.TIMING_NODE)
-					|| (node.getNodeType() == CellTreeNode.RELATIONSHIP_NODE)){
+					|| (node.getNodeType() == CellTreeNode.RELATIONSHIP_NODE) ){
 					// this check is performed since IE was giving JavaScriptError after removing a node and
 					//closing all nodes.
 					subTree = treeNode.setChildOpen(i, true, true);
@@ -1752,11 +1757,11 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 					
 					
 				}
-				/*if(node.getNodeType() == CellTreeNode.FUNCTIONS_NODE){
-					String nodeName = node.getName();
+				
+				if(node.getNodeType() == CellTreeNode.FUNCTIONS_NODE){
 					if((node.getName().equalsIgnoreCase("SATISFIES ALL")) || (node.getName().equalsIgnoreCase("SATISFIES ANY"))){
 						subTree = treeNode.setChildOpen(i, true, true);
-						if ((subTree != null) && (subTree.getChildCount() == 2)) {
+						if ((subTree != null) && (subTree.getChildCount() >= 2)) {
 							if (!node.getValidNode()) {
 								editNode(true, node);
 								if(!setErrorType.equalsIgnoreCase("inValidAtQDMNode")){
@@ -1770,11 +1775,8 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 								isValid = false;
 							}
 						}
-						
-						
 					}
-					
-				}*/
+				}
 				
 				
 				subTree = treeNode.setChildOpen(i, ((CellTreeNode) treeNode.getChildValue(i)).isOpen(),
@@ -2056,6 +2058,9 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		return validateBtnPopulationWorkspace;
 	}
 
+	/* (non-Javadoc)
+	 * @see mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay#setClauseEnabled(boolean)
+	 */
 	@Override
 	public void setClauseEnabled(boolean isClauseOpen) {
 		this.isClauseOpen = isClauseOpen;
