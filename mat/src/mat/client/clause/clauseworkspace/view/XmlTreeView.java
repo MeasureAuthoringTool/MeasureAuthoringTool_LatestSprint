@@ -1,8 +1,6 @@
 package mat.client.clause.clauseworkspace.view;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +60,6 @@ import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.cellview.client.TreeNode;
 import com.google.gwt.user.client.Event;
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
@@ -285,6 +282,14 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	/** The is valid. */
 	private boolean isValid = false;
 	
+	/** The is valid human readable. */
+	private boolean isValidHumanReadable = false;
+	
+	/** The is date time diff not in mo. */
+	boolean isDateTimeDiffNotInMO = false;
+	
+	/** The is sub tree logic valid in population work space. */
+	boolean isSubTreeLogicValidInPopulationWorkSpace = true;
 	/** The Constant MEASURE_OBSERVATIONS. */
 	private static final String MEASURE_OBSERVATIONS = "Measure Observations";
 	
@@ -647,13 +652,6 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		if(subTreeNameListBox != null){
 			subTreeNameListBox.clear();
 			List<Entry<String,String>> subTreeNameEntries = new LinkedList<Map.Entry<String,String>>(PopulationWorkSpaceConstants.subTreeLookUpName.entrySet());
-			Collections.sort(subTreeNameEntries, new Comparator<Entry<String, String>>() {
-				@Override
-				public int compare(Entry<String, String> o1,
-						Entry<String, String> o2) {
-					return o1.getValue().compareTo(o2.getValue());
-				}
-			});
 			
 			for(Entry<String, String> entry:subTreeNameEntries){
 				subTreeNameListBox.addItem(entry.getValue(),entry.getKey());
@@ -1111,6 +1109,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 			if (event.getType().equals(BrowserEvents.CONTEXTMENU)) {
 				/*successMessageAddCommentDisplay.removeStyleName("successMessageCommentPanel");*/
 				successMessageDisplay.clear();
+				getErrorMessageDisplay().clear();
 				event.preventDefault();
 				event.stopPropagation();
 				if (!isClauseOpen && MatContext.get().getMeasureLockService().checkForEditPermission()) {
@@ -1173,6 +1172,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 				}
 			}  else {
 				successMessageDisplay.clear();
+				getErrorMessageDisplay().clear();
 				super.onBrowserEvent(context, parent, value, event, valueUpdater);
 			}
 		}
@@ -1777,15 +1777,38 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		List<String> inValidNodeAtPopulationWorkspace = new ArrayList<String>();
 		if (treeNode != null) {
 			closeNodes(treeNode);
+			setValidHumanReadable(true);
+			isSubTreeLogicValidInPopulationWorkSpace = false;
 			for (int i = 0; i < treeNode.getChildCount(); i++) {
 				//TreeNode subTree = null;
 				CellTreeNode node =(CellTreeNode) treeNode.getChildValue(i);
 				validateCellTreeNodesPopulationWorkspace(node, inValidNodeAtPopulationWorkspace);
 			}
 		}
+		openAllNodes(getXmlTree().getRootTreeNode());
 		return inValidNodeAtPopulationWorkspace;
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay#validatePopulationCellTreeNodes(mat.client.clause.clauseworkspace.model.CellTreeNode)
+	 */
+	@Override
+	public List<String> validatePopulationCellTreeNodes(CellTreeNode cellNode) {
+		List<String> inValidNodeAtPopulationWorkspace = new ArrayList<String>();
+		setValidHumanReadable(true);
+		isSubTreeLogicValidInPopulationWorkSpace = false;
+		if ((cellNode != null) && (cellNode.getChilds()!=null)) {
+			
+			for (int i = 0; i < cellNode.getChilds().size(); i++) {
+				//TreeNode subTree = null;
+				CellTreeNode node =cellNode.getChilds().get(i);
+				validateCellTreeNodesPopulationWorkspace(node, inValidNodeAtPopulationWorkspace);
+			}
+		}
+		closeNodes(getXmlTree().getRootTreeNode());
+		openAllNodes(getXmlTree().getRootTreeNode());
+		return inValidNodeAtPopulationWorkspace;
+	}
 	/**
 	 * Validate cell tree nodes population workspace.
 	 *
@@ -1802,6 +1825,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 				if(cellTreeNode.getParent().getName()
 						.contains(MEASURE_OBSERVATION)){
 					editNode(false, cellTreeNode);
+					setValidHumanReadable(false);
 					if(!inValidNodeAtPopulationWorkspace
 							.contains("inValidAtMeasureObservationLogicalNode")){
 						inValidNodeAtPopulationWorkspace
@@ -1818,15 +1842,26 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 				}
 				break;
 			case CellTreeNode.SUBTREE_REF_NODE:
-				if (!isMeasureObservations()) {
-					editNode(!validateSubTreeRefNode(cellTreeNode), cellTreeNode);
+				boolean checkValidation = validateSubTreeRefNode(cellTreeNode);
+				editNode(!checkValidation, cellTreeNode);
+				if (isDateTimeDiffNotInMO) {
 					if (!inValidNodeAtPopulationWorkspace
 							.contains("inValidAtPopulationAndStratificationNode")
-							&& validateSubTreeRefNode(cellTreeNode)) {
+							&& checkValidation) {
 						inValidNodeAtPopulationWorkspace
 						.add("inValidAtPopulationAndStratificationNode");
 					}
+					isDateTimeDiffNotInMO = false;
+				} else if(isSubTreeLogicValidInPopulationWorkSpace){
+					if (!inValidNodeAtPopulationWorkspace
+							.contains("invalidClauseLogic") && checkValidation
+							) {
+						inValidNodeAtPopulationWorkspace
+						.add("invalidClauseLogic");
+					}
+					/*isSubTreeLogicValidInPopulationWorkSpace = false;*/
 				}
+				//}
 				break;
 			default:
 				editNode(false, cellTreeNode);
@@ -1855,7 +1890,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	 * @param cellTreeNode the cell tree node
 	 * @return true, if successful
 	 */
-	private boolean validateSubTreeRefNode(CellTreeNode cellTreeNode){
+	private boolean validateSubTreeRefNode(CellTreeNode cellTreeNode) {
 		Node node = PopulationWorkSpaceConstants.subTreeLookUpNode
 				.get(cellTreeNode.getName() + "~" + cellTreeNode.getUUID());
 		CellTreeNode subTreeCellTreeNode = null;
@@ -1882,26 +1917,64 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	 * @param subTreeCellTreeNode the sub tree cell tree node
 	 * @return true, if successful
 	 */
-	private boolean validateSubtreeNodeAtPopulation(CellTreeNode subTreeCellTreeNode){
+	private boolean validateSubtreeNodeAtPopulation(CellTreeNode subTreeCellTreeNode) {
 		int nodeType = subTreeCellTreeNode.getNodeType();
+		ArrayList<String> inValideNodesList =  new ArrayList<String>();
+		System.out.println("Start Node evaluated === "+ subTreeCellTreeNode.getName());
+		System.out.println("isValid Flag  === "+ isValid);
 		switch(nodeType){
-			
 			case CellTreeNode.SET_OP_NODE:
 			case CellTreeNode.TIMING_NODE:
 			case CellTreeNode.RELATIONSHIP_NODE:
 			case CellTreeNode.ELEMENT_REF_NODE:
-				break;
+				validateClauseWorkspaceCellTreeNodes(subTreeCellTreeNode,
+						PopulationWorkSpaceConstants.datatypeMap, inValideNodesList);
+				if (isValidHumanReadable) {
+					setValidHumanReadable(inValideNodesList.size() == 0);
+				}
+				if(! isSubTreeLogicValidInPopulationWorkSpace) {
+					isSubTreeLogicValidInPopulationWorkSpace = !(inValideNodesList.size()==0);
+				}
+				if(!isValid) {
+					setValid(!(inValideNodesList.size() == 0));
+				}
 				
+				break;
 			case CellTreeNode.SUBTREE_REF_NODE:
 				checkIfClauseAndAppend(subTreeCellTreeNode);
+				if(isValidHumanReadable) {
+					setValidHumanReadable(inValideNodesList.size() == 0);
+				}
+				if(! isSubTreeLogicValidInPopulationWorkSpace) {
+					isSubTreeLogicValidInPopulationWorkSpace = !(inValideNodesList.size()==0);
+				}
+				if(!isValid) {
+					setValid(!(inValideNodesList.size() == 0));
+				}
+				
 				break;
 			case CellTreeNode.FUNCTIONS_NODE:
-				if(subTreeCellTreeNode.getName().contains("DATETIMEDIFF")){
+				validateClauseWorkspaceCellTreeNodes(subTreeCellTreeNode, PopulationWorkSpaceConstants.datatypeMap, inValideNodesList);
+				if(isValidHumanReadable) {
+					setValidHumanReadable(inValideNodesList.size() == 0);
+				}
+				if(! isSubTreeLogicValidInPopulationWorkSpace) {
+					isSubTreeLogicValidInPopulationWorkSpace = !(inValideNodesList.size()==0);
+				}
+				if(!isValid) {
+					setValid(!(inValideNodesList.size() == 0));
+				}
+				
+				if (!isMeasureObservations
+						&& subTreeCellTreeNode.getName().contains("DATETIMEDIFF")) {
 					setValid(true);
+					isDateTimeDiffNotInMO = true;
+					setValidHumanReadable(false);
 				}
 				break;
 		}
-		
+		System.out.println("End Node evaluated === "+ subTreeCellTreeNode.getName());
+		System.out.println("isValid Flag  === "+ isValid);
 		List<CellTreeNode> children = subTreeCellTreeNode.getChilds();
 		if((children != null) && (children.size() > 0)
 				&& !isValid()){
@@ -1930,16 +2003,15 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 			String instanceOfDisplayName = namedNodeMap.getNamedItem("displayName").getNodeValue();
 			Node occurenceNode = PopulationWorkSpaceConstants.subTreeLookUpNode
 					.get(instanceOfDisplayName + "~" + instanceOfUUID);
-			subTreeCellTreeNode = XmlConversionlHelper
+			subTreeRefCellTreeNode = XmlConversionlHelper
 					.createCellTreeNode(occurenceNode, instanceOfDisplayName);
 		} else {
 			subTreeRefCellTreeNode = XmlConversionlHelper
 					.createCellTreeNode(childNode, subTreeCellTreeNode.getName());
 		}
-		List<CellTreeNode> children = subTreeRefCellTreeNode.getChilds();
-		if((children != null) && (children.size() > 0)
+		if((subTreeRefCellTreeNode.getChilds() != null) && (subTreeRefCellTreeNode.getChilds().size() > 0)
 				&& !isValid()){
-			for(CellTreeNode node:children){
+			for(CellTreeNode node:subTreeRefCellTreeNode.getChilds()){
 				validateSubtreeNodeAtPopulation(node);
 				
 			}
@@ -1952,60 +2024,69 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	 * @see mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay#validateCellTreeNodes(com.google.gwt.user.cellview.client.TreeNode)
 	 */
 	@Override
-	public void validateCellTreeNodes(TreeNode treeNode) {
-		validateClauseWorkspaceCellTreeNodes(treeNode);
+	public void validateCellTreeNodes(TreeNode treeNode , boolean isValidateButtonClicked) {
+		validateClauseWorkspaceCellTreeNodes(treeNode , isValidateButtonClicked);
 	}
 	
 	/**
 	 * Validate clause workspace cell tree nodes.
 	 *
 	 * @param treeNode the tree node
+	 * @param isValidateButtonClicked the is validate button clicked
 	 */
-	private void validateClauseWorkspaceCellTreeNodes(final TreeNode treeNode) {
-		List<String> dataTypeList = new ArrayList<String>();
-		dataTypeList.addAll(PopulationWorkSpaceConstants.getElementLookUpDataTypeName().values());
-		attributeService.getDatatypeList(dataTypeList, new AsyncCallback<Map<String, List<String>>>() {
-			
-			@Override
-			public void onFailure(Throwable caught) {
-				// TODO Auto-generated method stub
-				
+	private void validateClauseWorkspaceCellTreeNodes(final TreeNode treeNode , final boolean isValidateButtonClicked) {
+		List<String> inValidNodeList = new ArrayList<String>();
+		
+		
+		if (treeNode != null) {
+			openAllNodes(treeNode);
+			for (int i = 0; i < treeNode.getChildCount(); i++) {
+				//TreeNode subTree = null;
+				CellTreeNode node = (CellTreeNode) treeNode.getChildValue(i);
+				validateClauseWorkspaceCellTreeNodes(node, PopulationWorkSpaceConstants.getDatatypeMap(), inValidNodeList);
 			}
-			@Override
-			public void onSuccess(Map<String, List<String>> datatypeMap) {
-				System.out.println("Data type map:"+datatypeMap);
-				
-				List<String> inValidNodeList = new ArrayList<String>();
-				validateClauseWorkspaceCellTreeNodes(treeNode, datatypeMap, inValidNodeList);
-				List<String> warningMessages = new ArrayList<String>();
-				closeNodes(getXmlTree().getRootTreeNode());
-				openAllNodes(getXmlTree().getRootTreeNode());
-				if(inValidNodeList.size()==0){
-					getSuccessMessageDisplay().setMessage(
-							MatContext.get().getMessageDelegate().
-							getCLAUSE_WORK_SPACE_VALIDATION_SUCCESS());
-				}else{
-					for(String element: inValidNodeList){
-						if(element.equalsIgnoreCase("inValidAtTimingRelationShip")){
-							warningMessages.add(MatContext.get().getMessageDelegate().getLHS_RHS_REQUIRED());
-							
-						}
-						if(element.equalsIgnoreCase("inValidAtSetoperatorAndOrFunction")){
-							warningMessages.add(MatContext.get().getMessageDelegate().getATLEAST_ONE_CHILD_REQUIRED());
-						}
-					}
+		}
+		closeNodes(getXmlTree().getRootTreeNode());
+		openAllNodes(getXmlTree().getRootTreeNode());
+		setValidHumanReadable(true);
+		getErrorMessageDisplay().clear();
+		if (isValidateButtonClicked) {
+			List<String> warningMessages = new ArrayList<String>();
+			if (inValidNodeList.size() == 0) {
+				getSuccessMessageDisplay().setMessage(
+						MatContext.get().getMessageDelegate().
+						getCLAUSE_WORK_SPACE_VALIDATION_SUCCESS());
+			} else {
+				for(String element: inValidNodeList){
+					if(element.equalsIgnoreCase("inValidAtTimingRelationShip")){
+						warningMessages.add(MatContext.get().getMessageDelegate().getLHS_RHS_REQUIRED());
+						
+					} else if(element.equalsIgnoreCase("inValidAtSetoperatorAndOrFunction")){
+						warningMessages.add(MatContext.get().getMessageDelegate().getATLEAST_ONE_CHILD_REQUIRED());
+					} /*else if (element.equalsIgnoreCase("invalidClauseLogic")){
+						warningMessages.add("Invalid Clause is used.");
+					}*/
 					
-					if(warningMessages.size()>0){
-						if(!warningMessages.get(0).equalsIgnoreCase(MatContext.get().getMessageDelegate().getMEASURE_LOGIC_IS_INCOMPLETE())){
-							warningMessages.add(0, MatContext.get().getMessageDelegate().getMEASURE_LOGIC_IS_INCOMPLETE());
-						}
-						getWarningMessageDisplay().setMessages(warningMessages);
-					}
 				}
 				
+				if(warningMessages.size()>0){
+					if(!warningMessages.get(0).equalsIgnoreCase(MatContext.get().getMessageDelegate().getMEASURE_LOGIC_IS_INCOMPLETE())){
+						warningMessages.add(0, MatContext.get().getMessageDelegate().getMEASURE_LOGIC_IS_INCOMPLETE());
+					}
+					getWarningMessageDisplay().setMessages(warningMessages);
+				}
 			}
-			
-		});
+		} else {
+			if (inValidNodeList.size() == 0) {
+				setValidHumanReadable(true);
+			} else {
+				setValidHumanReadable(false);
+				errorMessageDisplay.setMessage(MatContext.get().getMessageDelegate().getINVALIDLOGIC_CLAUSE_WORK_SPACE());
+			}
+		}
+		
+		
+		
 		
 	}
 	
@@ -2018,7 +2099,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	 * @return the string
 	 */
 	@SuppressWarnings("unchecked")
-	private  List<String> validateClauseWorkspaceCellTreeNodes(TreeNode treeNode, Map<String,
+	private  List<String> validateClauseWorkspaceCellTreeNodes(CellTreeNode treeNode, Map<String,
 			List<String>> dataTypeMap, List<String> inValidNodeList) {
 		String timingElement = "timing element";
 		String timingElementMeasurementEndDate = "Measurement End Date : Timing Element";
@@ -2028,131 +2109,138 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		String satisfiesAll = "SATISFIES ALL";
 		String satisfiesAny = "SATISFIES ANY";
 		if (treeNode != null) {
-			openAllNodes(treeNode);
-			for (int i = 0; i < treeNode.getChildCount(); i++) {
-				TreeNode subTree = null;
-				String attributeValue = "";
-				CellTreeNode node = (CellTreeNode) treeNode.getChildValue(i);
-				subTree = treeNode.setChildOpen(i, true, false);
-				switch (node.getNodeType()) {
-					case CellTreeNode.ELEMENT_REF_NODE :
-						String nodeName = node.getName();
-						List<CellTreeNode> attributeList = (List<CellTreeNode>)
-								node.getExtraInformation("attributes");
-						if ((attributeList != null) && (attributeList.size() > 0)) {
-							CellTreeNode attributeNode = attributeList.get(0);
-							attributeValue = attributeNode.getExtraInformation("name").toString();
-						}
-						String nodeDataType = PopulationWorkSpaceConstants.getElementLookUpDataTypeName()
-								.get(node.getUUID());
-						if (nodeDataType.equalsIgnoreCase(timingElement)) {
-							if (nodeName.equalsIgnoreCase(timingElementMeasurementEndDate)
-									|| nodeName.equalsIgnoreCase(timingElementMeasurementStartDate)) {
-								inValidAtQdmNode(node, inValidNodeList);
-							} else {
-								if (!node.getValidNode()) {
-									editNode(true, node);
-								}
-							}
+			String attributeValue = "";
+			CellTreeNode node = treeNode;
+			
+			switch (node.getNodeType()) {
+				case CellTreeNode.ELEMENT_REF_NODE :
+					String nodeName = node.getName();
+					List<CellTreeNode> attributeList = (List<CellTreeNode>)
+							node.getExtraInformation("attributes");
+					if ((attributeList != null) && (attributeList.size() > 0)) {
+						CellTreeNode attributeNode = attributeList.get(0);
+						attributeValue = attributeNode.getExtraInformation("name").toString();
+					}
+					String nodeDataType = PopulationWorkSpaceConstants.getElementLookUpDataTypeName()
+							.get(node.getUUID());
+					if (nodeDataType.equalsIgnoreCase(timingElement)) {
+						if (nodeName.equalsIgnoreCase(timingElementMeasurementEndDate)
+								|| nodeName.equalsIgnoreCase(timingElementMeasurementStartDate)) {
+							inValidAtQdmNode(node, inValidNodeList);
 						} else {
-							if (nodeDataType.equalsIgnoreCase(patientCharBirthDate)
-									|| nodeDataType.equalsIgnoreCase(patientCharExpired)) {
-								validateNodeForOldBirthDateAndExpiredElement(nodeDataType,
-										node, inValidNodeList);
-							} else if (attributeValue.isEmpty()) {
-								if (!dataTypeMap.containsKey(nodeDataType)) {
-									inValidAtQdmNode(node, inValidNodeList);
-								}
-							} else if (!attributeValue.isEmpty() && (attributeValue.length() > 0)) {
-								if (!dataTypeMap.containsKey(nodeDataType)) {
-									inValidAtQdmNode(node, inValidNodeList);
-								} else {
-									List<String> attribList = dataTypeMap.get(nodeDataType);
-									if (!attribList.contains(attributeValue)) {
-										inValidAtQdmNode(node, inValidNodeList);
-									}
-								}
-							} else {
-								if (!node.getValidNode()) {
-									editNode(true, node);
-								}
-							}
-						}
-						break;
-					case CellTreeNode.TIMING_NODE:
-					case CellTreeNode.RELATIONSHIP_NODE:
-						if ((subTree != null) && (subTree.getChildCount() == 2)) {
-							//							if (!node.getValidNode() && (MatContext.get().relationships.contains(node.getName())
-							//							|| MatContext.get().timings.contains(node.getName()))) {
-							if (!node.getValidNode() && (MatContext.get().relationships.contains(node.getName())
-									|| (node.getNodeType()==CellTreeNode.TIMING_NODE))) {
-								editNode(true, node);
-							} else if (!MatContext.get().relationships.contains(node.getName())
-									&& (node.getNodeType()!=CellTreeNode.TIMING_NODE)){
-								editNode(false, node);
-								if(!inValidNodeList.contains("inValidAtRelationshipNode")){
-									inValidNodeList.add("inValidAtRelationshipNode");
-								}
-							}
-						} else {
-							editNode(false, node);
-							if(!inValidNodeList.contains("inValidAtTimingRelationShip")){
-								inValidNodeList.add("inValidAtTimingRelationShip");
-							}
-						}
-						break;
-					case CellTreeNode.SET_OP_NODE:
-						if ((subTree != null) && (subTree.getChildCount() >= 1)) {
 							if (!node.getValidNode()) {
 								editNode(true, node);
 							}
-						} else {
-							editNode(false, node);
-							if(!inValidNodeList.contains("inValidAtSetoperatorAndOrFunction")){
-								inValidNodeList.add("inValidAtSetoperatorAndOrFunction");
+						}
+					} else {
+						if (nodeDataType.equalsIgnoreCase(patientCharBirthDate)
+								|| nodeDataType.equalsIgnoreCase(patientCharExpired)) {
+							validateNodeForOldBirthDateAndExpiredElement(nodeDataType,
+									node, inValidNodeList);
+						} else if (attributeValue.isEmpty()) {
+							if (!dataTypeMap.containsKey(nodeDataType)) {
+								inValidAtQdmNode(node, inValidNodeList);
 							}
-						}
-						break;
-					case CellTreeNode.FUNCTIONS_NODE:
-						int checkChildCount = 1;
-						String invalidKeyForMap = "inValidAtSetoperatorAndOrFunction";
-						Map<String, String> map = (Map<String, String>)node.getExtraInformation("extraAttributes");
-						String funcType;
-						if(map!=null){
-							funcType = map.get("type");
-						} else {
-							funcType = node.getName();
-						}
-						if ((node.getName().equalsIgnoreCase(satisfiesAll))
-								|| (node.getName().equalsIgnoreCase(satisfiesAny))) {
-							checkChildCount = 2;
-							invalidKeyForMap = "inValidAtTimingRelationShip";
-						} else if(!MatContext.get().functions.contains(funcType)){
-							invalidKeyForMap = "invalidAtFunction";
-							editNode(false, node);
-							if(!inValidNodeList.contains(invalidKeyForMap)){
-								inValidNodeList.add(invalidKeyForMap);
+						} else if (!attributeValue.isEmpty() && (attributeValue.length() > 0)) {
+							if (!dataTypeMap.containsKey(nodeDataType)) {
+								inValidAtQdmNode(node, inValidNodeList);
+							} else {
+								List<String> attribList = dataTypeMap.get(nodeDataType);
+								if (!attribList.contains(attributeValue)) {
+									inValidAtQdmNode(node, inValidNodeList);
+								}
 							}
-						}
-						if ((subTree != null) && (subTree.getChildCount() >= checkChildCount)) {
-							if (!node.getValidNode() &&
-									!inValidNodeList.contains("invalidAtFunction")) {
+						} else {
+							if (!node.getValidNode()) {
 								editNode(true, node);
 							}
-						} else {
+						}
+					}
+					break;
+				case CellTreeNode.TIMING_NODE:
+				case CellTreeNode.RELATIONSHIP_NODE:
+					if (((node.getChilds() != null) && (node.getChilds().size()== 2))) {
+						//							if (!node.getValidNode() && (MatContext.get().relationships.contains(node.getName())
+						//							|| MatContext.get().timings.contains(node.getName()))) {
+						if (!node.getValidNode() && (MatContext.get().relationships.contains(node.getName())
+								|| (node.getNodeType()==CellTreeNode.TIMING_NODE))) {
+							editNode(true, node);
+						} else if (!MatContext.get().relationships.contains(node.getName())
+								&& (node.getNodeType()!=CellTreeNode.TIMING_NODE)){
 							editNode(false, node);
-							if(!inValidNodeList.contains(invalidKeyForMap)){
-								inValidNodeList.add(invalidKeyForMap);
+							if(!inValidNodeList.contains("inValidAtRelationshipNode")){
+								inValidNodeList.add("inValidAtRelationshipNode");
 							}
 						}
-						break;
-					default:
-						break;
-				}
-				subTree = treeNode.setChildOpen(i, ((CellTreeNode) treeNode.getChildValue(i)).isOpen(),
-						((CellTreeNode) treeNode.getChildValue(i)).isOpen());
-				if ((subTree != null) && (subTree.getChildCount() > 0)) {
-					validateClauseWorkspaceCellTreeNodes(subTree, dataTypeMap, inValidNodeList);
+					} else {
+						editNode(false, node);
+						if(!inValidNodeList.contains("inValidAtTimingRelationShip")){
+							inValidNodeList.add("inValidAtTimingRelationShip");
+						}
+					}
+					break;
+				case CellTreeNode.SET_OP_NODE:
+					if (((node.getChilds() != null) && (node.getChilds().size()>= 1))) {
+						if (!node.getValidNode()) {
+							editNode(true, node);
+						}
+					} else {
+						editNode(false, node);
+						if(!inValidNodeList.contains("inValidAtSetoperatorAndOrFunction")){
+							inValidNodeList.add("inValidAtSetoperatorAndOrFunction");
+						}
+					}
+					break;
+				case CellTreeNode.FUNCTIONS_NODE:
+					int checkChildCount = 1;
+					String invalidKeyForMap = "inValidAtSetoperatorAndOrFunction";
+					Map<String, String> map = (Map<String, String>)node.getExtraInformation("extraAttributes");
+					String funcType;
+					if(map!=null){
+						funcType = map.get("type");
+					} else {
+						funcType = node.getName();
+					}
+					if ((node.getName().equalsIgnoreCase(satisfiesAll))
+							|| (node.getName().equalsIgnoreCase(satisfiesAny))) {
+						checkChildCount = 2;
+						invalidKeyForMap = "inValidAtTimingRelationShip";
+					} else if(!MatContext.get().functions.contains(funcType)){
+						invalidKeyForMap = "invalidAtFunction";
+						editNode(false, node);
+						if(!inValidNodeList.contains(invalidKeyForMap)){
+							inValidNodeList.add(invalidKeyForMap);
+						}
+					}
+					if (((node.getChilds() != null) && (node.getChilds().size()>= checkChildCount))) {
+						if (!node.getValidNode() &&
+								!inValidNodeList.contains("invalidAtFunction")) {
+							editNode(true, node);
+						}
+					} else {
+						editNode(false, node);
+						if(!inValidNodeList.contains(invalidKeyForMap)){
+							inValidNodeList.add(invalidKeyForMap);
+						}
+					}
+					break;
+					/*case CellTreeNode.SUBTREE_REF_NODE:
+					boolean checkForValidation = validateSubTreeRefNode(node);
+					if(checkForValidation){
+						if(!inValidNodeList.contains("invalidClauseLogic")){
+							inValidNodeList.add("invalidClauseLogic");
+						}
+						editNode(false, node);
+					}
+					break;*/
+				default:
+					break;
+			}
+			List<CellTreeNode> children = treeNode.getChilds();
+			if ((children != null) && (children.size() > 0)) {
+				for (CellTreeNode childNode:children) {
+					validateClauseWorkspaceCellTreeNodes(childNode,
+							PopulationWorkSpaceConstants.getDatatypeMap(), inValidNodeList);
 				}
 			}
 		}
@@ -2533,6 +2621,25 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	 */
 	public void setMeasureObservations(boolean isMeasureObservations) {
 		this.isMeasureObservations = isMeasureObservations;
+	}
+	
+	/**
+	 * Checks if is valid human readable.
+	 *
+	 * @return the isValidHumanReadable
+	 */
+	@Override
+	public boolean isValidHumanReadable() {
+		return isValidHumanReadable;
+	}
+	
+	/**
+	 * Sets the valid human readable.
+	 *
+	 * @param isValidHumanReadable the isValidHumanReadable to set
+	 */
+	public void setValidHumanReadable(boolean isValidHumanReadable) {
+		this.isValidHumanReadable = isValidHumanReadable;
 	}
 	
 }

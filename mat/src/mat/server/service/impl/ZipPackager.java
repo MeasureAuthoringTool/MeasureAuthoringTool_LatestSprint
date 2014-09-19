@@ -224,12 +224,12 @@ public class ZipPackager {
 			emeasureHumanReadablePath = parentPath+File.separator+fnu.getEmeasureHumanReadableName(emeasureName + "_v4");
 			codeListXLSPath = parentPath+File.separator+fnu.getEmeasureXLSName(emeasureName + "_v4",packageDate);
 			simpleXMLPath = parentPath+File.separator+fnu.getSimpleXMLName(emeasureName +"_v4");
-			emeasureXMLPath = parentPath+File.separator+fnu.getEmeasureXMLName(emeasureName + "_v4");
+//			emeasureXMLPath = parentPath+File.separator+fnu.getEmeasureXMLName(emeasureName + "_v4");
 			
 		    addBytesToZip(simpleXMLPath, simpleXmlStr.getBytes(), zip);
 			addBytesToZip(emeasureHumanReadablePath, emeasureHTMLStr.getBytes(), zip);
 		    addBytesToZip(codeListXLSPath, wkbkbarr, zip);
-		    addBytesToZip(emeasureXMLPath,emeasureXMLStr.getBytes(),zip);
+//		    addBytesToZip(emeasureXMLPath,emeasureXMLStr.getBytes(),zip);
 		    
 		    zip.close();
 		    ret = baos.toByteArray();
@@ -247,7 +247,6 @@ public class ZipPackager {
 	 * @param wkbkbarr the wkbkbarr
 	 * @param emeasureXMLStr the emeasure xml str
 	 * @param emeasureHTMLStr the emeasure html str
-	 * @param emeasureXSLUrl the emeasure xsl url
 	 * @param packageDate the package date
 	 * @param simpleXmlStr the simple xml str
 	 * @param filesMap the files map
@@ -256,18 +255,11 @@ public class ZipPackager {
 	 */
 	public void createBulkExportZip(String emeasureName, byte[] wkbkbarr,
 			String emeasureXMLStr, String emeasureHTMLStr,
-			String emeasureXSLUrl, String packageDate, String simpleXmlStr,
+			String packageDate, String simpleXmlStr,
 			Map<String, byte[]> filesMap, String seqNum) throws Exception{
 		FileNameUtility fnu = new FileNameUtility();
 
 		try{
-			URL u = new URL(emeasureXSLUrl);
-			int contentLength = u.openConnection().getContentLength();
-			InputStream openStream = u.openStream();
-			byte[] emeasureXSLBarr = new byte[contentLength];
-			openStream.read(emeasureXSLBarr);
-			openStream.close();
-	
 			String parentPath = "";
 			String emeasureHumanReadablePath = "";
 			String codeListXLSPath = "";
@@ -281,7 +273,7 @@ public class ZipPackager {
 			filesMap.put(simpleXMLPath, simpleXmlStr.getBytes());
 			filesMap.put(emeasureHumanReadablePath, emeasureHTMLStr.getBytes());
 			filesMap.put(codeListXLSPath, wkbkbarr);
-			filesMap.put(emeasureXMLPath, emeasureXMLPath.getBytes());
+//			filesMap.put(emeasureXMLPath, emeasureXMLStr.getBytes());
 		}catch(Exception e){
 			System.out.println(e.toString());
 			System.out.println(e.fillInStackTrace());

@@ -33,18 +33,24 @@
       	<item root="2.16.840.1.113883.10.20.28.1.1"/>
    	  </templateId>
       <id root="{normalize-space(uuid)}"/>
-      <code code="57024-2" codeSystem="2.16.840.1.113883.6.1" displayName="Health Quality Measure Document"/>
+      <code code="57024-2" codeSystem="2.16.840.1.113883.6.1">
+      	<displayName value="Health Quality Measure Document"/>
+      </code>
        <!-- Title -->
       <title>
+      	<xsl:attribute name="value">
     		<xsl:call-template name="trim">
     			<xsl:with-param name="textString" select="title"/>
      		</xsl:call-template>
+     	</xsl:attribute>	
       </title>
       <!-- Description -->
       <text>
-   		<xsl:call-template name="trim">
-   			<xsl:with-param name="textString" select="description"/>
+      	<xsl:attribute name="value">
+   			<xsl:call-template name="trim">
+   				<xsl:with-param name="textString" select="description"/>
     		</xsl:call-template>
+    	</xsl:attribute>	
       </text>
       <!-- Status -->
       <xsl:variable name="status">
@@ -95,22 +101,6 @@
               </author>
            </xsl:for-each>           
         </xsl:when>
-        <xsl:otherwise>
-            <author>
-              	 <responsibleParty classCode="ASSIGNED">	
-	              	 <representedResponsibleOrganization classCode="ORG" determinerCode="INSTANCE">
-		              	 <id>
-		              	 	<item root=""/>
-		              	 </id>
-		              	 <name>
-		              	 	<item>
-		              	 		<part value=""/> 
-		              	 	</item>
-		              	 </name>
-	              	 </representedResponsibleOrganization>
-              	 </responsibleParty>
-              </author>  
-        </xsl:otherwise>
      </xsl:choose>
 	 <!-- Measure Steward -->
       <custodian>
@@ -161,19 +151,7 @@
          	</responsibleParty>
          </verifier>
       </xsl:if>
-      <xsl:if test="not(endorsement)">
-         <verifier>
-            <responsibleParty classCode="ASSIGNED">
-               <representedResponsibleOrganization classCode="ORG" determinerCode="INSTANCE">
-                  <name>
-		               <item>
-		                  <part value="None"/>
-		               </item>
-		            </name>
-			   </representedResponsibleOrganization>
-            </responsibleParty>
-         </verifier>
-      </xsl:if>
+      
       
       <!--  Component Of -->
       <xsl:call-template name="componentOfTemplate"/>
@@ -186,7 +164,13 @@
 	         <code nullFlavor="OTH">
 	            <originalText value="eMeasure Identifier (Measure Authoring Tool)"/>
 	         </code>
-	         <value xsi:type="ED" mediaType="text/plain" value="146"/>
+	         <value xsi:type="ED" mediaType="text/plain">
+	         	<xsl:attribute name="value">
+	         		<xsl:call-template name="trim">
+                 		<xsl:with-param name="textString" select="emeasureid"/>
+              		</xsl:call-template>
+	         	</xsl:attribute>
+	         </value>
 	      </measureAttribute>
 	  </subjectOf>
 	  <subjectOf>
@@ -257,25 +241,22 @@
                      <code code="MSRTYPE" codeSystem="2.16.840.1.113883.5.4">
                      	<displayName value="Measure Type"/>
                      </code>
-                     <value xsi:type="CD" code="{@id}" codeSystem="2.16.840.1.113883.1.11.20367">
-                     	<displayName value="{normalize-space(.)}"/>
+                     <xsl:variable name="nameVar">
+                     	<xsl:choose>
+                 			<xsl:when test="@id = 'PATENGEXP'">EXPERIENCE</xsl:when>
+                 			<xsl:when test="@id = 'COSTRESOURCEUSE'">RESOURCE</xsl:when>
+                 			<xsl:otherwise>
+                 				<xsl:value-of select="upper-case(.)"/>
+                 			</xsl:otherwise>
+                		</xsl:choose>
+                     </xsl:variable>
+                     <value xsi:type="CD" code="{$nameVar}" codeSystem="2.16.840.1.113883.1.11.20368">
+                     	<displayName value="{$nameVar}"/>
                      </value> 
                   </measureAttribute>
                </subjectOf>
             </xsl:for-each>
          </xsl:when>
-         <xsl:otherwise>
-            <subjectOf>
-               <measureAttribute>
-                  <code code="MSRTYPE" codeSystem="2.16.840.1.113883.5.4">
-                     	<displayName value="Measure Type"/>
-                  </code>
-                  <value xsi:type="CD" code="{@id}" codeSystem="2.16.840.1.113883.1.11.20367">
-                     	<displayName value=""/>
-                  </value>
-               </measureAttribute>
-            </subjectOf>
-         </xsl:otherwise>
       </xsl:choose>
 	
 	  <!-- itemCount -->
@@ -344,7 +325,7 @@
       <!-- Clinical Recommendation Statement -->
        <subjectOf>
           <measureAttribute>
-             <code code="CRS" codeSystem="2.16.840.1.113883.3.560">
+             <code code="CRS" codeSystem="2.16.840.1.113883.5.4">
              	<displayName value="Clinical Recommendation Statement"/>
              </code>
               <xsl:variable name="recommendationsTxt">
@@ -359,7 +340,7 @@
       <!-- Improvement Notation -->
       <subjectOf>
          <measureAttribute>
-            <code code="IDUR" codeSystem="2.16.840.1.113883.3.560">
+            <code code="IDUR" codeSystem="2.16.840.1.113883.5.4">
             	<displayName value="Improvement Notation"/>
             </code>
             <xsl:variable name="improvementNotationsTxt">
@@ -413,49 +394,14 @@
             </measureAttribute>
          </subjectOf>
       </xsl:if>
-      
-      <!-- NQF Number -->
-      <subjectOf>
-         <measureAttribute>
-            <code nullFlavor="OTH">
-               <originalText>NQF ID Number</originalText>
-            </code>
-            <xsl:variable name="extensionTxt">
-            	<xsl:call-template name="trim">
-               	   <xsl:with-param name="textString" select="nqfid/@extension"/>
-            	</xsl:call-template>
-            </xsl:variable>
-            <value xsi:type="II" root="{nqfid/@root}" value="{$extensionTxt}">
-                  <xsl:attribute name="extension">
-                     <xsl:value-of select="nqfid/@extension"/>
-                  </xsl:attribute>
-            </value>
-         </measureAttribute>
-      </subjectOf>
         
-      <!-- eMeasure Version Number -->
-     <subjectOf>
-        <measureAttribute>
-           <code nullFlavor="OTH">
-              <originalText>eMeasure Identifier</originalText>
-           </code>
-           <xsl:variable name="emeasureidTxt">
-            	<xsl:call-template name="trim">
-               	   <xsl:with-param name="textString" select="emeasureid"/>
-            	</xsl:call-template>
-           </xsl:variable>
-           <value xsi:type="ED" mediaType="text/plain" value="{$emeasureidTxt}"/>      
-        </measureAttribute>
-     </subjectOf>
-     
-      
-      <!-- Definitions -->
+     <!-- Definitions -->
       <xsl:choose>
 			<xsl:when test="definitions">
 				<xsl:for-each select="definitions">
 					<subjectOf>
 						<measureAttribute>
-							<code code="DEF" codeSystem="2.16.840.1.113883.3.560">
+							<code code="DEF" codeSystem="2.16.840.1.113883.5.4">
 								<displayName value="Definition"/>
 							</code>
 							<xsl:variable name="definitionsTxt">
@@ -471,7 +417,7 @@
 			<xsl:otherwise>
 				<subjectOf>
 					<measureAttribute>
-						<code code="DEF" codeSystem="2.16.840.1.113883.3.560">
+						<code code="DEF" codeSystem="2.16.840.1.113883.5.4">
 							<displayName value="Definition"/>
 						</code>
 						<value xsi:type="ED" mediaType="text/plain"/>
@@ -486,34 +432,39 @@
             <code code="GUIDE" codeSystem="2.16.840.1.113883.5.4">
             	<displayName value="Guidance"/>
             </code>
-            <xsl:variable name="guidanceTxt">
-            	<xsl:call-template name="trim">
-               	   <xsl:with-param name="textString" select="guidance"/>
-            	</xsl:call-template>
-            </xsl:variable>
-            <value xsi:type="ED" mediaType="text/plain" value="{$guidanceTxt}">
-				<xsl:call-template name="trim">
-             		 <xsl:with-param name="textString" select="guidance"/>
-           		</xsl:call-template>
+            
+            <value xsi:type="ED" mediaType="text/plain">
+            	<xsl:attribute name="value">
+					<xsl:call-template name="trim">
+	             		 <xsl:with-param name="textString" select="guidance"/>
+	           		</xsl:call-template>
+           		</xsl:attribute>
             </value>
          </measureAttribute>
       </subjectOf> 
 
       <!-- transmission format -->
-      <xsl:call-template name="subjOfOrigText">
-         <xsl:with-param name="origText"><xsl:text>Transmission Format</xsl:text></xsl:with-param>
-         <xsl:with-param name="text">
-            <xsl:value-of select="transmissionFormat/text()"/>
-         </xsl:with-param>
-      </xsl:call-template>   
+      <subjectOf>
+	      <measureAttribute>
+	         <code code="TRANF" codeSystem="2.16.840.1.113883.5.4">
+	            <displayName value="Transmission Format"/>
+	         </code>
+	         <value xsi:type="ED" mediaType="text/plain">
+	         	<xsl:attribute name="value">
+	         		<xsl:value-of select="transmissionFormat/text()"/>
+	         	</xsl:attribute>
+	         </value>
+	      </measureAttribute>
+   	  </subjectOf>
+         
       
       <!-- Initial Patient Population Description -->
       <xsl:call-template name="subjOfOrigText">
          <xsl:with-param name="origText">Initial Patient Population</xsl:with-param>
          <xsl:with-param name="text">
-            <xsl:value-of select="initialPatientPopDescription/text()"/>
+            <xsl:value-of select="initialPopDescription/text()"/>
          </xsl:with-param>
-         <xsl:with-param name="code">IPP</xsl:with-param>
+         <xsl:with-param name="code">IPOP</xsl:with-param>
          <xsl:with-param name="codeSystem">2.16.840.1.113883.5.1063</xsl:with-param>
       </xsl:call-template>  
       
@@ -533,6 +484,8 @@
          <xsl:with-param name="text">
             <xsl:value-of select="denominatorExclusionsDescription/text()"/>
          </xsl:with-param>
+         <xsl:with-param name="code">DENEX</xsl:with-param>
+         <xsl:with-param name="codeSystem">2.16.840.1.113883.5.1063</xsl:with-param>
       </xsl:call-template>
       
       <!-- Numerator Description -->
@@ -550,6 +503,8 @@
          <xsl:with-param name="text">
             <xsl:value-of select="numeratorExclusionsDescription/text()"/>
          </xsl:with-param>
+          <xsl:with-param name="code">NUMEX</xsl:with-param>
+         <xsl:with-param name="codeSystem">2.16.840.1.113883.5.1063</xsl:with-param>
       </xsl:call-template>
       <!-- Denominator Exceptions Description -->
       <xsl:call-template name="subjOfOrigText">
@@ -569,6 +524,15 @@
          <xsl:with-param name="code">MSRPOPL</xsl:with-param>
          <xsl:with-param name="codeSystem">2.16.840.1.113883.5.1063</xsl:with-param>
       </xsl:call-template>
+      <!-- Measure Population Exclusions -->
+      <xsl:call-template name="subjOfOrigText">
+         <xsl:with-param name="origText"><xsl:text>Measure Population Exclusions</xsl:text></xsl:with-param>
+         <xsl:with-param name="text">
+            <xsl:value-of select="measurePopulationExclusionsDescription/text()"/>
+         </xsl:with-param>
+          <xsl:with-param name="code">MSRPOPLEX</xsl:with-param>
+         <xsl:with-param name="codeSystem">2.16.840.1.113883.5.1063</xsl:with-param>
+      </xsl:call-template>
       <!-- Measure Observations Description -->
       <xsl:call-template name="subjOfOrigText">
          <xsl:with-param name="origText"><xsl:text>Measure Observations</xsl:text></xsl:with-param>
@@ -582,6 +546,8 @@
          <xsl:with-param name="text">
             <xsl:value-of select="supplementalData/text()"/>
          </xsl:with-param>
+          <xsl:with-param name="code">SDE</xsl:with-param>
+         <xsl:with-param name="codeSystem">2.16.840.1.113883.5.1063</xsl:with-param>
       </xsl:call-template>
       
       <xsl:variable name="qms_uuid"><xsl:value-of select="qualityMeasureSet/@uuid"/></xsl:variable>
@@ -653,23 +619,24 @@
    <xsl:template name="itemCountTemplate">
    		<xsl:if test="itemCount">
    			<xsl:if test="itemCount/elementRef">
-	   			<subjectOf>
-		   			<measureAttribute>
-			   			<code code="ITMCNT" codeSystem="2.16.840.1.113883.5.4">
-				            <displayName value="Items to count"/>
-				        </code>
-			   			<xsl:for-each select="itemCount/elementRef">
-			   				<value xsi:type="II">
-					        	<xsl:attribute name="root">
-					        		<xsl:value-of select="@id"/>
-					        	</xsl:attribute>
-					        	<xsl:attribute name="extension">
-					        		<xsl:value-of select="@dataType"/>
-					        	</xsl:attribute>
-					        </value>
-			   			</xsl:for-each>
-		   			</measureAttribute>
-	   			</subjectOf>
+   				<xsl:for-each select="itemCount/elementRef">
+		   			<subjectOf>
+			   			<measureAttribute>
+				   			<code code="ITMCNT" codeSystem="2.16.840.1.113883.5.4">
+					            <displayName value="Items to count"/>
+					        </code>
+				   			
+				   				<value xsi:type="II">
+						        	<xsl:attribute name="root">
+						        		<xsl:value-of select="@id"/>
+						        	</xsl:attribute>
+						        	<xsl:attribute name="extension">
+						        		<xsl:value-of select="@dataType"/>
+						        	</xsl:attribute>
+						        </value>
+				   		</measureAttribute>
+		   			</subjectOf>
+	   			</xsl:for-each>
    			</xsl:if>
    		</xsl:if> 
    </xsl:template>

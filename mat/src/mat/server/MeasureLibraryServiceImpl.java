@@ -13,17 +13,23 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.DTO.AuthorDTO;
 import mat.DTO.MeasureNoteDTO;
 import mat.DTO.MeasureTypeDTO;
 import mat.DTO.OperatorDTO;
+import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
@@ -75,6 +81,7 @@ import mat.shared.ConstantMessages;
 import mat.shared.DateStringValidator;
 import mat.shared.DateUtility;
 import mat.shared.model.util.MeasureDetailsUtil;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang.StringUtils;
@@ -312,9 +319,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @see mat.server.service.MeasureLibraryService#saveSubTreeInMeasureXml(mat.client.clause.clauseworkspace.model.MeasureXmlModel, java.lang.String)
 	 */
 	@Override
-	public MeasureXmlModel saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID) {
+	public SortedClauseMapResult saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID) {
 		logger.info("Inside saveSubTreeInMeasureXml Method for measure Id " + measureXmlModel.getMeasureId() + " .");
-		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
+		SortedClauseMapResult clauseMapResult = new SortedClauseMapResult();
+		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());		
+		
 		if (((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml()))) {
 			/*System.out.println("Measure XML is:"+xmlModel.getXml());*/
 			XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
@@ -378,6 +387,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				xmlProcessor.setOriginalXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
 				
 				measureXmlModel.setXml(xmlProcessor.getOriginalXml());
+				clauseMapResult.setMeasureXmlModel(measureXmlModel);
 				getService().saveMeasureXml(measureXmlModel);
 			} catch (XPathExpressionException exception) {
 				exception.printStackTrace();
@@ -389,16 +399,18 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				e.printStackTrace();
 			}
 		}
-		logger.info("End saveSubTreeInMeasureXml Method for measure Id " + measureXmlModel.getMeasureId() + " .");
-		return measureXmlModel;
+		logger.info("End saveSubTreeInMeasureXml Method for measure Id " + measureXmlModel.getMeasureId() + " .");		
+		clauseMapResult.setClauseMap(getSortedClauseMap(measureXmlModel.getMeasureId()));
+		return clauseMapResult;
 	}
 	
 	/* (non-Javadoc)
 	 * @see mat.server.service.MeasureLibraryService#saveSubTreeOccurrence(mat.client.clause.clauseworkspace.model.MeasureXmlModel, java.lang.String, java.lang.String)
 	 */
 	@Override
-	public MeasureXmlModel saveSubTreeOccurrence(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID){
+	public SortedClauseMapResult saveSubTreeOccurrence(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID){
 		logger.info("Inside saveSubTreeOccurrence Method for measure Id " + measureXmlModel.getMeasureId() + " .");
+		SortedClauseMapResult sortedClauseMapResult = new SortedClauseMapResult();
 		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
 		int ASCII_START = 65;
 		int ASCII_END = 90;
@@ -447,6 +459,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				}
 				xmlProcessor.setOriginalXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
 				measureXmlModel.setXml(xmlProcessor.getOriginalXml());
+				sortedClauseMapResult.setMeasureXmlModel(measureXmlModel);
 				getService().saveMeasureXml(measureXmlModel);
 			} catch (XPathExpressionException exception) {
 				// TODO Auto-generated catch block
@@ -459,7 +472,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				exception.printStackTrace();
 			}
 		}
-		return measureXmlModel;
+		sortedClauseMapResult.setClauseMap(getSortedClauseMap(measureXmlModel.getMeasureId()));
+		return sortedClauseMapResult;
 	}
 	/**
 	 * Method to call XMLProcessor appendNode method to append new xml nodes
@@ -1364,8 +1378,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	@Override
 	public final MeasureXmlModel getMeasureXmlForMeasure(final String measureId) {
 		logger.info("In MeasureLibraryServiceImpl.getMeasureXmlForMeasure()");
-		MeasureXmlModel measureXmlModel = getService().getMeasureXmlForMeasure(measureId);
-		
+		MeasureXmlModel measureXmlModel = getService().getMeasureXmlForMeasure(measureId);		
 		if (measureXmlModel == null) {
 			logger.info("Measure XML is null");
 		} else {
@@ -1374,6 +1387,118 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		return measureXmlModel;
 	}
 	
+	@Override
+	public SortedClauseMapResult getMeasureXmlForMeasureAndSortedSubTreeMap(final String measureId){
+		 SortedClauseMapResult result = new SortedClauseMapResult();
+		  MeasureXmlModel model = getMeasureXmlForMeasure(measureId);
+		  LinkedHashMap<String, String> sortedSubTreeMap = getSortedClauseMap(measureId);		 
+		  result.setMeasureXmlModel(model);
+		  result.setClauseMap(sortedSubTreeMap);
+		  return result;
+		 }
+	
+	/**
+	 * Gets the sorted clause map.
+	 *
+	 * @param measureId the measure id
+	 * @return the sorted clause map
+	 */
+	@Override
+	public LinkedHashMap<String, String> getSortedClauseMap(String measureId){
+
+	logger.info("In MeasureLibraryServiceImpl.getSortedClauseMap()");
+	MeasureXmlModel measureXmlModel = getService().getMeasureXmlForMeasure(
+			measureId);
+	
+	LinkedHashMap<String, String> sortedMainClauseMap = new LinkedHashMap<String, String>();
+	LinkedHashMap<String, String> mainClauseMap = new LinkedHashMap<String, String>();
+	
+	if ((measureXmlModel != null)
+			&& StringUtils.isNotBlank(measureXmlModel.getXml())) {
+		XmlProcessor xmlProcessor = new XmlProcessor(
+				measureXmlModel.getXml());
+		NodeList mainClauseLIst;
+		NodeList instanceClauseList;
+		try {
+			mainClauseLIst = (NodeList) xPath.evaluate(
+					"/measure//subTreeLookUp/subTree[not(@instanceOf )]",
+					xmlProcessor.getOriginalDoc().getDocumentElement(),
+					XPathConstants.NODESET);
+			for (int i = 0; i < mainClauseLIst.getLength(); i++) {
+				mainClauseMap.put(mainClauseLIst.item(i).getAttributes()
+						.getNamedItem("displayName").getNodeValue(),
+						mainClauseLIst.item(i).getAttributes()
+								.getNamedItem("uuid").getNodeValue());
+			}
+			// sort the map alphabetically
+			List<Entry<String, String>> mainClauses = new LinkedList<Map.Entry<String, String>>(
+					mainClauseMap.entrySet());
+			Collections.sort(mainClauses,
+					new Comparator<Entry<String, String>>() {
+						@Override
+						public int compare(Entry<String, String> o1,
+								Entry<String, String> o2) {
+							return o1.getKey().toUpperCase()
+									.compareTo(o2.getKey().toUpperCase());
+						}
+					});
+			for (Entry<String, String> entry : mainClauses) {
+				sortedMainClauseMap.put(entry.getValue(), entry.getKey());
+
+				instanceClauseList = (NodeList) xPath.evaluate(
+						"/measure//subTreeLookUp/subTree[@instanceOf='"
+								+ entry.getValue() + "']", xmlProcessor
+								.getOriginalDoc().getDocumentElement(),
+						XPathConstants.NODESET);
+
+				if (instanceClauseList.getLength() >= 1) {
+
+					Map<String, String> instanceClauseMap = new HashMap<String, String>();
+					for (int j = 0; j < instanceClauseList.getLength(); j++) {
+						String uuid = instanceClauseList.item(j)
+								.getAttributes().getNamedItem("uuid")
+								.getNodeValue();
+						String name = instanceClauseList.item(j)
+								.getAttributes()
+								.getNamedItem("displayName").getNodeValue();
+						String instanceVal = instanceClauseList.item(j)
+								.getAttributes().getNamedItem("instance")
+								.getNodeValue().toUpperCase();
+						String fname = "Occurrence "+ instanceVal +" of "
+								+ name;
+						instanceClauseMap.put(fname, uuid);
+					}
+
+					List<Entry<String, String>> instanceClauses = new LinkedList<Map.Entry<String, String>>(
+							instanceClauseMap.entrySet());
+					Collections.sort(instanceClauses,
+							new Comparator<Entry<String, String>>() {
+								@Override
+								public int compare(
+										Entry<String, String> o1,
+										Entry<String, String> o2) {
+									return o1
+											.getKey()
+											.toUpperCase()
+											.compareTo(
+													o2.getKey()
+															.toUpperCase());
+								}
+							});
+					for (Entry<String, String> entry1 : instanceClauses) {
+						sortedMainClauseMap.put(entry1.getValue(),
+								entry1.getKey());
+					}
+				}
+			}
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+			}
+			
+	}
+		return sortedMainClauseMap;
+	}
+		
 	/** Gets the page count.
 	 * 
 	 * @param userId the user id
@@ -3101,6 +3226,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		NodeList groupedSubTreeRefIdsNodeListMO;
 		NodeList groupedSubTreeRefIdListStrat;
 		String uuidXPathString = "";
+		
 		for(String uuidString: measureGroupingIDList){
 			uuidXPathString += "@uuid = '"+uuidString + "' or";
 		}
@@ -3118,6 +3244,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 						.item(i);
 				String uuid = groupedSubTreeRefIdAttributeNodePop
 						.getNodeValue();
+				
 				uuid = checkIfQDMVarInstanceIsPresent(uuid, xmlProcessor);
 				if(!usedSubTreeRefIdsPop.contains(uuid)){
 					usedSubTreeRefIdsPop.add(uuid);
@@ -3218,8 +3345,24 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 									+ "']//subTreeRef[@id='"
 									+ allSubTreeRefIds.get(j) + "']",
 									xmlProcessor.getOriginalDoc(), XPathConstants.NODE);
+					
 					if (usedSubTreeRefNode != null) {
+						
+						String subTreeUUID = usedSubTreeRefNode.getAttributes().getNamedItem("id").getNodeValue();
+				      String XPATH_IS_INSTANCE_OF = "//subTree [boolean(@instanceOf)]/@uuid ='"
+				    	        + subTreeUUID +"'";
+				    	      boolean isOccurrenceNode = (Boolean) xPath.evaluate(XPATH_IS_INSTANCE_OF, xmlProcessor.getOriginalDoc(), XPathConstants.BOOLEAN);
+				    	      if(isOccurrenceNode) {
+				    	       String XPATH_PARENT_UUID = "//subTree [@uuid ='"+subTreeUUID +"']/@instanceOf";
+				    	       String parentUUID = (String) xPath.evaluate(XPATH_PARENT_UUID, xmlProcessor.getOriginalDoc(), XPathConstants.STRING);
+				    	       if (!usedSubTreeRefIds.contains(parentUUID)) {
+				    	        usedSubTreeRefIds.add(parentUUID);
+				    	       }
+
+						}
 						if (!usedSubTreeRefIds.contains(allSubTreeRefIds.get(j))) {
+							
+							
 							usedSubTreeRefIds.add(allSubTreeRefIds.get(j));
 						}
 					}
@@ -3497,5 +3640,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		return allOperatorsTypeList;
 	}
+
+	
 }
 

@@ -2,7 +2,10 @@ package mat.client.clause.clauseworkspace.presenter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+
 import com.google.gwt.xml.client.Node;
 
 // TODO: Auto-generated Javadoc
@@ -90,10 +93,19 @@ public class PopulationWorkSpaceConstants {
 	public static Map<String, Node> elementLookUpNode;
 	
 	/** The element look up name. */
-	public static Map<String, String> subTreeLookUpName;
+	public static LinkedHashMap<String, String> subTreeLookUpName;
 	/** The element look up node. */
-	public static Map<String, Node> subTreeLookUpNode;
+	public static LinkedHashMap<String, Node> subTreeLookUpNode;
 	
+	/**
+	 * Sets the sub tree look up node.
+	 *
+	 * @param subTreeLookUpNode the sub tree look up node
+	 */
+	public static void setSubTreeLookUpNode(LinkedHashMap<String, Node> subTreeLookUpNode) {
+		PopulationWorkSpaceConstants.subTreeLookUpNode = subTreeLookUpNode;
+	}
+
 	/** The Constant ELEMENT_REF. */
 	public static final String ELEMENT_REF = "elementRef";
 	
@@ -171,6 +183,9 @@ public class PopulationWorkSpaceConstants {
 	/** The Constant CLAUSE_QDM_VARIABLE. */
 	public static final String CLAUSE_QDM_VARIABLE = "qdmVariable";
 	
+	/** The datatype map. */
+	public static Map<String, List<String>> datatypeMap;
+	
 	static {
 		constantsMap.put("populations", "Populations");
 		constantsMap.put("measureObservations", "Measure Observations");
@@ -187,7 +202,7 @@ public class PopulationWorkSpaceConstants {
 		constantsMap.put("Numerator Exclusions", "numeratorExclusions");
 		constantsMap.put("Populations", "populations");
 		//commented for MAT-4426 in sprint 44
-		//topNodeOperatorMap.put("measureobservations", "and"); 
+		//topNodeOperatorMap.put("measureobservations", "and");
 		topNodeOperatorMap.put("initialpopulations", "and");
 		topNodeOperatorMap.put("numerators", "and");
 		topNodeOperatorMap.put("denominators", "and");
@@ -253,6 +268,8 @@ public class PopulationWorkSpaceConstants {
 	}
 	
 	/**
+	 * Gets the element look up data type name.
+	 *
 	 * @return the elementLookUpDataTypeName
 	 */
 	public static Map<String, String> getElementLookUpDataTypeName() {
@@ -311,6 +328,24 @@ public class PopulationWorkSpaceConstants {
 	 */
 	public static ArrayList<String> getUnits() {
 		return units;
+	}
+	
+	/**
+	 * Gets the datatype map.
+	 *
+	 * @return the datatypeMap
+	 */
+	public static Map<String, List<String>> getDatatypeMap() {
+		return datatypeMap;
+	}
+	
+	/**
+	 * Sets the datatype map.
+	 *
+	 * @param datatypeMap the datatype map
+	 */
+	public static  void setDatatypeMap(Map<String, List<String>> datatypeMap) {
+		PopulationWorkSpaceConstants.datatypeMap = datatypeMap;
 	}
 	
 	/*public static Map<String, Node> getElementLookUps() {
