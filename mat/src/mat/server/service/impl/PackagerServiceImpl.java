@@ -7,9 +7,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.client.clause.clauseworkspace.presenter.PopulationWorkSpaceConstants;
 import mat.client.measurepackage.MeasurePackageClauseDetail;
 import mat.client.measurepackage.MeasurePackageDetail;
@@ -24,6 +26,7 @@ import mat.server.service.PackagerService;
 import mat.server.util.ResourceLoader;
 import mat.server.util.XmlProcessor;
 import mat.shared.MeasurePackageClauseValidator;
+
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,7 +36,6 @@ import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.Marshaller;
 import org.exolab.castor.xml.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -64,6 +66,7 @@ public class PackagerServiceImpl implements PackagerService {
 	
 	
 	
+	
 	/** The measure xmldao. */
 	@Autowired
 	private MeasureXMLDAO measureXMLDAO;
@@ -90,6 +93,8 @@ public class PackagerServiceImpl implements PackagerService {
 		
 		List<MeasurePackageClauseDetail> clauses = new ArrayList<MeasurePackageClauseDetail>();
 		List<MeasurePackageDetail> pkgs = new ArrayList<MeasurePackageDetail>();
+		//get all the list of allowed populations at package
+		List<String> allowedPopulationsInPackage = MatContext.get().getAllowedPopulationsInPackage();
 		// Load Measure Xml
 		MeasureXML measureXML = measureXMLDAO.findForMeasure(measureId);
 		XmlProcessor  processor = new XmlProcessor(measureXML.getMeasureXMLAsString());
@@ -109,6 +114,7 @@ public class PackagerServiceImpl implements PackagerService {
 					Node displayNameNode = namedNodeMap.getNamedItem(PopulationWorkSpaceConstants.DISPLAY_NAME);
 					Node typeNode = namedNodeMap.getNamedItem(PopulationWorkSpaceConstants.TYPE);
 					Node associatedClauseUUIDNode = namedNodeMap.getNamedItem("associatedPopulationUUID");
+					
 					String associatedClauseUUID = null;
 					if(associatedClauseUUIDNode != null){
 						associatedClauseUUID = associatedClauseUUIDNode.getNodeValue();
@@ -119,9 +125,8 @@ public class PackagerServiceImpl implements PackagerService {
 						clauses.add(createMeasurePackageClauseDetail(
 								uuidNode.getNodeValue(), displayNameNode.getNodeValue(), XmlProcessor.STRATIFICATION,
 								associatedClauseUUID,qdmSelectedList));
-					}
-					else
-					{
+						
+					} else if(allowedPopulationsInPackage.contains(typeNode.getNodeValue())){//filter unAllowed populations in package
 						clauses.add(createMeasurePackageClauseDetail(
 								uuidNode.getNodeValue(), displayNameNode.getNodeValue(), typeNode.getNodeValue(),
 								associatedClauseUUID,qdmSelectedList));
@@ -435,7 +440,7 @@ public class PackagerServiceImpl implements PackagerService {
 			//try {
 			//	setSupplementalDataForQDMs(processor.getOriginalDoc(), detail.getSuppDataElements(), detail.getQdmElements());
 			//} catch (XPathExpressionException e) {
-				// TODO Auto-generated catch block
+			// TODO Auto-generated catch block
 			//	e.printStackTrace();
 			//}
 		} else {
@@ -462,6 +467,8 @@ public class PackagerServiceImpl implements PackagerService {
 		measureXMLDAO.save(measureXML);
 	}
 	
+	
+	
 	/**
 	 * Sets the supplemental data for qd ms.
 	 *
@@ -469,27 +476,27 @@ public class PackagerServiceImpl implements PackagerService {
 	 * @param supplementalDataElemnts the supplemental data elemnts
 	 * @param qdmElemnts the qdm elemnts
 	 * @throws XPathExpressionException the x path expression exception
-	 *///commented Out 
-//	private void setSupplementalDataForQDMs(Document originalDoc, List<QualityDataSetDTO> supplementalDataElemnts, 
-//			List<QualityDataSetDTO> qdmElemnts) throws XPathExpressionException {
-//		
-//		//to set QDM's that are used in Supplemental Data ELements tab.
-//		for(int i = 0; i<supplementalDataElemnts.size(); i++){
-//			javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
-//			Node nodeSupplementalDataNode = (Node) xPath.evaluate(XPATH_MEASURE_ELEMENT_LOOK_UP_EXPRESSION +supplementalDataElemnts.get(i).getUuid()+"']",
-//					originalDoc.getDocumentElement(), XPathConstants.NODE);
-//			nodeSupplementalDataNode.getAttributes().getNamedItem("suppDataElement").setNodeValue("true");
-//		}
-//		
-//		//to set QDM's that are used in QDM Elements Tab
-//		
-//		for(int j = 0; j<qdmElemnts.size(); j++){
-//			javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
-//			Node nodeSupplementalDataNode = (Node) xPath.evaluate(XPATH_MEASURE_ELEMENT_LOOK_UP_EXPRESSION +qdmElemnts.get(j).getUuid()+"']",
-//					originalDoc.getDocumentElement(), XPathConstants.NODE);
-//			nodeSupplementalDataNode.getAttributes().getNamedItem("suppDataElement").setNodeValue("false");
-//		}
-//		
-//	}
+	 *///commented Out
+	//	private void setSupplementalDataForQDMs(Document originalDoc, List<QualityDataSetDTO> supplementalDataElemnts,
+	//			List<QualityDataSetDTO> qdmElemnts) throws XPathExpressionException {
+	//
+	//		//to set QDM's that are used in Supplemental Data ELements tab.
+	//		for(int i = 0; i<supplementalDataElemnts.size(); i++){
+	//			javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
+	//			Node nodeSupplementalDataNode = (Node) xPath.evaluate(XPATH_MEASURE_ELEMENT_LOOK_UP_EXPRESSION +supplementalDataElemnts.get(i).getUuid()+"']",
+	//					originalDoc.getDocumentElement(), XPathConstants.NODE);
+	//			nodeSupplementalDataNode.getAttributes().getNamedItem("suppDataElement").setNodeValue("true");
+	//		}
+	//
+	//		//to set QDM's that are used in QDM Elements Tab
+	//
+	//		for(int j = 0; j<qdmElemnts.size(); j++){
+	//			javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
+	//			Node nodeSupplementalDataNode = (Node) xPath.evaluate(XPATH_MEASURE_ELEMENT_LOOK_UP_EXPRESSION +qdmElemnts.get(j).getUuid()+"']",
+	//					originalDoc.getDocumentElement(), XPathConstants.NODE);
+	//			nodeSupplementalDataNode.getAttributes().getNamedItem("suppDataElement").setNodeValue("false");
+	//		}
+	//
+	//	}
 	
 }

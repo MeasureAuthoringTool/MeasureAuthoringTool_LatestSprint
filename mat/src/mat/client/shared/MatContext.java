@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import mat.DTO.OperatorDTO;
 import mat.client.Enableable;
 import mat.client.admin.service.AdminService;
@@ -15,10 +16,8 @@ import mat.client.audit.service.AuditServiceAsync;
 import mat.client.clause.QDMAvailableValueSetWidget;
 import mat.client.clause.QDSAppliedListView;
 import mat.client.clause.QDSCodeListSearchView;
-import mat.client.clause.clauseworkspace.model.CellTreeNode;
 import mat.client.codelist.AdminManageCodeListSearchModel;
 import mat.client.codelist.ListBoxCodeProvider;
-import mat.client.codelist.ManageCodeListSearchView;
 import mat.client.codelist.service.CodeListService;
 import mat.client.codelist.service.CodeListServiceAsync;
 import mat.client.event.ForgottenPasswordEvent;
@@ -42,6 +41,7 @@ import mat.client.umls.service.VSACAPIService;
 import mat.client.umls.service.VSACAPIServiceAsync;
 import mat.client.util.ClientConstants;
 import mat.shared.ConstantMessages;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.shared.HandlerManager;
 import com.google.gwt.http.client.UrlBuilder;
@@ -158,7 +158,7 @@ public class MatContext implements IsSerializable {
 	private ManageMeasureSearchModel manageMeasureSearchModel;
 	
 	/** The manage code list search view. */
-	private ManageCodeListSearchView manageCodeListSearchView;
+	//private ManageCodeListSearchView manageCodeListSearchView;
 	
 	/** The manage code list search model. */
 	private AdminManageCodeListSearchModel manageCodeListSearchModel;
@@ -1295,19 +1295,19 @@ public class MatContext implements IsSerializable {
 	 * @param manageCodeListSearchView
 	 *            the manageCodeListSearchView to set
 	 */
-	public void setManageCodeListSearchView(ManageCodeListSearchView manageCodeListSearchView) {
-		this.manageCodeListSearchView = manageCodeListSearchView;
-	}
-	
-	
-	/**
-	 * Gets the manage code list search view.
-	 * 
-	 * @return the manageCodeListSearchView
-	 */
-	public ManageCodeListSearchView getManageCodeListSearchView() {
-		return manageCodeListSearchView;
-	}
+//	public void setManageCodeListSearchView(ManageCodeListSearchView manageCodeListSearchView) {
+//		this.manageCodeListSearchView = manageCodeListSearchView;
+//	}
+//	
+//	
+//	/**
+//	 * Gets the manage code list search view.
+//	 * 
+//	 * @return the manageCodeListSearchView
+//	 */
+//	public ManageCodeListSearchView getManageCodeListSearchView() {
+//		return manageCodeListSearchView;
+//	}
 	
 	
 	/**
@@ -1454,6 +1454,28 @@ public class MatContext implements IsSerializable {
 	public void setUMLSLoggedIn(boolean isUMLSLoggedIn) {
 		this.isUMLSLoggedIn = isUMLSLoggedIn;
 	}
+	
+	/**
+	 * Gets the allowed populations in package.
+	 *
+	 * @return the allowed populations in package
+	 */
+	public List<String> getAllowedPopulationsInPackage(){
+		
+		List<String> allowedPopulationsInPackage = new ArrayList<String>();
+		
+		allowedPopulationsInPackage.add("initialPopulation");
+		allowedPopulationsInPackage.add("stratification");
+		allowedPopulationsInPackage.add("measurePopulation");
+		allowedPopulationsInPackage.add("measurePopulationExclusions");
+		allowedPopulationsInPackage.add("measureObservation");
+		allowedPopulationsInPackage.add("denominator");
+		allowedPopulationsInPackage.add("denominatorExclusions");
+		allowedPopulationsInPackage.add("denominatorExceptions");
+		allowedPopulationsInPackage.add("numerator");
+		allowedPopulationsInPackage.add("numeratorExclusions");
+		return allowedPopulationsInPackage;
+	}
 	/**
 	 * @return the copiedNode
 	 */
@@ -1462,6 +1484,8 @@ public class MatContext implements IsSerializable {
 	 * public CellTreeNode getCopiedNode() {
 		return copiedNode;
 	}*/
+	
+	
 	
 	
 	/**

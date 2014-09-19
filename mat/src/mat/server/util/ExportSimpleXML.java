@@ -998,10 +998,10 @@ public class ExportSimpleXML {
 		
 		Node measurementPeriodNode = (Node)xPath.evaluate("/measure/elementLookUp/qdm[@oid='"+ MEASUREMENT_PERIOD_OID + "']",originalDoc, 
 				XPathConstants.NODE);
-		Node measurementPeriodStartDateNode = (Node)xPath.evaluate("/measure/elementLookUp/qdm[@oid='"+ MEASUREMENT_START_DATE_OID + "']",originalDoc, 
-				XPathConstants.NODE);
-		Node measurementPeriodEndDateNode = (Node)xPath.evaluate("/measure/elementLookUp/qdm[@oid='"+ MEASUREMENT_END_DATE_OID + "']",originalDoc, 
-				XPathConstants.NODE);
+		//Node measurementPeriodStartDateNode = (Node)xPath.evaluate("/measure/elementLookUp/qdm[@oid='"+ MEASUREMENT_START_DATE_OID + "']",originalDoc, 
+		//		XPathConstants.NODE);
+		//Node measurementPeriodEndDateNode = (Node)xPath.evaluate("/measure/elementLookUp/qdm[@oid='"+ MEASUREMENT_END_DATE_OID + "']",originalDoc, 
+		//		XPathConstants.NODE);
 		
 		if(periodNode != null){
 		
@@ -1017,18 +1017,28 @@ public class ExportSimpleXML {
 					//Date in MM/DD/YYYY
 					String value = node.getTextContent();
 					node.setTextContent(formatDate(value));
-					if(measurementPeriodStartDateNode != null){
-						node.getAttributes().getNamedItem("uuid").setNodeValue(measurementPeriodStartDateNode.getAttributes().
-								getNamedItem("uuid").getNodeValue());
+					Node uuidAttributeNode = node.getAttributes().getNamedItem("uuid");
+					if(uuidAttributeNode!=null){
+					node.getAttributes().removeNamedItem("uuid");
 					}
+					//Commented this code to remove UUID attribute as a part of MAT-4613
+//					if(measurementPeriodStartDateNode != null){
+//						node.getAttributes().getNamedItem("uuid").setNodeValue(measurementPeriodStartDateNode.getAttributes().
+//								getNamedItem("uuid").getNodeValue());
+//					}
 				}else if("stopDate".equals(node.getNodeName())){
 					//Date in MM/DD/YYYY
 					String value = node.getTextContent();
 					node.setTextContent(formatDate(value));
-					if(measurementPeriodEndDateNode != null){
-						node.getAttributes().getNamedItem("uuid").setNodeValue(measurementPeriodEndDateNode.getAttributes().
-								getNamedItem("uuid").getNodeValue());
+					Node uuidAttributeNode = node.getAttributes().getNamedItem("uuid");
+					if(uuidAttributeNode!=null){
+					node.getAttributes().removeNamedItem("uuid");
 					}
+					//Commented this code to remove UUID attribute as a part of MAT-4613
+//					if(measurementPeriodEndDateNode != null){
+//						node.getAttributes().getNamedItem("uuid").setNodeValue(measurementPeriodEndDateNode.getAttributes().
+//								getNamedItem("uuid").getNodeValue());
+//					}
 				}
 			}
 		}
