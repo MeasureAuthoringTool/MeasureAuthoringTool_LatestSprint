@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import mat.DTO.MeasureNoteDTO;
+import mat.DTO.MeasureTypeDTO;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
@@ -11,6 +12,7 @@ import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.MeasureNotesModel;
 import mat.client.measure.TransferMeasureOwnerShipModel;
 import mat.model.MatValueSet;
+import mat.model.MeasureType;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
 import mat.server.util.XmlProcessor;
@@ -498,5 +500,24 @@ public interface MeasureServiceAsync {
 	 */
 	void validateForGroup(ManageMeasureDetailModel model,
 			AsyncCallback<ValidateMeasureResult> asyncCallback);
+	
+	/**
+	 * Gets the applied qdm for item count.
+	 *
+	 * @param measureId the measure id
+	 * @param checkForSupplementData the check for supplement data
+	 * @param asyncCallback the async callback
+	 * @return the applied qdm for item count
+	 */
+	void getAppliedQDMForItemCount(String measureId,boolean checkForSupplementData,
+			AsyncCallback<List<QualityDataSetDTO>> asyncCallback);
+	
+	/**
+	 * Gets the all measure types.
+	 *
+	 * @param asyncCallback the async callback
+	 * @return the all measure types
+	 */
+	void getAllMeasureTypes(AsyncCallback<List<MeasureType>> asyncCallback);
 			
 }

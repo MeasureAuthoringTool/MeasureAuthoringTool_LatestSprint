@@ -83,6 +83,9 @@ public class PopulationWorkSpaceConstants {
 	/** The element look up name. */
 	public static Map<String, String> elementLookUpName;
 	
+	/** The element look up name. */
+	public static Map<String, String> elementLookUpDataTypeName;
+	
 	/** The element look up node. */
 	public static Map<String, Node> elementLookUpNode;
 	
@@ -183,8 +186,8 @@ public class PopulationWorkSpaceConstants {
 		constantsMap.put("Measure Population Exclusions", "measurePopulationExclusions");
 		constantsMap.put("Numerator Exclusions", "numeratorExclusions");
 		constantsMap.put("Populations", "populations");
-		
-		topNodeOperatorMap.put("measureobservations", "and");
+		//commented for MAT-4426 in sprint 44
+		//topNodeOperatorMap.put("measureobservations", "and"); 
 		topNodeOperatorMap.put("initialpopulations", "and");
 		topNodeOperatorMap.put("numerators", "and");
 		topNodeOperatorMap.put("denominators", "and");
@@ -247,6 +250,13 @@ public class PopulationWorkSpaceConstants {
 	 */
 	public static Map<String, String> getElementLookUpName() {
 		return elementLookUpName;
+	}
+	
+	/**
+	 * @return the elementLookUpDataTypeName
+	 */
+	public static Map<String, String> getElementLookUpDataTypeName() {
+		return elementLookUpDataTypeName;
 	}
 	
 	/**

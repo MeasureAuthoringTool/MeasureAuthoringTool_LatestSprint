@@ -268,8 +268,8 @@ public class XmlProcessor {
 		constantsMap.put("Measure Populations", "Measure Population");
 		constantsMap.put("Measure Population Exclusions", "Measure Population Exclusions");
 		constantsMap.put("Numerator Exclusions", "Numerator Exclusions");
-		
-		topNodeOperatorMap.put(MEASURE_OBSERVATION, AND);
+		//commented for MAT-4426 in sprint 44
+		//topNodeOperatorMap.put(MEASURE_OBSERVATION, AND);
 		topNodeOperatorMap.put("initialPopulations", AND);
 		topNodeOperatorMap.put("numerators", AND);
 		topNodeOperatorMap.put("denominators", AND);
@@ -688,6 +688,8 @@ public class XmlProcessor {
 							.getNamedItem(UUID_STRING).getNodeValue();
 					String dataType = newNode.getAttributes()
 							.getNamedItem("datatype").getNodeValue();
+					String oid = newNode.getAttributes()
+							.getNamedItem("oid").getNodeValue();
 					boolean isOccurrenceText = false;
 					if (newNode.getAttributes().getNamedItem(INSTANCE) != null) {
 						isOccurrenceText = true;
@@ -697,10 +699,10 @@ public class XmlProcessor {
 						.equalsIgnoreCase(ConstantMessages.TIMING_ELEMENT)
 						&& !dataType
 						.equalsIgnoreCase(ConstantMessages.ATTRIBUTE) 
-						&& !dataType
-						.equalsIgnoreCase(ConstantMessages.PATIENT_CHARACTERISTIC_BIRTHDATE)
-						&& !dataType
-						.equalsIgnoreCase(ConstantMessages.PATIENT_CHARACTERISTIC_EXPIRED))) {
+						&& !oid
+						.equalsIgnoreCase(ConstantMessages.EXPIRED_OID)
+						&& !oid
+						.equalsIgnoreCase(ConstantMessages.BIRTHDATE_OID))) {
 						for (QualityDataSetDTO dataSetDTO : masterList) {
 							if (dataSetDTO.getUuid().equalsIgnoreCase(
 									nodeID)
@@ -719,15 +721,21 @@ public class XmlProcessor {
 							.getNamedItem(UUID_STRING).getNodeValue();
 					String dataType = newNode.getAttributes()
 							.getNamedItem("datatype").getNodeValue();
+					String oid = newNode.getAttributes()
+							.getNamedItem("oid").getNodeValue();
 					boolean isOccurrenceText = false;
 					if (newNode.getAttributes().getNamedItem(INSTANCE) != null) {
 						isOccurrenceText = true;
 					}
-					// Check to Filter Occurrences and to filter Attributes and Timing data types.
+					// Check to Filter Occurrences and to filter Attributes, Timing, BirtDate and Expired data types.
 					if (!isOccurrenceText && (!dataType
 						.equalsIgnoreCase(ConstantMessages.TIMING_ELEMENT)
 						&& !dataType
-						.equalsIgnoreCase(ConstantMessages.ATTRIBUTE))) {
+						.equalsIgnoreCase(ConstantMessages.ATTRIBUTE)
+						&& !oid
+						.equalsIgnoreCase(ConstantMessages.EXPIRED_OID)
+						&& !oid
+						.equalsIgnoreCase(ConstantMessages.BIRTHDATE_OID))) {
 						for (QualityDataSetDTO dataSetDTO : masterList) {
 							if (dataSetDTO.getUuid().equalsIgnoreCase(
 									nodeID)

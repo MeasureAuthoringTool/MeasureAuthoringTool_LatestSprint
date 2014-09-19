@@ -461,9 +461,8 @@ public class HumanReadableGenerator {
 			if (LOGICAL_OP.equals(parentNode.getNodeName())) {
 				parentListElement = parentListElement.appendElement(HTML_LI);
 				if (LOGICAL_OP.equals(parentNode.getNodeName())) {
-					parentListElement = parentListElement
-							.appendText(getNodeText(parentNode,
-									populationOrSubtreeXMLProcessor));
+					parentListElement = parentListElement.appendText(getNodeText(parentNode,
+							populationOrSubtreeXMLProcessor));
 					// parentListElement = liElement.appendElement(HTML_UL);
 				}
 			}
@@ -863,9 +862,7 @@ public class HumanReadableGenerator {
 	private static boolean checkIfElementRefOrQDMVariable(Node node) {
 		boolean retValue = false;
 		String nodeName = node.getNodeName();
-		System.out.println("checkIfElementRefOrQDMVariable nodeName:"
-				+ nodeName);
-
+		
 		if (ELEMENT_REF.equals(nodeName)) {
 			retValue = true;
 		} else if (SUB_TREE.equals(nodeName)) {
@@ -898,6 +895,7 @@ public class HumanReadableGenerator {
 			if (node.getAttributes().getNamedItem("qdmVariable") != null) {
 				String qdmVariable = node.getAttributes()
 						.getNamedItem("qdmVariable").getNodeValue();
+				System.out.println("qdmVariable:" + qdmVariable);
 				if (qdmVariable.equalsIgnoreCase("true")) {
 					return true;
 				}
