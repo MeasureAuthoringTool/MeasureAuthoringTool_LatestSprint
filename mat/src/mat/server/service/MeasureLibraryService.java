@@ -2,11 +2,9 @@ package mat.server.service;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
 import mat.DTO.MeasureNoteDTO;
-import mat.DTO.MeasureTypeDTO;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
@@ -387,9 +385,10 @@ public interface MeasureLibraryService {
 	 * @param measureXmlModel the measure xml model
 	 * @param nodeName the node name
 	 * @param nodeUUID the node uuid
+	 * @return
 	 */
-	void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID);
-
+	MeasureXmlModel saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID);
+	
 	/**
 	 * Check and delete sub tree.
 	 *
@@ -397,8 +396,8 @@ public interface MeasureLibraryService {
 	 * @param subTreeUUID the sub tree uuid
 	 * @return true, if successful
 	 */
-	boolean checkAndDeleteSubTree(String measureId, String subTreeUUID);
-
+	HashMap<String, String> checkAndDeleteSubTree(String measureId, String subTreeUUID);
+	
 	/**
 	 * Gets the formatted release date.
 	 *
@@ -406,14 +405,14 @@ public interface MeasureLibraryService {
 	 * @return the formatted release date
 	 */
 	Date getFormattedReleaseDate(String releaseDate);
-
+	
 	/**
 	 * Gets the release date.
 	 *
 	 * @return the release date
 	 */
 	String getReleaseDate();
-
+	
 	/**
 	 * Checks if is sub tree referred in logic.
 	 *
@@ -422,7 +421,7 @@ public interface MeasureLibraryService {
 	 * @return true, if is sub tree referred in logic
 	 */
 	boolean isSubTreeReferredInLogic(String measureId, String subTreeUUID);
-
+	
 	/**
 	 * Gets the human readable for node.
 	 *
@@ -439,9 +438,9 @@ public interface MeasureLibraryService {
 	 * @return the component measures
 	 */
 	ManageMeasureSearchModel getComponentMeasures(List<String> measureIds);
-
 	
-
+	
+	
 	/**
 	 * Validate package grouping.
 	 *
@@ -449,7 +448,7 @@ public interface MeasureLibraryService {
 	 * @return the string
 	 */
 	boolean validatePackageGrouping(ManageMeasureDetailModel model);
-
+	
 	/**
 	 * Validate measure xmlinpopulation workspace.
 	 *
@@ -465,7 +464,7 @@ public interface MeasureLibraryService {
 	 * @param measureId the measure id
 	 */
 	void updateComponentMeasuresOnDeletion(String measureId);
-
+	
 	/**
 	 * Validate for group.
 	 *
@@ -483,18 +482,22 @@ public interface MeasureLibraryService {
 	 */
 	List<QualityDataSetDTO> getAppliedQDMForItemCount(String measureId,
 			boolean checkForSupplementData);
-
+	
 	/**
 	 * Gets the all measure types.
 	 *
 	 * @return the all measure types
 	 */
 	List<MeasureType> getAllMeasureTypes();
-
+	
 	/**
 	 * Gets the all authors.
 	 *
 	 * @return the all authors
 	 */
 	List<Author> getAllAuthors();
+	
+	MeasureXmlModel saveSubTreeOccurrence(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID);
+	
+	boolean isQDMVariableEnabled(String measureId, String subTreeUUID);
 }

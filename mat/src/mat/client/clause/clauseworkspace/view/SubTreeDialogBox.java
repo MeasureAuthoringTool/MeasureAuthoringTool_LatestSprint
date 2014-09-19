@@ -2,11 +2,9 @@ package mat.client.clause.clauseworkspace.view;
 
 import java.util.Map.Entry;
 import java.util.Set;
-
 import mat.client.clause.clauseworkspace.model.CellTreeNode;
 import mat.client.clause.clauseworkspace.presenter.PopulationWorkSpaceConstants;
 import mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay;
-
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.OptionElement;
 import com.google.gwt.dom.client.SelectElement;
@@ -28,6 +26,7 @@ import com.google.gwt.user.client.ui.MultiWordSuggestOracle;
 import com.google.gwt.user.client.ui.SuggestBox;
 import com.google.gwt.user.client.ui.SuggestOracle.Suggestion;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.xml.client.NamedNodeMap;
 import com.google.gwt.xml.client.Node;
 import com.google.gwt.xml.client.NodeList;
 
@@ -104,7 +103,7 @@ public class SubTreeDialogBox {
 		
 		if(isClauseWorkspace){
 			CellTreeNode cellTreeNode = (CellTreeNode) (xmlTreeDisplay
-				.getXmlTree().getRootTreeNode().getChildValue(0));
+					.getXmlTree().getRootTreeNode().getChildValue(0));
 			currentSelectedSubTreeuid = cellTreeNode.getChilds().get(0).getUUID();
 		}
 		
@@ -126,10 +125,10 @@ public class SubTreeDialogBox {
 			@Override
 			public void onClick(ClickEvent event) {
 				if(!isSelected()){
-				DomEvent.fireNativeEvent(
-						Document.get().createDblClickEvent(0, 0, 0, 0, 0,
-								false, false, false, false), listBox);
-				setSelected(true);
+					DomEvent.fireNativeEvent(
+							Document.get().createDblClickEvent(0, 0, 0, 0, 0,
+									false, false, false, false), listBox);
+					setSelected(true);
 				}
 			}
 		});
@@ -185,16 +184,16 @@ public class SubTreeDialogBox {
 				}
 				
 				if(!isSelected()){
-				String value = listBox.getItemText(listBox.getSelectedIndex());
-				String uuid = listBox.getValue(listBox.getSelectedIndex());
-				if (isAdd) {
-					xmlTreeDisplay.addNode(value, value, uuid,
-							CellTreeNode.SUBTREE_REF_NODE);
-				} else {
-					xmlTreeDisplay.editNode(value, value, uuid);
-				}
-				xmlTreeDisplay.setDirty(true);
-				setSelected(true);
+					String value = listBox.getItemText(listBox.getSelectedIndex());
+					String uuid = listBox.getValue(listBox.getSelectedIndex());
+					if (isAdd) {
+						xmlTreeDisplay.addNode(value, value, uuid,
+								CellTreeNode.SUBTREE_REF_NODE);
+					} else {
+						xmlTreeDisplay.editNode(value, value, uuid);
+					}
+					xmlTreeDisplay.setDirty(true);
+					setSelected(true);
 				}
 				dialogBox.hide();
 			}
@@ -241,20 +240,31 @@ public class SubTreeDialogBox {
 		for (Entry<String, Node> subTreeLookup : subTreeLookUpNodes) {
 			String key = subTreeLookup.getKey();
 			String uuid = key.substring(key.lastIndexOf("~") + 1);
-			if (uuid.equals(currentSelectedSubTreeUuid) && isClauseWorkSpace){
+			if (uuid.equals(currentSelectedSubTreeUuid) && isClauseWorkSpace) {
 				continue;
 			}
 			if (PopulationWorkSpaceConstants.getSubTreeLookUpName().get(uuid) != null) {
 				String item = PopulationWorkSpaceConstants.getSubTreeLookUpName().get(uuid);
 				boolean noCycle = true;
-				if(isClauseWorkSpace){
+				if (isClauseWorkSpace) {
 					System.out.println();
 					System.out.println();
-					System.out.println("checkForCycleConditions for:"+item);
-					System.out.println("currentSelectedSubTreeUuid for:"+currentSelectedSubTreeUuid);
-					noCycle = checkForCycleConditions(item,uuid,currentSelectedSubTreeUuid);
+					System.out.println("checkForCycleConditions for:" + item);
+					System.out.println("currentSelectedSubTreeUuid for:" + currentSelectedSubTreeUuid);
+					Node node = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(item + "~" + uuid);
+					NamedNodeMap namedNodeMap = node.getAttributes();
+					if (namedNodeMap.getNamedItem("instance") != null) { // filter Occurrences of Selected Clause.
+						String instanceOfUUID = namedNodeMap.getNamedItem("instanceOf").getNodeValue();
+						if (currentSelectedSubTreeUuid.equalsIgnoreCase(instanceOfUUID)) {
+							noCycle = false;
+						} else {
+							noCycle = checkForCycleConditions(item, uuid, currentSelectedSubTreeUuid);
+						}
+					} else {
+						noCycle = checkForCycleConditions(item, uuid, currentSelectedSubTreeUuid);
+					}
 				}
-				if(noCycle){
+				if (noCycle) {
 					listBox.addItem(item, uuid);
 				}
 			}
@@ -283,7 +293,7 @@ public class SubTreeDialogBox {
 	 * @return true, if successful
 	 */
 	private static boolean checkForCycleConditions(String subTreeName, String uuid, String currentSelectedSubTreeUuid) {
-		Node node = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(subTreeName+"~"+uuid);
+		Node node = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(subTreeName + "~" + uuid);
 		
 		return checkForCycleConditions(node,currentSelectedSubTreeUuid);
 	}
@@ -297,8 +307,8 @@ public class SubTreeDialogBox {
 	 */
 	private static boolean checkForCycleConditions(Node node,
 			String currentSelectedSubTreeUuid) {
-		System.out.println("node.hasChildNodes():"+node.hasChildNodes());
-		if(node.hasChildNodes()){
+		System.out.println("node.hasChildNodes():"  + node.hasChildNodes());
+		if (node.hasChildNodes()) {
 			NodeList childNodeList = node.getChildNodes();
 			System.out.println("childNodeList.getLength():"+childNodeList.getLength());
 			for(int i=0;i<childNodeList.getLength();i++){
@@ -311,8 +321,24 @@ public class SubTreeDialogBox {
 					String displayName = childNode.getAttributes().getNamedItem("displayName").getNodeValue();
 					System.out.println("subtree name:"+displayName);
 					System.out.println("subtree uuid:"+uuid);
-//					String uuid = childNode.getAttributes().getNamedItem("id").getNodeValue();
-					if(uuid.equals(currentSelectedSubTreeUuid)){
+					//					String uuid = childNode.getAttributes().getNamedItem("id").getNodeValue();
+					Node subTreeNode = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(displayName + "~" + uuid);
+					NamedNodeMap namedNodeMap = subTreeNode.getAttributes();
+					if (namedNodeMap.getNamedItem("instance") != null) { // filter Occurrences of Selected Clause.
+						String instanceOfUUID = namedNodeMap.getNamedItem("instanceOf").getNodeValue();
+						if (currentSelectedSubTreeUuid.equalsIgnoreCase(instanceOfUUID)) {
+							return false;
+						} else {
+							String parentDisplayName = namedNodeMap.getNamedItem("displayName").getNodeValue();
+							parentDisplayName = parentDisplayName.replace("Occurrence "
+									+ namedNodeMap.getNamedItem("instance").getNodeValue() + " of " , "");
+							Node subTreeParentNode = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(parentDisplayName + "~" + instanceOfUUID);
+							boolean isInnerSubTreeCycle = checkForCycleConditions(subTreeParentNode, currentSelectedSubTreeUuid);
+							if(!isInnerSubTreeCycle){
+								return false;
+							}
+						}
+					} else if(uuid.equals(currentSelectedSubTreeUuid)){
 						return false;
 					}else{
 						Node childSubTreeNode = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(displayName+"~"+uuid);
@@ -323,6 +349,24 @@ public class SubTreeDialogBox {
 					}
 				}else{
 					boolean isInnerSubTreeCycle = checkForCycleConditions(childNode, currentSelectedSubTreeUuid);
+					if(!isInnerSubTreeCycle){
+						return false;
+					}
+				}
+			}
+		} else {
+			
+			NamedNodeMap namedNodeMap = node.getAttributes();
+			if (namedNodeMap.getNamedItem("instance") != null) { // filter Occurrences of Selected Clause.
+				String instanceOfUUID = namedNodeMap.getNamedItem("instanceOf").getNodeValue();
+				if (currentSelectedSubTreeUuid.equalsIgnoreCase(instanceOfUUID)) {
+					return false;
+				} else {
+					String parentDisplayName = namedNodeMap.getNamedItem("displayName").getNodeValue();
+					parentDisplayName = parentDisplayName.replace("Occurrence "
+							+ namedNodeMap.getNamedItem("instance").getNodeValue() + " of " , "");
+					Node subTreeParentNode = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(parentDisplayName + "~" + instanceOfUUID);
+					boolean isInnerSubTreeCycle = checkForCycleConditions(subTreeParentNode, currentSelectedSubTreeUuid);
 					if(!isInnerSubTreeCycle){
 						return false;
 					}

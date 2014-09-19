@@ -13,6 +13,7 @@ import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.cellview.client.TreeNode;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.ListBox;
+import com.google.gwt.user.client.ui.SuggestBox;
 import com.google.gwt.user.client.ui.Widget;
 
 // TODO: Auto-generated Javadoc
@@ -256,14 +257,6 @@ public interface XmlTreeDisplay {
 	//			TreeNode subTree);
 	
 	/**
-	 * Sets the valid.
-	 * 
-	 * @param isValid
-	 *            the new valid
-	 */
-	void setValid(boolean isValid);
-	
-	/**
 	 * Gets the cell tree.
 	 *
 	 * @return the cell tree
@@ -449,4 +442,11 @@ public interface XmlTreeDisplay {
 	
 	void pasteFromClipboard();
 	*/
+	
+	/**
+	 * Gets the search suggest text box.
+	 *
+	 * @return the search suggest text box
+	 */
+	SuggestBox getSearchSuggestTextBox();
 }

@@ -1,5 +1,6 @@
 package mat.client.clause.clauseworkspace.view;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -8,6 +9,7 @@ import mat.client.clause.clauseworkspace.model.CellTreeNode;
 import mat.client.clause.clauseworkspace.presenter.PopulationWorkSpaceConstants;
 import mat.client.clause.clauseworkspace.presenter.XmlConversionlHelper;
 import mat.client.clause.clauseworkspace.presenter.XmlTreeDisplay;
+import mat.client.event.ClauseSpecificOccurenceEvent;
 import mat.client.shared.MatContext;
 import mat.shared.UUIDUtilClient;
 import com.google.gwt.core.client.GWT;
@@ -106,7 +108,7 @@ public class ClauseWorkspaceContextMenu {
 	/*
 	 * POC Global Copy Paste.
 	MenuItem pasteFromClipboardMenu;
-	*/
+	 */
 	/** The delete menu. */
 	MenuItem deleteMenu;
 	
@@ -419,6 +421,35 @@ public class ClauseWorkspaceContextMenu {
 		addMenu = new MenuItem("Add", subMenuBar); // 1st level menu
 		popupMenuBar.addItem(addMenu);
 		popupMenuBar.addSeparator(separator);
+		Command addSpecificOccSubTreeCmd = new Command() {
+			@Override
+			public void execute() {
+				popupPanel.hide();
+				MatContext.get().getEventBus().fireEvent(
+						new ClauseSpecificOccurenceEvent(xmlTreeDisplay.getSelectedNode(), true));
+			}
+		};
+		String qdmVariableValue = null;
+		MenuItem specificOccMenuItem = new MenuItem("Create Specific Occurrence", true, addSpecificOccSubTreeCmd);
+		popupMenuBar.addItem(specificOccMenuItem);
+		if(!xmlTreeDisplay.isQdmVariableDirty()) {
+			if (xmlTreeDisplay.getSelectedNode().getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES) != null) {
+				@SuppressWarnings("unchecked")
+				HashMap<String , String> map = (HashMap<String, String>)
+				xmlTreeDisplay.getSelectedNode().getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+				qdmVariableValue = map.get("qdmVariable");
+			}
+			if ((qdmVariableValue != null) && qdmVariableValue.equalsIgnoreCase("true")) {
+				specificOccMenuItem.setEnabled(true);
+				popupMenuBar.addItem(specificOccMenuItem);
+			} else {
+				specificOccMenuItem.setEnabled(false);
+				
+			}
+		} else {
+			specificOccMenuItem.setEnabled(false);
+		}
+		popupMenuBar.addSeparator(separator);
 		addCommonMenus();
 		copyMenu.setEnabled(true);
 		if ((xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.SUBTREE_NODE)) {
@@ -446,8 +477,8 @@ public class ClauseWorkspaceContextMenu {
 				pasteMenu.setEnabled(true);
 				pasteFromClipboardMenu.setEnabled(true);
 			}
-			*/
-			if (!xmlTreeDisplay.getSelectedNode().hasChildren() && xmlTreeDisplay.getCopiedNode() != null) {
+			 */
+			if (!xmlTreeDisplay.getSelectedNode().hasChildren() && (xmlTreeDisplay.getCopiedNode() != null)) {
 				pasteMenu.setEnabled(true);
 			}
 		}
@@ -460,11 +491,11 @@ public class ClauseWorkspaceContextMenu {
 			pasteFromClipboardMenu.setEnabled(true);
 		}*/
 		//can paste LOGOP,RELOP, QDM, TIMING & FUNCS
-				if ((xmlTreeDisplay.getCopiedNode() != null)
-						&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.SUBTREE_NODE)
-						&& (xmlTreeDisplay.getSelectedNode().getNodeType() != CellTreeNode.SUBTREE_NODE)) {
-					pasteMenu.setEnabled(true);
-				}
+		if ((xmlTreeDisplay.getCopiedNode() != null)
+				&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.SUBTREE_NODE)
+				&& (xmlTreeDisplay.getSelectedNode().getNodeType() != CellTreeNode.SUBTREE_NODE)) {
+			pasteMenu.setEnabled(true);
+		}
 		if (xmlTreeDisplay.getSelectedNode().getNodeType() != CellTreeNode.SUBTREE_NODE) {
 			deleteMenu.setEnabled(true);
 			if (xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.LOGICAL_OP_NODE) {
@@ -592,12 +623,13 @@ public class ClauseWorkspaceContextMenu {
 					addMenuLHS.setEnabled(false);
 				}
 			}
-			if(xmlTreeDisplay.getCopiedNode() != null
-					&& xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE &&
-					xmlTreeDisplay.getSelectedNode().getChilds() != null && xmlTreeDisplay.getSelectedNode().getChilds().size() >=1)
+			if((xmlTreeDisplay.getCopiedNode() != null)
+					&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE) &&
+					(xmlTreeDisplay.getSelectedNode().getChilds() != null) && (xmlTreeDisplay.getSelectedNode().getChilds().size() >=1)) {
 				pasteMenu.setEnabled(true);
-			else
+			} else {
 				pasteMenu.setEnabled(false);
+			}
 			/*
 			 * POC Global Copy Paste.
 			 * if((copiedNode != null)
@@ -632,11 +664,11 @@ public class ClauseWorkspaceContextMenu {
 		addCommonMenus();
 		copyMenu.setEnabled(true);
 		//can paste LOGOP, RELOP, QDM, TIMING & FUNCS
-				if ((xmlTreeDisplay.getCopiedNode() != null)
-						&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE) && ! xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ALL") && 
-						! xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ANY")) {
-					pasteMenu.setEnabled(true);
-				}
+		if ((xmlTreeDisplay.getCopiedNode() != null)
+				&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE) && ! xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ALL") &&
+				! xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ANY")) {
+			pasteMenu.setEnabled(true);
+		}
 		/*
 		 * POC Global Copy Paste.
 		 * copyToClipBoardMenu.setEnabled(true);
@@ -797,14 +829,6 @@ public class ClauseWorkspaceContextMenu {
 				xmlTreeDisplay.getSelectedNode().getParent().getLabel().equalsIgnoreCase("SATISFIES ANY"))){
 			deleteMenu.setEnabled(checkIfTopChildNode());
 			cutMenu.setEnabled(checkIfTopChildNode());
-			//			if( xmlTreeDisplay.getSelectedNode().getNodeType() != CellTreeNode.ELEMENT_REF_NODE)
-			//				pasteMenu.setEnabled(checkIfTopChildNode());
-			//			if( xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.FUNCTIONS_NODE){
-			//				if(xmlTreeDisplay.getSelectedNode().getParent().getChilds() != null && xmlTreeDisplay.getSelectedNode().getParent().getChilds().size() > 1)
-			//					pasteMenu.setEnabled(true);
-			//				else
-			//					pasteMenu.setEnabled(false);
-			//			}
 			moveUpMenu.setEnabled(checkIfTopChildNodeForSatisfy());
 			moveDownMenu.setEnabled(checkIfLastChildNodeForSatisfy());
 		}

@@ -1,7 +1,7 @@
 package mat.server;
 
+import java.util.HashMap;
 import java.util.List;
-
 import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
@@ -345,15 +345,15 @@ MeasureService {
 	 * @see mat.client.measure.service.MeasureService#saveSubTreeInMeasureXml(mat.client.clause.clauseworkspace.model.MeasureXmlModel, java.lang.String, java.lang.String)
 	 */
 	@Override
-	public void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel , String nodeName, String nodeUUID) {
-		this.getMeasureLibraryService().saveSubTreeInMeasureXml(measureXmlModel , nodeName, nodeUUID);
+	public MeasureXmlModel saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel , String nodeName, String nodeUUID) {
+		return this.getMeasureLibraryService().saveSubTreeInMeasureXml(measureXmlModel , nodeName, nodeUUID);
 	}
 	
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#checkAndDeleteSubTree(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public boolean checkAndDeleteSubTree(String measureId, String subTreeUUID){
+	public HashMap<String, String> checkAndDeleteSubTree(String measureId, String subTreeUUID){
 		return this.getMeasureLibraryService().checkAndDeleteSubTree(measureId, subTreeUUID);
 	}
 	
@@ -372,7 +372,7 @@ MeasureService {
 	public ManageMeasureSearchModel getComponentMeasures(List<String> measureIds){
 		return getMeasureLibraryService().getComponentMeasures(measureIds);
 	}
-
+	
 	
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#validatePackageGrouping(mat.client.measure.ManageMeasureDetailModel)
@@ -383,7 +383,7 @@ MeasureService {
 		return this.getMeasureLibraryService().validatePackageGrouping(
 				model);
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#validateMeasureXmlinpopulationWorkspace(mat.client.clause.clauseworkspace.model.MeasureXmlModel)
 	 */
@@ -392,16 +392,16 @@ MeasureService {
 			MeasureXmlModel measureXmlModel) {
 		return this.getMeasureLibraryService().validateMeasureXmlAtCreateMeasurePackager(measureXmlModel);
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#updateComponentMeasuresFromXml(java.lang.String)
 	 */
 	@Override
 	public void updateComponentMeasuresFromXml(String measureId) {
-	
-		 this.getMeasureLibraryService().updateComponentMeasuresOnDeletion(measureId);
+		
+		this.getMeasureLibraryService().updateComponentMeasuresOnDeletion(measureId);
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#validateForGroup(mat.client.measure.ManageMeasureDetailModel)
 	 */
@@ -435,6 +435,17 @@ MeasureService {
 	public List<Author> getAllAddEditAuthors() {
 		
 		return this.getMeasureLibraryService().getAllAuthors();
+	}
+	
+	@Override
+	public MeasureXmlModel saveSubTreeOccurrence(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID) {
+		return this.getMeasureLibraryService().saveSubTreeOccurrence(measureXmlModel, nodeName, nodeUUID);
+		
+	}
+	
+	@Override
+	public boolean isQDMVariableEnabled(String measureId, String subTreeUUID) {
+		return this.getMeasureLibraryService().isQDMVariableEnabled(measureId, subTreeUUID);
 	}
 	
 }

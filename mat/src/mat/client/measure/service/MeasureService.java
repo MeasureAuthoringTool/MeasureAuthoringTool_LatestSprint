@@ -1,10 +1,8 @@
 package mat.client.measure.service;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
 import mat.DTO.MeasureNoteDTO;
-import mat.DTO.MeasureTypeDTO;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
@@ -17,9 +15,6 @@ import mat.model.MatValueSet;
 import mat.model.MeasureType;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
-import mat.server.util.XmlProcessor;
-
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 
@@ -375,10 +370,11 @@ public interface MeasureService extends RemoteService {
 	 * @param measureXmlModel the measure xml model
 	 * @param nodeName the node name
 	 * @param nodeUUID the node uuid
+	 * @return
 	 */
-	void saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel,
+	MeasureXmlModel saveSubTreeInMeasureXml(MeasureXmlModel measureXmlModel,
 			String nodeName, String nodeUUID);
-
+	
 	/**
 	 * Check and delete sub tree.
 	 *
@@ -386,8 +382,8 @@ public interface MeasureService extends RemoteService {
 	 * @param subTreeUUID the sub tree uuid
 	 * @return true, if successful
 	 */
-	boolean checkAndDeleteSubTree(String measureId, String subTreeUUID);
-
+	HashMap<String, String> checkAndDeleteSubTree(String measureId, String subTreeUUID);
+	
 	/**
 	 * Checks if is sub tree referred in logic.
 	 *
@@ -396,7 +392,7 @@ public interface MeasureService extends RemoteService {
 	 * @return true, if is sub tree referred in logic
 	 */
 	boolean isSubTreeReferredInLogic(String measureId, String subTreeUUID);
-
+	
 	/**
 	 * Gets the human readable for node.
 	 *
@@ -413,7 +409,7 @@ public interface MeasureService extends RemoteService {
 	 * @return the component measures
 	 */
 	ManageMeasureSearchModel getComponentMeasures(List<String> measureIds);
-
+	
 	/**
 	 * Validate package grouping.
 	 *
@@ -421,7 +417,7 @@ public interface MeasureService extends RemoteService {
 	 * @return true, if successful
 	 */
 	boolean validatePackageGrouping(ManageMeasureDetailModel model);
-
+	
 	/**
 	 * Validate measure xmlinpopulation workspace.
 	 *
@@ -437,7 +433,7 @@ public interface MeasureService extends RemoteService {
 	 * @param measureId the measure id
 	 */
 	void updateComponentMeasuresFromXml(String measureId);
-
+	
 	/**
 	 * Validate for group.
 	 *
@@ -445,7 +441,7 @@ public interface MeasureService extends RemoteService {
 	 * @return the validate measure result
 	 */
 	ValidateMeasureResult validateForGroup(ManageMeasureDetailModel model);
-
+	
 	/**
 	 * Gets the applied qdm for item count.
 	 *
@@ -455,13 +451,16 @@ public interface MeasureService extends RemoteService {
 	 */
 	List<QualityDataSetDTO> getAppliedQDMForItemCount(String measureId,
 			boolean checkForSupplementData);
-
+	
 	/**
 	 * Gets the all measure types.
 	 *
 	 * @return the all measure types
 	 */
 	List<MeasureType> getAllMeasureTypes();
-
+	
 	List<Author> getAllAddEditAuthors();
+	
+	MeasureXmlModel saveSubTreeOccurrence(MeasureXmlModel measureXmlModel, String nodeName, String nodeUUID);
+	boolean isQDMVariableEnabled(String measureId, String subTreeUUID);
 }
