@@ -18,6 +18,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import mat.DTO.AuthorDTO;
 import mat.DTO.MeasureNoteDTO;
 import mat.DTO.MeasureTypeDTO;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
@@ -33,6 +34,7 @@ import mat.client.measure.service.SaveMeasureResult;
 import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatException;
+import mat.dao.AuthorDAO;
 import mat.dao.DataTypeDAO;
 import mat.dao.MeasureNotesDAO;
 import mat.dao.MeasureTypeDAO;
@@ -159,6 +161,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	/** The measure type dao. */
 	@Autowired
 	private MeasureTypeDAO measureTypeDAO;
+	
+	/** The author dao. */
+	@Autowired
+	private AuthorDAO authorDAO;
 	
 	/** The x path. */
 	 javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
@@ -1938,7 +1944,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			measureDetailModel.setQltyMeasureSetUuid(UUID.randomUUID().toString());
 		}
 		
-		setOrgIdInAuthor(measureDetailModel.getAuthorList());
+		setOrgIdInAuthor(measureDetailModel.getAuthorSelectedList());
 		setMeasureTypeAbbreviation(measureDetailModel.getMeasureTypeSelectedList());
 		measureDetailModel.setScoringAbbr(setScoringAbbreviation(measureDetailModel.getMeasScoring()));
 		
@@ -2658,7 +2664,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			
 			//validate only from MeasureGrouping
 			String XAPTH_MEASURE_GROUPING="/measure/measureGrouping/ group/packageClause" +
-					"[not(@uuid = preceding:: group/packageClause/@uuid)]/@uuid";
+					"[not(@uuid = preceding:: group/packageClause/@uuid)]";
+			
 			List<String> measureGroupingIDList = new ArrayList<String>();;
 			
 			try {
@@ -2666,7 +2673,15 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 						XPathConstants.NODESET);
 				
 				for(int i=0 ; i<measureGroupingNodeList.getLength();i++){
-					measureGroupingIDList.add(measureGroupingNodeList.item(i).getNodeValue());
+					Node childNode = measureGroupingNodeList.item(i);
+					String uuid = childNode.getAttributes().getNamedItem("uuid").getNodeValue();
+					String type = childNode.getAttributes().getNamedItem("type").getNodeValue();		
+					if(type.equals("stratification")){
+						List<String> stratificationClausesIDlist = getStratificationClasuesIDList(uuid, xmlProcessor);
+						measureGroupingIDList.addAll(stratificationClausesIDlist);						
+					} else {
+					measureGroupingIDList.add(uuid);
+					}
 				}
 			} catch (XPathExpressionException e2) {
 				// TODO Auto-generated catch block
@@ -2679,37 +2694,58 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			}
 			
 			uuidXPathString = uuidXPathString.substring(0,uuidXPathString.lastIndexOf(" or"));
-			String XPATH_POPULATION = "/measure/populations//clause["+uuidXPathString+"]";
-			//get the Population Worspace Logic that are Used in Measure Grouping
-			NodeList populationNodeList;
-			try {
-				populationNodeList = (NodeList) xPath.evaluate(XPATH_POPULATION, xmlProcessor.getOriginalDoc(),
-						XPathConstants.NODESET);
 			
-//			Node newNode = populationNodeList.item(0);
-//			NodeList populationsChildList = newNode.getChildNodes();
+			//String XPATH_POPULATION = "/measure//clause["+uuidXPathString+"]";
+			
+			String XPATH_POPULATION_LOGICALOP = "/measure//clause["+uuidXPathString+"]//logicalOp";
+			
+			String XPATH_POPULATION_QDMELEMENT = "/measure//clause["+uuidXPathString+"]//elementRef";
+			
+			 String XPATH_POPULATION_TIMING_ELEMENT = "/measure//clause["+uuidXPathString+"]//relationalOp";
+			 
+			 String XPATH_POPULATION_FUNCTIONS ="/measure//clause["+uuidXPathString+"]//functionalOp";
+			 
+			
+			
+			//get the Population Worspace Logic that are Used in Measure Grouping
+			
+			try {
+				//list of LogicalOpNode inSide the PopulationWorkspace That are used in Grouping
+				NodeList populationLogicalOp = (NodeList) xPath.evaluate(XPATH_POPULATION_LOGICALOP, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
+				//list of Qdemelement inSide the PopulationWorkspace That are used in Grouping
+				NodeList populationQdemElement = (NodeList) xPath.evaluate(XPATH_POPULATION_QDMELEMENT, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
+				//list of TimingElement inSide the PopulationWorkspace That are used in Grouping
+				NodeList populationTimingElement = (NodeList) xPath.evaluate(XPATH_POPULATION_TIMING_ELEMENT, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
+				//list of functionNode inSide the PopulationWorkspace That are used in Grouping
+				NodeList populationFunctions = (NodeList) xPath.evaluate(XPATH_POPULATION_FUNCTIONS, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
 				
-					for (int i = 0; i <populationNodeList.getLength() && !flag; i++) {
-					Node childNode =populationNodeList.item(i);
-					NodeList childsList = childNode.getChildNodes();
-					
-					if(childsList.getLength()>0){
-						for(int j=0; j <childsList.getLength() && !flag; j++){
-							Node subChildNode =childsList.item(j);
-							flag=validateNode(subChildNode,flag);
-							if(flag){
-								break;
-							}
-				
+				if(populationLogicalOp.getLength()>0){
+					for (int i = 0; i <populationLogicalOp.getLength() && !flag; i++) {
+						Node childNode =populationLogicalOp.item(i);
+						String type = childNode.getParentNode().getAttributes().getNamedItem("type").getNodeValue();
+						if(type.equals("measureObservation")){
+							flag = true;
+							break;
 						}
-				
-					}
-					 flag=validateNode(childNode, flag);
-					 if(flag){
-						break;
 					}
 				}
-		
+					
+				if(populationQdemElement.getLength()>0 && !flag){
+					flag = true;
+				}
+				
+				if(populationTimingElement.getLength()>0 && !flag){
+					flag = true;
+				}
+				if(populationFunctions.getLength()>0 && !flag){
+					flag = true;
+				}
+				
+					
 			} catch (XPathExpressionException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -2815,6 +2851,31 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	}
 	
 	
+	/**
+	 * Gets the stratification clasues id list.
+	 *
+	 * @param uuid the uuid
+	 * @param xmlProcessor the xml processor
+	 * @return the stratification clasues id list
+	 */
+	private List<String> getStratificationClasuesIDList(String uuid, XmlProcessor xmlProcessor) {
+		
+		String XPATH_MEASURE_GROUPING_STRATIFICATION_CLAUSES = "/measure/strata/stratification" +
+				"[@uuid='"+uuid+"']/clause/@uuid";
+		List<String> clauseList = new ArrayList<String>();
+		try {
+			NodeList stratificationClausesNodeList = (NodeList)xPath.evaluate(XPATH_MEASURE_GROUPING_STRATIFICATION_CLAUSES, 
+					xmlProcessor.getOriginalDoc(),XPathConstants.NODESET);
+			for(int i=0;i<stratificationClausesNodeList.getLength();i++){
+				clauseList.add(stratificationClausesNodeList.item(i).getNodeValue());
+			}
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	return clauseList;
+	}
+
 	/**
 	 * Gets the used subtree ref ids.
 	 *
@@ -2950,12 +3011,13 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	/**
 	 * Validate node.
 	 *
-	 * @param newNode the new node
-	 * @param flag the flag
+	 * @param qdmchildNode the qdmchild node
+	 * @param attributeValue the attribute value
 	 * @return true, if successful
 	 */
-	private boolean validateNode(Node newNode, boolean flag) {
+	/*private boolean validateNode(Node newNode, boolean flag) {
 		String nodeName = newNode.getNodeName().trim();
+		
 		if (!((nodeName == "logicalOp") 
 				|| (nodeName == "clause") 
 				|| (nodeName == "subTreeRef")
@@ -2971,6 +3033,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			
 					flag =true;	 
 			}
+		if((nodeName == "logicalOp") && newNode.getParentNode().getNodeName().contains("")){
+			
+		}
 			if(newNode.getFirstChild()!=null && (newNode.getNodeName() != "comment") && !flag){
 					Node node =newNode.getFirstChild(); 
 					flag = validateNode(node, flag);			
@@ -2979,7 +3044,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		return flag;
 		
 	}
-	
+	*/
 	
 	/**
 	 * Validate qdm node.
@@ -3047,7 +3112,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @return true, if successful
 	 */
 	private boolean validateTimingNode(Node timingElementchildNode, boolean flag) {
-		int childCount = timingElementchildNode.getChildNodes().getLength();
+		int childCount = timingElementchildNode.getChildNodes().getLength();		
 		if(childCount != 2){
 			flag = true;
 		}
@@ -3199,6 +3264,23 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		return measureTypeList;
 		
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#getAllAuthors()
+	 */
+	@Override
+	public List<Author> getAllAuthors() {
+		List<AuthorDTO> authorDTOList = authorDAO.getAllAuthors();
+		List<Author> authorList = new ArrayList<Author>();
+		for(AuthorDTO authorDTO : authorDTOList){
+			Author author = new Author();
+			author.setAuthorName(authorDTO.getAuthorName());
+			String oid = getService().retrieveStewardOID(author.getAuthorName().trim());
+			author.setOrgId(oid);
+			authorList.add(author);
+		}
+		return authorList;
 	}
 }
 

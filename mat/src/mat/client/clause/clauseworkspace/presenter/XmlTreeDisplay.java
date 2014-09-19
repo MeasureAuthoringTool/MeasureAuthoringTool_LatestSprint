@@ -1,5 +1,7 @@
 package mat.client.clause.clauseworkspace.presenter;
 
+import java.util.List;
+
 import mat.client.clause.clauseworkspace.model.CellTreeNode;
 import mat.client.clause.clauseworkspace.view.ClauseWorkspaceContextMenu;
 import mat.client.measure.metadata.CustomCheckBox;
@@ -120,7 +122,7 @@ public interface XmlTreeDisplay {
 	 * @return the copied node
 	 */
 	public CellTreeNode getCopiedNode();
-		
+	
 	/**
 	 * Refresh cell tree after adding.
 	 * 
@@ -217,9 +219,9 @@ public interface XmlTreeDisplay {
 	 * 
 	 * @param treeNode
 	 *            the tree node
-	 * @return true, if successful
+	 * @return list
 	 */
-	boolean validateCellTreeNodesPopulationWorkspace(TreeNode treeNode);
+	List<String> validateCellTreeNodesPopulationWorkspace(TreeNode treeNode);
 	
 	/**
 	 * Validate cell tree nodes.
@@ -250,8 +252,8 @@ public interface XmlTreeDisplay {
 	 *
 	 * @param isValid the new valid
 	 */
-//	void editNode(boolean isValideNodeValue, CellTreeNode node,
-//			TreeNode subTree);
+	//	void editNode(boolean isValideNodeValue, CellTreeNode node,
+	//			TreeNode subTree);
 	
 	/**
 	 * Sets the valid.
@@ -377,21 +379,21 @@ public interface XmlTreeDisplay {
 	 * Move Node Down in List.
 	 */
 	void moveDown();
-
+	
 	/**
 	 * Gets the button collapse clause work space.
 	 *
 	 * @return the button collapse clause work space
 	 */
 	public abstract Button getButtonCollapseClauseWorkSpace();
-
+	
 	/**
 	 * Gets the button expand clause work space.
 	 *
 	 * @return the button expand clause work space
 	 */
 	public abstract Button getButtonExpandClauseWorkSpace();
-
+	
 	/**
 	 * Edits the node.
 	 *
@@ -406,13 +408,13 @@ public interface XmlTreeDisplay {
 	 * @param isClauseOpen the new clause enabled
 	 */
 	public void setClauseEnabled(boolean isClauseOpen);
-
+	
 	/**
 	 * Gets the include qdm varibale.
 	 *
 	 * @return the include qdm varibale
 	 */
-	CustomCheckBox getIncludeQdmVaribale(); 
+	CustomCheckBox getIncludeQdmVaribale();
 	
 	/**
 	 * Sets the qdm variable.
@@ -427,18 +429,24 @@ public interface XmlTreeDisplay {
 	 * @return the string
 	 */
 	public String isQdmVariable();
-
+	
 	/**
 	 * Checks if is qdm variable dirty.
 	 *
 	 * @return true, if is qdm variable dirty
 	 */
 	boolean isQdmVariableDirty();
-
+	
 	/**
 	 * Sets the qdm variable dirty.
 	 *
 	 * @param isQdmVariableDirty the new qdm variable dirty
 	 */
 	void setQdmVariableDirty(boolean isQdmVariableDirty);
+	/*
+	 * POC Global Copy Paste
+	void copyToClipboard();
+	
+	void pasteFromClipboard();
+	*/
 }

@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import mat.client.umls.service.VSACAPIService;
 import mat.client.umls.service.VsacApiResult;
+import mat.dao.DataTypeDAO;
+import mat.model.DataType;
 import mat.model.MatValueSet;
 import mat.model.QualityDataSetDTO;
 import mat.model.VSACValueSetWrapper;
@@ -24,11 +26,14 @@ import org.exolab.castor.mapping.Mapping;
 import org.exolab.castor.mapping.MappingException;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.Unmarshaller;
+import org.springframework.context.ApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 import org.telligen.vsac.dao.ValueSetsResponseDAO;
 import org.telligen.vsac.object.ValueSetsResponse;
 import org.telligen.vsac.service.VSACTicketService;
 import org.xml.sax.InputSource;
 
+// TODO: Auto-generated Javadoc
 /** VSACAPIServiceImpl class. **/
 @SuppressWarnings("static-access")
 public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VSACAPIService {
@@ -393,6 +398,12 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 						toBeModifiedQDM.setNotFoundInVSAC(true);
 						toBeModifiedQDM.setHasModifiedAtVSAC(true);
 						modifiedQDMList.add(toBeModifiedQDM);
+						DataType qdmDataType = getDataTypeDAO().findByDataTypeName(toBeModifiedQDM.getDataType());
+						if(qdmDataType == null || ConstantMessages.PATIENT_CHARACTERISTIC_BIRTHDATE.equals(qualityDataSetDTO.getDataType())
+								|| ConstantMessages.PATIENT_CHARACTERISTIC_EXPIRED.equals(qualityDataSetDTO.getDataType())){
+							toBeModifiedQDM.setDataTypeHasRemoved(true);
+						}
+						
 					}
 					continue;
 				} else if ("1.0".equalsIgnoreCase(qualityDataSetDTO.getVersion())
@@ -449,6 +460,12 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 						toBeModifiedQDM.setNotFoundInVSAC(true);
 					}
 				}
+				//to validate removed DataTypes in Applied QDM ELements
+				DataType qdmDataType = getDataTypeDAO().findByDataTypeName(toBeModifiedQDM.getDataType());
+				if(qdmDataType == null || ConstantMessages.PATIENT_CHARACTERISTIC_BIRTHDATE.equals(qualityDataSetDTO.getDataType())
+						|| ConstantMessages.PATIENT_CHARACTERISTIC_EXPIRED.equals(qualityDataSetDTO.getDataType())){
+					toBeModifiedQDM.setDataTypeHasRemoved(true);
+				}
 				modifiedQDMList.add(toBeModifiedQDM);
 			}
 			updateAllInMeasureXml(updateInMeasureXml, measureId);
@@ -475,5 +492,14 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 		UMLSSessionTicket.put(getThreadLocalRequest().getSession().getId(), eightHourTicketForUser);
 		LOGGER.info("End VSACAPIServiceImpl validateVsacUser: " + " Ticket issued for 8 hours: " + eightHourTicketForUser);
 		return eightHourTicketForUser != null;
+	}
+	
+	/**
+	 * Gets the data type dao.
+	 *
+	 * @return the data type dao
+	 */
+	private DataTypeDAO getDataTypeDAO(){
+		return (DataTypeDAO)context.getBean("dataTypeDAO");
 	}
 }
