@@ -17,19 +17,22 @@ import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.MatContext;
 import mat.client.shared.SecondaryButton;
 import mat.shared.ConstantMessages;
+import com.google.gwt.user.client.Element;
+
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.logical.shared.ValueChangeEvent;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.resources.client.ImageResource;
 import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.cellview.client.TreeNode;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.PopupPanel;
-import com.google.gwt.user.client.ui.ScrollPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.xml.client.Document;
 import com.google.gwt.xml.client.NamedNodeMap;
@@ -49,6 +52,7 @@ public class XmlTreePresenter {
 	 * Cell Tree Node Size to remove show more.
 	 */
 	private static final int NODESIZE = 500;
+	
 	
 	
 	/** The is unsaved data. */
@@ -115,6 +119,7 @@ public class XmlTreePresenter {
 	 * method.
 	 */
 	private String originalXML = "";
+	
 	
 	/**
 	 * Load xml tree.
@@ -316,7 +321,7 @@ public class XmlTreePresenter {
 								.getXmlTree().getRootTreeNode().getChildValue(0));
 						
 						if(cellTreeNode.getChilds().size() > 0){
-							if (xmlTreeDisplay.isDirty()) {
+							if (xmlTreeDisplay.isDirty() || xmlTreeDisplay.isQdmVariableDirty()) {
 								//isUnsavedData = true;
 								xmlTreeDisplay.getErrorMessageDisplay().clear();
 								showErrorMessage(xmlTreeDisplay.getErrorMessageDisplay());
@@ -333,7 +338,7 @@ public class XmlTreePresenter {
 										if ("Yes".equals(button.getText())) {
 											xmlTreeDisplay.getErrorMessageDisplay().clear();
 											xmlTreeDisplay.setDirty(false);
-											
+											xmlTreeDisplay.setQdmVariableDirty(false);
 											changeClause(cellTreeNode, selectedClauseName, selectedClauseUUID);
 											
 										} else if ("No".equals(button.getText())) {
@@ -378,13 +383,22 @@ public class XmlTreePresenter {
 		
 		Node node = PopulationWorkSpaceConstants.subTreeLookUpNode.get(selectedClauseName + "~" + selectedClauseUUID);
 		CellTreeNode subTreeCellTreeNode = XmlConversionlHelper.createCellTreeNode(node, selectedClauseName);
-		
+		//for getting Qdm Variable attribute value for the Subtree Node
+		Node qdmAttrNode = node.getAttributes().getNamedItem("qdmVariable");
+		if(qdmAttrNode!=null && qdmAttrNode.getNodeValue().equals("true")){
+		xmlTreeDisplay.getIncludeQdmVaribale().setValue(true);
+		} else {
+			xmlTreeDisplay.getIncludeQdmVaribale().setValue(false);
+		}
+		xmlTreeDisplay.setQdmVariable(xmlTreeDisplay.getIncludeQdmVaribale().getValue().toString());
 		cellTreeNode.appendChild(subTreeCellTreeNode.getChilds().get(0));
 		
 		xmlTreeDisplay.getXmlTree().getRootTreeNode().setChildOpen(0, false);
 		xmlTreeDisplay.getXmlTree().getRootTreeNode().setChildOpen(0, true);
 		//the statement below will cause a programattic equivalent of clicking the Expand tree button.
 		xmlTreeDisplay.getButtonExpandClauseWorkSpace().click();
+		xmlTreeDisplay.getIncludeQdmVaribale().setVisible(true);
+
 	}
 	
 	/**
@@ -467,6 +481,7 @@ public class XmlTreePresenter {
 							.getXmlTree().getRootTreeNode().getChildValue(0));
 					if (cellTreeNode.hasChildren()) {
 						xmlTreeDisplay.setDirty(false);
+						xmlTreeDisplay.setQdmVariableDirty(false);
 						MatContext.get().recordTransactionEvent(
 								MatContext.get().getCurrentMeasureId(), null,
 								"CLAUSEWORKSPACE_TAB_SAVE_EVENT",
@@ -474,6 +489,10 @@ public class XmlTreePresenter {
 								ConstantMessages.DB_LOG);
 						final String nodeUUID = cellTreeNode.getChilds().get(0).getUUID();
 						final String nodeName = cellTreeNode.getChilds().get(0).getName();
+						//for adding qdmVariable as an attribute
+						String isQdmVariable = xmlTreeDisplay.getIncludeQdmVaribale().getValue().toString();
+						CellTreeNode subTreeNode = cellTreeNode.getChilds().get(0);
+						subTreeNode.setExtraInformation("qdmVariable", isQdmVariable);		
 						String xml = XmlConversionlHelper.createXmlFromTree(cellTreeNode.getChilds().get(0));
 						
 						final MeasureXmlModel measureXmlModel = createMeasureXmlModel(xml);
@@ -574,6 +593,25 @@ public class XmlTreePresenter {
 						MatContext.get().getMessageDelegate().getCOMMENT_ADDED_SUCCESSFULLY());
 			}
 		});
+		
+		xmlTreeDisplay.getIncludeQdmVaribale().addValueChangeHandler(new ValueChangeHandler<Boolean>() {
+			
+			@Override
+			public void onValueChange(ValueChangeEvent<Boolean> event) {
+						
+				final CellTreeNode cellTreeNode = (CellTreeNode) (xmlTreeDisplay
+						.getXmlTree().getRootTreeNode().getChildValue(0));
+				CellTreeNode subTreeNode = cellTreeNode.getChilds().get(0);
+				if(!xmlTreeDisplay.isQdmVariable().equals(event.getValue().toString())){			    
+					xmlTreeDisplay.setQdmVariableDirty(true);
+				} else {
+					xmlTreeDisplay.setQdmVariableDirty(false);
+				}
+				subTreeNode.setExtraInformation("qdmVariable", event.getValue().toString());
+			    
+				
+			}
+		});
 	}
 	/**
 	 * Method to Reterive SubTree Node and corresponding Node Tree and add to SubTreeLookUpNode map.
@@ -589,11 +627,15 @@ public class XmlTreePresenter {
 		}
 		Document document = XMLParser.parse(xml);
 		NodeList nodeList = document.getElementsByTagName("subTree");
-		if ((null != nodeList) && (nodeList.getLength() > 0)) {
+		if ((nodeList != null) && (nodeList.getLength() > 0)) {
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				NamedNodeMap namedNodeMap = nodeList.item(i).getAttributes();
 				String name = namedNodeMap.getNamedItem("displayName").getNodeValue();
 				String uuid = namedNodeMap.getNamedItem("uuid").getNodeValue();
+				String subTreeLookUpNode = PopulationWorkSpaceConstants.subTreeLookUpName.get(uuid)+"~"+uuid;
+				if(PopulationWorkSpaceConstants.subTreeLookUpNode.containsKey(subTreeLookUpNode)){
+					PopulationWorkSpaceConstants.subTreeLookUpNode.remove(subTreeLookUpNode);
+				}
 				PopulationWorkSpaceConstants.subTreeLookUpNode.put(name + "~" + uuid, nodeList.item(i));
 				PopulationWorkSpaceConstants.subTreeLookUpName.put(uuid, name);
 			}
@@ -702,7 +744,7 @@ public class XmlTreePresenter {
 					String  result = xmlTreeDisplay
 							.validateCellTreeNodes(xmlTreeDisplay.getXmlTree()
 									.getRootTreeNode());
-					if (result!=null && result.equalsIgnoreCase("inValidAtOtherNode")) {
+					/*if (result!=null && result.equalsIgnoreCase("inValidAtOtherNode")) {
 						xmlTreeDisplay.closeNodes(xmlTreeDisplay.getXmlTree()
 								.getRootTreeNode());
 						xmlTreeDisplay.openAllNodes(xmlTreeDisplay.getXmlTree()
@@ -726,7 +768,7 @@ public class XmlTreePresenter {
 								MatContext.get().getMessageDelegate().
 								getCLAUSE_WORK_SPACE_VALIDATION_SUCCESS());
 						
-					}
+					}*/
 					
 					
 				}
@@ -742,7 +784,7 @@ public class XmlTreePresenter {
 			@Override
 			public void onClick(ClickEvent event) {
 				xmlTreeDisplay.clearMessages();
-				if (xmlTreeDisplay.isDirty()) {
+				if (xmlTreeDisplay.isDirty() || xmlTreeDisplay.isQdmVariableDirty()) {
 				//	isUnsavedData = true;
 					showErrorMessage(xmlTreeDisplay.getErrorMessageDisplay());
 					xmlTreeDisplay.getErrorMessageDisplay().getButtons().get(0).setFocus(true);
@@ -752,8 +794,10 @@ public class XmlTreePresenter {
 				} else {
 				//	isUnsavedData = false;
 					xmlTreeDisplay.setDirty(false);
+					xmlTreeDisplay.setQdmVariableDirty(false);
 					panel.clear();
 					loadClauseWorkSpaceView(panel);
+					xmlTreeDisplay.getIncludeQdmVaribale().setVisible(false);
 				}
 			}
 		});
@@ -792,6 +836,7 @@ public class XmlTreePresenter {
 				if ("Yes".equals(button.getText())) {
 					saveErrorMessage.clear();
 					xmlTreeDisplay.setDirty(false);
+					xmlTreeDisplay.setQdmVariableDirty(false);
 					panel.clear();
 					loadClauseWorkSpaceView(panel);
 				} else if ("No".equals(button.getText())) {

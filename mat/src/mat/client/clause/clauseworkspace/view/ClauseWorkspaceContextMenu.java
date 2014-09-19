@@ -383,6 +383,14 @@ public class ClauseWorkspaceContextMenu {
 			}
 			copyMenu.setEnabled(false);
 		}
+		//Allow paste option
+		if ((xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.SUBTREE_NODE)) {
+			// Only One child is allow in SubTree Root Node.
+			if (!xmlTreeDisplay.getSelectedNode().hasChildren() && xmlTreeDisplay.getCopiedNode() != null) {
+				pasteMenu.setEnabled(true);
+			}
+			
+		}
 		//can paste LOGOP,RELOP, QDM, TIMING & FUNCS
 		if ((xmlTreeDisplay.getCopiedNode() != null)
 				&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.SUBTREE_NODE)
@@ -511,6 +519,12 @@ public class ClauseWorkspaceContextMenu {
 					addMenuLHS.setEnabled(false);
 				}
 			}
+			if(xmlTreeDisplay.getCopiedNode() != null
+					&& xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE &&
+					xmlTreeDisplay.getSelectedNode().getChilds() != null && xmlTreeDisplay.getSelectedNode().getChilds().size() >=1)
+				pasteMenu.setEnabled(true);
+			else
+				pasteMenu.setEnabled(false);
 			popupMenuBar.addItem(addMenuLHS);
 			popupMenuBar.addItem(addMenuRHS);
 			
@@ -535,7 +549,8 @@ public class ClauseWorkspaceContextMenu {
 		copyMenu.setEnabled(true);
 		//can paste LOGOP, RELOP, QDM, TIMING & FUNCS
 		if ((xmlTreeDisplay.getCopiedNode() != null)
-				&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE)) {
+				&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE) && ! xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ALL") && 
+				! xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ANY")) {
 			pasteMenu.setEnabled(true);
 		}
 		cutMenu.setEnabled(true);
@@ -671,8 +686,8 @@ public class ClauseWorkspaceContextMenu {
 				xmlTreeDisplay.getSelectedNode().getParent().getLabel().equalsIgnoreCase("SATISFIES ANY"))){
 			deleteMenu.setEnabled(checkIfTopChildNode());
 			cutMenu.setEnabled(checkIfTopChildNode());
-			if( xmlTreeDisplay.getSelectedNode().getNodeType() != CellTreeNode.ELEMENT_REF_NODE)
-				pasteMenu.setEnabled(checkIfTopChildNode());
+//			if( xmlTreeDisplay.getSelectedNode().getNodeType() != CellTreeNode.ELEMENT_REF_NODE)
+//				pasteMenu.setEnabled(checkIfTopChildNode());
 //			if( xmlTreeDisplay.getSelectedNode().getNodeType() == CellTreeNode.FUNCTIONS_NODE){
 //				if(xmlTreeDisplay.getSelectedNode().getParent().getChilds() != null && xmlTreeDisplay.getSelectedNode().getParent().getChilds().size() > 1)
 //					pasteMenu.setEnabled(true);
@@ -682,18 +697,7 @@ public class ClauseWorkspaceContextMenu {
 			moveUpMenu.setEnabled(checkIfTopChildNodeForSatisfy());
 			moveDownMenu.setEnabled(checkIfLastChildNodeForSatisfy());
 		}
-		if(xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ALL") || 
-				xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ANY")){
-			
-			
-			if(xmlTreeDisplay.getCopiedNode() != null
-					&& xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE &&
-					xmlTreeDisplay.getSelectedNode().getChilds() != null && xmlTreeDisplay.getSelectedNode().getChilds().size() >=1)
-				pasteMenu.setEnabled(true);
-			else
-				pasteMenu.setEnabled(false);
-			
-		}
+		
 	}
 	/**
 	 * Timing Node Pop Up Menu Items.
@@ -956,7 +960,11 @@ public class ClauseWorkspaceContextMenu {
 		String rootNodeName = xmlTreeDisplay.getCopiedNode().getName();
 		int seqNumber = getNextHighestSequence(xmlTreeDisplay.getSelectedNode());
 		String name = rootNodeName.substring(0, rootNodeName.lastIndexOf(" ")) + " " + seqNumber;
-		CellTreeNode pasteNode = xmlTreeDisplay.getCopiedNode().cloneNode();
+		// In Case of Stratification RootNode UUID is Duplicating itself. So we are
+		// Creating new UUID for Every new Copy n Paste of Root Node
+		CellTreeNode rootNode = xmlTreeDisplay.getCopiedNode();
+		rootNode.setUUID(UUIDUtilClient.uuid());
+		CellTreeNode pasteNode = rootNode.cloneNode();
 		pasteNode.setName(name);
 		pasteNode.setLabel(name);
 		xmlTreeDisplay.getSelectedNode().appendChild(pasteNode);
