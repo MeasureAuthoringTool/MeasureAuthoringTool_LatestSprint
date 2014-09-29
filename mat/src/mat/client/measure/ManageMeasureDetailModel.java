@@ -2,6 +2,7 @@ package mat.client.measure;
 
 import java.util.List;
 import mat.model.Author;
+import mat.model.MeasureSteward;
 import mat.model.MeasureType;
 import mat.model.QualityDataSetDTO;
 import mat.shared.model.util.MeasureDetailsUtil;
@@ -53,7 +54,7 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	
 	//US 413. Support Steward Other
 	/** The meas steward other. */
-	private String measStewardOther;
+	//private String measStewardOther;
 	
 	/** The endorse by nqf. */
 	private Boolean endorseByNQF;
@@ -96,6 +97,9 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	
 	/** The author list. */
 	private List<Author> authorSelectedList;
+	
+	/** The steward selected list. */
+	private List<MeasureSteward> stewardSelectedList;
 	
 	/** The measure type list. */
 	private List<MeasureType> measureTypeSelectedList;
@@ -174,7 +178,10 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	private String qltyMeasureSetUuid;
 	
 	/** The steward uuid. */
-	private String stewardUuid;
+	private String stewardId;
+	
+	/** The steward value. */
+	//private String stewardValue;
 	
 	/** The scoring abbr. */
 	private String scoringAbbr;
@@ -758,9 +765,9 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	 * 
 	 * @return the meas steward other
 	 */
-	public String getMeasStewardOther() {
+	/*public String getMeasStewardOther() {
 		return measStewardOther;
-	}
+	}*/
 	
 	/**
 	 * Sets the meas steward other.
@@ -768,9 +775,9 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	 * @param measStewardOther
 	 *            the new meas steward other
 	 */
-	public void setMeasStewardOther(String measStewardOther) {
+	/*public void setMeasStewardOther(String measStewardOther) {
 		this.measStewardOther = doTrim(measStewardOther);
-	}
+	}*/
 	
 	/**
 	 * Do trim.
@@ -1120,9 +1127,9 @@ public class ManageMeasureDetailModel implements IsSerializable {
 				+ ((measScoring == null) ? 0 : measScoring.hashCode());
 		result = (prime * result)
 				+ ((measSteward == null) ? 0 : measSteward.hashCode());
-		result = (prime
+		/*result = (prime
 				* result)
-				+ ((measStewardOther == null) ? 0 : measStewardOther.hashCode());
+				+ ((measStewardOther == null) ? 0 : measStewardOther.hashCode());*/
 		result = (prime * result)
 				+ ((measToPeriod == null) ? 0 : measToPeriod.hashCode());
 		result = (prime * result)
@@ -1310,7 +1317,7 @@ public class ManageMeasureDetailModel implements IsSerializable {
 		} else if (!trimToNull(measFromPeriod).equals(trimToNull(other.measFromPeriod))) {
 			return false;
 		}
-		if (trimToNull(measSteward) == null) {
+		/*if (trimToNull(measSteward) == null) {
 			if (trimToNull(other.measSteward) != null) {
 				return false;
 			}
@@ -1323,6 +1330,13 @@ public class ManageMeasureDetailModel implements IsSerializable {
 				return false;
 			}
 		}else if (!trimToNull(measSteward).equals(trimToNull(other.measSteward))){
+			return false;
+		}*/
+		if (trimToNull(stewardId) == null) {
+			if (trimToNull(other.stewardId) != null) {
+				return false;
+			}
+		}else if (!trimToNull(stewardId).equals(trimToNull(other.stewardId))) {
 			return false;
 		}
 		if (trimToNull(measToPeriod) == null) {
@@ -1661,10 +1675,10 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	 * @return the steward
 	 */
 	public String getSteward() {
-		if (this.measSteward != null && this.measSteward.equalsIgnoreCase("Other")) {
+		if ((measSteward != null) && measSteward.equalsIgnoreCase("Other")) {
 			return null;
 		}
-		return this.measSteward;
+		return measSteward;
 	}
 	
 	/**
@@ -1672,18 +1686,17 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	 * 
 	 * @return the stewardUuid
 	 */
-	public String getStewardUuid() {
-		return stewardUuid;
+	public String getStewardId() {
+		return stewardId;
 	}
 	
 	/**
 	 * Sets the steward uuid.
-	 * 
-	 * @param stewardUuid
-	 *            the stewardUuid to set
+	 *
+	 * @param stewardId the new steward id
 	 */
-	public void setStewardUuid(String stewardUuid) {
-		this.stewardUuid = stewardUuid;
+	public void setStewardId(String stewardId) {
+		this.stewardId = stewardId;
 	}
 	
 	/**
@@ -1762,53 +1775,53 @@ public class ManageMeasureDetailModel implements IsSerializable {
 		this.endorsementId = endorsementId;
 	}
 	
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
 	@Override
 	public String toString() {
 		return "ManageMeasureDetailModel [id=" + id + ", name=" + name
 				+ ", shortName=" + shortName + ", versionNumber="
-				+ versionNumber + ", measureId=" + measureId + ", groupName="
-				+ groupName + ", groupId=" + groupId + ", finalizedDate="
-				+ finalizedDate + ", measFromPeriod=" + measFromPeriod
-				+ ", measToPeriod=" + measToPeriod + ", measScoring="
-				+ measScoring + ", measSteward=" + measSteward
-				+ ", measStewardOther=" + measStewardOther + ", endorseByNQF="
-				+ endorseByNQF
-				/*+ endorseByNQF + ", measureStatus=" + measureStatus*/
-				+ ", nqfId=" + nqfId + ", description=" + description
-				+ ", copyright=" + copyright + ", clinicalRecomms="
-				+ clinicalRecomms + ", definitions=" + definitions
-				+ ", guidance=" + guidance + ", transmissionFormat="
-				+ transmissionFormat + ", rationale=" + rationale
-				+ ", improvNotations=" + improvNotations + ", stratification="
-				+ stratification + ", referencesList=" + referencesList
-				+ ", authorSelectedList=" + authorSelectedList + ", measureTypeList="
-				+ measureTypeSelectedList + ", qdsSelectedList=" + qdsSelectedList
-				+",componentMeasuresSelectedList=" +componentMeasuresSelectedList
-				+ ", toCompareAuthor=" + toCompareAuthor
-				+ ", toCompareMeasure=" + toCompareMeasure
+				+ versionNumber + ", revisionNumber=" + revisionNumber
+				+ ", measureId=" + measureId + ", groupName=" + groupName
+				+ ", groupId=" + groupId + ", finalizedDate=" + finalizedDate
+				+ ", measFromPeriod=" + measFromPeriod + ", measToPeriod="
+				+ measToPeriod + ", measScoring=" + measScoring
+				+ ", measSteward=" + measSteward + ", endorseByNQF="
+				+ endorseByNQF + ", nqfId=" + nqfId + ", description="
+				+ description + ", copyright=" + copyright
+				+ ", clinicalRecomms=" + clinicalRecomms + ", definitions="
+				+ definitions + ", guidance=" + guidance
+				+ ", transmissionFormat=" + transmissionFormat + ", rationale="
+				+ rationale + ", improvNotations=" + improvNotations
+				+ ", stratification=" + stratification + ", referencesList="
+				+ referencesList + ", authorSelectedList=" + authorSelectedList
+				+ ", stewardSelectedList=" + stewardSelectedList
+				+ ", measureTypeSelectedList=" + measureTypeSelectedList
+				+ ", qdsSelectedList=" + qdsSelectedList
+				+ ", componentMeasuresSelectedList="
+				+ componentMeasuresSelectedList + ", toCompareAuthor="
+				+ toCompareAuthor + ", toCompareMeasure=" + toCompareMeasure
 				+ ", toCompareItemCount=" + toCompareItemCount
-				+ ", toCompareComponentMeasures =" + toCompareComponentMeasures
-				+", draft=" + draft
-				+ ", measureSetId=" + measureSetId + ", valueSetDate="
-				+ valueSetDate + ", supplementalData=" + supplementalData
-				+ ", disclaimer=" + disclaimer + ", riskAdjustment="
-				+ riskAdjustment + ", rateAggregation=" + rateAggregation
-				+ ", initialPop=" + initialPop + ", denominator="
-				+ denominator + ", denominatorExclusions="
+				+ ", toCompareComponentMeasures=" + toCompareComponentMeasures
+				+ ", draft=" + draft + ", measureSetId=" + measureSetId
+				+ ", valueSetDate=" + valueSetDate + ", supplementalData="
+				+ supplementalData + ", disclaimer=" + disclaimer
+				+ ", riskAdjustment=" + riskAdjustment + ", rateAggregation="
+				+ rateAggregation + ", initialPop=" + initialPop
+				+ ", denominator=" + denominator + ", denominatorExclusions="
 				+ denominatorExclusions + ", numerator=" + numerator
 				+ ", numeratorExclusions=" + numeratorExclusions
 				+ ", denominatorExceptions=" + denominatorExceptions
 				+ ", measurePopulation=" + measurePopulation
 				+ ", measureObservations=" + measureObservations
-				+ ", eMeasureId=" + eMeasureId + ", versionNumberInt="
-				+ qltyMeasureSetUuid + ", stewardUuid=" + stewardUuid
+				+ ", eMeasureId=" + eMeasureId + ", orgVersionNumber="
+				+ orgVersionNumber + ", qltyMeasureSetUuid="
+				+ qltyMeasureSetUuid + ", stewardId=" + stewardId
 				+ ", scoringAbbr=" + scoringAbbr + ", periodModel="
-				+ (periodModel != null ? periodModel.toString() : null) + ", endorsement=" + endorsement
-				+ ", endorsementId=" + endorsementId + ", nqfModel="
-				+ (nqfModel != null ? nqfModel.toString() : null) +"]";
+				+ periodModel + ", endorsement=" + endorsement
+				+ ", endorsementId=" + endorsementId + ", nqfModel=" + nqfModel
+				+ ", isDeleted=" + isDeleted + ", measureOwnerId="
+				+ measureOwnerId + ", measurePopulationExclusions="
+				+ measurePopulationExclusions + ", isEditable=" + isEditable
+				+ "]";
 	}
 	
 	/**
@@ -1941,5 +1954,42 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	public void setEditable(boolean isEditable) {
 		this.isEditable = isEditable;
 	}
+	
+	/**
+	 * Gets the steward selected list.
+	 *
+	 * @return the steward selected list
+	 */
+	public List<MeasureSteward> getStewardSelectedList() {
+		return stewardSelectedList;
+	}
+	
+	/**
+	 * Sets the steward selected list.
+	 *
+	 * @param steSelectedList the new steward selected list
+	 */
+	public void setStewardSelectedList(List<MeasureSteward> steSelectedList) {
+		stewardSelectedList =steSelectedList;
+	}
+	
+	/**
+	 * Gets the steward value.
+	 *
+	 * @return the steward value
+	 */
+	/*public String getStewardValue() {
+		return stewardValue;
+	}*/
+	
+	/**
+	 * Sets the steward value.
+	 *
+	 * @param stewardValue the new steward value
+	 */
+	/*public void setStewardValue(String stewardValue) {
+		this.stewardValue = stewardValue;
+	}*/
+	
 	
 }

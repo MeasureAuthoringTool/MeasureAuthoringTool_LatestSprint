@@ -2,6 +2,7 @@ package mat.client.measure.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import mat.client.Mat;
 import mat.client.MatPresenter;
 import mat.client.MeasureComposerPresenter;
@@ -22,28 +23,26 @@ import mat.client.shared.DateBoxWithCalendar;
 import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.ErrorMessageDisplayInterface;
 import mat.client.shared.HasVisible;
-import mat.client.shared.ListBoxMVP;
 import mat.client.shared.MatContext;
 import mat.client.shared.MeasureSearchFilterWidget;
 import mat.client.shared.MessageDelegate;
 import mat.client.shared.PrimaryButton;
 import mat.client.shared.ReadOnlyHelper;
 import mat.client.shared.SpacerWidget;
-import mat.client.shared.SuccessMessageDisplay;
 import mat.client.shared.SuccessMessageDisplayInterface;
 import mat.model.Author;
+import mat.model.MeasureSteward;
 import mat.model.MeasureType;
+import mat.model.Organization;
 import mat.model.QualityDataSetDTO;
 import mat.shared.ConstantMessages;
-import mat.shared.UUIDUtilClient;
+
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
 import com.google.gwt.event.dom.client.HasKeyDownHandlers;
 import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
-import com.google.gwt.event.logical.shared.ValueChangeEvent;
-import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.event.shared.HandlerManager;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -91,13 +90,6 @@ public class MetaDataPresenter  implements MatPresenter {
 		public Label getMeasureScoring();
 		
 		/**
-		 * Gets the edits the authors button.
-		 * 
-		 * @return the edits the authors button
-		 */
-		public HasClickHandlers getEditAuthorsButton();
-		
-		/**
 		 * Gets the edits the measure type button.
 		 * 
 		 * @return the edits the measure type button
@@ -117,7 +109,7 @@ public class MetaDataPresenter  implements MatPresenter {
 		 * @return the version number
 		 */
 		public Label getVersionNumber();
-		//public HasValue<String> getMeasureId();
+	
 		/**
 		 * Gets the sets the name.
 		 * 
@@ -180,43 +172,6 @@ public class MetaDataPresenter  implements MatPresenter {
 		 * @return the measure type
 		 */
 		public String getMeasureType();
-		
-		/**
-		 * Gets the measure steward.
-		 * 
-		 * @return the measure steward
-		 */
-		public ListBoxMVP getMeasureSteward();
-		
-		//US 413. Introduced Measure Steward Other option.
-		/**
-		 * Gets the measure steward list box.
-		 * 
-		 * @return the measure steward list box
-		 */
-		public HasValue<String> getMeasureStewardListBox();
-		
-		/**
-		 * Gets the measure steward value.
-		 * 
-		 * @return the measure steward value
-		 */
-		public String getMeasureStewardValue();
-		
-		/**
-		 * Gets the measure steward other.
-		 * 
-		 * @return the measure steward other
-		 */
-		public TextBox getMeasureStewardOther();
-		
-		/**
-		 * Gets the measure steward other value.
-		 * 
-		 * @return the measure steward other value
-		 */
-		public String getMeasureStewardOtherValue();
-		
 		/**
 		 * Gets the endorseby nqf.
 		 * 
@@ -491,17 +446,6 @@ public class MetaDataPresenter  implements MatPresenter {
 		 */
 		public HasClickHandlers getSaveButton();
 		
-		//US 413. Interfaces to show or clear out Steward Other text boxes.
-		/**
-		 * Show other text box.
-		 */
-		public void showOtherTextBox();
-		
-		/**
-		 * Hide other text box.
-		 */
-		public void hideOtherTextBox();
-		
 		/**
 		 * Gets the save btn.
 		 * 
@@ -667,9 +611,41 @@ public class MetaDataPresenter  implements MatPresenter {
 		/**
 		 * Sets the measure steward options.
 		 *
-		 * @param itemList the new measure steward options
+		 * @param result the result
+		 * @param editable the editable
 		 */
-		void setMeasureStewardOptions(List<? extends HasListBox> itemList);
+		//void setMeasureStewardOptions(List<? extends HasListBox> itemList);
+
+		public void buildStewardCellTable(List<MeasureSteward> result,
+				boolean editable);
+
+		/**
+		 * Sets the steward id.
+		 *
+		 * @param stewardId the new steward id
+		 */
+		public void setStewardId(String stewardId);
+
+		/**
+		 * Gets the steward id.
+		 *
+		 * @return the steward id
+		 */
+		String getStewardId();
+		
+		/**
+		 * Gets the steward value.
+		 *
+		 * @return the steward value
+		 */
+		String getStewardValue();
+		
+		/**
+		 * Sets the steward value.
+		 *
+		 * @param stewardValue the new steward value
+		 */
+		public void setStewardValue(String stewardValue);
 	}
 	
 	/**
@@ -683,28 +659,28 @@ public class MetaDataPresenter  implements MatPresenter {
 		 *
 		 * @return the adds the to measure developer list btn
 		 */
-		public Button getAddToMeasureDeveloperListBtn();
+		//public Button getAddToMeasureDeveloperListBtn();
 		
 		/**
 		 * Gets the adds the button.
 		 *
 		 * @return the adds the button
 		 */
-		public Button getAddButton();
+		//public Button getAddButton();
 		
 		/**
 		 * Gets the measure dev input.
 		 *
 		 * @return the measure dev input
 		 */
-		TextBox getMeasureDevInput();
+		//TextBox getMeasureDevInput();
 		
 		/**
 		 * Sets the measure dev input.
 		 *
 		 * @param measureDevInput the new measure dev input
 		 */
-		void setMeasureDevInput(TextBox measureDevInput);
+		//void setMeasureDevInput(TextBox measureDevInput);
 		
 		/**
 		 * Gets the author selected list.
@@ -742,7 +718,7 @@ public class MetaDataPresenter  implements MatPresenter {
 		 *
 		 * @return the adds the edit cancel button
 		 */
-		Button getAddEditCancelButton();
+		//Button getAddEditCancelButton();
 		
 		/**
 		 * As widget.
@@ -756,14 +732,14 @@ public class MetaDataPresenter  implements MatPresenter {
 		 *
 		 * @return the success message display
 		 */
-		SuccessMessageDisplay getSuccessMessageDisplay();
+		//SuccessMessageDisplay getSuccessMessageDisplay();
 		
 		/**
 		 * Gets the return button.
 		 *
 		 * @return the return button
 		 */
-		HasClickHandlers getReturnButton();
+		//HasClickHandlers getReturnButton();
 	
 	}
 	
@@ -876,7 +852,7 @@ public class MetaDataPresenter  implements MatPresenter {
 	private MetaDataDetailDisplay metaDataDisplay;
 	
 	/** The add edit authors display. */
-	private AddEditAuthorsDisplay addEditAuthorsDisplay;
+	//private AddEditAuthorsDisplay addEditAuthorsDisplay;
 	
 	/** The add edit component measures display. */
 	private AddEditComponentMeasuresDisplay addEditComponentMeasuresDisplay;
@@ -888,7 +864,7 @@ public class MetaDataPresenter  implements MatPresenter {
 	private ManageAuthorsModel currentAuthorsList;
 	
 	/** The current measure type list. */
-	private ManageMeasureTypeModel currentMeasureTypeList;
+	//private ManageMeasureTypeModel currentMeasureTypeList;
 	
 	/** The author list. */
 	private List<Author> authorList = new ArrayList<Author>();
@@ -898,6 +874,12 @@ public class MetaDataPresenter  implements MatPresenter {
 	
 	/** The db author list. */
 	private List<Author> dbAuthorList = new ArrayList<Author>();
+	
+	/** The db steward list. */
+	private List<MeasureSteward> dbStewardList = new ArrayList<MeasureSteward>();
+	
+	/** The steward list. */
+	private List<MeasureSteward> stewardList = new ArrayList<MeasureSteward>();
 	
 	/** The db measure type list. */
 	private List<MeasureType> dbMeasureTypeList = new ArrayList<MeasureType>();
@@ -966,25 +948,26 @@ public class MetaDataPresenter  implements MatPresenter {
 	 * Instantiates a new meta data presenter.
 	 *
 	 * @param mDisplay the m display
-	 * @param aDisplay the a display
 	 * @param cmDisplay the cm display
 	 * @param pcButtons the pc buttons
 	 * @param lp the lp
 	 */
-	public MetaDataPresenter(MetaDataDetailDisplay mDisplay, AddEditAuthorsDisplay aDisplay, AddEditComponentMeasuresView cmDisplay, HasVisible pcButtons, ListBoxCodeProvider lp) {
+	public MetaDataPresenter(MetaDataDetailDisplay mDisplay, AddEditComponentMeasuresView cmDisplay, HasVisible pcButtons, ListBoxCodeProvider lp) {
 		previousContinueButtons = pcButtons;
 		this.metaDataDisplay = mDisplay;
-		this.addEditAuthorsDisplay = aDisplay;
+		//MAT-4898
+		//this.addEditAuthorsDisplay = aDisplay;
 		this.addEditComponentMeasuresDisplay = cmDisplay;
-		getMeasureStewardList(lp);
+		//getAllOrganizations();
+		//getMeasureStewardList(lp);
 		HandlerManager eventBus = MatContext.get().getEventBus();
-		metaDataDisplay.getEditAuthorsButton().addClickHandler(new ClickHandler() {
-			@Override
-			public void onClick(ClickEvent event) {
-				getMetaDataDisplay().getSaveErrorMsg().clear();
-				displayAddEditAuthors();
-			}
-		});
+		//metaDataDisplay.getEditAuthorsButton().addClickHandler(new ClickHandler() {
+			//@Override
+			//public void onClick(ClickEvent event) {
+				//getMetaDataDisplay().getSaveErrorMsg().clear();
+				//displayAddEditAuthors();
+			//}
+		//});
 		
 		metaDataDisplay.getAddEditComponentMeasures().addClickHandler(new ClickHandler() {
 			@Override
@@ -1010,14 +993,15 @@ public class MetaDataPresenter  implements MatPresenter {
 				});
 			}
 		});
-		addEditAuthorsDisplay.getAddEditCancelButton().addClickHandler(new ClickHandler() {
+		//MAT-4898
+		/*addEditAuthorsDisplay.getAddEditCancelButton().addClickHandler(new ClickHandler() {
 			
 			@Override
 			public void onClick(ClickEvent event) {
 				addEditAuthorsDisplay.getMeasureDevInput().setText("");
 				
 			}
-		});
+		});*/
 		/*addEditAuthorsDisplay.getCancelButton().addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(final ClickEvent event) {
@@ -1025,7 +1009,8 @@ public class MetaDataPresenter  implements MatPresenter {
 				//addEditAuthorsDisplay.hideTextBox();
 			}
 		});*/
-		addEditAuthorsDisplay.getReturnButton().addClickHandler(new ClickHandler() {
+		//MAT-4898
+		/*addEditAuthorsDisplay.getReturnButton().addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(final ClickEvent event) {
 				isSubView = false;
@@ -1033,7 +1018,7 @@ public class MetaDataPresenter  implements MatPresenter {
 				getMeasureDeveloperAuthors();
 				backToDetail();
 			}
-		});
+		});*/
 		
 		addEditComponentMeasuresDisplay.getReturnButton().addClickHandler(new ClickHandler() {
 			
@@ -1086,7 +1071,7 @@ public class MetaDataPresenter  implements MatPresenter {
 //			}
 //		});
 		//US 413. Added value change listener to show or clear out Steward Other text box based on the selection.
-		metaDataDisplay.getMeasureStewardListBox().addValueChangeHandler(new ValueChangeHandler<String>() {
+		/*metaDataDisplay.getMeasureStewardListBox().addValueChangeHandler(new ValueChangeHandler<String>() {
 			
 			@Override
 			public void onValueChange(ValueChangeEvent<String> event) {
@@ -1098,7 +1083,7 @@ public class MetaDataPresenter  implements MatPresenter {
 				}
 				
 			}
-		});
+		});*/
 		
 		metaDataDisplay.getSearchButton().addClickHandler(new ClickHandler() {
 			
@@ -1159,26 +1144,6 @@ public class MetaDataPresenter  implements MatPresenter {
 				metaDataDisplay.setComponentMeasureSelectedList(addEditComponentMeasuresDisplay.getComponentMeasuresList());
 			}
 		});
-		addEditAuthorsDisplay.getAddToMeasureDeveloperListBtn().addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				currentMeasureDetail.setAuthorSelectedList(addEditAuthorsDisplay.getAuthorSelectedList());
-				
-				metaDataDisplay.setAuthorsSelectedList(currentMeasureDetail.getAuthorSelectedList());
-				addEditAuthorsDisplay.getSuccessMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getMeasureDeveloperAddedSuccessfully());
-			}
-		});
-		addEditAuthorsDisplay.getAddButton().addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				String name = addEditAuthorsDisplay.getMeasureDevInput().getValue().trim();
-				if((name!=null) && !name.isEmpty()){
-					addToTheList(name);
-				}
-			}
-		});
 		addEditComponentMeasuresDisplay.getSearchButton().addClickHandler(new ClickHandler() {
 			
 			@Override
@@ -1189,77 +1154,6 @@ public class MetaDataPresenter  implements MatPresenter {
 		});
 		
 		emptyWidget.add(new Label("No Measure Selected"));
-	}
-	
-	/**
-	 * Gets the measure steward list.
-	 *
-	 * @param listBoxCodeProvider the list box code provider
-	 * @return the measure steward list
-	 */
-	private void getMeasureStewardList(ListBoxCodeProvider listBoxCodeProvider) {
-		listBoxCodeProvider.getStewardList(new AsyncCallback<List<? extends HasListBox>>() {
-
-			@Override
-			public void onFailure(Throwable caught) {
-				metaDataDisplay.getErrorMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-				MatContext.get().recordTransactionEvent(null, null, null, "Unhandled Exception: "+caught.getLocalizedMessage(), 0);
-			}
-
-			@Override
-			public void onSuccess(List<? extends HasListBox> result) {
-				metaDataDisplay.setMeasureStewardOptions(result);
-			}
-		});
-
-	}
-
-	/**
-	 * Adds the to the list.
-	 *
-	 * @param name the name
-	 */
-	protected void addToTheList(String name) {
-		final Author newListObject = new Author();
-		newListObject.setAuthorName(name);
-		newListObject.setOrgId(UUIDUtilClient.uuid());
-		addEditAuthorsDisplay.getListOfAllAuthor().add(newListObject);
-		addEditAuthorsDisplay.buildAuthorCellTable(addEditAuthorsDisplay.getListOfAllAuthor(), editable,
-				currentMeasureDetail.getAuthorSelectedList());
-		
-	}
-	
-	//TODO by Ravi
-	
-	/**
-	 * Gets the all add edit authors.
-	 *
-	 * @return the all add edit authors
-	 */
-	protected void getAllAddEditAuthors() {
-		service.getAllAddEditAuthors(new AsyncCallback<List<Author>>() {
-			
-			@Override
-			public void onSuccess(List<Author> authorList) {
-				List<String> orgIDList = new ArrayList<String>();
-				for(int j=0;j<authorList.size();j++){
-					orgIDList.add(authorList.get(j).getOrgId());
-				}
-				
-				for(int i=0;i<currentMeasureDetail.getAuthorSelectedList().size();i++){
-					if(!orgIDList.contains(currentMeasureDetail.getAuthorSelectedList().get(i).getOrgId())){
-						authorList.add(currentMeasureDetail.getAuthorSelectedList().get(i));
-					}
-				}
-				addEditAuthorsDisplay.buildAuthorCellTable(authorList, editable, currentMeasureDetail.getAuthorSelectedList());
-			}
-			
-			@Override
-			public void onFailure(Throwable caught) {
-				// TODO Auto-generated method stub
-			}
-		});
-		
 	}
 	
 	/**
@@ -1534,8 +1428,7 @@ public class MetaDataPresenter  implements MatPresenter {
 		metaDataDisplay.getMeasureScoring().setText(currentMeasureDetail.getMeasScoring());
 		metaDataDisplay.getClinicalRecommendation().setValue(currentMeasureDetail.getClinicalRecomms());
 		metaDataDisplay.getDefinitions().setValue(currentMeasureDetail.getDefinitions());
-		metaDataDisplay.getDescription().setValue(currentMeasureDetail.getDescription());
-		
+		metaDataDisplay.getDescription().setValue(currentMeasureDetail.getDescription());		
 		metaDataDisplay.getDisclaimer().setValue(currentMeasureDetail.getDisclaimer());
 		metaDataDisplay.getRiskAdjustment().setValue(currentMeasureDetail.getRiskAdjustment());
 		metaDataDisplay.getRateAggregation().setValue(currentMeasureDetail.getRateAggregation());
@@ -1564,28 +1457,19 @@ public class MetaDataPresenter  implements MatPresenter {
 		metaDataDisplay.getFinalizedDate().setText(currentMeasureDetail.getFinalizedDate());
 		metaDataDisplay.getMeasurementFromPeriodInputBox().setValue(currentMeasureDetail.getMeasFromPeriod());
 		metaDataDisplay.getMeasurementToPeriodInputBox().setValue(currentMeasureDetail.getMeasToPeriod());
-		metaDataDisplay.getVersionNumber().setText(currentMeasureDetail.getVersionNumber());
+		metaDataDisplay.getVersionNumber().setText(currentMeasureDetail.getVersionNumber());		
 		
-		//US 413. Populate Steward and Steward Other value if any.
-		String steward = currentMeasureDetail.getMeasSteward();
-		metaDataDisplay.getMeasureSteward().setValueMetadata(currentMeasureDetail.getMeasSteward());
-		if ((metaDataDisplay.getMeasureSteward().getSelectedIndex() == 0) && (steward != null) && !steward.equals("")) {
-			steward = "Other";
-			currentMeasureDetail.setMeasStewardOther(currentMeasureDetail.getMeasSteward());
-			metaDataDisplay.getMeasureSteward().setValueMetadata(steward);
-		}
-		boolean setSteward = (steward != null) && steward.equalsIgnoreCase("Other");
-		if (setSteward) {
-			metaDataDisplay.showOtherTextBox();
-			metaDataDisplay.getMeasureStewardOther().setValue(currentMeasureDetail.getMeasStewardOther());
-			
-		} else {
-			metaDataDisplay.hideOtherTextBox();
+		String stewardId = currentMeasureDetail.getStewardId();		
+		if(stewardId!=null){
+			metaDataDisplay.setStewardId(stewardId);
+		}else{
+			metaDataDisplay.setStewardId("");					
 		}
 		
 		metaDataDisplay.getRationale().setValue(currentMeasureDetail.getRationale());
 		metaDataDisplay.getStratification().setValue(currentMeasureDetail.getStratification());
-		metaDataDisplay.getRiskAdjustment().setValue(currentMeasureDetail.getRiskAdjustment());
+		metaDataDisplay.getRiskAdjustment().setValue(currentMeasureDetail.getRiskAdjustment());	
+		
 		//authorSelectedList
 		if (currentMeasureDetail.getAuthorSelectedList() != null) {
 			metaDataDisplay.setAuthorsSelectedList(currentMeasureDetail.getAuthorSelectedList());
@@ -1596,8 +1480,9 @@ public class MetaDataPresenter  implements MatPresenter {
 		}
 		dbAuthorList.clear();
 		dbAuthorList.addAll(currentMeasureDetail.getAuthorSelectedList());
-		getMeasureDeveloperAuthors();
+		getAllOrganizations();
 		authorList = currentMeasureDetail.getAuthorSelectedList();
+	
 		//measureTypeSelectList
 		if (currentMeasureDetail.getMeasureTypeSelectedList() != null) {
 			metaDataDisplay.setMeasureTypeSelectedList(currentMeasureDetail.getMeasureTypeSelectedList());
@@ -1651,22 +1536,43 @@ public class MetaDataPresenter  implements MatPresenter {
 			metaDataDisplay.getDeleteMeasure().setEnabled(true);
 		}
 		currentMeasureDetail.setEditable(editable);
-	}
+	}	
 	
+
 	/**
 	 * Gets the measure developer authors.
 	 *
 	 * @return the measure developer authors
 	 */
-	public void getMeasureDeveloperAuthors() {
-		if (currentMeasureDetail.getAuthorSelectedList() != null) {
+	public void getAllOrganizations() {
+		service.getAllOrganizations(new AsyncCallback<List<Organization>>() {
 			
-			metaDataDisplay.buildAuthorCellTable(currentMeasureDetail.getAuthorSelectedList(), editable);
-		} else {
-			List<Author> authorList = new ArrayList<Author>();
-			metaDataDisplay.buildAuthorCellTable(authorList, editable);
-			currentMeasureDetail.setAuthorSelectedList(authorList);
-		}
+			@Override
+			public void onSuccess(List<Organization> result) {
+				List<MeasureSteward> stewardList = new ArrayList<MeasureSteward>();
+				List<Author> authorList = new ArrayList<Author>();
+				for(Organization organization: result){
+					MeasureSteward steward = new MeasureSteward();
+					Author author = new Author();
+					steward.setOrgName(organization.getOrganizationName());
+					steward.setOrgOid(organization.getOrganizationOID());
+					steward.setId(Long.toString(organization.getId()));
+					author.setAuthorName(organization.getOrganizationName());
+					author.setOrgId(organization.getOrganizationOID());
+					author.setId(Long.toString(organization.getId()));
+					stewardList.add(steward);
+					authorList.add(author);
+				}
+				metaDataDisplay.buildStewardCellTable(stewardList, editable);
+				metaDataDisplay.buildAuthorCellTable(authorList, editable);	
+				
+			}
+			
+			@Override
+			public void onFailure(Throwable caught) {
+				// TODO Auto-generated method stub
+			}
+		});
 		
 	}
 	
@@ -1765,8 +1671,7 @@ public class MetaDataPresenter  implements MatPresenter {
 		currentMeasureDetail.setNumeratorExclusions(metaDataDisplay.getNumeratorExclusions().getValue());
 		currentMeasureDetail.setDenominatorExceptions(metaDataDisplay.getDenominatorExceptions().getValue());
 		currentMeasureDetail.setMeasurePopulation(metaDataDisplay.getMeasurePopulation().getValue());
-		currentMeasureDetail.setMeasureObservations(metaDataDisplay.getMeasureObservations().getValue());
-		
+		currentMeasureDetail.setMeasureObservations(metaDataDisplay.getMeasureObservations().getValue());			
 		currentMeasureDetail.setCopyright(metaDataDisplay.getCopyright().getValue());
 		currentMeasureDetail.setEndorseByNQF(metaDataDisplay.getEndorsebyNQF().getValue());
 		currentMeasureDetail.setGuidance(metaDataDisplay.getGuidance().getValue());
@@ -1774,19 +1679,13 @@ public class MetaDataPresenter  implements MatPresenter {
 		currentMeasureDetail.setImprovNotations(metaDataDisplay.getImprovementNotation().getValue());
 		currentMeasureDetail.setMeasFromPeriod(metaDataDisplay.getMeasurementFromPeriod());
 		
-		//US 413. Update Steward and Steward Other values from the UI.
-		String stewardValue = metaDataDisplay.getMeasureStewardValue();
-		if (nullCheck(stewardValue)) {
-			currentMeasureDetail.setMeasSteward(stewardValue);
-		} else {
-			currentMeasureDetail.setMeasSteward(null);
-		}
-		currentMeasureDetail.setMeasStewardOther(metaDataDisplay.getMeasureStewardOtherValue());
+		if(!metaDataDisplay.getStewardId().isEmpty()){
+			currentMeasureDetail.setStewardId(metaDataDisplay.getStewardId());	
+			currentMeasureDetail.setMeasSteward(metaDataDisplay.getStewardValue());
+		}		
+		
 		currentMeasureDetail.setMeasToPeriod(metaDataDisplay.getMeasurementToPeriod());
-		currentMeasureDetail.setSupplementalData(metaDataDisplay.getSupplementalData().getValue());
-		/*if (nullCheck(metaDataDisplay.getMeasureStatusValue())) {
-			currentMeasureDetail.setMeasureStatus(metaDataDisplay.getMeasureStatusValue());
-		}*/
+		currentMeasureDetail.setSupplementalData(metaDataDisplay.getSupplementalData().getValue());		
 		currentMeasureDetail.setRationale(metaDataDisplay.getRationale().getValue());
 		currentMeasureDetail.setReferencesList(metaDataDisplay.getReferenceValues());
 		currentMeasureDetail.setMeasureSetId(metaDataDisplay.geteMeasureIdentifier().getText());
@@ -1808,35 +1707,7 @@ public class MetaDataPresenter  implements MatPresenter {
 			currentMeasureDetail.seteMeasureId(new Integer(metaDataDisplay.getEmeasureId().getValue()));
 		}
 	}
-	
-	
-	
-	/**
-	 * Null check.
-	 * 
-	 * @param value
-	 *            the value
-	 * @return true, if successful
-	 */
-	private boolean nullCheck(String value) {
-		return  !value.equalsIgnoreCase("--Select--") && !value.equals("");
-	}
-	
-	
-	/**
-	 * Display add edit authors.
-	 */
-	private void displayAddEditAuthors() {
-		isSubView = true;
-		//addEditAuthorsDisplay.setReturnToLink("Return to Previous");
-		currentAuthorsList = new ManageAuthorsModel(currentMeasureDetail.getAuthorSelectedList());
-		//currentAuthorsList.setPageSize(SearchView.PAGE_SIZE_ALL);
-		getAllAddEditAuthors();
-		panel.clear();
-		panel.add(addEditAuthorsDisplay.asWidget());
-		previousContinueButtons.setVisible(false);
-		Mat.focusSkipLists("MeasureComposer");
-	}
+		
 	/**
 	 * Display add edit component measures.
 	 */
@@ -1872,7 +1743,7 @@ public class MetaDataPresenter  implements MatPresenter {
 				isMeasureDetailsLoaded = false;
 			}
 		}
-		getAppliedQDMList(true);
+		getAppliedQDMList(true);	
 		getAllMeasureTypes();
 		MeasureComposerPresenter.setSubSkipEmbeddedLink("MetaDataView.containerPanel");
 		Mat.focusSkipLists("MeasureComposer");
@@ -2147,25 +2018,6 @@ public class MetaDataPresenter  implements MatPresenter {
 	 */
 	public void setFocusForSave() {
 		getMetaDataDisplay().getSaveBtn().setFocus(true);
-	}
-	
-	/**
-	 * Gets the adds the edit authors display.
-	 * 
-	 * @return the addEditAuthorsDisplay
-	 */
-	public AddEditAuthorsDisplay getAddEditAuthorsDisplay() {
-		return addEditAuthorsDisplay;
-	}
-	
-	/**
-	 * Sets the adds the edit authors display.
-	 * 
-	 * @param addEditAuthorsDisplay
-	 *            the addEditAuthorsDisplay to set
-	 */
-	public void setAddEditAuthorsDisplay(AddEditAuthorsDisplay addEditAuthorsDisplay) {
-		this.addEditAuthorsDisplay = addEditAuthorsDisplay;
 	}
 	
 	/**

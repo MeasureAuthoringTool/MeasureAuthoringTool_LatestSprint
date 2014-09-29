@@ -47,6 +47,7 @@ import mat.dao.AuthorDAO;
 import mat.dao.DataTypeDAO;
 import mat.dao.MeasureNotesDAO;
 import mat.dao.MeasureTypeDAO;
+import mat.dao.OrganizationDAO;
 import mat.dao.RecentMSRActivityLogDAO;
 import mat.dao.clause.MeasureDAO;
 import mat.dao.clause.MeasureXMLDAO;
@@ -57,7 +58,9 @@ import mat.model.DataType;
 import mat.model.LockedUserInfo;
 import mat.model.MatValueSet;
 import mat.model.MeasureNotes;
+import mat.model.MeasureSteward;
 import mat.model.MeasureType;
+import mat.model.Organization;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
@@ -180,6 +183,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	@Autowired
 	private OperatorDAO operatorDAO;
 	
+	@Autowired
+	private OrganizationDAO organizationDAO;
 	/** The x path. */
 	javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
 	
@@ -941,7 +946,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		detail.setOwnerLastName(user.getLastName());
 		detail.setOwnerEmailAddress(user.getEmailAddress());
 		detail.setDraft(dto.isDraft());
-		String formattedVersion = MeasureUtility.getVersionText(dto.getVersion(), dto.isDraft());
+		String formattedVersion = MeasureUtility.getVersionTextWithRevisionNumber(dto.getVersion(), dto.getRevisionNumber(), dto.isDraft());
 		detail.setVersion(formattedVersion);
 		detail.setFinalizedDate(dto.getFinalizedDate());
 		detail.setMeasureSetId(dto.getMeasureSetId());
@@ -1149,7 +1154,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					.after(getFormattedReleaseDate(releaseDate))
 					|| measure.getExportedDate().equals(getFormattedReleaseDate(releaseDate))));
 			/*detail.setStatus(measure.getMeasureStatus());*/
-			String formattedVersion = MeasureUtility.getVersionText(measure.getVersion(),
+			String formattedVersion = MeasureUtility.getVersionTextWithRevisionNumber(measure.getVersion(), measure.getRevisionNumber(),
 					measure.isDraft());
 			detail.setVersion(formattedVersion);
 			detail.setFinalizedDate(measure.getFinalizedDate());
@@ -1838,6 +1843,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				
 			} else {
 				if (!versionArr[1].equalsIgnoreCase(ConstantMessages.MAXIMUM_ALLOWED_MINOR_VERSION)) {
+					versionNumber = versionArr[0]+"."+versionArr[1];
 					return incrementVersionNumberAndSave(versionNumber, "0.001", mDetail, m);
 				} else {
 					return returnFailureReason(rs, SaveMeasureResult.REACHED_MAXIMUM_MINOR_VERSION);
@@ -2031,7 +2037,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			List<MeasureShareDTO> measureTotalList = measureList;
 			
 			searchModel.setResultsTotal(measureTotalList.size());
-			if (pageSize < measureTotalList.size()) {
+			if (pageSize <= measureTotalList.size()) {
 				measureList = measureTotalList
 						.subList(startIndex - 1, pageSize);
 			} else if (pageSize > measureList.size()) {
@@ -2187,20 +2193,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			measureDetailModel.setPeriodModel(periodModel);
 		}
 		
-		if (StringUtils.isNotBlank(measureDetailModel.getMeasSteward())
-				&& !StringUtils.equalsIgnoreCase(measureDetailModel.getMeasSteward(), "Other")) {
-			String oid = getService().retrieveStewardOID(measureDetailModel.getMeasSteward().trim());
-			measureDetailModel.setStewardUuid(oid);
-		} else if (StringUtils.equalsIgnoreCase(measureDetailModel.getMeasSteward(), "Other")
-				&& StringUtils.isNotBlank(measureDetailModel.getMeasStewardOther())) {
-			measureDetailModel.setStewardUuid(UUID.randomUUID().toString());
-		}
-		
 		if (StringUtils.isNotBlank(measureDetailModel.getGroupName())) {
 			measureDetailModel.setQltyMeasureSetUuid(UUID.randomUUID().toString());
 		}
-		
-		setOrgIdInAuthor(measureDetailModel.getAuthorSelectedList());
+		//MAT-4898
+		//setOrgIdInAuthor(measureDetailModel.getAuthorSelectedList());
 		setMeasureTypeAbbreviation(measureDetailModel.getMeasureTypeSelectedList());
 		measureDetailModel.setScoringAbbr(setScoringAbbreviation(measureDetailModel.getMeasScoring()));
 		
@@ -2246,7 +2243,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	private void setDTOtoModel(final List<ManageMeasureSearchModel.Result> detailModelList, final MeasureShareDTO dto,
 			final String currentUserId, final boolean isSuperUser) {
 		boolean isOwner = currentUserId.equals(dto.getOwnerUserId());
-		ManageMeasureSearchModel.Result detail = new ManageMeasureSearchModel.Result();
+		ManageMeasureSearchModel.Result detail = new ManageMeasureSearchModel.Result();		
 		detail.setName(dto.getMeasureName());
 		detail.setShortName(dto.getShortName());
 		detail.setStatus(dto.getStatus());
@@ -2259,7 +2256,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		detail.setSharable(isOwner || isSuperUser);
 		detail.setLockedUserInfo(dto.getLockedUserInfo());
 		detail.setDraft(dto.isDraft());
-		String formattedVersion = MeasureUtility.getVersionText(dto.getVersion(), dto.isDraft());
+		String formattedVersion = MeasureUtility.getVersionTextWithRevisionNumber(dto.getVersion(), dto.getRevisionNumber(), dto.isDraft());
 		detail.setVersion(formattedVersion);
 		detail.setScoringType(dto.getScoringType());
 		detail.setMeasureSetId(dto.getMeasureSetId());
@@ -2880,7 +2877,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		ManageMeasureSearchModel.Result detail = new ManageMeasureSearchModel.Result();
 		detail.setName(measure.getDescription());
 		detail.setId(measure.getId());
-		String formattedVersion = MeasureUtility.getVersionText(measure.getVersion(), measure.isDraft());
+		String formattedVersion = MeasureUtility.getVersionTextWithRevisionNumber(measure.getVersion(), measure.getRevisionNumber(), measure.isDraft());
 		detail.setVersion(formattedVersion);
 		detail.setFinalizedDate(measure.getFinalizedDate());
 		return detail;
@@ -3614,17 +3611,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @see mat.server.service.MeasureLibraryService#getAllAuthors()
 	 */
 	@Override
-	public List<Author> getAllAuthors() {
-		List<AuthorDTO> authorDTOList = authorDAO.getAllAuthors();
-		List<Author> authorList = new ArrayList<Author>();
-		for(AuthorDTO authorDTO : authorDTOList){
-			Author author = new Author();
-			author.setAuthorName(authorDTO.getAuthorName());
-			String oid = getService().retrieveStewardOID(author.getAuthorName().trim());
-			author.setOrgId(oid);
-			authorList.add(author);
-		}
-		return authorList;
+	public List<Organization> getAllOrganizations(){
+		List<Organization> organizationDTOList = organizationDAO.getAllOrganizations();
+		return organizationDTOList;
 	}
 	
 	/**
