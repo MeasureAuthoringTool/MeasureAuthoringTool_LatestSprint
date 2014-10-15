@@ -27,7 +27,6 @@ import mat.client.umls.service.VSACAPIServiceAsync;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.MatValueSet;
 import mat.model.QualityDataSetDTO;
-import mat.shared.ConstantMessages;
 import mat.shared.MeasurePackageClauseValidator;
 
 import com.google.gwt.core.client.GWT;
@@ -964,6 +963,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 			public void onFailure(Throwable caught) {
 				Mat.hideLoadingMessage();
 				((Button) view.getPackageMeasureButton()).setEnabled(true);
+				Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
 			}
 			
 			/**
@@ -973,16 +973,9 @@ public class MeasurePackagePresenter implements MatPresenter {
 			 */
 			@Override
 			public void onSuccess(SaveMeasureResult result) {
-				updateComponentMeasuresFromXml();
-				
-				if (result.isSuccess()) {
-					String measureId = MatContext.get()
-							.getCurrentMeasureId();
-					if (view.getIncludeVSACData().getValue().equals(Boolean.TRUE)) {
-						updateValueSetsBeforePackaging(measureId);
-					} else {
-						validateMeasureAndExport(measureId, null);
-					}
+				if (result.isSuccess()) {					
+					updateMeasureXmlForDeletedComponentMeasureAndOrg();
+					
 				} else {
 					Mat.hideLoadingMessage();
 					((Button) view.getPackageMeasureButton()).setEnabled(true);					
@@ -1004,21 +997,30 @@ public class MeasurePackagePresenter implements MatPresenter {
 	/**
 	 * Update component measures from xml.
 	 */
-	private void updateComponentMeasuresFromXml(){
+	private void updateMeasureXmlForDeletedComponentMeasureAndOrg(){
 		
-		MatContext.get().getMeasureService().updateComponentMeasuresFromXml(model.getId(), new AsyncCallback<Void>() {
+		MatContext.get().getMeasureService().updateMeasureXmlForDeletedComponentMeasureAndOrg(model.getId(), new AsyncCallback<Void>() {
 
 			@Override
 			public void onFailure(Throwable caught) {
-				System.out.println(" Updation of Component Measures on Creation of Measure Packager: " + caught.getStackTrace());
+				Mat.hideLoadingMessage();
+				((Button) view.getPackageMeasureButton()).setEnabled(true);				
+				Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
 			}
 
 			@Override
-			public void onSuccess(Void result) {
-				//view.getPackageSuccessMessageDisplay().setMessage("Component Measures Updated");
+			public void onSuccess(Void result) {				
+				String measureId = MatContext.get()
+						.getCurrentMeasureId();
+				if (view.getIncludeVSACData().getValue().equals(Boolean.TRUE)) {
+					updateValueSetsBeforePackaging(measureId);
+				} else {
+					validateMeasureAndExport(measureId, null);
+				}
 			}
 		});
 	}
+		
 	/**
 	 * Service call to VSAC to update Measure Xml before invoking simple xml and value set sheet generation.
 	 * @param measureId - String.
@@ -1030,6 +1032,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 			@Override
 			public void onFailure(final Throwable caught) {
 				Mat.hideLoadingMessage();
+				Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
 			}
 			
 			@Override

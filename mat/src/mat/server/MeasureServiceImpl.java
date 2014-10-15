@@ -3,9 +3,11 @@ package mat.server;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+
 import mat.DTO.MeasureNoteDTO;
-import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
+import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
+import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
@@ -15,7 +17,6 @@ import mat.client.measure.service.MeasureService;
 import mat.client.measure.service.SaveMeasureResult;
 import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.shared.MatException;
-import mat.model.Author;
 import mat.model.MatValueSet;
 import mat.model.MeasureType;
 import mat.model.Organization;
@@ -400,11 +401,11 @@ MeasureService {
 	 * @see mat.client.measure.service.MeasureService#updateComponentMeasuresFromXml(java.lang.String)
 	 */
 	@Override
-	public void updateComponentMeasuresFromXml(String measureId) {
+	public void updateMeasureXmlForDeletedComponentMeasureAndOrg(String measureId) {
 		
-		this.getMeasureLibraryService().updateComponentMeasuresOnDeletion(measureId);
+		this.getMeasureLibraryService().updateMeasureXmlForDeletedComponentMeasureAndOrg(measureId);
 	}
-	
+			
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#validateForGroup(mat.client.measure.ManageMeasureDetailModel)
 	 */
@@ -472,6 +473,11 @@ MeasureService {
 	public SortedClauseMapResult getMeasureXmlForMeasureAndSortedSubTreeMap(
 			String currentMeasureId) {		
 		return this.getMeasureLibraryService().getMeasureXmlForMeasureAndSortedSubTreeMap(currentMeasureId);
+	}
+
+	@Override
+	public MeasureDetailResult getUsedStewardAndDevelopersList(String measureId) {		
+		return this.getMeasureLibraryService().getUsedStewardAndDevelopersList(measureId);
 	}
 	
 }

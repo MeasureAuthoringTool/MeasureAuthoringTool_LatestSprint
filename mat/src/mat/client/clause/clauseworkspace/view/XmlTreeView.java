@@ -351,7 +351,9 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		expandCollapse.setStyleName("leftAndTopPadding");
 		expandCollapse.setSize("100px", "20px");
 		buttonExpand.setStylePrimaryName("expandAllButton");
+		buttonExpand.getElement().setId("buttonExpand_Button");
 		buttonCollapse.setStylePrimaryName("collapseAllButton");
+		buttonCollapse.getElement().setId("buttonCollapse_Button");
 		buttonExpand.setTitle("Expand All (Shift +)");
 		buttonCollapse.setTitle("Collapse All (Shift -)");
 		expandCollapse.add(buttonExpand);
@@ -370,16 +372,20 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		savePanel.getElement().setId("savePanel_VerticalPanel");
 		//savePanel.add(new SpacerWidget());
 		vp.add(successMessageDisplay);
+		successMessageDisplay.getElement().setId("successMessageDisplay_SuccessMessageDisplay");
 		savePanel.add(saveBtn);
 		//Commented Validate Button from Population Work Space as part of Mat-3162
 		validateBtnPopulationWorkspace.setTitle("Validate");//uncommented
+		validateBtnPopulationWorkspace.getElement().setId("validateBtnPopulationWorkspace_Button");
 		savePanel.add(validateBtnPopulationWorkspace);// uncommented
 		vp.add(warningMessageDisplay);//uncommented
+		warningMessageDisplay.getElement().setId("warningMessageDisplay_WarningMessageDisplay");
 		vp.add(savePanel);
 		bottomSavePanel.add(vp);
 		SimplePanel errPanel = new SimplePanel();
 		errPanel.getElement().setId("errPanel_SimplePanel");
 		errPanel.add(errorMessageDisplay);
+		errorMessageDisplay.getElement().setId("errorMessageDisplay_ErrorMessageDisplay");
 		addCommentPanel = addCommentPanelToRightPanel();
 		addCommentPanel.setVisible(false);
 		rightPanel.add(addCommentPanel);
@@ -436,6 +442,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		this.cellTree = cellTree;
 		mainPanel.clear();
 		mainPanel.setStyleName("div-wrapper"); //main div
+		mainPanel.getElement().setId("mainPanel_FlowPanel");
 		SimplePanel leftPanel = new SimplePanel();
 		leftPanel.getElement().setId("leftPanel_SimplePanelCW");
 		leftPanel.setStyleName("div-first bottomPadding10px"); //left side div which will  have tree
@@ -480,15 +487,21 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		HorizontalPanel clauseButtonPanel = new HorizontalPanel();
 		clauseButtonPanel.setWidth("100%");
 		clauseButtonPanel.add(openClauseButton);
+		openClauseButton.getElement().setId("openClauseButton_Button");
 		clauseButtonPanel.add(deleteClauseButton);
+		deleteClauseButton.getElement().setId("deleteClauseButton_Button");
 		clauseButtonPanel.setCellHorizontalAlignment(openClauseButton, HasHorizontalAlignment.ALIGN_LEFT);
 		clauseButtonPanel.setCellHorizontalAlignment(deleteClauseButton, HasHorizontalAlignment.ALIGN_RIGHT);
 		
 		rightVerticalPanel.add(clauseLibraryLabel);
+		clauseLibraryLabel.getElement().setId("clauseLibraryLabel_Label");
 		searchSuggestTextBox.getElement().setAttribute("id", "searchSuggestTextBox");
 		rightVerticalPanel.add(searchSuggestTextBox);
+		searchSuggestTextBox.getElement().setId("searchSuggestTextBox_SuggestBox");
 		rightVerticalPanel.add(subTreeNameListBox);
+		subTreeNameListBox.getElement().setId("subTreeNameListBox_ListBox");
 		rightVerticalPanel.add(clauseButtonPanel);
+		clauseButtonPanel.getElement().setId("clauseButtonPanel_HorizontalPanel");
 		
 		rightVerticalPanel.setCellHorizontalAlignment(clauseLibraryLabel, HasHorizontalAlignment.ALIGN_LEFT);
 		
@@ -503,7 +516,9 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		buttonExpandClauseWorkSpace.setTitle("Expand All (Shift +)");
 		buttonCollapseClauseWorkSpace.setTitle("Collapse All (Shift -)");
 		expandCollapse.add(buttonExpandClauseWorkSpace);
+		buttonExpandClauseWorkSpace.getElement().setId("buttonExpandClauseWorkSpace_Button");
 		expandCollapse.add(buttonCollapseClauseWorkSpace);
+		buttonCollapseClauseWorkSpace.getElement().setId("buttonCollapseClauseWorkSpace_Button");
 		buttonExpandClauseWorkSpace.setFocus(true);
 		buttonCollapseClauseWorkSpace.setVisible(true);
 		if (cellTree != null) {
@@ -535,6 +550,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		clearClauseWorkSpace.setTitle("Clear Clause WorkSpace");
 		savePanel.add(validateBtnClauseWorkSpace);
 		savePanel.add(clearClauseWorkSpace);
+		clearClauseWorkSpace.getElement().setId("clearClauseWorkSpace_Button");
 		vp.add(warningMessageDisplay);
 		vp.add(savePanel);
 		bottomSavePanel.add(vp);
@@ -571,9 +587,12 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		buttonExpandClauseWorkSpace.setStylePrimaryName("expandAllButton");
 		buttonCollapseClauseWorkSpace.setStylePrimaryName("collapseAllButton");
 		buttonExpandClauseWorkSpace.setTitle("Expand All (Shift +)");
+		
 		buttonCollapseClauseWorkSpace.setTitle("Collapse All (Shift -)");
 		expandCollapse.add(buttonExpandClauseWorkSpace);
 		expandCollapse.add(buttonCollapseClauseWorkSpace);
+		buttonExpandClauseWorkSpace.getElement().setId("buttonExpandClauseWorkSpace_Button");
+		buttonCollapseClauseWorkSpace.getElement().setId("buttonCollapseClauseWorkSpace_Button");
 		buttonExpandClauseWorkSpace.setFocus(true);
 		buttonCollapseClauseWorkSpace.setVisible(true);
 		if (cellTree != null) {

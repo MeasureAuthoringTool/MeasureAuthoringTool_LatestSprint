@@ -2,13 +2,15 @@ package mat.client.measure.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import mat.client.Mat;
 import mat.client.MatPresenter;
 import mat.client.MeasureComposerPresenter;
 import mat.client.clause.QDSAppliedListModel;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
-import mat.client.codelist.HasListBox;
+import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.codelist.ListBoxCodeProvider;
 import mat.client.event.BackToMeasureLibraryPage;
 import mat.client.event.MeasureDeleteEvent;
@@ -60,7 +62,6 @@ import com.google.gwt.user.client.ui.Widget;
  * The Class MetaDataPresenter.
  */
 public class MetaDataPresenter  implements MatPresenter {
-	
 	
 	/**
 	 * The Interface MetaDataDetailDisplay.
@@ -875,12 +876,6 @@ public class MetaDataPresenter  implements MatPresenter {
 	/** The db author list. */
 	private List<Author> dbAuthorList = new ArrayList<Author>();
 	
-	/** The db steward list. */
-	private List<MeasureSteward> dbStewardList = new ArrayList<MeasureSteward>();
-	
-	/** The steward list. */
-	private List<MeasureSteward> stewardList = new ArrayList<MeasureSteward>();
-	
 	/** The db measure type list. */
 	private List<MeasureType> dbMeasureTypeList = new ArrayList<MeasureType>();
 	
@@ -1457,32 +1452,13 @@ public class MetaDataPresenter  implements MatPresenter {
 		metaDataDisplay.getFinalizedDate().setText(currentMeasureDetail.getFinalizedDate());
 		metaDataDisplay.getMeasurementFromPeriodInputBox().setValue(currentMeasureDetail.getMeasFromPeriod());
 		metaDataDisplay.getMeasurementToPeriodInputBox().setValue(currentMeasureDetail.getMeasToPeriod());
-		metaDataDisplay.getVersionNumber().setText(currentMeasureDetail.getVersionNumber());		
-		
-		String stewardId = currentMeasureDetail.getStewardId();		
-		if(stewardId!=null){
-			metaDataDisplay.setStewardId(stewardId);
-		}else{
-			metaDataDisplay.setStewardId("");					
-		}
-		
+		metaDataDisplay.getVersionNumber().setText(currentMeasureDetail.getVersionNumber());
 		metaDataDisplay.getRationale().setValue(currentMeasureDetail.getRationale());
 		metaDataDisplay.getStratification().setValue(currentMeasureDetail.getStratification());
 		metaDataDisplay.getRiskAdjustment().setValue(currentMeasureDetail.getRiskAdjustment());	
+		setStewardAndMeasureDevelopers();
+				
 		
-		//authorSelectedList
-		if (currentMeasureDetail.getAuthorSelectedList() != null) {
-			metaDataDisplay.setAuthorsSelectedList(currentMeasureDetail.getAuthorSelectedList());
-		} else {
-			List<Author> authorList = new ArrayList<Author>();
-			metaDataDisplay.setAuthorsSelectedList(authorList);
-			currentMeasureDetail.setAuthorSelectedList(authorList);
-		}
-		dbAuthorList.clear();
-		dbAuthorList.addAll(currentMeasureDetail.getAuthorSelectedList());
-		getAllOrganizations();
-		authorList = currentMeasureDetail.getAuthorSelectedList();
-	
 		//measureTypeSelectList
 		if (currentMeasureDetail.getMeasureTypeSelectedList() != null) {
 			metaDataDisplay.setMeasureTypeSelectedList(currentMeasureDetail.getMeasureTypeSelectedList());
@@ -1536,45 +1512,48 @@ public class MetaDataPresenter  implements MatPresenter {
 			metaDataDisplay.getDeleteMeasure().setEnabled(true);
 		}
 		currentMeasureDetail.setEditable(editable);
-	}	
-	
+	}
 
 	/**
-	 * Gets the measure developer authors.
-	 *
-	 * @return the measure developer authors
+	 * steward and Author table
 	 */
-	public void getAllOrganizations() {
-		service.getAllOrganizations(new AsyncCallback<List<Organization>>() {
-			
-			@Override
-			public void onSuccess(List<Organization> result) {
-				List<MeasureSteward> stewardList = new ArrayList<MeasureSteward>();
-				List<Author> authorList = new ArrayList<Author>();
-				for(Organization organization: result){
-					MeasureSteward steward = new MeasureSteward();
-					Author author = new Author();
-					steward.setOrgName(organization.getOrganizationName());
-					steward.setOrgOid(organization.getOrganizationOID());
-					steward.setId(Long.toString(organization.getId()));
-					author.setAuthorName(organization.getOrganizationName());
-					author.setOrgId(organization.getOrganizationOID());
-					author.setId(Long.toString(organization.getId()));
-					stewardList.add(steward);
-					authorList.add(author);
-				}
-				metaDataDisplay.buildStewardCellTable(stewardList, editable);
-				metaDataDisplay.buildAuthorCellTable(authorList, editable);	
-				
-			}
-			
+	public void setStewardAndMeasureDevelopers() {
+		service.getUsedStewardAndDevelopersList(MatContext.get().getCurrentMeasureId(),
+				new AsyncCallback<MeasureDetailResult>(){
+
 			@Override
 			public void onFailure(Throwable caught) {
-				// TODO Auto-generated method stub
+				Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+				
 			}
+
+			@Override
+			public void onSuccess(MeasureDetailResult result) {				
+				if(result.getUsedSteward() !=null){
+					metaDataDisplay.setStewardId(result.getUsedSteward().getId());
+					metaDataDisplay.setStewardValue(result.getUsedSteward().getOrgName());
+					
+				} else {
+					metaDataDisplay.setStewardId(null);
+					metaDataDisplay.setStewardValue(null);
+				}
+				
+				if(currentMeasureDetail.getAuthorSelectedList() !=null){
+					metaDataDisplay.setAuthorsSelectedList(result.getUsedAuthorList());
+				} else {
+					List<Author> authorList = new ArrayList<Author>();
+					metaDataDisplay.setAuthorsSelectedList(authorList);
+					currentMeasureDetail.setAuthorSelectedList(authorList);
+				}
+				dbAuthorList.clear();
+				
+				dbAuthorList.addAll(currentMeasureDetail.getAuthorSelectedList());				
+				metaDataDisplay.buildStewardCellTable(result.getAllStewardList(), editable);
+				metaDataDisplay.buildAuthorCellTable(result.getAllAuthorList(), editable);	
+			}
+			
 		});
-		
-	}
+	}	
 	
 	/**
 	 * Save meta data information.
@@ -1677,12 +1656,10 @@ public class MetaDataPresenter  implements MatPresenter {
 		currentMeasureDetail.setGuidance(metaDataDisplay.getGuidance().getValue());
 		currentMeasureDetail.setTransmissionFormat(metaDataDisplay.getTransmissionFormat().getValue());
 		currentMeasureDetail.setImprovNotations(metaDataDisplay.getImprovementNotation().getValue());
-		currentMeasureDetail.setMeasFromPeriod(metaDataDisplay.getMeasurementFromPeriod());
+		currentMeasureDetail.setMeasFromPeriod(metaDataDisplay.getMeasurementFromPeriod());	
 		
-		if(!metaDataDisplay.getStewardId().isEmpty()){
-			currentMeasureDetail.setStewardId(metaDataDisplay.getStewardId());	
-			currentMeasureDetail.setMeasSteward(metaDataDisplay.getStewardValue());
-		}		
+		currentMeasureDetail.setStewardId(metaDataDisplay.getStewardId());	
+		currentMeasureDetail.setStewardValue(metaDataDisplay.getStewardValue());
 		
 		currentMeasureDetail.setMeasToPeriod(metaDataDisplay.getMeasurementToPeriod());
 		currentMeasureDetail.setSupplementalData(metaDataDisplay.getSupplementalData().getValue());		

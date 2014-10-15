@@ -3,21 +3,23 @@ package mat.client.measure.service;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+
 import mat.DTO.MeasureNoteDTO;
-import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
+import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
+import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.MeasureNotesModel;
 import mat.client.measure.TransferMeasureOwnerShipModel;
 import mat.client.shared.MatException;
-import mat.model.Author;
 import mat.model.MatValueSet;
 import mat.model.MeasureType;
 import mat.model.Organization;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
+
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 
@@ -429,13 +431,6 @@ public interface MeasureService extends RemoteService {
 			MeasureXmlModel measureXmlModel);
 	
 	/**
-	 * Update component measures from xml.
-	 *
-	 * @param measureId the measure id
-	 */
-	void updateComponentMeasuresFromXml(String measureId);
-	
-	/**
 	 * Validate for group.
 	 *
 	 * @param model the model
@@ -502,4 +497,9 @@ public interface MeasureService extends RemoteService {
 	 */
 	SortedClauseMapResult getMeasureXmlForMeasureAndSortedSubTreeMap(
 			String currentMeasureId);
+
+	MeasureDetailResult getUsedStewardAndDevelopersList(String measureId);
+
+	void updateMeasureXmlForDeletedComponentMeasureAndOrg(String id);
+	
 }
