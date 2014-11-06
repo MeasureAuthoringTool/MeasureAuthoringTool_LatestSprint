@@ -106,7 +106,8 @@ public class AddEditComponentMeasuresView implements
 	private Observer observer;
 
 	/** The component measure selected list. */
-	private List<ManageMeasureSearchModel.Result> componentMeasuresList;
+	private List<ManageMeasureSearchModel.Result> componentMeasuresList =
+			new ArrayList<ManageMeasureSearchModel.Result>();;
 
 	/** The index. */
 	private int index;
@@ -128,6 +129,7 @@ public class AddEditComponentMeasuresView implements
 	 * Instantiates a new adds the edit component measures view.
 	 */
 	public AddEditComponentMeasuresView() {
+		
 		successMessages.setMessage("");
 		HorizontalPanel mainHorizontalPanel = new HorizontalPanel();
 		mainHorizontalPanel.getElement().setId("panel_MainHorizontalPanel");
@@ -290,7 +292,7 @@ public class AddEditComponentMeasuresView implements
 					(Resources) GWT.create(CellTableResource.class));
 			table.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
 			selectedMeasureList = new ArrayList<Result>();
-			componentMeasuresList = new ArrayList<ManageMeasureSearchModel.Result>();
+			//componentMeasuresList = new ArrayList<ManageMeasureSearchModel.Result>();
 			componentMeasuresList.addAll(measureSelectedList);
 			selectedMeasureList.addAll(result.getData());
 			table.setPageSize(PAGE_SIZE);

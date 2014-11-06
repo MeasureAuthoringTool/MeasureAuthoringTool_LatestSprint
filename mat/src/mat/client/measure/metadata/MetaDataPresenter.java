@@ -647,6 +647,20 @@ public class MetaDataPresenter  implements MatPresenter {
 		 * @param stewardValue the new steward value
 		 */
 		public void setStewardValue(String stewardValue);
+
+		/**
+		 * Gets the calender year.
+		 *
+		 * @return the calender year
+		 */
+		CustomCheckBox getCalenderYear();
+
+		/**
+		 * Sets the measurement period buttons visible.
+		 *
+		 * @param b the new measurement period buttons visible
+		 */
+		void setMeasurementPeriodButtonsVisible(boolean b);
 	}
 	
 	/**
@@ -947,12 +961,12 @@ public class MetaDataPresenter  implements MatPresenter {
 	 * @param pcButtons the pc buttons
 	 * @param lp the lp
 	 */
-	public MetaDataPresenter(MetaDataDetailDisplay mDisplay, AddEditComponentMeasuresView cmDisplay, HasVisible pcButtons, ListBoxCodeProvider lp) {
+	public MetaDataPresenter(MetaDataDetailDisplay mDisplay, HasVisible pcButtons, ListBoxCodeProvider lp) {
 		previousContinueButtons = pcButtons;
 		this.metaDataDisplay = mDisplay;
 		//MAT-4898
 		//this.addEditAuthorsDisplay = aDisplay;
-		this.addEditComponentMeasuresDisplay = cmDisplay;
+		//this.addEditComponentMeasuresDisplay = cmDisplay;
 		//getAllOrganizations();
 		//getMeasureStewardList(lp);
 		HandlerManager eventBus = MatContext.get().getEventBus();
@@ -968,7 +982,6 @@ public class MetaDataPresenter  implements MatPresenter {
 			@Override
 			public void onClick(ClickEvent event) {
 				getMetaDataDisplay().getSaveErrorMsg().clear();
-				addEditComponentMeasuresDisplay.getSearchString().setValue("");
 				displayAddEditComponentMeasures();
 			}
 		});
@@ -1015,16 +1028,7 @@ public class MetaDataPresenter  implements MatPresenter {
 			}
 		});*/
 		
-		addEditComponentMeasuresDisplay.getReturnButton().addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				isSubView = false;
-				metaDataDisplay.setSaveButtonEnabled(editable);
-				getComponentMeasures();
-				backToDetail();
-			}
-		} );
+		
 //		
 //		addEditAuthorsDisplay.getSaveButton().addClickHandler(new ClickHandler() {
 //			@Override
@@ -1131,22 +1135,7 @@ public class MetaDataPresenter  implements MatPresenter {
 			}
 		});
 		
-		addEditComponentMeasuresDisplay.getAddtoComponentMeasuresButtonHandler().addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				addEditComponentMeasuresDisplay.getSuccessMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getCOMPONENT_MEASURES_ADDED_SUCCESSFULLY());
-				metaDataDisplay.setComponentMeasureSelectedList(addEditComponentMeasuresDisplay.getComponentMeasuresList());
-			}
-		});
-		addEditComponentMeasuresDisplay.getSearchButton().addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				
-				searchMeasuresList(addEditComponentMeasuresDisplay.getSearchString().getValue(), 1, PAGE_SIZE, 1);
-			}
-		});
+		
 		
 		emptyWidget.add(new Label("No Measure Selected"));
 	}
@@ -1174,7 +1163,8 @@ public class MetaDataPresenter  implements MatPresenter {
 				@Override
 				public void onSuccess(ManageMeasureSearchModel result) {
 					List<ManageMeasureSearchModel.Result> measureSelectedList = result.getData();
-					currentMeasureDetail.setComponentMeasuresSelectedList(measureSelectedList);
+					//currentMeasureDetail.setComponentMeasuresSelectedList(measureSelectedList);
+					metaDataDisplay.setComponentMeasureSelectedList(measureSelectedList);// Added To fix the Dirty Check Message issue
 					metaDataDisplay.buildComponentMeasuresSelectedList(measureSelectedList, editable);
 				}
 			});
@@ -1415,6 +1405,7 @@ public class MetaDataPresenter  implements MatPresenter {
 	 * Prepopulate fields.
 	 */
 	private void prepopulateFields() {
+		removeMeasurementPeriodStyle();
 		metaDataDisplay.getNqfId().setValue(currentMeasureDetail.getNqfId());
 		metaDataDisplay.geteMeasureIdentifier().setText(currentMeasureDetail.getMeasureSetId());
 		metaDataDisplay.getSetName().setValue(currentMeasureDetail.getGroupName());
@@ -1450,15 +1441,21 @@ public class MetaDataPresenter  implements MatPresenter {
 		metaDataDisplay.getImprovementNotation().setValue(currentMeasureDetail.getImprovNotations());
 		metaDataDisplay.getSupplementalData().setValue(currentMeasureDetail.getSupplementalData());
 		metaDataDisplay.getFinalizedDate().setText(currentMeasureDetail.getFinalizedDate());
+		//currentMeasureDetail.setCalenderYear(metaDataDisplay.getCalenderYear().getValue());
+		metaDataDisplay.getCalenderYear().setValue(currentMeasureDetail.isCalenderYear());
+		if (metaDataDisplay.getCalenderYear().getValue().equals(Boolean.TRUE)) {
 		metaDataDisplay.getMeasurementFromPeriodInputBox().setValue(currentMeasureDetail.getMeasFromPeriod());
 		metaDataDisplay.getMeasurementToPeriodInputBox().setValue(currentMeasureDetail.getMeasToPeriod());
+		} else {
+			metaDataDisplay.getMeasurementFromPeriodInputBox().setValue(null);
+			metaDataDisplay.getMeasurementToPeriodInputBox().setValue(null);
+		}
 		metaDataDisplay.getVersionNumber().setText(currentMeasureDetail.getVersionNumber());
 		metaDataDisplay.getRationale().setValue(currentMeasureDetail.getRationale());
 		metaDataDisplay.getStratification().setValue(currentMeasureDetail.getStratification());
 		metaDataDisplay.getRiskAdjustment().setValue(currentMeasureDetail.getRiskAdjustment());	
 		setStewardAndMeasureDevelopers();
 				
-		
 		//measureTypeSelectList
 		if (currentMeasureDetail.getMeasureTypeSelectedList() != null) {
 			metaDataDisplay.setMeasureTypeSelectedList(currentMeasureDetail.getMeasureTypeSelectedList());
@@ -1512,10 +1509,15 @@ public class MetaDataPresenter  implements MatPresenter {
 			metaDataDisplay.getDeleteMeasure().setEnabled(true);
 		}
 		currentMeasureDetail.setEditable(editable);
+		if(metaDataDisplay.getCalenderYear().getValue().equals(Boolean.TRUE) && editable){
+			metaDataDisplay.setMeasurementPeriodButtonsVisible(true);
+		} else {
+			metaDataDisplay.setMeasurementPeriodButtonsVisible(false);
+		}
 	}
 
 	/**
-	 * steward and Author table
+	 * steward and Author table.
 	 */
 	public void setStewardAndMeasureDevelopers() {
 		service.getUsedStewardAndDevelopersList(MatContext.get().getCurrentMeasureId(),
@@ -1567,7 +1569,7 @@ public class MetaDataPresenter  implements MatPresenter {
 		metaDataDisplay.getSuccessMessageDisplay().clear();
 		metaDataDisplay.getSaveBtn().setFocus(true);
 		updateModelDetailsFromView();
-		if (MatContext.get().getMeasureLockService().checkForEditPermission()) {
+		if (MatContext.get().getMeasureLockService().checkForEditPermission() && checkIfCalenderYear()) {
 			Mat.showLoadingMessage();
 			MatContext.get().getSynchronizationDelegate().setSavingMeasureDetails(true);
 			MatContext.get().getMeasureService().saveMeasureDetails(currentMeasureDetail,
@@ -1619,6 +1621,41 @@ public class MetaDataPresenter  implements MatPresenter {
 	}
 	
 	/**
+	 * Check if calender year.
+	 *
+	 * @return true, if successful
+	 */
+	private boolean checkIfCalenderYear(){
+		boolean isCalender = false;
+		if(metaDataDisplay.getCalenderYear().getValue().equals(Boolean.TRUE)){
+			if(!metaDataDisplay.getMeasurementFromPeriod().isEmpty() && 
+					!metaDataDisplay.getMeasurementToPeriod().isEmpty()){
+				metaDataDisplay.getMeasurementFromPeriodInputBox().removeStyleName("gwt-TextBoxRed");
+				metaDataDisplay.getMeasurementToPeriodInputBox().removeStyleName("gwt-TextBoxRed");
+				isCalender = true;
+			}
+			else {
+				metaDataDisplay.getCalenderYear().setFocus(true);
+				metaDataDisplay.getMeasurementFromPeriodInputBox().setStyleName("gwt-TextBoxRed");
+				metaDataDisplay.getMeasurementToPeriodInputBox().setStyleName("gwt-TextBoxRed");
+				isCalender = false;
+			}
+		} else {
+			isCalender = true;
+		}
+		
+		return isCalender;
+	}
+	
+	/**
+	 * Removes the measurement period style.
+	 */
+	private void removeMeasurementPeriodStyle(){
+		metaDataDisplay.getMeasurementFromPeriodInputBox().removeStyleName("gwt-TextBoxRed");
+		metaDataDisplay.getMeasurementToPeriodInputBox().removeStyleName("gwt-TextBoxRed");
+	}
+	
+	/**
 	 * Update model details from view.
 	 */
 	private void updateModelDetailsFromView() {
@@ -1634,6 +1671,7 @@ public class MetaDataPresenter  implements MatPresenter {
 	 *            the meta data display
 	 */
 	public void updateModelDetailsFromView(ManageMeasureDetailModel currentMeasureDetail, MetaDataDetailDisplay metaDataDisplay) {
+		removeMeasurementPeriodStyle();
 		currentMeasureDetail.setName(metaDataDisplay.getMeasureName().getText());
 		currentMeasureDetail.setShortName(metaDataDisplay.getShortName().getText());
 		currentMeasureDetail.setFinalizedDate(metaDataDisplay.getFinalizedDate().getText());
@@ -1656,6 +1694,7 @@ public class MetaDataPresenter  implements MatPresenter {
 		currentMeasureDetail.setGuidance(metaDataDisplay.getGuidance().getValue());
 		currentMeasureDetail.setTransmissionFormat(metaDataDisplay.getTransmissionFormat().getValue());
 		currentMeasureDetail.setImprovNotations(metaDataDisplay.getImprovementNotation().getValue());
+		currentMeasureDetail.setCalenderYear(metaDataDisplay.getCalenderYear().getValue());
 		currentMeasureDetail.setMeasFromPeriod(metaDataDisplay.getMeasurementFromPeriod());	
 		
 		currentMeasureDetail.setStewardId(metaDataDisplay.getStewardId());	
@@ -1689,6 +1728,9 @@ public class MetaDataPresenter  implements MatPresenter {
 	 * Display add edit component measures.
 	 */
 	private void displayAddEditComponentMeasures() {
+		AddEditComponentMeasuresView cmDisplay = new AddEditComponentMeasuresView();
+		this.addEditComponentMeasuresDisplay = cmDisplay;
+		addEditComponenetMeasuresClickHandlers();
 		isSubView = true;
 		clearMessages();
 		VerticalPanel vPanel = new VerticalPanel();
@@ -1703,6 +1745,57 @@ public class MetaDataPresenter  implements MatPresenter {
 		previousContinueButtons.setVisible(false);
 		Mat.focusSkipLists("MeasureComposer");
 	}
+
+	/**
+	 * Adds the edit componenet measures click handlers.
+	 */
+	private void addEditComponenetMeasuresClickHandlers() {
+		//AddToComponentMeasures Button clickHandler Handler
+		addEditComponentMeasuresDisplay
+				.getAddtoComponentMeasuresButtonHandler().addClickHandler(
+						new ClickHandler() {
+
+							@Override
+							public void onClick(ClickEvent event) {
+								addEditComponentMeasuresDisplay
+										.getSuccessMessageDisplay()
+										.setMessage(
+												MatContext
+														.get()
+														.getMessageDelegate()
+														.getCOMPONENT_MEASURES_ADDED_SUCCESSFULLY());
+								metaDataDisplay
+										.setComponentMeasureSelectedList(addEditComponentMeasuresDisplay
+												.getComponentMeasuresList());
+							}
+						});
+		//Component Measures Search clickHandler handler
+		addEditComponentMeasuresDisplay.getSearchButton().addClickHandler(
+				new ClickHandler() {
+
+					@Override
+					public void onClick(ClickEvent event) {
+
+						searchMeasuresList(addEditComponentMeasuresDisplay
+								.getSearchString().getValue(), 1, PAGE_SIZE, 1);
+					}
+				});
+
+		//component Measures Return click handler
+		addEditComponentMeasuresDisplay.getReturnButton().addClickHandler(
+				new ClickHandler() {
+
+					@Override
+					public void onClick(ClickEvent event) {
+						isSubView = false;
+						metaDataDisplay.setSaveButtonEnabled(editable);
+						getComponentMeasures();
+						backToDetail();
+					}
+				});
+		
+	}
+
 	/* (non-Javadoc)
 	 * @see mat.client.MatPresenter#beforeDisplay()
 	 */

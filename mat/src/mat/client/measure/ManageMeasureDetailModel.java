@@ -211,7 +211,28 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	/** The is editable. */
 	private boolean isEditable;
 	
+	/** The calender year. */
+	private boolean isCalenderYear;
 	
+	
+	/**
+	 * Checks if is calender year.
+	 *
+	 * @return true, if is calender year
+	 */
+	public boolean isCalenderYear() {
+		return isCalenderYear;
+	}
+
+	/**
+	 * Sets the calender year.
+	 *
+	 * @param calenderYear the new calender year
+	 */
+	public void setCalenderYear(boolean isCalenderYear) {
+		this.isCalenderYear = isCalenderYear;
+	}
+
 	/**
 	 * Checks if is deleted.
 	 * 
@@ -763,7 +784,8 @@ public class ManageMeasureDetailModel implements IsSerializable {
 	//US 413
 	/**
 	 * Gets the meas steward other.
-	 * 
+	 *
+	 * @param str the str
 	 * @return the meas steward other
 	 */
 	/*public String getMeasStewardOther() {
@@ -1340,6 +1362,9 @@ public class ManageMeasureDetailModel implements IsSerializable {
 		}else if (!trimToNull(stewardValue).equals(trimToNull(other.stewardValue))) {
 			return false;
 		}
+		if(isCalenderYear!=other.isCalenderYear){
+			return false;
+		}
 		if (trimToNull(stewardId) == null) {
 			if (trimToNull(other.stewardId) != null) {
 				return false;
@@ -1517,31 +1542,71 @@ public class ManageMeasureDetailModel implements IsSerializable {
 			return false;
 		}
 		for (int i = 0; i < listA.size(); i++) {
+			boolean checkIfEqual = true;
 			if (listA.get(i) instanceof Author) {
-				Author author = (Author) listA.get(i);
-				Author otherAuthor = (Author) listB.get(i);
-				if (author.compare(author, otherAuthor) != 0) {
-					return false;
+				for (int j = 0; j < listA.size(); j++) {
+					Author author = (Author) listA.get(j);
+					for (int k = 0; k < listB.size(); k++) {
+						Author otherAuthor = (Author) listB.get(k);
+						if (author.compare(author, otherAuthor) == 0) {
+							checkIfEqual = true;
+							break;
+						} else {
+							checkIfEqual = false;
+						}
+					}
+					if (!checkIfEqual) {
+						break;
+					}
 				}
+				return checkIfEqual;
+
 			} else if (listA.get(i) instanceof MeasureType) {
-				MeasureType measureType = (MeasureType) listA.get(i);
-				MeasureType otherMeasureType = (MeasureType) listB.get(i);
-				if (measureType.compare(measureType, otherMeasureType) != 0) {
-					return false;
+				for (int j = 0; j < listA.size(); j++) {
+					MeasureType measureType = (MeasureType) listA.get(j);
+					for (int k = 0; k < listB.size(); k++) {
+						MeasureType otherMeasureType = (MeasureType) listB
+								.get(k);
+						if (measureType.compare(measureType, otherMeasureType) == 0) {
+							checkIfEqual = true;
+							break;
+						} else {
+							checkIfEqual = false;
+						}
+					}
+					if (!checkIfEqual) {
+						break;
+					}
 				}
+				return checkIfEqual;
+				
 			} else if (listA.get(i) instanceof String) {
+				
 				String val1 = (String) listA.get(i);
 				String val2 = (String) listB.get(i);
 				if (val1.compareTo(val2) != 0) {
 					return false;
 				}
-			}
-			else if (listA.get(i) instanceof ManageMeasureSearchModel.Result) {
-				ManageMeasureSearchModel.Result val1 = (ManageMeasureSearchModel.Result) listA.get(i);
-				ManageMeasureSearchModel.Result val2 = (ManageMeasureSearchModel.Result) listB.get(i);
-				if (val1.compare(val1, val2) != 0) {
-					return false;
+			} else if (listA.get(i) instanceof ManageMeasureSearchModel.Result) {
+				for (int j = 0; j < listA.size(); j++) {
+					ManageMeasureSearchModel.Result val1 = (ManageMeasureSearchModel.Result) listA
+							.get(j);
+					for (int k = 0; k < listB.size(); k++) {
+						ManageMeasureSearchModel.Result val2 = (ManageMeasureSearchModel.Result) listB
+								.get(k);
+						if (val1.compare(val1, val2) == 0) {
+							checkIfEqual = true;
+							break;
+						} else {
+							checkIfEqual = false;
+						}
+					}
+					if (!checkIfEqual) {
+						break;
+					}
 				}
+				return checkIfEqual;
+				
 			}
 		}
 		return true;
@@ -1783,6 +1848,9 @@ public class ManageMeasureDetailModel implements IsSerializable {
 		this.endorsementId = endorsementId;
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
 	@Override
 	public String toString() {
 		return "ManageMeasureDetailModel [id=" + id + ", name=" + name
@@ -1791,7 +1859,8 @@ public class ManageMeasureDetailModel implements IsSerializable {
 				+ ", measureId=" + measureId + ", groupName=" + groupName
 				+ ", groupId=" + groupId + ", finalizedDate=" + finalizedDate
 				+ ", measFromPeriod=" + measFromPeriod + ", measToPeriod="
-				+ measToPeriod + ", measScoring=" + measScoring
+				+ measToPeriod +", isCalenderYear= "+ isCalenderYear  
+				+ ", measScoring=" + measScoring
 				+ ", stewardValue=" + stewardValue + ", endorseByNQF="
 				+ endorseByNQF + ", nqfId=" + nqfId + ", description="
 				+ description + ", copyright=" + copyright
@@ -1981,10 +2050,20 @@ public class ManageMeasureDetailModel implements IsSerializable {
 		stewardSelectedList =steSelectedList;
 	}
 
+	/**
+	 * Gets the steward value.
+	 *
+	 * @return the steward value
+	 */
 	public String getStewardValue() {
 		return stewardValue;
 	}
 
+	/**
+	 * Sets the steward value.
+	 *
+	 * @param stewardValue the new steward value
+	 */
 	public void setStewardValue(String stewardValue) {
 		this.stewardValue = stewardValue;
 	}
