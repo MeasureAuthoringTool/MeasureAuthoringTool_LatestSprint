@@ -67,10 +67,11 @@ public class HumanReadableGenerator {
 	private static Boolean showOnlyVariableName = false;
 	
 	/** The lhs id. */
-	private static List<String> lhsID = new ArrayList<String>();
+	private static List<String> lhsID;
 	
 	/** The initial population hash. */
 	private static Map<String, String> initialPopulationHash = new HashMap<String, String>();
+
 	
 	/**
 	 * Generate html for population or subtree.
@@ -89,7 +90,7 @@ public class HumanReadableGenerator {
 			//System.out.println("Original subXML:" + subXML);
 			XmlProcessor populationOrSubtreeXMLProcessor = expandSubTreesAndImportQDMs(
 					subXML, measureXML, true);
-			
+			lhsID = new ArrayList<String>();
 			if (populationOrSubtreeXMLProcessor == null) {
 				htmlDocument = createBaseHumanReadableDocument();
 				Element bodyElement = htmlDocument.body();
@@ -883,9 +884,14 @@ public class HumanReadableGenerator {
 			XmlProcessor populationOrSubtreeXMLProcessor) {
 		Node lhs = item.getFirstChild();
 		if ("elementRef".equalsIgnoreCase(lhs.getNodeName())) {
-			// Element ulElement = parentListElement.appendElement(HTML_LI);
-			parseChild(lhs, liElement, item, populationOrSubtreeXMLProcessor,
-					false);
+			// Element ulElement = parentListElement.appendElement(HTML_LI); 
+			if( checkForSatisfiesParentNode(item.getParentNode())){
+				parseChild(lhs, liElement, item, populationOrSubtreeXMLProcessor,
+						true);
+			} else {
+				parseChild(lhs, liElement, item, populationOrSubtreeXMLProcessor,
+						false);
+			}
 			liElement.appendText(" "
 					+ item.getAttributes().getNamedItem("displayName")
 					.getNodeValue().toLowerCase());
@@ -911,6 +917,7 @@ public class HumanReadableGenerator {
 	 * @param list the list
 	 * @param populationOrSubtreeXMLProcessor the population or subtree xml processor
 	 * @param parentNode the parent node
+	 * @return true, if successful
 	 */
 	private static boolean displayNone(Element list,
 			XmlProcessor populationOrSubtreeXMLProcessor, Node parentNode) {
@@ -2282,6 +2289,37 @@ public class HumanReadableGenerator {
 			return date;
 		}
 		return dateString;
+	}
+	
+	
+	/**
+	 * Check for satisfies parent node.
+	 *
+	 * @param item the item
+	 * @return true, if successful
+	 */
+	private static boolean checkForSatisfiesParentNode(Node item){
+		String nodeName = item.getNodeName();
+		switch(nodeName){
+		case "functionalOp":
+			if (item.getAttributes().getNamedItem("type") != null
+			&& item.getAttributes()
+					.getNamedItem("type").getNodeValue()
+					.contains("SATISFIES")) {
+				return true;
+			}
+			break;
+		case "relationalOp":
+			return checkForSatisfiesParentNode(item.getParentNode()); 
+		case "setOp":
+			return checkForSatisfiesParentNode(item.getParentNode());
+		case "subTree":
+			return false;
+			default://do nothing
+				break;		
+		}
+	
+		return checkForSatisfiesParentNode(item.getParentNode());
 	}
 	
 }

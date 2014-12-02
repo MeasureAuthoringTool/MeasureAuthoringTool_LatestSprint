@@ -16,14 +16,15 @@ public class HQMFDataCriteriaGenerator implements Generator {
 	 * @throws Exception the exception
 	 */
 	@Override
-	public String generate(MeasureExport me) throws Exception{
+	public String generate(MeasureExport me) throws Exception {
 		
 		HQMFDataCriteriaElementGenerator hqmfDataCriteriaElementGenerator = new HQMFDataCriteriaElementGenerator();
 		hqmfDataCriteriaElementGenerator.generate(me);
 		
 		HQMFClauseLogicGenerator hqmfClauseLogicGenerator = new HQMFClauseLogicGenerator();
 		hqmfClauseLogicGenerator.generate(me);
-		
+		HQMFPopulationLogicGenerator hqmfPopulationLogicGenerator = new HQMFPopulationLogicGenerator();
+		hqmfPopulationLogicGenerator.generate(me);
 		XmlProcessor dataCriteriaXMLProcessor = me.getHQMFXmlProcessor();
 		return removeXmlTagNamespaceAndPreamble(dataCriteriaXMLProcessor.transform(dataCriteriaXMLProcessor.getOriginalDoc(), true));
 	}
@@ -33,11 +34,19 @@ public class HQMFDataCriteriaGenerator implements Generator {
 	 * @return
 	 */
 	private String removeXmlTagNamespaceAndPreamble(String xmlString) {
-		xmlString = xmlString.replaceAll("\\<\\?xml(.+?)\\?\\>", "").trim().
-				replaceAll("(<\\?[^<]*\\?>)?", "")./* remove preamble */
-				replaceAll("xmlns.*?(\"|\').*?(\"|\')", "") /* remove xmlns declaration */
-				.replaceAll("(<)(\\w+:)(.*?>)", "$1$3") /* remove opening tag prefix */
-				.replaceAll("(</)(\\w+:)(.*?>)", "$1$3"); /* remove closing tags prefix */
+		xmlString = xmlString.replaceAll("\\<\\?xml(.+?)\\?\\>", "").trim()
+				.replaceAll("(<\\?[^<]*\\?>)?", "");/* remove preamble */
+								
+		xmlString = xmlString.replaceAll("<root>", "").replaceAll("</root>","");
+		
+		String componentTag = "<component";
+		int indx = xmlString.indexOf(componentTag);
+		while(indx > -1){
+			int indx2 = xmlString.indexOf(">", indx);
+			xmlString = xmlString.substring(0, indx+componentTag.length()) + xmlString.substring(indx2);
+			indx = xmlString.indexOf(componentTag,indx2);
+		}
+		
 		return xmlString;
 	}
 }

@@ -684,7 +684,7 @@ public class MetaDataView implements MetaDataDetailDisplay{
 		//fPanel.add(addEditMeasureType);
 		fPanel.add(new SpacerWidget());
 		
-		Label itemCountTableLabel = (Label) LabelBuilder.buildLabel(cellTable, " ItemCount List");
+		Label itemCountTableLabel = (Label) LabelBuilder.buildLabel(cellTable, " Items Counted List");
 		itemCountTableLabel.setStyleName("measureDetailTableHeader");
 		fPanel.add(itemCountTableLabel);
 		fPanel.add(horzPanel);
@@ -1083,7 +1083,7 @@ public class MetaDataView implements MetaDataDetailDisplay{
 			}
 		};
 		
-		cellTable.addColumn(vsacDataType, SafeHtmlUtils.fromSafeConstant("<span title='Data Type'>" + "Data Type"
+		cellTable.addColumn(vsacDataType, SafeHtmlUtils.fromSafeConstant("<span title='Datatype'>" + "Datatype"
 				+ "</span>"));
 		
 		cellTable.setWidth("100%");
