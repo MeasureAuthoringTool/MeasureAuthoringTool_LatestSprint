@@ -134,22 +134,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	/** The release date. */
 	private String releaseDate;
 	
-	/* (non-Javadoc)
-	 * @see mat.server.service.MeasureLibraryService#getReleaseDate()
-	 */
-	@Override
-	public String getReleaseDate() {
-		return releaseDate;
-	}
-	
-	/**
-	 * Sets the release date.
-	 *
-	 * @param releaseDate the new release date
-	 */
-	public void setReleaseDate(String releaseDate) {
-		this.releaseDate = releaseDate;
-	}
+	/** The is measure created. */
+	private boolean isMeasureCreated;
+
 	
 	/**
 	 * Comparator.
@@ -622,7 +609,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		logger.info("In easureLibraryServiceImpl.convertAddlXmlElementsToModel()");
 		manageMeasureDetailModel.setId(measure.getId());
 		manageMeasureDetailModel.setCalenderYear(manageMeasureDetailModel.getPeriodModel().isCalenderYear());
-		if(manageMeasureDetailModel.getPeriodModel().isCalenderYear()){
+		if(!manageMeasureDetailModel.getPeriodModel().isCalenderYear()){
 		manageMeasureDetailModel.setMeasFromPeriod(manageMeasureDetailModel.getPeriodModel() != null ? manageMeasureDetailModel
 				.getPeriodModel().getStartDate() : null);
 		manageMeasureDetailModel.setMeasToPeriod(manageMeasureDetailModel.getPeriodModel() != null ? manageMeasureDetailModel
@@ -1830,6 +1817,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		Measure pkg = null;
 		MeasureSet measureSet = null;
 		if (model.getId() != null) {
+			setMeasureCreated(true);
 			// editing an existing measure
 			pkg = getService().getById(model.getId());
 			model.setVersionNumber(pkg.getVersion());
@@ -1850,7 +1838,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			
 		} else {
 			// creating a new measure.
-			
+			setMeasureCreated(false);
 			pkg = new Measure();
 			/*model.setMeasureStatus("In Progress");*/
 			model.setRevisionNumber("000");
@@ -2277,8 +2265,12 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				|| StringUtils.isNotBlank(measureDetailModel.getMeasToPeriod())) {*/
 			PeriodModel periodModel = new PeriodModel();
 			periodModel.setUuid(UUID.randomUUID().toString());
+			//for New measures checking Calender year to add Default Dates
+			if(!isMeasureCreated()){
+				measureDetailModel.setCalenderYear(true);
+			}
 			periodModel.setCalenderYear(measureDetailModel.isCalenderYear());
-			if(measureDetailModel.isCalenderYear()){
+			if(!measureDetailModel.isCalenderYear()){
 				periodModel.setStartDate(measureDetailModel.getMeasFromPeriod());
 				periodModel.setStopDate(measureDetailModel.getMeasToPeriod());
 			} else { // for Default Dates
@@ -3123,7 +3115,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					String satisfyFunction = "@type='SATISFIES ALL' or @type='SATISFIES ANY'";
 					String otherThanSatisfyfunction = "@type!='SATISFIES ALL' or @type!='SATISFIES ANY'";
 					String dateTimeDiffFunction = "@type='DATETIMEDIFF'";
+					//geting list of IDs
 					String XPATH_QDMELEMENT = "/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//elementRef/@id";
+					//geting Unique Ids only
+					//String XPATH_QDMELEMENT = "/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//elementRef[not(@id =  preceding:: elementRef/@id)]";
 					String XPATH_TIMING_ELEMENT = "/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//relationalOp";
 					String XPATH_SATISFY_ELEMENT = "/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//functionalOp["+satisfyFunction+"]";
 					String XPATH_FUNCTIONS ="/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//functionalOp["+otherThanSatisfyfunction+"]";
@@ -3166,24 +3161,32 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 							
 						}
 						
-						for (int m = 0; (m <nodesSDE_qdmElementId.getLength()) && !flag; m++) {
+						for (int m = 0; (m <nodesSDE_qdmElementId.getLength()) && !flag; m++) {	
 							String id = nodesSDE_qdmElementId.item(m).getNodeValue();
-							String xpathForAttribute ="/measure//subTreeLookUp//elementRef[@id='"+id+"']/attribute";
-							Node attributeNode = (Node)xPath.evaluate(xpathForAttribute, xmlProcessor.getOriginalDoc(),XPathConstants.NODE);
-							String attributeName="";
-							if(attributeNode!=null){
-								attributeName = attributeNode.getAttributes().getNamedItem("name").getNodeValue();
-								
-							}
-							
-							
+							String xpathForQdmWithAttributeList ="/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//elementRef[@id='"+id+"']/attribute";
+							String xpathForQdmWithOutAttributeList ="/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//elementRef[@id='"+id+"'][not(attribute)]";
 							String XPATH_QDMLOOKUP = "/measure/elementLookUp/qdm[@uuid='"+id+"']";
 							Node qdmNode = (Node)xPath.evaluate(XPATH_QDMLOOKUP, xmlProcessor.getOriginalDoc(),XPathConstants.NODE);
-							flag = !validateQdmNode(qdmNode, attributeName);
-							
-							if(flag){
-								break;
+							NodeList qdmWithAttributeNodeList = (NodeList)xPath.evaluate(xpathForQdmWithAttributeList, xmlProcessor.getOriginalDoc(),XPathConstants.NODESET);
+							NodeList qdmWithOutAttributeList = (NodeList)xPath.evaluate(xpathForQdmWithOutAttributeList, xmlProcessor.getOriginalDoc(),XPathConstants.NODESET);														
+							//validation for QDMwithAttributeList
+							//checking for all the Attribute That are used for The Id
+							for(int n=0; n<qdmWithAttributeNodeList.getLength(); n++){								
+									String attributeName = qdmWithAttributeNodeList.item(n).getAttributes().getNamedItem("name").getNodeValue();								
+								flag = !validateQdmNode(qdmNode, attributeName);							
+								if(flag){
+									break;
+								}
 							}
+							//validation for QDMwithOutAttributeList for the Id							
+							if(!flag && qdmWithOutAttributeList.getLength() >0){	
+								String attributeName ="";
+								flag = !validateQdmNode(qdmNode, attributeName);							
+								if(flag){
+									break;
+								}
+							}
+							
 						}
 						
 						for (int n = 0; (n <nodesSDE_functions.getLength()) && !flag; n++) {
@@ -3894,6 +3897,41 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 		return measureSteward;
 		
+	}
+	
+	/**
+	 * Checks if is measure created.
+	 *
+	 * @return true, if is measure created
+	 */
+	public boolean isMeasureCreated() {
+		return isMeasureCreated;
+	}
+
+	/**
+	 * Sets the measure created.
+	 *
+	 * @param isMeasureCreated the new measure created
+	 */
+	public void setMeasureCreated(boolean isMeasureCreated) {
+		this.isMeasureCreated = isMeasureCreated;
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#getReleaseDate()
+	 */
+	@Override
+	public String getReleaseDate() {
+		return releaseDate;
+	}
+	
+	/**
+	 * Sets the release date.
+	 *
+	 * @param releaseDate the new release date
+	 */
+	public void setReleaseDate(String releaseDate) {
+		this.releaseDate = releaseDate;
 	}
 		
 }

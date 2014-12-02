@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
 
+import mat.server.util.XmlProcessor;
+
 import org.hibernate.Hibernate;
 
 
@@ -25,6 +27,11 @@ public class MeasureExport {
 	
 	/** The measure. */
 	private Measure measure;
+	
+	/** XMLProcessor instance to be used for HQMF Export related tasks**/
+	private XmlProcessor hqmfXMLProcessor;
+	
+	private XmlProcessor simpleXMLProcessor;
 	
 	/**
 	 * Gets the id.
@@ -181,6 +188,22 @@ public class MeasureExport {
 			  }  
 		  }  
 		  return baos.toByteArray();
+	}
+
+	public XmlProcessor getHQMFXmlProcessor() {
+		return hqmfXMLProcessor;
+	}
+
+	public void setHQMFXmlProcessor(XmlProcessor xmlProcessor) {
+		this.hqmfXMLProcessor = xmlProcessor;
+	}
+
+	public XmlProcessor getSimpleXMLProcessor() {
+		return simpleXMLProcessor;
+	}
+
+	public void setSimpleXMLProcessor(XmlProcessor simpleXMLProcessor) {
+		this.simpleXMLProcessor = simpleXMLProcessor;
 	}
 	  
 	
