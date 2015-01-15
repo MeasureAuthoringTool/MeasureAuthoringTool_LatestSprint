@@ -217,6 +217,8 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	/** The success message display. */
 	private SuccessMessageDisplay successMessageAddCommentDisplay = new SuccessMessageDisplay();
 	
+	private boolean isClauseWorkSpace = false;
+	
 	/** The add comment panel. */
 	VerticalPanel addCommentPanel;
 	/**
@@ -395,6 +397,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		mainPanel.add(bottomSavePanel);
 		focusPanel.addKeyDownHandler(this);
 		focusPanel.addFocusHandler(this);
+		isClauseWorkSpace = false;
 	}
 	
 	/**
@@ -564,6 +567,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		mainPanel.add(bottomSavePanel);
 		focusPanel.addKeyDownHandler(this);
 		focusPanel.addFocusHandler(this);
+		isClauseWorkSpace = true;
 	}
 	
 	/**
@@ -973,10 +977,12 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 							String subStringText = commentAreaUpdatedText.substring(0,
 									maxLength);
 							CommentAreaTextBox.this.setValue(subStringText);
+							setCursorPos(maxLength);
 						} else {
 							CommentAreaTextBox.this.setValue(commentAreaUpdatedText);
+							setCursorPos(pos);
 						}
-						setCursorPos(pos);
+						
 						setDirty(true);
 						onTextAreaContentChanged(remainingCharsLabel);
 					}
@@ -1593,7 +1599,12 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 								break;
 							case CellTreeNode.LOGICAL_OP_NODE: case CellTreeNode.FUNCTIONS_NODE:
 							case CellTreeNode.SET_OP_NODE:
-								if (copiedNode.getNodeType() != CellTreeNode.CLAUSE_NODE) {
+								if(selectedNode.getName().contains("SATISFIES")){
+									if((selectedNode.getChilds()!=null) && (selectedNode.getChilds().size()>=1)){
+										canPaste = true;
+									}
+								}
+								else if (copiedNode.getNodeType() != CellTreeNode.CLAUSE_NODE) {
 									canPaste = true;
 								}
 								break;
@@ -1844,7 +1855,6 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 			List<String> inValidNodeAtPopulationWorkspace){
 		int nodeType = cellTreeNode.getNodeType();
 		switch(nodeType){
-			
 			case CellTreeNode.LOGICAL_OP_NODE:
 				if(cellTreeNode.getParent().getName()
 						.contains(MEASURE_OBSERVATION)){
@@ -1866,6 +1876,11 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 				}
 				break;
 			case CellTreeNode.SUBTREE_REF_NODE:
+				// Added check for Measure Observation - For DateTimeDiff Fnx.
+				if (cellTreeNode.getParent().getName()
+						.contains(MEASURE_OBSERVATION)) {
+					setMeasureObservations(true);
+				}
 				boolean checkValidation = validateSubTreeRefNode(cellTreeNode);
 				editNode(!checkValidation, cellTreeNode);
 				if (isDateTimeDiffNotInMO) {
@@ -1988,12 +2003,13 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 				if(!isValid) {
 					setValid(!(inValideNodesList.size() == 0));
 				}
-				
-				if (!isMeasureObservations
-						&& subTreeCellTreeNode.getName().contains("DATETIMEDIFF")) {
-					setValid(true);
-					isDateTimeDiffNotInMO = true;
-					setValidHumanReadable(false);
+				if(!isClauseWorkSpace) { // Check for measure Ob and datetimediff is to be performed on Population workspace only.
+					if (!isMeasureObservations
+							&& subTreeCellTreeNode.getName().contains("DATETIMEDIFF")) {
+						setValid(true);
+						isDateTimeDiffNotInMO = true;
+						setValidHumanReadable(false);
+					}
 				}
 				break;
 		}

@@ -2,14 +2,18 @@ package mat.server.simplexml.hqmf;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.model.clause.MeasureExport;
 import mat.server.util.XmlProcessor;
 import mat.shared.UUIDUtilClient;
+
 import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
@@ -28,7 +32,7 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 	private Map<String, String> clauseLogicMap = new HashMap<String, String>();
 	
 	/** The measure grouping map. */
-	private Map<String, NodeList> measureGroupingMap = new HashMap<String, NodeList>();
+	private Map<String, NodeList> measureGroupingMap = new LinkedHashMap<String, NodeList>();
 	
 	/** The scoring type. */
 	private String scoringType;
@@ -61,6 +65,7 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
                  7. Based on top AND/OR/ANDNOT/ORNOT generate "AllTrue", "AllFalse", "AtLeastOneTrue" tag. Generate id empty tag inside it.
                  8. Generate precondition tag typeCode="PRCN" for all children inside top Logical Op and add criteriaRef to it with id and extension.
 		 **/
+		measureExport = me;
 		getMeasureScoringType(me);
 		generateClauseLogicMap(me);
 		getAllMeasureGroupings(me);
@@ -372,7 +377,7 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 				preConditionElement.setAttribute(TYPE_CODE, "PRCN");
 				switch(nodeType) {
 					case "subTree":
-						generateCritRefSubTreeRef(me, preConditionElement, childNode, me.getHQMFXmlProcessor());
+						generateCritRefSubTreeRef( preConditionElement, childNode, me.getHQMFXmlProcessor());
 						break;
 					case "comment":
 						// skipping comment node as of now.
@@ -441,7 +446,7 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 		// creating text for PopulationCriteria
 		Element textElem = outputProcessor.getOriginalDoc()
 				.createElement("text");
-		textElem.setAttribute(VALUE, "Population Criteria text");
+		//textElem.setAttribute(VALUE, "Population Criteria text");
 		popCriteriaElem.appendChild(textElem);
 		componentElement.appendChild(popCriteriaElem);
 		outputProcessor.getOriginalDoc().getDocumentElement().appendChild(componentElement);

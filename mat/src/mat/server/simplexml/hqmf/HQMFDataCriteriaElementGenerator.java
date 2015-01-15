@@ -17,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -64,11 +65,12 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		XmlProcessor simpleXmlprocessor = new XmlProcessor(simpleXMLStr);
 		me.setSimpleXMLProcessor(simpleXmlprocessor);
 		
+		prepHQMF(me);
+		
 		createDataCriteriaForQDMELements(me, dataCriteriaXMLProcessor, simpleXmlprocessor);
 		addDataCriteriaComment(dataCriteriaXMLProcessor);
 		return dataCriteriaXMLProcessor.transform(dataCriteriaXMLProcessor.getOriginalDoc(), true);
 	}
-	
 	
 	/**
 	 * Creates the date criteria template.
@@ -89,7 +91,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		Element itemChild = outputProcessor.getOriginalDoc()
 				.createElement(ITEM);
 		itemChild.setAttribute(ROOT, "2.16.840.1.113883.10.20.28.2.2");
-		/*	itemChild.setAttribute("extension", VERSIONID);*/
+		itemChild.setAttribute("extension", VERSIONID);
 		templateId.appendChild(itemChild);
 		// creating Code Element for DataCriteria
 		Element codeElem = outputProcessor.getOriginalDoc()
@@ -105,7 +107,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		// creating text for DataCriteria
 		Element textElem = outputProcessor.getOriginalDoc()
 				.createElement("text");
-		textElem.setAttribute(VALUE, "Data Criteria text");
+		//textElem.setAttribute(VALUE, "Data Criteria text");
 		dataCriteriaElem.appendChild(textElem);
 		
 		return outputProcessor;
@@ -370,6 +372,8 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			XmlProcessor simpleXmlprocessor, Node qdmNode, boolean forceGenerate)
 					throws XPathExpressionException {
 		String qdmUUID = qdmNode.getAttributes().getNamedItem(UUID).getNodeValue();
+		String qdmName = qdmNode.getAttributes().getNamedItem("name").getNodeValue();
+			
 		
 		String xPathForIndividualElementRefs = "/measure/subTreeLookUp//elementRef[@id='"+qdmUUID+"'][not(attribute)]";
 		NodeList elementRefList = simpleXmlprocessor.findNodeList(simpleXmlprocessor.getOriginalDoc(), xPathForIndividualElementRefs);
@@ -667,10 +671,11 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 				.getNamedItem(TAXONOMY).getNodeValue();
 		String entryCommentText = dataType;
 		// Local variable changes.
-		//String qdmLocalVariableName = (qdmName + "_" + StringUtils.deleteWhitespace(dataType) + "_" + UUIDUtilClient.uuid());
 		String qdmLocalVariableName = qdmName + "_" + dataType;
+		String localVariableName = qdmLocalVariableName;
 		if(qdmNode.getAttributes().getNamedItem("instance") != null){
 			qdmLocalVariableName = qdmNode.getAttributes().getNamedItem("instance").getNodeValue() +"_" + qdmLocalVariableName;
+			localVariableName = qdmNode.getAttributes().getNamedItem("instance").getNodeValue() + "of" + localVariableName;
 		}
 		qdmLocalVariableName = StringUtils.deleteWhitespace(qdmLocalVariableName);
 		if(attributeQDMNode != null){
@@ -679,12 +684,14 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			}
 			if(attributeQDMNode.getUserData(ATTRIBUTE_NAME) != null){
 				entryCommentText = entryCommentText+ " - " +attributeQDMNode.getUserData(ATTRIBUTE_NAME);
+				localVariableName = localVariableName + "_" +attributeQDMNode.getUserData(ATTRIBUTE_NAME);
 			}
 			if(attributeQDMNode.getUserData(ATTRIBUTE_MODE) != null){
 				entryCommentText = entryCommentText+ " With " +attributeQDMNode.getUserData(ATTRIBUTE_MODE);
+				localVariableName = localVariableName + "_" +attributeQDMNode.getUserData(ATTRIBUTE_MODE);
 			}
 		}
-		
+		localVariableName = StringUtils.deleteWhitespace(localVariableName);
 		
 		Element dataCriteriaSectionElem = (Element) dataCriteriaXMLProcessor
 				.getOriginalDoc().getElementsByTagName("dataCriteriaSection")
@@ -704,7 +711,10 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		Element entryElem = dataCriteriaXMLProcessor.getOriginalDoc()
 				.createElement("entry");
 		entryElem.setAttribute(TYPE_CODE, "DRIV");
-		
+		//Local Variable Name Tag - Inside Entry tag.
+		Element localVarElem = dataCriteriaXMLProcessor.getOriginalDoc().createElement("localVariableName");
+		localVarElem.setAttribute(VALUE, localVariableName + "_" + UUIDUtilClient.uuid(5));
+		entryElem.appendChild(localVarElem);
 		Element dataCriteriaElem = dataCriteriaXMLProcessor
 				.getOriginalDoc().createElement(actNodeStr);
 		entryElem.appendChild(dataCriteriaElem);
@@ -726,11 +736,12 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		
 		boolean appendEntryElem = false;
 		String occurString = dataType + "-" + qdmOidValue;
+		
 		if(qdmNode.getAttributes().getNamedItem("instance") != null){
 			generateOutboundForOccur(templateNode, qdmNode, dataCriteriaElem, occurString);
 			entryCommentText = qdmNode.getAttributes().getNamedItem("instance").getNodeValue() + " " + entryCommentText;
 			appendEntryElem = true;
-		}else if(!occurrenceMap.containsKey(occurString)){
+		}else if(!occurrenceMap.containsKey(occurString) || attributeQDMNode != null){
 			
 			String isAddCodeTag = templateNode.getAttributes().getNamedItem("addCodeTag").getNodeValue();
 			if ("true".equalsIgnoreCase(isAddCodeTag)) { // Add Code Element to DataCriteria Element.
@@ -806,8 +817,12 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 	 * @param qdmNode the qdm node
 	 * @param valueElem the value elem
 	 */
-	private void addValueSetVersion(Node qdmNode, Element valueElem) {
-		String valueSetVersion = qdmNode.getAttributes().getNamedItem("version").getNodeValue();
+	protected void addValueSetVersion(Node qdmNode, Element valueElem) {
+		/**
+		 * This is to be commented until we start getting value set versions from 
+		 * VSAC.
+		 */
+		/*String valueSetVersion = qdmNode.getAttributes().getNamedItem("version").getNodeValue();
 		boolean addVersionToValueTag = false;
 		if("1.0".equals(valueSetVersion)) {
 			if(qdmNode.getAttributes().getNamedItem("effectiveDate") !=null){
@@ -821,7 +836,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		}
 		if(addVersionToValueTag) {
 			valueElem.setAttribute("valueSetVersion", valueSetVersion);
-		}
+		}*/
 	}
 	
 	/**
@@ -836,8 +851,8 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			Element dataCriteriaElem, String occurString) {
 		Node refNode = occurrenceMap.get(occurString);
 		
-		System.out.println("In generateOutboundForOccur()..refNode:"+refNode);
-		System.out.println("----------Occurance map:"+occurrenceMap);
+		logger.info("In generateOutboundForOccur()..refNode:"+refNode);
+		logger.info("----------Occurance map:"+occurrenceMap);
 		
 		if(refNode != null){
 			String refRootValue = refNode.getAttributes().getNamedItem(ID).getNodeValue();
@@ -998,7 +1013,8 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 					if(addVersionToValueTag){
 						Attr attrNode = attributedToBeChangedInNode.getOwnerDocument().createAttribute("valueSetVersion");
 						attrNode.setNodeValue(version);
-						attributedToBeChangedInNode.getAttributes().setNamedItem(attrNode);
+						//commented the line below until we start getting value set version from VSAC.
+						//attributedToBeChangedInNode.getAttributes().setNamedItem(attrNode);
 					}
 					
 				} else if (changeAttribute.equalsIgnoreCase(DISPLAY_NAME)) {
@@ -1012,7 +1028,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		for (int i = 0; i < subTemplateNodeChilds.getLength(); i++) {
 			Node childNode = subTemplateNodeChilds.item(i);
 			Node nodeToAttach = dataCriteriaXMLProcessor.getOriginalDoc().importNode(childNode, true);
-			clean(nodeToAttach);
+			XmlProcessor.clean(nodeToAttach);
 			dataCriteriaElem.appendChild(nodeToAttach);
 		}
 	}
@@ -1075,7 +1091,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		for (int i = 0; i < subTemplateNodeChilds.getLength(); i++) {
 			Node childNode = subTemplateNodeChilds.item(i);
 			Node nodeToAttach = dataCriteriaXMLProcessor.getOriginalDoc().importNode(childNode, true);
-			clean(nodeToAttach);
+			XmlProcessor.clean(nodeToAttach);
 			dataCriteriaElem.appendChild(nodeToAttach);
 		}
 	}
@@ -1120,7 +1136,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		for (int i = 0; i < subTemplateNodeChilds.getLength(); i++) {
 			Node childNode = subTemplateNodeChilds.item(i);
 			Node nodeToAttach = dataCriteriaXMLProcessor.getOriginalDoc().importNode(childNode, true);
-			clean(nodeToAttach);
+			XmlProcessor.clean(nodeToAttach);
 			dataCriteriaElem.appendChild(nodeToAttach);
 		}
 		Element timeNode = dataCriteriaXMLProcessor.getOriginalDoc().createElement(TIME);
@@ -1236,7 +1252,8 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 					addVersionToValueTag = true;
 				}
 				if(addVersionToValueTag) {
-					translationNode.setAttribute("valueSetVersion", version);
+					//commented this line until we start getting value set version from VSAC.
+					//translationNode.setAttribute("valueSetVersion", version);
 				}
 				Element displayNameElem = dataCriteriaXMLProcessor.getOriginalDoc()
 						.createElement(DISPLAY_NAME);
@@ -1295,13 +1312,17 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		}
 		String insertAfterNodeName = templateNode.getAttributes().getNamedItem("insertAfterNode").getNodeValue();
 		if (insertAfterNodeName != null) {
-			Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0).getNextSibling();
-			if (outBoundElement != null) {
-				outBoundElement.getParentNode().insertBefore(targetQuantityTag, outBoundElement);
-			} else {
-				if(!isLengthOfStayValueSet){
-					dataCriteriaElem.appendChild(targetQuantityTag);
+			if(dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0) != null) {
+				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0).getNextSibling();
+				if (outBoundElement != null) {
+					outBoundElement.getParentNode().insertBefore(targetQuantityTag, outBoundElement);
+				} else {
+					if(!isLengthOfStayValueSet){
+						dataCriteriaElem.appendChild(targetQuantityTag);
+					}
 				}
+			} else {
+				dataCriteriaElem.appendChild(targetQuantityTag);
 			}
 		} else {
 			if(!isLengthOfStayValueSet){
@@ -1411,11 +1432,11 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			XmlProcessor templateXMLProcessor = TemplateXMLSingleton.getTemplateXmlProcessor();
 			Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/template[text()='"
 					+ attrName + "']");
-			System.out.println("----------");
-			System.out.println(attributeQDMNode.getNodeName());
-			System.out.println(attributeQDMNode.getAttributes());
-			System.out.println(simpleXmlprocessor.transform(attributeQDMNode));
-			System.out.println("----------");
+			logger.info("----------");
+			logger.info(attributeQDMNode.getNodeName());
+			logger.info(attributeQDMNode.getAttributes());
+			logger.info(simpleXmlprocessor.transform(attributeQDMNode));
+			logger.info("----------");
 			String attributeValueSetName = attributeQDMNode.getAttributes()
 					.getNamedItem(NAME).getNodeValue();
 			String attributeOID = attributeQDMNode.getAttributes()
@@ -1622,7 +1643,13 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			observationCriteriaElem.appendChild(valueElem);
 			dataCriteriaElem.appendChild(outboundRelationshipElem);
 		} else {
-			dataCriteriaElem.appendChild(valueElem);
+			NodeList outboundRelationshipList = ((Element)dataCriteriaElem).getElementsByTagName("outboundRelationship");
+			if((outboundRelationshipList != null) && (outboundRelationshipList.getLength() > 0)){
+				Node outboundRelationshipNode = outboundRelationshipList.item(0);
+				dataCriteriaElem.insertBefore(valueElem, outboundRelationshipNode);
+			}else{
+				dataCriteriaElem.appendChild(valueElem);
+			}
 		}
 	}
 	
@@ -2158,7 +2185,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 	 * @param dataCriteriaXMLProcessor the data criteria xml processor
 	 * @return the element
 	 */
-	private Element createCodeForDatatype(Node templateNode,
+	protected Element createCodeForDatatype(Node templateNode,
 			XmlProcessor dataCriteriaXMLProcessor) {
 		Node codeAttr = templateNode.getAttributes().getNamedItem(CODE);
 		Node codeSystemAttr = templateNode.getAttributes().getNamedItem(
@@ -2195,12 +2222,189 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 	}
 	
 	/**
+	 * This method is called before we start generating HQMF code for various data criteria elements.
+	 * It will perform the task of prepping the Simple XML for the clause generation process.
+	 * It will do the following,
+	 * 
+	 * 1) Call prepForAGE_AT(MeasureExport me) which will,
+	 *    Look for <functionalOp type="AGE AT"...../> and
+	 *    replace it with <relationalOp type="SBS" ..../>
+	 *    The first child of this new relationalOp will be the elementRef
+	 *    for Birthdate QDM element.
+	 *    The 2nd child will be the first child of the original
+	 *    <functionalOp type="AGE AT"...../>.
+	 */
+	private void prepHQMF(MeasureExport me) {
+		logger.info("Prepping for HQMF Clause generation..............");
+		prepForUUID(me);
+		prepForAGE_AT(me);
+		prepForSatisfiesAll_Any(me);
+//		System.out.println("Done prepping for HQMF Clause generation.");
+//		System.out.println(me.getSimpleXMLProcessor().transform(me.getSimpleXMLProcessor().getOriginalDoc(), true));
+		logger.info("Done prepping for HQMF Clause generation.");
+	}
+	
+	private void prepForUUID(MeasureExport me) {
+		
+		String xPathForFunctionalOp = "/measure/subTreeLookUp//functionalOp";
+		String xPathForRelationalOp = "/measure/subTreeLookUp//relationalOp";
+		String xPathForSetOp = "/measure/subTreeLookUp//setOp";
+		
+		try{
+			NodeList nodeList = me.getSimpleXMLProcessor().findNodeList(me.getSimpleXMLProcessor().getOriginalDoc(), xPathForFunctionalOp);
+			addUUIDToNodes(nodeList);
+			
+			nodeList = me.getSimpleXMLProcessor().findNodeList(me.getSimpleXMLProcessor().getOriginalDoc(), xPathForRelationalOp);
+			addUUIDToNodes(nodeList);
+			
+			nodeList = me.getSimpleXMLProcessor().findNodeList(me.getSimpleXMLProcessor().getOriginalDoc(), xPathForSetOp);
+			addUUIDToNodes(nodeList);
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private void addUUIDToNodes(NodeList nodeList){
+		if(nodeList != null && nodeList.getLength() > 0){
+			for(int i=0;i<nodeList.getLength();i++){
+				Node node = nodeList.item(i);
+				((Element)node).setAttribute("uuid", UUIDUtilClient.uuid());
+			}
+		}
+	}
+
+	/**
+	 * This method will be called by prepHQMF(MeasureExport me) method to prep 
+	 * functionalOp for AGE AT functions. This methiod will do the following, 
+	 * 
+	 *    Look for <functionalOp type="AGE AT"...../> and
+	 *    replace it with <relationalOp type="SBS" ..../>
+	 *    The first child of this new relationalOp will be the elementRef
+	 *    for Birthdate QDM element.
+	 *    The 2nd child will be the first child of the original
+	 *    <functionalOp type="AGE AT"...../>.
+	 * @param me
+	 */
+	
+	private void prepForAGE_AT(MeasureExport me) {
+		XmlProcessor xmlProcessor = me.getSimpleXMLProcessor();
+		logger.info("Prepping for HQMF Clause generation for AGE AT functionalOps.");
+				
+		try {
+			
+			//find <qdm> for Birthdate QDM element in elementLookUp
+			String xPathForBirthdate = "/measure/elementLookUp/qdm[@name='Birthdate'][@datatype='Patient Characteristic Birthdate']";
+			Node birthDateQDM = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), xPathForBirthdate);
+			if(birthDateQDM == null){
+				logger.info("**********   Could not find QDM for Birthdate. No changes done for AGE AT. ***************");
+				return;
+			}
+			
+			String xPathForAGE_AT = "/measure/subTreeLookUp//functionalOp[@type='AGE AT']";
+			Node ageAtFuncNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), xPathForAGE_AT);
+			
+			logger.info(".......found AGE AT functionalOps");
+							
+			while(ageAtFuncNode != null){
+				logger.info("Changing "+ageAtFuncNode.toString() + " to relational SBS node.");
+				Node cloneAgeAtRelNode = ageAtFuncNode.cloneNode(true);
+				
+				//hold on to the first child of Age At
+				Node firstChild = cloneAgeAtRelNode.getFirstChild();
+				//Node firstChild = ageAtFuncNode.getFirstChild();
+				NamedNodeMap attribMap = ageAtFuncNode.getAttributes();
+				Element newRelationalOp = xmlProcessor.getOriginalDoc().createElement("relationalOp");
+				
+				for(int j=0;j<attribMap.getLength();j++){
+					Node attrib = attribMap.item(j);
+					newRelationalOp.setAttribute(attrib.getNodeName(), attrib.getNodeValue());
+				}
+				
+				//set the type attribute to SBS
+				newRelationalOp.getAttributes().getNamedItem("type").setNodeValue("SBS");
+												
+				//create a new <elementRef for birthDateQDM
+				Element birthDateElementRef = xmlProcessor.getOriginalDoc().createElement("elementRef");
+				birthDateElementRef.setAttribute("id", birthDateQDM.getAttributes().getNamedItem("uuid").getNodeValue());
+				birthDateElementRef.setAttribute("type", "qdm");
+				birthDateElementRef.setAttribute("displayName", "Birthdate : Patient Characteristic Birthdate");
+				
+				newRelationalOp.appendChild(birthDateElementRef);
+				newRelationalOp.appendChild(firstChild);
+				
+				Node parentNode = ageAtFuncNode.getParentNode();
+				parentNode.insertBefore(newRelationalOp, ageAtFuncNode);
+				parentNode.removeChild(ageAtFuncNode);
+				logger.info("Change done.");
+				
+				ageAtFuncNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), xPathForAGE_AT);
+			}
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * This method will be called by prepHQMF(MeasureExport me) method to prep 
+	 * functionalOp for SATISFIES ALL/SATISFIES ANY functions. 
+	 * This methiod will do the following, 
+	 * 
+	 * This method will look for all functionalOp's with names, 
+	 * SATISFIES ALL/SATISFIES ANY renames the <functionalOp> tag with 
+	 * <setOp> tag.
+	 *  
+	 * @param me
+	 */
+	private void prepForSatisfiesAll_Any(MeasureExport me) {
+		XmlProcessor xmlProcessor = me.getSimpleXMLProcessor();
+		logger.info("Prepping for HQMF Clause generation for Satisfies All/Satisfies Any functionalOps.");
+		String xPathForSatisfiesAllAny = "/measure/subTreeLookUp//functionalOp[@type='SATISFIES ALL' or @type='SATISFIES ANY']";
+		try {
+			Node satisfiesFuncNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), xPathForSatisfiesAllAny);
+			logger.info(".......found Satisfies All/Satisfies Any functionalOps");
+			while(satisfiesFuncNode != null){
+				logger.info("Changing functionaOp "+satisfiesFuncNode.getAttributes().getNamedItem("displayName").getNodeValue() + " to relationalOp node.");
+									
+				NamedNodeMap attribMap = satisfiesFuncNode.getAttributes();
+				Element newSetOp = xmlProcessor.getOriginalDoc().createElement("setOp");
+				
+				for(int j=0;j<attribMap.getLength();j++){
+					Node attrib = attribMap.item(j);
+					newSetOp.setAttribute(attrib.getNodeName(), attrib.getNodeValue());
+				}
+								
+				NodeList childNodeList = satisfiesFuncNode.getChildNodes();
+				/**
+				 * Ignore the first element of SATISFIES ALL/ANY.
+				 * i.e. Start counter at 1 isntead of 0.
+				 */
+				for(int j=1;j<childNodeList.getLength();j++){
+					Node childNode = childNodeList.item(j).cloneNode(true);
+					newSetOp.appendChild(childNode);
+				}
+				
+				Node parentNode = satisfiesFuncNode.getParentNode();
+				parentNode.insertBefore(newSetOp, satisfiesFuncNode);
+				parentNode.removeChild(satisfiesFuncNode);
+				logger.info("Change done.");
+				satisfiesFuncNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), xPathForSatisfiesAllAny);
+			}
+		}catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	/**
 	 * Gets the unit string.
 	 *
 	 * @param unitString the unit string
 	 * @return the unit string
 	 */
-	private String getUnitString(String unitString){
+	protected String getUnitString(String unitString){
 		String returnString = unitString;
 		
 		if(unitString.equals("years") || unitString.equals("year")){
@@ -2240,29 +2444,5 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		}
 		
 		return returnString;
-	}
-	
-	private void clean(Node node)
-	{
-	  NodeList childNodes = node.getChildNodes();
-
-	  for (int n = childNodes.getLength() - 1; n >= 0; n--)
-	  {
-	     Node child = childNodes.item(n);
-	     short nodeType = child.getNodeType();
-
-	     if (nodeType == Node.ELEMENT_NODE)
-	        clean(child);
-	     else if (nodeType == Node.TEXT_NODE)
-	     {
-	        String trimmedNodeVal = child.getNodeValue().trim();
-	        if (trimmedNodeVal.length() == 0)
-	           node.removeChild(child);
-	        else
-	           child.setNodeValue(trimmedNodeVal);
-	     }
-	     else if (nodeType == Node.COMMENT_NODE)
-	        node.removeChild(child);
-	  }
 	}
 }

@@ -25,28 +25,20 @@ public class HQMFDataCriteriaGenerator implements Generator {
 		hqmfClauseLogicGenerator.generate(me);
 		HQMFPopulationLogicGenerator hqmfPopulationLogicGenerator = new HQMFPopulationLogicGenerator();
 		hqmfPopulationLogicGenerator.generate(me);
+		HQMFMeasureObservationLogicGenerator hqmfMeasureObservationLogicGenerator = new HQMFMeasureObservationLogicGenerator();
+		hqmfMeasureObservationLogicGenerator.generate(me);
 		XmlProcessor dataCriteriaXMLProcessor = me.getHQMFXmlProcessor();
-		return removeXmlTagNamespaceAndPreamble(dataCriteriaXMLProcessor.transform(dataCriteriaXMLProcessor.getOriginalDoc(), true));
+		return removePreambleAndRootTags(dataCriteriaXMLProcessor.transform(dataCriteriaXMLProcessor.getOriginalDoc(), true));
 	}
 	
 	/**
 	 * @param xmlString
 	 * @return
 	 */
-	private String removeXmlTagNamespaceAndPreamble(String xmlString) {
+	private String removePreambleAndRootTags(String xmlString) {
 		xmlString = xmlString.replaceAll("\\<\\?xml(.+?)\\?\\>", "").trim()
 				.replaceAll("(<\\?[^<]*\\?>)?", "");/* remove preamble */
-								
 		xmlString = xmlString.replaceAll("<root>", "").replaceAll("</root>","");
-		
-		String componentTag = "<component";
-		int indx = xmlString.indexOf(componentTag);
-		while(indx > -1){
-			int indx2 = xmlString.indexOf(">", indx);
-			xmlString = xmlString.substring(0, indx+componentTag.length()) + xmlString.substring(indx2);
-			indx = xmlString.indexOf(componentTag,indx2);
-		}
-		
 		return xmlString;
 	}
 }

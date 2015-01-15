@@ -6,9 +6,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.xml.xpath.XPathExpressionException;
+
 import mat.server.util.XmlProcessor;
 import mat.shared.ConstantMessages;
+
 import org.apache.commons.lang.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -1498,11 +1501,11 @@ public class HumanReadableGenerator {
 	public static String generateHTMLForMeasure(String measureId,
 			String simpleXmlStr) {
 		String humanReadableHTML = "";
+		lhsID = new ArrayList<String>();
 		try {
 			org.jsoup.nodes.Document humanReadableHTMLDocument = HeaderHumanReadableGenerator
 					.generateHeaderHTMLForMeasure(simpleXmlStr);
 			XmlProcessor simpleXMLProcessor = resolveSubTreesInPopulations(simpleXmlStr);
-			
 			if (simpleXMLProcessor == null) {
 				org.jsoup.nodes.Document htmlDocument = createBaseHumanReadableDocument();
 				Element bodyElement = htmlDocument.body();
@@ -1543,10 +1546,12 @@ public class HumanReadableGenerator {
 		generateQDMVariables(humanReadableHTMLDocument, simpleXMLProcessor);
 		generateDataCriteria(humanReadableHTMLDocument, simpleXMLProcessor);
 		generateSupplementalData(humanReadableHTMLDocument, simpleXMLProcessor);
+		generateRiskAdjustmentVariables(humanReadableHTMLDocument, simpleXMLProcessor);
 		HeaderHumanReadableGenerator.addMeasureSet(simpleXMLProcessor,
 				humanReadableHTMLDocument);
 	}
 	
+
 	/**
 	 * Generate table of contents.
 	 *
@@ -1580,6 +1585,10 @@ public class HumanReadableGenerator {
 		supplementalCriteriaLI
 		.append("<a href=\"#d1e767\">Supplemental Data Elements</a>");
 		
+		Element riskAdjustmentCriteriaLI = tocULElement.appendElement(HTML_LI);
+		riskAdjustmentCriteriaLI
+		.append("<a href=\"#d1e879\">Risk Adjustment Variables</a>");
+		
 		bodyElement
 		.append("<div style=\"float:left; background:teal; height:3px; width:80%\"></div><pre><br/></pre>");
 		
@@ -1607,11 +1616,12 @@ public class HumanReadableGenerator {
 		// dont have 'Timing Element', 'Patient Characteristic Expired' and
 		// 'Patient Characteristic Birthdate' Default QDM data type and are not
 		// supplement data elems
+		String xpathForQDMElements = "/measure/elementLookUp/qdm[@datatype != 'Timing Element' and @oid!='"
+				+ ConstantMessages.BIRTHDATE_OID + "' " + "and @oid!='"
+				+ ConstantMessages.EXPIRED_OID + "']";
 		NodeList qdmElements = simpleXMLProcessor.findNodeList(
 				simpleXMLProcessor.getOriginalDoc(),
-				"/measure/elementLookUp/qdm[@datatype != 'Timing Element' and @oid!='"
-						+ ConstantMessages.BIRTHDATE_OID + "' " + "and @oid!='"
-						+ ConstantMessages.EXPIRED_OID + "']");
+				xpathForQDMElements);
 		
 		Map<String, Node> qdmMap = new HashMap<String, Node>();
 		Map<String, Node> attributeMap = new HashMap<String, Node>();
@@ -1630,7 +1640,8 @@ public class HumanReadableGenerator {
 					.getNodeValue();
 			
 			if ("attribute".equals(datatype)) {
-				attributeMap.put(oid + datatype, qdmNode);
+				//attributeMap.put(oid + datatype, qdmNode);
+				attributeMap.put(datatype + ":" + name + "~" + oid, qdmNode);
 			} else if ("true".equals(suppDataElement)) {
 				int isUsedInLogic = simpleXMLProcessor.getNodeCount(
 						simpleXMLProcessor.getOriginalDoc(),
@@ -1702,18 +1713,22 @@ public class HumanReadableGenerator {
 			for (String qdmString : qdmItemList) {
 				mainListElement.appendElement(HTML_LI).appendText(qdmString);
 			}
-			
+			List<String> attrNameList = new ArrayList<String>();
 			for (Node qdm : attributeMap.values()) {
 				NamedNodeMap qdmAttribs = qdm.getAttributes();
-				Node node = simpleXMLProcessor.findNode(simpleXMLProcessor
+				String uuid = qdmAttribs.getNamedItem("uuid").getNodeValue();
+				NodeList nodeList = simpleXMLProcessor.findNodeList(simpleXMLProcessor
 						.getOriginalDoc(), "//attribute[@qdmUUID=\""
 								+ qdmAttribs.getNamedItem("uuid").getNodeValue()
 								+ "\"][@name != \"negation rationale\"]");
 				String name = "";
-				if (node != null) {
-					name = node.getAttributes().getNamedItem("name")
+				if (nodeList != null) {
+					for(int i=0;i<nodeList.getLength();i++){
+					name = nodeList.item(i).getAttributes().getNamedItem("name")
 							.getNodeValue();
 					name = StringUtils.capitalize(name);
+					String attrUUID_NAME = uuid + "~" +name;
+					if(!attrNameList.contains(attrUUID_NAME)){
 					Element listItem = mainListElement.appendElement(HTML_LI);
 					listItem.appendText(" Attribute: "
 							+ "\""
@@ -1727,7 +1742,10 @@ public class HumanReadableGenerator {
 							.getNodeValue() + " Value Set ("
 							+ qdmAttribs.getNamedItem("oid").getNodeValue()
 							+ ")\"");
-				}
+					attrNameList.add(uuid+"~"+name);
+					}
+					}
+				}	
 			}
 		} else {
 			mainListElement.appendElement(HTML_LI).appendText("None");
@@ -1848,6 +1866,42 @@ public class HumanReadableGenerator {
 						+ qdmMap.getNamedItem("taxonomy").getNodeValue()
 						+ " Value Set ("
 						+ qdmMap.getNamedItem("oid").getNodeValue() + ")\"");
+			}
+		} else {
+			mainListElement.appendElement(HTML_LI).appendText("None");
+		}
+	}
+	
+	
+	/**
+	 * Generate risk adjustment variables.
+	 *
+	 * @param humanReadableHTMLDocument the human readable html document
+	 * @param simpleXMLProcessor the simple xml processor
+	 * @throws XPathExpressionException the x path expression exception
+	 */
+	private static void generateRiskAdjustmentVariables(
+			Document humanReadableHTMLDocument, XmlProcessor simpleXMLProcessor) 
+					throws XPathExpressionException {
+		Element bodyElement = humanReadableHTMLDocument.body();
+		bodyElement
+		.append("<h3><a name=\"d1e879\" href=\"#toc\">Risk Adjustment Variables</a></h3>");
+		
+		Element mainDivElement = bodyElement.appendElement("div");
+		Element mainListElement = mainDivElement.appendElement(HTML_UL);
+		
+		NodeList elements = simpleXMLProcessor.findNodeList(
+				simpleXMLProcessor.getOriginalDoc(),
+				"/measure/riskAdjustmentVariables/subTreeRef");
+		
+		if (elements.getLength() > 0) {
+			for(int i=0;i<elements.getLength();i++){
+				Node childNode = elements.item(i);
+				String uuid = childNode.getAttributes().getNamedItem("id").getNodeValue();
+				String xpathforSubTree = "/measure/subTreeLookUp/subTree[@uuid='"+ uuid +"']";
+				Node subTreeNode = simpleXMLProcessor.findNode(simpleXMLProcessor.getOriginalDoc(), 
+						xpathforSubTree);
+				parseChild(subTreeNode.getFirstChild(), mainListElement, subTreeNode.getParentNode(), simpleXMLProcessor, false);
 			}
 		} else {
 			mainListElement.appendElement(HTML_LI).appendText("None");

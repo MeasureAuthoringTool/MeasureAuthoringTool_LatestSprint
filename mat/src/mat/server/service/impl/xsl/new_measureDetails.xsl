@@ -29,7 +29,7 @@
       </xsl:text>
 		<typeId root="2.16.840.1.113883.1.3" extension="POQM_HD000001UV02" />
 		<templateId>
-			<item root="2.16.840.1.113883.10.20.28.1.1" />
+			<item root="2.16.840.1.113883.10.20.28.1.1" extension="2014-11-24"/>
 		</templateId>
 		<id root="{normalize-space(uuid)}" />
 		<code code="57024-2" codeSystem="2.16.840.1.113883.6.1">
@@ -279,10 +279,12 @@
 				<code code="STRAT" codeSystem="2.16.840.1.113883.5.4">
 					<displayName value="Stratification" />
 				</code>
-				<value xsi:type="ED" mediaType="text/plain" value="None" />
-				<!-- <value xsi:type="ED" mediaType="text/plain"> <xsl:call-template 
-					name="trim"> <xsl:with-param name="textString" select="stratification"/> 
-					</xsl:call-template> </value> -->
+				<xsl:variable name="stratTxt">
+					<xsl:call-template name="trim"> 
+						<xsl:with-param name="textString" select="stratification"/> 
+					</xsl:call-template> 
+				</xsl:variable>
+				<value xsi:type="ED" mediaType="text/plain" value="{$stratTxt}"/> 
 			</measureAttribute>
 		</subjectOf>
 
@@ -292,10 +294,12 @@
 				<code code="MSRADJ" codeSystem="2.16.840.1.113883.5.4">
 					<displayName value="Risk Adjustment" />
 				</code>
-				<value xsi:type="ED" mediaType="text/plain" value="None" />
-				<!-- <value xsi:type="ED" mediaType="text/plain"> <xsl:call-template 
-					name="trim"> <xsl:with-param name="textString" select="riskAdjustment"/> 
-					</xsl:call-template> </value> -->
+				<xsl:variable name="rskAdjustTxt">
+					<xsl:call-template name="trim"> 
+						<xsl:with-param name="textString" select="riskAdjustment"/> 
+					</xsl:call-template>
+				</xsl:variable>
+				<value xsi:type="ED" mediaType="text/plain" value="{$rskAdjustTxt}"/> 
 			</measureAttribute>
 		</subjectOf>
 
@@ -305,10 +309,12 @@
 				<code code="MSRAGG" codeSystem="2.16.840.1.113883.5.4">
 					<displayName value="Rate Aggregation" />
 				</code>
-				<value xsi:type="ED" mediaType="text/plain" value="None" />
-				<!-- <value xsi:type="ED" mediaType="text/plain"> <xsl:call-template 
-					name="trim"> <xsl:with-param name="textString" select="aggregation"/> </xsl:call-template> 
-					</value> -->
+				<xsl:variable name="rateAggTxt"> 
+					<xsl:call-template name="trim"> 
+						<xsl:with-param name="textString" select="aggregation"/> 
+					</xsl:call-template> 
+				</xsl:variable>
+				<value xsi:type="ED" mediaType="text/plain" value="{$rateAggTxt}" />
 			</measureAttribute>
 		</subjectOf>
 
