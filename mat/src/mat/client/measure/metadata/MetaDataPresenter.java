@@ -68,12 +68,6 @@ public class MetaDataPresenter  implements MatPresenter {
 	 */
 	public static interface MetaDataDetailDisplay {
 		
-		/**
-		 * Gets the measure name.
-		 * 
-		 * @return the measure name
-		 */
-		public Label getMeasureName();
 		
 		/**
 		 * Gets the short name.
@@ -1423,10 +1417,13 @@ public class MetaDataPresenter  implements MatPresenter {
 	private void prepopulateFields() {
 		metaDataDisplay.getNqfId().setValue(currentMeasureDetail.getNqfId());
 		metaDataDisplay.geteMeasureIdentifier().setText(currentMeasureDetail.getMeasureSetId());
+		metaDataDisplay.geteMeasureIdentifier().setTitle(currentMeasureDetail.getMeasureSetId());
 		metaDataDisplay.getSetName().setValue(currentMeasureDetail.getGroupName());
-		metaDataDisplay.getMeasureName().setText(currentMeasureDetail.getName());
+		// short name is the Abbreviated Title
 		metaDataDisplay.getShortName().setText(currentMeasureDetail.getShortName());
-		metaDataDisplay.getMeasureScoring().setText(currentMeasureDetail.getMeasScoring());
+		metaDataDisplay.getShortName().setTitle(currentMeasureDetail.getShortName());
+		metaDataDisplay.getMeasureScoring().setText(currentMeasureDetail.getMeasScoring());	
+		metaDataDisplay.getMeasureScoring().setTitle(currentMeasureDetail.getMeasScoring());
 		metaDataDisplay.getClinicalRecommendation().setValue(currentMeasureDetail.getClinicalRecomms());
 		metaDataDisplay.getDefinitions().setValue(currentMeasureDetail.getDefinitions());
 		metaDataDisplay.getDescription().setValue(currentMeasureDetail.getDescription());		
@@ -1456,6 +1453,7 @@ public class MetaDataPresenter  implements MatPresenter {
 		metaDataDisplay.getImprovementNotation().setValue(currentMeasureDetail.getImprovNotations());
 		metaDataDisplay.getSupplementalData().setValue(currentMeasureDetail.getSupplementalData());
 		metaDataDisplay.getFinalizedDate().setText(currentMeasureDetail.getFinalizedDate());
+		metaDataDisplay.getFinalizedDate().setTitle(currentMeasureDetail.getFinalizedDate());
 		//currentMeasureDetail.setCalenderYear(metaDataDisplay.getCalenderYear().getValue());
 		metaDataDisplay.getCalenderYear().setValue(currentMeasureDetail.isCalenderYear());
 		if (metaDataDisplay.getCalenderYear().getValue().equals(Boolean.FALSE)) {
@@ -1466,6 +1464,7 @@ public class MetaDataPresenter  implements MatPresenter {
 			metaDataDisplay.getMeasurementToPeriodInputBox().setValue(null);
 		}
 		metaDataDisplay.getVersionNumber().setText(currentMeasureDetail.getVersionNumber());
+		metaDataDisplay.getVersionNumber().setTitle(currentMeasureDetail.getVersionNumber());
 		metaDataDisplay.getRationale().setValue(currentMeasureDetail.getRationale());
 		metaDataDisplay.getStratification().setValue(currentMeasureDetail.getStratification());
 		metaDataDisplay.getRiskAdjustment().setValue(currentMeasureDetail.getRiskAdjustment());	
@@ -1718,7 +1717,6 @@ public class MetaDataPresenter  implements MatPresenter {
 	 *            the meta data display
 	 */
 	public void updateModelDetailsFromView(ManageMeasureDetailModel currentMeasureDetail, MetaDataDetailDisplay metaDataDisplay) {
-		currentMeasureDetail.setName(metaDataDisplay.getMeasureName().getText());
 		currentMeasureDetail.setShortName(metaDataDisplay.getShortName().getText());
 		currentMeasureDetail.setFinalizedDate(metaDataDisplay.getFinalizedDate().getText());
 		currentMeasureDetail.setClinicalRecomms(metaDataDisplay.getClinicalRecommendation().getValue());

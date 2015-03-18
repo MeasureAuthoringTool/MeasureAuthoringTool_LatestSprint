@@ -43,8 +43,10 @@ public class ComparisonDialogBox {
 	/** The dialog box. */
 	public static DialogBox dialogBox = new DialogBox(false,true);
 	
-	public static List<String> filterFunctionList = new ArrayList<String>();
-	
+	private static List<String> filterFunctionList = new ArrayList<String>();
+	private static List<String> subSetFunctionsList = new ArrayList<String>();
+	private static List<String> aggregateFunctionsList = new ArrayList<String>();
+		
 	static{
 		filterFunctionList.add("FIRST");
 		filterFunctionList.add("SECOND");
@@ -54,6 +56,20 @@ public class ComparisonDialogBox {
 		filterFunctionList.add("MOST RECENT");
 		filterFunctionList.add("SATISFIES ALL");
 		filterFunctionList.add("SATISFIES ANY");
+		
+		subSetFunctionsList.add("FIRST");
+		subSetFunctionsList.add("SECOND");
+		subSetFunctionsList.add("THIRD");
+		subSetFunctionsList.add("FOURTH");
+		subSetFunctionsList.add("FIFTH");
+		subSetFunctionsList.add("MOST RECENT");
+		
+		aggregateFunctionsList.add("MIN");
+		aggregateFunctionsList.add("MAX");
+		aggregateFunctionsList.add("MEDIAN");
+		aggregateFunctionsList.add("AVG");
+		aggregateFunctionsList.add("COUNT");
+		aggregateFunctionsList.add("SUM");
 	}
 	
 	/**
@@ -477,24 +493,22 @@ public class ComparisonDialogBox {
 	 */
 	public static List<String> filterFunctions(final CellTreeNode cellTreeNode, List<String> allFunctionsList) {
 		
-		System.out.println("filtyerFunctions....");
+		System.out.println("filterFunctions....");
 		List<String> returnList = new ArrayList<String>(filterFunctionList);
-//		returnList.add("FIRST");
-//		returnList.add("SECOND");
-//		returnList.add("THIRD");
-//		returnList.add("FOURTH");
-//		returnList.add("FIFTH");
-//		returnList.add("MOST RECENT");
-//		returnList.add("SATISFIES ALL");
-//		returnList.add("SATISFIES ANY");
 		
 		int nodeType = cellTreeNode.getNodeType();
 		System.out.println("nodeType:"+nodeType);
-		String nodeText = cellTreeNode.getLabel();
-		System.out.println("nodeText:"+nodeText);
-		
-		if(nodeType == CellTreeNode.FUNCTIONS_NODE && (!("SATISFIES ALL".equals(nodeText)) && !("SATISFIES ANY".equals(nodeText)) )){
-			returnList = allFunctionsList;
+				
+		if(nodeType == CellTreeNode.FUNCTIONS_NODE) {
+			@SuppressWarnings("unchecked")
+			String nodeText = cellTreeNode.getName();
+			HashMap<String, String> map =  (HashMap<String, String>) cellTreeNode.getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+			if(map != null){
+				nodeText = map.get(PopulationWorkSpaceConstants.TYPE);
+			}
+			System.out.println("nodeText:"+nodeText);
+			returnList = getAllowedFunctionsList(allFunctionsList, nodeText);
+				
 		}else if(nodeType != CellTreeNode.TIMING_NODE && nodeType != CellTreeNode.SET_OP_NODE && 
 				nodeType != CellTreeNode.RELATIONSHIP_NODE && nodeType != CellTreeNode.FUNCTIONS_NODE) {
 			returnList = allFunctionsList;
@@ -503,5 +517,37 @@ public class ComparisonDialogBox {
 		System.out.println("returnList:"+returnList);
 		return returnList;
 	}
+
+	public static List<String> getAllowedFunctionsList(List<String> allFunctionsList, String nodeText) {
+		
+		List<String> returnList = new ArrayList<String>(filterFunctionList);
+		
+		if(subSetFunctionsList.contains(nodeText)){
+			returnList.clear();
+			returnList.add("SATISFIES ALL");
+			returnList.add("SATISFIES ANY");
+		}else if(aggregateFunctionsList.contains(nodeText)){
+			returnList.clear();
+			returnList.add("SATISFIES ALL");
+			returnList.add("SATISFIES ANY");
+			returnList.add("DATETIMEDIFF");
+		}else if( (!("SATISFIES ALL".equals(nodeText)) 
+				&& !("SATISFIES ANY".equals(nodeText)) 
+				&& !("AGE AT".equals(nodeText)) 
+				&& !("DATETIMEDIFF".equals(nodeText)) )){
+			
+			returnList = allFunctionsList;
+		}
+		return returnList;
+	}
+	
+	public static List<String> getSubSetFunctionsList() {
+		return subSetFunctionsList;
+	}
+	
+	public static List<String> getAggregateFunctionsList() {
+		return aggregateFunctionsList;
+	}
+
 	
 }

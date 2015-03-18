@@ -630,9 +630,18 @@ public class ClauseWorkspaceContextMenu {
 					(xmlTreeDisplay.getSelectedNode().getChilds() != null) && 
 					(xmlTreeDisplay.getSelectedNode().getChilds().size() >=1)) {
 						if(xmlTreeDisplay.getCopiedNode().getNodeType() == CellTreeNode.FUNCTIONS_NODE){
-							String funcName = xmlTreeDisplay.getCopiedNode().getLabel();
-							if(!ComparisonDialogBox.filterFunctionList.contains(funcName)){
+							String copiedFuncName = xmlTreeDisplay.getCopiedNode().getName();
+							
+							@SuppressWarnings("unchecked")
+							HashMap<String, String> map =  (HashMap<String, String>) xmlTreeDisplay.getCopiedNode().getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+							if(map != null){
+								copiedFuncName = map.get(PopulationWorkSpaceConstants.TYPE);
+							}
+							List<String> allowedFunctionsList = ComparisonDialogBox.filterFunctions(xmlTreeDisplay.getSelectedNode(), MatContext.get().functions);
+							if(!allowedFunctionsList.contains(copiedFuncName)){
 								pasteMenu.setEnabled(false);
+							}else{
+								pasteMenu.setEnabled(true);
 							}
 						}else{
 							pasteMenu.setEnabled(true);
@@ -670,18 +679,77 @@ public class ClauseWorkspaceContextMenu {
 					, functions); // functions sub menus 3rd level
 			createAddClauseMenuItem(subMenuBar);
 			addMenu = new MenuItem("Add", subMenuBar); // 1st level menu
+			
+			String selectedFunctionName = xmlTreeDisplay.getSelectedNode().getName();
+			@SuppressWarnings("unchecked")
+			HashMap<String, String> attribMap =  (HashMap<String, String>) xmlTreeDisplay.getSelectedNode().getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+			if(attribMap != null){
+				selectedFunctionName = attribMap.get(PopulationWorkSpaceConstants.TYPE);
+			}
+			
+			if(ComparisonDialogBox.getAggregateFunctionsList().contains(selectedFunctionName) || ComparisonDialogBox.getSubSetFunctionsList().contains(selectedFunctionName)){
+				if(xmlTreeDisplay.getSelectedNode().hasChildren()){
+					addMenu.setEnabled(false);
+				}
+			}
+			
 			popupMenuBar.addItem(addMenu);
+						
+			if(xmlTreeDisplay.getCopiedNode() != null){
+				if(ComparisonDialogBox.getAggregateFunctionsList().contains(selectedFunctionName) || ComparisonDialogBox.getSubSetFunctionsList().contains(selectedFunctionName)){
+					if(xmlTreeDisplay.getSelectedNode().hasChildren()){
+						pasteMenu.setEnabled(false);
+					}else if( (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE) ) {
+						if(xmlTreeDisplay.getCopiedNode().getNodeType() == CellTreeNode.FUNCTIONS_NODE){
+							@SuppressWarnings("unchecked")
+							HashMap<String, String> map =  (HashMap<String, String>) xmlTreeDisplay.getCopiedNode().getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+							String copiedFuncName = xmlTreeDisplay.getCopiedNode().getName();
+							if(map != null){
+								copiedFuncName = map.get(PopulationWorkSpaceConstants.TYPE);
+							}
+							List<String> allowedFunctionsList = ComparisonDialogBox.filterFunctions(xmlTreeDisplay.getSelectedNode(), MatContext.get().functions);
+							if(!allowedFunctionsList.contains(copiedFuncName)){
+								pasteMenu.setEnabled(false);
+							}else{
+								pasteMenu.setEnabled(true);
+							}
+						}else{
+							pasteMenu.setEnabled(true);
+						}
+					}else {
+						pasteMenu.setEnabled(false);
+					}
+				}else{
+					if((xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE)) {
+						if(xmlTreeDisplay.getCopiedNode().getNodeType() == CellTreeNode.FUNCTIONS_NODE){
+							@SuppressWarnings("unchecked")
+							HashMap<String, String> map =  (HashMap<String, String>) xmlTreeDisplay.getCopiedNode().getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+							String copiedFuncName = xmlTreeDisplay.getCopiedNode().getName();
+							if(map != null){
+								copiedFuncName = map.get(PopulationWorkSpaceConstants.TYPE);
+							}
+							List<String> allowedFunctionsList = ComparisonDialogBox.filterFunctions(xmlTreeDisplay.getSelectedNode(), MatContext.get().functions);
+							if(!allowedFunctionsList.contains(copiedFuncName)){
+								pasteMenu.setEnabled(false);
+							}else{
+								pasteMenu.setEnabled(true);
+							}
+						}else{
+							pasteMenu.setEnabled(true);
+						}
+					}else {
+						pasteMenu.setEnabled(false);
+					}
+				}
+			}
+			System.out.println("paste menu enabled2?"+pasteMenu.isEnabled());
 		}
 		
 		popupMenuBar.addSeparator(separator);
 		addCommonMenus();
 		copyMenu.setEnabled(true);
-		//can paste LOGOP, RELOP, QDM, TIMING & FUNCS
-		if ((xmlTreeDisplay.getCopiedNode() != null)
-				&& (xmlTreeDisplay.getCopiedNode().getNodeType() != CellTreeNode.CLAUSE_NODE) && ! xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ALL") &&
-				! xmlTreeDisplay.getSelectedNode().getName().equalsIgnoreCase("SATISFIES ANY")) {
-			pasteMenu.setEnabled(true);
-		}
+	
+		System.out.println("paste menu enabled3?"+pasteMenu.isEnabled());
 		/*
 		 * POC Global Copy Paste.
 		 * copyToClipBoardMenu.setEnabled(true);
@@ -757,8 +825,11 @@ public class ClauseWorkspaceContextMenu {
 				pasteMenu.setEnabled(true);
 			}
 			if(xmlTreeDisplay.getCopiedNode().getNodeType() == CellTreeNode.FUNCTIONS_NODE){
-				String funcName = xmlTreeDisplay.getCopiedNode().getLabel();
-				if(!ComparisonDialogBox.filterFunctionList.contains(funcName)){
+				HashMap<String, String> map =  (HashMap<String, String>) xmlTreeDisplay.getCopiedNode().getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+				String funcName = map.get(PopulationWorkSpaceConstants.TYPE);
+				
+				List<String> allowedFunctionsList = ComparisonDialogBox.filterFunctions(xmlTreeDisplay.getSelectedNode(), MatContext.get().functions);
+				if(!allowedFunctionsList.contains(funcName)){
 					pasteMenu.setEnabled(false);
 				}
 			}
@@ -906,12 +977,14 @@ public class ClauseWorkspaceContextMenu {
 				}
 				
 				if(xmlTreeDisplay.getCopiedNode().getNodeType() == CellTreeNode.FUNCTIONS_NODE){
-					String funcName = xmlTreeDisplay.getCopiedNode().getLabel();
-					if(!ComparisonDialogBox.filterFunctionList.contains(funcName)){
+					HashMap<String, String> map =  (HashMap<String, String>) xmlTreeDisplay.getCopiedNode().getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+					String funcName = map.get(PopulationWorkSpaceConstants.TYPE);
+					
+					List<String> allowedFunctionsList = ComparisonDialogBox.filterFunctions(xmlTreeDisplay.getSelectedNode(), MatContext.get().functions);
+					if(!allowedFunctionsList.contains(funcName)){
 						pasteMenu.setEnabled(false);
 					}
-				}					
-			
+				}				
 		}
 		if (xmlTreeDisplay.getSelectedNode().getParent().getNodeType() != CellTreeNode.CLAUSE_NODE) {
 			deleteMenu.setEnabled(true);
