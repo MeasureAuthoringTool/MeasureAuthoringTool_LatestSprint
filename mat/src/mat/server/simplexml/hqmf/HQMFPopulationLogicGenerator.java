@@ -29,7 +29,7 @@ import org.w3c.dom.NodeList;
 public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 	
 	/** The clause logic map. */
-	private Map<String, String> clauseLogicMap = new HashMap<String, String>();
+	private Map<String, String> clauseLogicMap = new LinkedHashMap<String, String>();
 	
 	/** The measure grouping map. */
 	private Map<String, NodeList> measureGroupingMap = new LinkedHashMap<String, NodeList>();
