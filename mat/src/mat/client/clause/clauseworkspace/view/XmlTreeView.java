@@ -6,7 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import mat.client.clause.QDSAttributesService;
 import mat.client.clause.QDSAttributesServiceAsync;
 import mat.client.clause.clauseworkspace.model.CellTreeNode;
@@ -25,9 +24,7 @@ import mat.client.shared.SuccessMessageDisplay;
 import mat.client.shared.WarningMessageDisplay;
 import mat.shared.ConstantMessages;
 import mat.shared.UUIDUtilClient;
-
 import org.apache.commons.lang.StringUtils;
-
 import com.google.gwt.cell.client.AbstractCell;
 import com.google.gwt.cell.client.Cell.Context;
 import com.google.gwt.cell.client.ValueUpdater;
@@ -94,6 +91,11 @@ import com.google.gwt.xml.client.Node;
  * The Class XmlTreeView.
  */
 public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewModel, KeyDownHandler, FocusHandler {
+	/**
+	 * Clause valid nested depth.
+	 */
+	public static final int CLAUSE_NESTED_DEPTH = 10;
+	
 	/**
 	 * Comment Area Max Length - Population Work Space.
 	 */
@@ -1619,40 +1621,40 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 									}
 								}else if(selectedNode.getNodeType() == CellTreeNode.FUNCTIONS_NODE){
 									
-										String selectedFunctionName = selectedNode.getName();
-										
-										@SuppressWarnings("unchecked")
-										HashMap<String, String> map =  (HashMap<String, String>) selectedNode.getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
-										if(map != null){
-											selectedFunctionName = map.get(PopulationWorkSpaceConstants.TYPE);
-										}
-																				
-										if(ComparisonDialogBox.getAggregateFunctionsList().contains(selectedFunctionName) 
-												|| ComparisonDialogBox.getSubSetFunctionsList().contains(selectedFunctionName)){
-											if(selectedNode.hasChildren()){
-												canPaste = false;
-											}else{
-												canPaste = true;
-											}																						
+									String selectedFunctionName = selectedNode.getName();
+									
+									@SuppressWarnings("unchecked")
+									HashMap<String, String> map =  (HashMap<String, String>) selectedNode.getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+									if(map != null){
+										selectedFunctionName = map.get(PopulationWorkSpaceConstants.TYPE);
+									}
+									
+									if(ComparisonDialogBox.getAggregateFunctionsList().contains(selectedFunctionName)
+											|| ComparisonDialogBox.getSubSetFunctionsList().contains(selectedFunctionName)){
+										if(selectedNode.hasChildren()){
+											canPaste = false;
 										}else{
 											canPaste = true;
 										}
-										if(canPaste && (copiedNode.getNodeType() == CellTreeNode.FUNCTIONS_NODE)){
-											@SuppressWarnings("unchecked")
-											HashMap<String, String> copiedNodeMap =  (HashMap<String, String>) copiedNode.getExtraInformation(
-													PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
-											String copiedFuncName = getCopiedNode().getName();
-											if(copiedNodeMap != null) {
-												copiedFuncName = copiedNodeMap.get(PopulationWorkSpaceConstants.TYPE);
-											}
-										
-											List<String> allowedFunctionsList = ComparisonDialogBox.getAllowedFunctionsList(MatContext.get().functions, selectedFunctionName);
-											if(!allowedFunctionsList.contains(copiedFuncName)){
-												canPaste = false;
-											}else{
-												canPaste = true;
-											}
+									}else{
+										canPaste = true;
+									}
+									if(canPaste && (copiedNode.getNodeType() == CellTreeNode.FUNCTIONS_NODE)){
+										@SuppressWarnings("unchecked")
+										HashMap<String, String> copiedNodeMap =  (HashMap<String, String>) copiedNode.getExtraInformation(
+												PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
+										String copiedFuncName = getCopiedNode().getName();
+										if(copiedNodeMap != null) {
+											copiedFuncName = copiedNodeMap.get(PopulationWorkSpaceConstants.TYPE);
 										}
+										
+										List<String> allowedFunctionsList = ComparisonDialogBox.getAllowedFunctionsList(MatContext.get().functions, selectedFunctionName);
+										if(!allowedFunctionsList.contains(copiedFuncName)){
+											canPaste = false;
+										}else{
+											canPaste = true;
+										}
+									}
 									
 								}else{
 									
@@ -1962,7 +1964,31 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 					setMeasureObservations(true);
 				}
 				boolean checkValidation = validateSubTreeRefNode(cellTreeNode);
+				//Method to find nesting depth of clauses inside clause.
+				Node node = PopulationWorkSpaceConstants.subTreeLookUpNode
+						.get(cellTreeNode.getName() + "~" + cellTreeNode.getUUID());
+				NamedNodeMap namedNodeMap = node.getAttributes();
+				CellTreeNode subTreeCellTreeNode = null;
+				//for validating Occurrence of QDM Variable Clause
+				if (namedNodeMap.getNamedItem("instance") != null) {
+					String instanceOfUUID = namedNodeMap.getNamedItem("instanceOf").getNodeValue();
+					String instanceOfDisplayName = namedNodeMap.getNamedItem("displayName").getNodeValue();
+					Node occurenceNode = PopulationWorkSpaceConstants.subTreeLookUpNode
+							.get(instanceOfDisplayName + "~" + instanceOfUUID);
+					subTreeCellTreeNode = XmlConversionlHelper
+							.createCellTreeNode(occurenceNode, instanceOfDisplayName);
+				} else {
+					subTreeCellTreeNode = XmlConversionlHelper
+							.createCellTreeNode(node, cellTreeNode.getName());
+				}
+				boolean checkNestedValidation = validateClauseNodeNesting(subTreeCellTreeNode
+						, inValidNodeAtPopulationWorkspace, 0);
 				editNode(!checkValidation, cellTreeNode);
+				if (checkNestedValidation) {
+					editNode(false, cellTreeNode);
+					setValidHumanReadable(false);
+					//isSubTreeLogicValidInPopulationWorkSpace = true;
+				}
 				if (isDateTimeDiffNotInMO) {
 					if (!inValidNodeAtPopulationWorkspace
 							.contains("inValidAtPopulationAndStratificationNode")
@@ -2028,6 +2054,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		}
 		setValid(false);
 		boolean valid = validateSubtreeNodeAtPopulation(subTreeCellTreeNode);
+		
 		return valid;
 	}
 	/**
@@ -2039,8 +2066,8 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	private boolean validateSubtreeNodeAtPopulation(CellTreeNode subTreeCellTreeNode) {
 		int nodeType = subTreeCellTreeNode.getNodeType();
 		ArrayList<String> inValideNodesList =  new ArrayList<String>();
-		System.out.println("Start Node evaluated === "+ subTreeCellTreeNode.getName());
-		System.out.println("isValid Flag  === "+ isValid);
+		//System.out.println("Start Node evaluated === "+ subTreeCellTreeNode.getName());
+		//System.out.println("isValid Flag  === "+ isValid);
 		switch(nodeType){
 			case CellTreeNode.SET_OP_NODE:
 			case CellTreeNode.TIMING_NODE:
@@ -2093,8 +2120,8 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 				}
 				break;
 		}
-		System.out.println("End Node evaluated === "+ subTreeCellTreeNode.getName());
-		System.out.println("isValid Flag  === "+ isValid);
+		//System.out.println("End Node evaluated === "+ subTreeCellTreeNode.getName());
+		//System.out.println("isValid Flag  === "+ isValid);
 		List<CellTreeNode> children = subTreeCellTreeNode.getChilds();
 		if((children != null) && (children.size() > 0)
 				&& !isValid()){
@@ -2161,6 +2188,9 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 			for (int i = 0; i < treeNode.getChildCount(); i++) {
 				CellTreeNode node = (CellTreeNode) treeNode.getChildValue(i);
 				validateClauseWorkspaceCellTreeNodes(node, PopulationWorkSpaceConstants.getDatatypeMap(), inValidNodeList);
+				if((node != null) && node.hasChildren()) {
+					validateClauseNodeNesting(node.getChilds().get(0),inValidNodeList,1);
+				}
 			}
 		}
 		closeNodes(getXmlTree().getRootTreeNode());
@@ -2182,6 +2212,9 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 					} else if (element.equalsIgnoreCase("invalidClauseLogic")) {
 						warningMessages.add(MatContext.get().getMessageDelegate()
 								.getCLAUSE_WORK_SPACE_INVALID_NESTED_CLAUSE());
+					} else if (element.equalsIgnoreCase("nestedClauseLogic")) {
+						warningMessages.add(MatContext.get().getMessageDelegate()
+								.getCLAUSE_WORK_SPACE_INVALID_NESTED_DEPTH_CLAUSE());
 					}
 				}
 				if (warningMessages.size() > 0) {
@@ -2306,7 +2339,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 						}
 					} else {
 						editNode(false, node);
-						if(!inValidNodeList.contains("inValidAtSetoperatorAndOrFunction")){
+						if (!inValidNodeList.contains("inValidAtSetoperatorAndOrFunction")) {
 							inValidNodeList.add("inValidAtSetoperatorAndOrFunction");
 						}
 					}
@@ -2314,9 +2347,9 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 				case CellTreeNode.FUNCTIONS_NODE:
 					int checkChildCount = 1;
 					String invalidKeyForMap = "inValidAtSetoperatorAndOrFunction";
-					Map<String, String> map = (Map<String, String>)node.getExtraInformation("extraAttributes");
+					Map<String, String> map = (Map<String, String>) node.getExtraInformation("extraAttributes");
 					String funcType;
-					if(map!=null){
+					if (map!=null) {
 						funcType = map.get("type");
 					} else {
 						funcType = node.getName();
@@ -2352,6 +2385,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 						}
 						editNode(false, node);
 					}
+					
 					break;
 				default:
 					break;
@@ -2365,6 +2399,176 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 			}
 		}
 		return inValidNodeList;
+	}
+	
+	/**
+	 * @param treeNode
+	 * @param inValidNodeList
+	 * @param counter
+	 */
+	private boolean validateClauseNodeNesting(CellTreeNode treeNode , List<String> inValidNodeList, int counter) {
+		//List <Node> subTreeRefList = new ArrayList<Node>();
+		//Node subTreeNode = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(treeNode.getName() + "~" + treeNode.getUUID());
+		//findAllSubTreeRefsInNode(subTreeNode, subTreeRefList);
+		//boolean isValidDepth = validateNestedSubTreeDepth(treeNode, subTreeRefList , counter, false);
+		boolean isValidDepth = false;
+		if(treeNode != null) {
+			editNode(true, treeNode);
+			isValidDepth = findChildCount(treeNode, 0, false);
+			if (isValidDepth) {
+				/*editNode(!isValidDepth, treeNode);*/
+				if (!inValidNodeList.contains("nestedClauseLogic")) {
+					inValidNodeList.add("nestedClauseLogic");
+				}
+			}
+		}
+		return isValidDepth;
+	}
+	
+	/**
+	 * @param treeNode
+	 * @param subTreeRefList
+	 * @param counter
+	 * @param isValidDepth
+	 * @return
+	 *//*
+	private boolean validateNestedSubTreeDepth(CellTreeNode treeNode,List<Node> subTreeRefList, int counter , boolean isValidDepth) {
+		Node parentNode = null;
+		for (int i = 0; ((i < subTreeRefList.size()) && !isValidDepth); i++) {
+			Node subTreeNode = subTreeRefList.get(i);
+			int currentCounter = counter;
+			if(currentCounter == 1){
+				parentNode = subTreeNode;
+			}
+			if(subTreeNode != null) {
+				NamedNodeMap namedNodeMap = subTreeNode.getAttributes();
+				String displayName = namedNodeMap.getNamedItem("displayName").getNodeValue();
+				String uuid = namedNodeMap.getNamedItem("id").getNodeValue();
+				if (namedNodeMap.getNamedItem("instance") != null) {
+					uuid = namedNodeMap.getNamedItem("instanceOf").getNodeValue();
+					displayName = namedNodeMap.getNamedItem("displayName").getNodeValue();
+				}
+				Node node  = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(displayName + "~" + uuid);
+				List <Node> subTreeNodeRefList = new ArrayList<Node>();
+				findAllSubTreeRefsInNode(node, subTreeNodeRefList);
+				if(subTreeNodeRefList.size() > 0){
+					currentCounter = currentCounter +1;
+				}
+				if (currentCounter > 10) {
+					isValidDepth = true;
+					break;
+				} else {
+					isValidDepth = validateNestedSubTreeDepth(treeNode,subTreeNodeRefList ,currentCounter, isValidDepth);
+				}
+			}
+		}
+		if(isValidDepth && (parentNode != null)) {
+			CellTreeNode nodeToEdit = findCellTreeNode(treeNode, parentNode);
+			if(nodeToEdit != null){
+				editNode(false, nodeToEdit);
+			}
+			
+		}
+		return isValidDepth;
+	}*/
+	
+	/**
+	 * This method finds CellTreeNode for Node from treeNode.
+	 * @param treeNode - CellTreeNode - top Node.
+	 * @param parentNode - Node - to be located in top Node.
+	 * @return CellTreeNode.
+	 */
+	/*private CellTreeNode findCellTreeNode(CellTreeNode treeNode, Node parentNode) {
+		String uuid = parentNode.getAttributes().getNamedItem("id").getNodeValue();
+		CellTreeNode node = null;
+		if (treeNode != null) {
+			List<CellTreeNode> children = treeNode.getChilds();
+			if ((children != null) && (children.size() > 0)) {
+				for (CellTreeNode childNode:children) {
+					if (childNode.getUUID().equals(uuid)) {
+						node = childNode;
+						break;
+					} else {
+						if (childNode.hasChildren()) {
+							node = findCellTreeNode(childNode, parentNode);
+						}
+					}
+				}
+			}
+		}
+		return node;
+	}*/
+	/**
+	 * This Method finds all the SubTreeRef nodes present in treeNode.
+	 * @param treeNode - Node
+	 * @param subTreeRefNodeList - List of Nodes.
+	 *//*
+	private void findAllSubTreeRefsInNode(Node treeNode, List<Node> subTreeRefNodeList){
+		if (treeNode != null) {
+			switch (treeNode.getNodeName()) {
+				case "subTreeRef":
+					subTreeRefNodeList.add(treeNode);
+					break;
+				default:
+					break;
+			}
+			NodeList children = treeNode.getChildNodes();
+			if ((children != null) && (children.getLength() > 0)) {
+				for (int i = 0; i < children.getLength(); i++) {
+					findAllSubTreeRefsInNode(children.item(i), subTreeRefNodeList);
+				}
+			}
+		}
+	}*/
+	
+	/**
+	 * Method to find out depth of Node.
+	 * @param treeNode - Node
+	 * @param counter - Int
+	 * @param flag - Boolean
+	 * @return - Boolean
+	 */
+	private boolean findChildCount(CellTreeNode treeNode, int counter, boolean flag) {
+		List<CellTreeNode> children = treeNode.getChilds();
+		CellTreeNode childNode = null;
+		if ((children != null) && (children.size() > 0)) {
+			for (int i = 0; (i < children.size()) && !flag; i++) {
+				int currentCounter = counter;
+				CellTreeNode subTreeCellTreeNode = children.get(i);
+				childNode = subTreeCellTreeNode;
+				String uuid = subTreeCellTreeNode.getUUID();
+				if (subTreeCellTreeNode.getNodeType() == CellTreeNode.SUBTREE_REF_NODE) {
+					String displayName = subTreeCellTreeNode.getName();
+					Node node = PopulationWorkSpaceConstants.subTreeLookUpNode
+							.get(displayName + "~" + uuid);
+					if (node.getAttributes().getNamedItem("instance") != null) {
+						uuid = node.getAttributes().getNamedItem("instanceOf").getNodeValue();
+						displayName = node.getAttributes().getNamedItem("displayName").getNodeValue();
+					}
+					node = PopulationWorkSpaceConstants.getSubTreeLookUpNode().get(displayName + "~" + uuid);
+					CellTreeNode subTreeReferenceNode  = XmlConversionlHelper
+							.createCellTreeNode(node, displayName);
+					if (subTreeReferenceNode.hasChildren()) {
+						subTreeCellTreeNode =  subTreeReferenceNode.getChilds().get(0);
+					}
+				}
+				if ((subTreeCellTreeNode.getChilds() != null) && (subTreeCellTreeNode.getChilds().size() > 0)
+						&& (subTreeCellTreeNode.getNodeType() != CellTreeNode.SUBTREE_NODE)) {
+					currentCounter = currentCounter + 1;
+					System.out.println("Current Counter Value ========" + currentCounter + " For Node :: " + subTreeCellTreeNode.getName());
+				}
+				if (currentCounter > CLAUSE_NESTED_DEPTH) {
+					flag = true;
+					break;
+				} else {
+					flag = findChildCount(subTreeCellTreeNode, currentCounter, flag);
+				}
+			}
+		}
+		if (flag && (childNode != null)) {
+			editNode(!flag, childNode);
+		}
+		return flag;
 	}
 	
 	/**

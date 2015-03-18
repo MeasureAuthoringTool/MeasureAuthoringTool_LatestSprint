@@ -553,6 +553,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 					validatePackageGrouping();
 				}else {
 					Mat.hideLoadingMessage();
+					view.getInProgressMessageDisplay().clear();
 					view.getMeasureErrorMessageDisplay()
 					.setMessages(result.getValidationMessages());
 					((Button) view.getPackageMeasureButton()).setEnabled(true);

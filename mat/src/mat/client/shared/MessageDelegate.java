@@ -368,7 +368,7 @@ public class MessageDelegate {
 	private final String MEASURE_PACKAGE_FAILED_VSAC_TIMEOUT = "Measure Package Failed. VSAC request timed out.Please contact Help Desk.";
 	
 	/** The Measure Period has invalid "TO" and/or "FROM" period dates. */
-	public final String MEASURE_PERIOD_DATES_ERROR = "Please enter a valid Measurement Period date.";
+	public final String MEASURE_PERIOD_DATES_ERROR = "Please enter valid Measurement Period dates.";
 	
 	/** The measure selection error. */
 	private final String MEASURE_SELECTION_ERROR = "Please select at least one measure";
@@ -611,6 +611,9 @@ public class MessageDelegate {
 	
 	/** The clause work space invalid nested clause. */
 	private final String CLAUSE_WORK_SPACE_INVALID_NESTED_CLAUSE ="Invalid clause(s) used in logic.";
+	
+	/** The clause work space invalid nested clause. */
+	private final String CLAUSE_WORK_SPACE_INVALID_NESTED_DEPTH_CLAUSE = "Clause Exceeds Maximum Number of Nested Logic Levels (10).";
 	/**
 	 * Gets the component measures added successfully.
 	 *
@@ -1209,7 +1212,7 @@ public class MessageDelegate {
 	public String getMEASURE_PERIOD_DATES_ERROR() {
 		return MEASURE_PERIOD_DATES_ERROR;
 	}
-
+	
 	
 	/**
 	 * Gets the measure deletion invalid pwd.
@@ -2206,6 +2209,13 @@ public class MessageDelegate {
 	 */
 	public String getCLAUSE_WORK_SPACE_INVALID_NESTED_CLAUSE() {
 		return CLAUSE_WORK_SPACE_INVALID_NESTED_CLAUSE;
+	}
+	
+	/**
+	 * @return the cLAUSE_WORK_SPACE_INVALID_NESTED_DEPTH_CLAUSE
+	 */
+	public String getCLAUSE_WORK_SPACE_INVALID_NESTED_DEPTH_CLAUSE() {
+		return CLAUSE_WORK_SPACE_INVALID_NESTED_DEPTH_CLAUSE;
 	}
 	
 	/**

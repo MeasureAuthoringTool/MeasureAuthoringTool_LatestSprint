@@ -2,14 +2,18 @@ package mat.server.simplexml.hqmf;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.model.clause.MeasureExport;
 import mat.server.util.XmlProcessor;
 import mat.shared.UUIDUtilClient;
+
 import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
@@ -25,10 +29,10 @@ import org.w3c.dom.NodeList;
 public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 	
 	/** The clause logic map. */
-	private Map<String, String> clauseLogicMap = new HashMap<String, String>();
+	private Map<String, String> clauseLogicMap = new LinkedHashMap<String, String>();
 	
 	/** The measure grouping map. */
-	private Map<String, NodeList> measureGroupingMap = new HashMap<String, NodeList>();
+	private Map<String, NodeList> measureGroupingMap = new LinkedHashMap<String, NodeList>();
 	
 	/** The scoring type. */
 	private String scoringType;
@@ -157,7 +161,7 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 				}
 			}
 			//for creating SupplementalDataElements Criteria Section
-			createSupplementalDataElmStratifier(me,populationCriteriaComponentElement.getFirstChild());
+			populationCriteriaComponentElement.getFirstChild().appendChild(createSupplementalDateCriteriaSection(me));
 		}
 		
 	}
@@ -174,26 +178,27 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 			, MeasureExport me, String groupingSequence) throws XPathExpressionException {
 		Document doc = populationCriteriaComponentElement.getOwnerDocument();
 		Element populationCriteriaElement = (Element) populationCriteriaComponentElement.getFirstChild();
-		//Node stratifierCriteraNode = null;
-		/*Node populationCriteria = null;*/
+		Node stratifierCriteraNode = null;
 		// Code to identify correct PopulationCriteria/StratificationCriteria Node based on Grouping Key.
-		/*NodeList idNodeList = me.getHQMFXmlProcessor().findNodeList(doc, "//component/populationCriteriaSection/child::id");
+		NodeList idNodeList = me.getHQMFXmlProcessor().findNodeList(doc, "//component/populationCriteriaSection/child::id");
 		for (int i = 0; i < idNodeList.getLength(); i++) {
 			String extension = idNodeList.item(i).getAttributes().getNamedItem("extension").getNodeValue();
 			String extensionToBeCompared = "PopulationCriteria" + groupingSequence;
 			if (extensionToBeCompared.equalsIgnoreCase(extension)) {
-				populationCriteria = idNodeList.item(i).getParentNode();
+				Node populationCriteria = idNodeList.item(i).getParentNode();
 				Node lastChild = populationCriteria.getLastChild();
 				if ((lastChild.getChildNodes() != null)
 						&& lastChild.getChildNodes().item(0).getNodeName().equalsIgnoreCase("stratifierCriteria")) {
 					stratifierCriteraNode = lastChild.getChildNodes().item(0);
 				}
 			}
-		}*/
-		if (populationCriteriaElement != null) {
-			Element componentElement = doc.createElement("component");
+		}
+		Element componentElement = null;
+		Element stratCriteriaElement = null;
+		if (stratifierCriteraNode == null) {
+			componentElement = doc.createElement("component");
 			componentElement.setAttribute(TYPE_CODE, "COMP");
-			Element stratCriteriaElement = doc.createElement("stratifierCriteria");
+			stratCriteriaElement = doc.createElement("stratifierCriteria");
 			Element idElement = doc.createElement(ID);
 			idElement.setAttribute(ROOT, item.getAttributes().getNamedItem(UUID).getNodeValue());
 			idElement.setAttribute("identifierName", "Stratifiers");
@@ -208,16 +213,15 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 			stratCriteriaElement.appendChild(codeElem);
 			componentElement.appendChild(stratCriteriaElement);
 			populationCriteriaElement.appendChild(componentElement);
-			/*else {
+		} else {
 			
 			stratCriteriaElement = (Element) stratifierCriteraNode;
 			componentElement = (Element) stratCriteriaElement.getParentNode();
-		}*/
-			/*Element preConditionElem = doc.createElement("precondition");
+		}
+		/*Element preConditionElem = doc.createElement("precondition");
 		preConditionElem.setAttribute(TYPE_CODE, "PRCN");*/
-			if (item.getChildNodes().item(0) != null) {
-				generatePopulationLogic(stratCriteriaElement, item, me);
-			}
+		if (item.getChildNodes().item(0) != null) {
+			generatePopulationLogic(stratCriteriaElement, item, me);
 		}
 		/*stratCriteriaElement.appendChild(preConditionElem);*/
 	}
@@ -508,7 +512,7 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 	 * @return the node
 	 * @throws XPathExpressionException the x path expression exception
 	 */
-	private Element createSupplementalDataElmComponentNode(MeasureExport me) throws XPathExpressionException {
+	private Node createSupplementalDateCriteriaSection(MeasureExport me) throws XPathExpressionException {
 		XmlProcessor outputProcessor = me.getHQMFXmlProcessor();
 		Element componentElement = outputProcessor.getOriginalDoc().createElement("component");
 		componentElement.setAttribute(TYPE_CODE, "COMP");
@@ -528,6 +532,8 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 		displayNameElement.setAttribute(VALUE, "Stratification");
 		codeElem.appendChild(displayNameElement);
 		stratCriteriaElem.appendChild(codeElem);
+		createPreConditionWithCriteriaRef(me, stratCriteriaElem);
+		createMeasureAttributeComponent(me, stratCriteriaElem);
 		componentElement.appendChild(stratCriteriaElem);
 		return componentElement;
 	}
@@ -673,22 +679,22 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 	}
 	
 	/**
-	 * Creates Logic for Each Supplemental Data Element Nodes.
+	 * Creates the pre condition with criteria ref.
 	 *
 	 * @param me the me
-	 * @param parentNode - PopulationCriteria First Child Node.
+	 * @param parentElem the parent elem
 	 * @throws XPathExpressionException the x path expression exception
 	 */
-	private void createSupplementalDataElmStratifier(MeasureExport me, Node parentNode) throws XPathExpressionException {
+	private void createPreConditionWithCriteriaRef(MeasureExport me, Node parentElem) throws XPathExpressionException{
 		String xpathForOtherSupplementalQDMs = "/measure/supplementalDataElements/elementRef/@id";
 		NodeList supplementalDataElements = me.getSimpleXMLProcessor().findNodeList(me.getSimpleXMLProcessor().getOriginalDoc(),
 				xpathForOtherSupplementalQDMs);
-		if ((supplementalDataElements == null)
-				|| (supplementalDataElements.getLength() < 1)) {
+		if ((supplementalDataElements == null) ||
+				(supplementalDataElements.getLength() < 1)){
 			return;
 		}
 		List<String> supplementalElemenRefIds = new ArrayList<String>();
-		for (int i = 0; i < supplementalDataElements.getLength(); i++) {
+		for(int i=0; i<supplementalDataElements.getLength();i++){
 			supplementalElemenRefIds.add(supplementalDataElements.item(i).getNodeValue());
 		}
 		
@@ -697,25 +703,20 @@ public class HQMFPopulationLogicGenerator extends HQMFClauseLogicGenerator {
 			uuidXPathString += "@uuid = '" + uuidString + "' or";
 		}
 		uuidXPathString = uuidXPathString.substring(0, uuidXPathString.lastIndexOf(" or"));
-		String xpathforOtherSupplementalDataElements = "/measure/elementLookUp/qdm[" + uuidXPathString + "]";
+		String xpathforOtherSupplementalDataElements="/measure/elementLookUp/qdm["+uuidXPathString+"]";
 		NodeList supplementalQDMNodeList = me.getSimpleXMLProcessor().findNodeList(me.getSimpleXMLProcessor().getOriginalDoc(),
 				xpathforOtherSupplementalDataElements);
-		if (supplementalQDMNodeList.getLength() < 1) {
+		if(supplementalQDMNodeList.getLength()<1){
 			return;
 		}
 		
-		for (int i = 0; i < supplementalQDMNodeList.getLength(); i++) {
-			Element componentElement = createSupplementalDataElmComponentNode(me);
-			Node stratCriteriaElem = componentElement.getFirstChild();
+		for(int i=0;i<supplementalQDMNodeList.getLength();i++){
 			Node qdmNode = supplementalQDMNodeList.item(i);
 			String qdmName = qdmNode.getAttributes().getNamedItem("name").getNodeValue();
 			String qdmDatatype = qdmNode.getAttributes().getNamedItem("datatype").getNodeValue();
 			String qdmUUID = qdmNode.getAttributes().getNamedItem("uuid").getNodeValue();
-			String qdmExtension = qdmName.replaceAll("\\s", "") + "_" + qdmDatatype.replaceAll("\\s", "");
-			createPreConditionTag(me.getHQMFXmlProcessor(), stratCriteriaElem, qdmUUID, qdmExtension);
-			createMeasureAttributeComponent(me, stratCriteriaElem);
-			componentElement.appendChild(stratCriteriaElem);
-			parentNode.appendChild(componentElement);
+			String qdmExtension = qdmName.replaceAll("\\s", "") +"_"+ qdmDatatype.replaceAll("\\s", "");
+			createPreConditionTag(me.getHQMFXmlProcessor(), parentElem, qdmUUID, qdmExtension);
 		}
 		
 	}

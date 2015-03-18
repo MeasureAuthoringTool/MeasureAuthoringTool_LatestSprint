@@ -86,6 +86,7 @@ public class HumanReadableGenerator {
 	 */
 	public static String generateHTMLForPopulationOrSubtree(String measureId,
 			String subXML, String measureXML) {
+		
 		org.jsoup.nodes.Document htmlDocument = null;
 		// replace the <subTree> tags in 'populationSubXML' with the appropriate
 		// subTree tags from 'simpleXML'.
@@ -93,6 +94,7 @@ public class HumanReadableGenerator {
 			//System.out.println("Original subXML:" + subXML);
 			XmlProcessor populationOrSubtreeXMLProcessor = expandSubTreesAndImportQDMs(
 					subXML, measureXML, true);
+			
 			lhsID = new ArrayList<String>();
 			if (populationOrSubtreeXMLProcessor == null) {
 				htmlDocument = createBaseHumanReadableDocument();
@@ -106,7 +108,7 @@ public class HumanReadableGenerator {
 						+ "Most likely you have included a clause with clause which is causing an infinite loop.");
 				return htmlDocument.toString();
 			}
-			
+						
 			boolean isPopulation = checkIfPopulation(populationOrSubtreeXMLProcessor);
 			String name = getPopulationOrSubtreeName(
 					populationOrSubtreeXMLProcessor, isPopulation);
@@ -382,16 +384,17 @@ public class HumanReadableGenerator {
 		Node subTreeRefNodeParent = subTreeRefNode.getParentNode();
 		Node subTreeNodeImportedClone = xmlProcessor.getOriginalDoc()
 				.importNode(subTreeNode, true);
-		if (commentNode != null) {
-			subTreeNodeImportedClone.insertBefore(commentNode,
-					subTreeNodeImportedClone.getFirstChild());
-		}
-		
-		/*Node newNode = subTreeNodeImportedClone;
-		if(subTreeNodeImportedClone.hasChildNodes()){
+				
+		Node newNode = subTreeNodeImportedClone;
+		String qdmVariable = subTreeNodeImportedClone.getAttributes().getNamedItem("qdmVariable").getNodeValue();
+		if (subTreeNodeImportedClone.hasChildNodes() && "false".equalsIgnoreCase(qdmVariable)) {
 			newNode = subTreeNodeImportedClone.getFirstChild();
-		}*/
-		subTreeRefNodeParent.replaceChild(subTreeNodeImportedClone, subTreeRefNode);
+		}
+						
+		subTreeRefNodeParent.replaceChild(newNode, subTreeRefNode);
+		if (commentNode != null) {
+			subTreeRefNodeParent.insertBefore(commentNode,newNode);
+		}
 	}
 	
 	/**
@@ -581,6 +584,7 @@ public class HumanReadableGenerator {
 			}
 		} else if (COMMENT.equals(nodeName)) {
 			String commentValue = item.getTextContent();
+			System.out.println("comment value:"+commentValue);
 			if ((commentValue != null) && (commentValue.trim().length() > 0)) {
 				Element liElement = parentListElement.appendElement(HTML_LI);
 				liElement.attr("style", "list-style-type: none");
@@ -901,7 +905,7 @@ public class HumanReadableGenerator {
 			}
 			liElement.appendText(" "
 					+ item.getAttributes().getNamedItem("displayName")
-					.getNodeValue().toLowerCase());
+					.getNodeValue().toLowerCase() + ":");
 			String lhsId = lhs.getAttributes().getNamedItem("id").getNodeValue();
 			if(!lhsID.contains(lhsId)){
 				lhsID.add(lhsId);
@@ -1041,27 +1045,24 @@ public class HumanReadableGenerator {
 						HTML_LI);
 			}
 			
+			boolean isParentheses = false;
+			
 			if (RELATIONAL_OP.equals(childNodes.item(0).getNodeName())) {
 				NodeList children = childNodes.item(0).getChildNodes();
-				if ((ELEMENT_REF.equals(children.item(0).getNodeName()) || (checkIfQDMVariable(children
-						.item(0))))
-						&& (ELEMENT_REF.equals(children.item(1).getNodeName()) || checkIfQDMVariable(children
-								.item(1)))) {
-					newLiElement.appendText(" (");
+				if (checkIfElementRefOrQDMVariable(children.item(0)) && checkIfElementRefOrQDMVariable(children.item(1))) {
+					isParentheses = true;
 				}
+			}
+			
+			if(isParentheses){
+				newLiElement.appendText(" (");
 			}
 			
 			parseChild(childNodes.item(0), newLiElement, item,
 					populationOrSubtreeXMLProcessor, satisfiesAnyAll);
 			
-			if (RELATIONAL_OP.equals(childNodes.item(0).getNodeName())) {
-				NodeList children = childNodes.item(0).getChildNodes();
-				if ((ELEMENT_REF.equals(children.item(0).getNodeName()) || (checkIfQDMVariable(children
-						.item(0))))
-						&& (ELEMENT_REF.equals(children.item(1).getNodeName()) || checkIfQDMVariable(children
-								.item(1)))) {
-					newLiElement.appendText(") ");
-				}
+			if(isParentheses){
+				newLiElement.appendText(") ");
 			}
 			
 			if (!newLiElement.children().isEmpty()) {
@@ -1080,11 +1081,7 @@ public class HumanReadableGenerator {
 				
 				if (RELATIONAL_OP.equals(childNodes.item(1).getNodeName())) {
 					NodeList children = childNodes.item(1).getChildNodes();
-					if ((ELEMENT_REF.equals(children.item(0).getNodeName()) || (checkIfQDMVariable(children
-							.item(0))))
-							&& (ELEMENT_REF.equals(children.item(1)
-									.getNodeName()) || checkIfQDMVariable(children
-											.item(1)))) {
+					if(checkIfElementRefOrQDMVariable(children.item(0)) && checkIfElementRefOrQDMVariable(children.item(1))) {					
 						newLiElement.appendText(" (");
 						parseChild(childNodes.item(1), newLiElement, item,
 								populationOrSubtreeXMLProcessor, false);
@@ -1127,11 +1124,12 @@ public class HumanReadableGenerator {
 			retValue = true;
 		} else if (RELATIONAL_OP.equals(nodeName)) {
 			NodeList children = node.getChildNodes();
-			if ((ELEMENT_REF.equals(children.item(0).getNodeName()) || (checkIfQDMVariable(children
-					.item(0))))
-					&& (ELEMENT_REF.equals(children.item(1).getNodeName()) || checkIfQDMVariable(children
-							.item(1)))) {
-				retValue = true;
+			retValue = checkIfElementRefOrQDMVariable(children.item(0));
+		} else if(FUNCTIONAL_OP.equals(nodeName)){
+			NodeList children = node.getChildNodes();
+			if(children.getLength() == 1){
+				Node child = children.item(0);
+				retValue = checkIfElementRefOrQDMVariable(child);
 			}
 		}
 		
@@ -2323,11 +2321,12 @@ public class HumanReadableGenerator {
 				Node clonedSubTreeNode = subTreeNode.cloneNode(true);
 				Node subTreeRefParentNode = subTreeRefNode.getParentNode();
 				
-				/*Node newNode = clonedSubTreeNode;
-				if(clonedSubTreeNode.hasChildNodes()){
+				Node newNode = clonedSubTreeNode;
+				String qdmVariable = clonedSubTreeNode.getAttributes().getNamedItem("qdmVariable").getNodeValue();
+				if (clonedSubTreeNode.hasChildNodes() && "false".equalsIgnoreCase(qdmVariable)) {
 					newNode = clonedSubTreeNode.getFirstChild();
-				}*/
-				subTreeRefParentNode.replaceChild(clonedSubTreeNode, subTreeRefNode);
+				}
+				subTreeRefParentNode.replaceChild(newNode, subTreeRefNode);
 			}
 		}
 	}

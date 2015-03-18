@@ -2117,13 +2117,13 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 						dataCriteriaElem.insertBefore(dateTimeNode, valueNodeList.item(0));
 					} else {
 						NodeList statusCodeNodeList =  dataCriteriaElem.getElementsByTagName("statusCode");
-						if(statusCodeNodeList != null && statusCodeNodeList.getLength() > 0){
-							dataCriteriaElem.insertBefore(dateTimeNode, statusCodeNodeList.item(0).getNextSibling());
+						if ((statusCodeNodeList != null) && (statusCodeNodeList.getLength() > 0)) {
+							dataCriteriaElem.insertBefore(dateTimeNode
+									, statusCodeNodeList.item(0).getNextSibling());
 						} else {
 							dataCriteriaElem.appendChild(dateTimeNode);
 						}
 					}
-
 				}
 			} else{
 				NodeList nodeList = dataCriteriaElem.getElementsByTagName("value");
