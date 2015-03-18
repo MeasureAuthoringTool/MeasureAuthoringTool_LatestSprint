@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import javax.xml.xpath.XPathExpressionException;
 
@@ -15,6 +16,7 @@ import mat.shared.ConstantMessages;
 import org.apache.commons.lang.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -70,7 +72,7 @@ public class HumanReadableGenerator {
 	private static Boolean showOnlyVariableName = false;
 	
 	/** The lhs id. */
-	private static List<String> lhsID;
+	private static Stack<String> lhsID;
 	
 	/** The initial population hash. */
 	private static Map<String, String> initialPopulationHash = new HashMap<String, String>();
@@ -95,7 +97,7 @@ public class HumanReadableGenerator {
 			XmlProcessor populationOrSubtreeXMLProcessor = expandSubTreesAndImportQDMs(
 					subXML, measureXML, true);
 			
-			lhsID = new ArrayList<String>();
+			lhsID = new Stack<String>();
 			if (populationOrSubtreeXMLProcessor == null) {
 				htmlDocument = createBaseHumanReadableDocument();
 				Element bodyElement = htmlDocument.body();
@@ -525,6 +527,9 @@ public class HumanReadableGenerator {
 			Node parentNode, XmlProcessor populationOrSubtreeXMLProcessor,
 			boolean satisfiesAnyAll) {
 		String nodeName = item.getNodeName();
+/*		System.out.println("parseChild nodeName: " + nodeName);
+		System.out.println("Parent List Element: " + parentListElement);
+*/
 		if (LOGICAL_OP.equals(nodeName)) {
 			String nodeDisplayName = item.getAttributes()
 					.getNamedItem(DISPLAY_NAME).getNodeValue().toUpperCase();
@@ -893,6 +898,10 @@ public class HumanReadableGenerator {
 	 */
 	private static void createSatisfies(Node item, Element liElement,
 			XmlProcessor populationOrSubtreeXMLProcessor) {
+/*		
+		System.out.println("createSatisfies nodeName: " + item);
+		System.out.println("Parent List Element: " + liElement);
+*/
 		Node lhs = item.getFirstChild();
 		if ("elementRef".equalsIgnoreCase(lhs.getNodeName())) {
 			// Element ulElement = parentListElement.appendElement(HTML_LI);
@@ -907,17 +916,25 @@ public class HumanReadableGenerator {
 					+ item.getAttributes().getNamedItem("displayName")
 					.getNodeValue().toLowerCase() + ":");
 			String lhsId = lhs.getAttributes().getNamedItem("id").getNodeValue();
+		
 			if(!lhsID.contains(lhsId)){
 				lhsID.add(lhsId);
 			}
-			NodeList childNodes = item.getChildNodes();
+/*			System.out.println("Added an ID: " + lhsId);
+			System.out.println("LhsID Array: ");
+			for (int i=0; i < lhsID.size(); i++) {
+				System.out.println(lhsID.get(i));
+			}
+*/	
+		NodeList childNodes = item.getChildNodes();
 			if (childNodes.getLength() > 1) {
-				liElement = liElement.appendElement(HTML_UL);
+				Element ulElement = liElement.appendElement(HTML_UL);
 				for (int i = 1; i < childNodes.getLength(); i++) {
 					parseChild(childNodes.item(i),
-							liElement.appendElement(HTML_LI), item,
+							ulElement.appendElement(HTML_LI), item,
 							populationOrSubtreeXMLProcessor, true);
 				}
+				lhsID.pop();
 			}
 		}
 	}
@@ -1013,6 +1030,10 @@ public class HumanReadableGenerator {
 	private static void getRelationalOpText(Node item, Element liElement,
 			XmlProcessor populationOrSubtreeXMLProcessor,
 			boolean satisfiesAnyAll) {
+/*		
+		System.out.println("getRelationalOpText item: " + item);
+		System.out.println("List Element: " + liElement);
+*/		
 		/**
 		 * A relationalOp can have 2 children. First evaluate the LHS child,
 		 * then add the name of the relationalOp and finally evaluate the RHS
@@ -1052,17 +1073,25 @@ public class HumanReadableGenerator {
 				if (checkIfElementRefOrQDMVariable(children.item(0)) && checkIfElementRefOrQDMVariable(children.item(1))) {
 					isParentheses = true;
 				}
+			}else if(FUNCTIONAL_OP.equals(childNodes.item(0).getNodeName())){
+				isParentheses = true;
 			}
 			
 			if(isParentheses){
 				newLiElement.appendText(" (");
 			}
-			
+						
 			parseChild(childNodes.item(0), newLiElement, item,
 					populationOrSubtreeXMLProcessor, satisfiesAnyAll);
 			
 			if(isParentheses){
-				newLiElement.appendText(") ");
+				/* Find all elements under this element 
+				 * (including self, and children of children),
+				 * and add a parentheses to the last element in the list.
+				*/
+				Elements elements = newLiElement.getAllElements();
+				Element lastElement = elements.get(elements.size() - 1);
+				lastElement.appendText(") ");
 			}
 			
 			if (!newLiElement.children().isEmpty()) {
@@ -1085,7 +1114,7 @@ public class HumanReadableGenerator {
 						newLiElement.appendText(" (");
 						parseChild(childNodes.item(1), newLiElement, item,
 								populationOrSubtreeXMLProcessor, false);
-						newLiElement.appendText(")");
+						newLiElement.appendText(") ");
 						return;
 					}
 				}
@@ -1503,7 +1532,7 @@ public class HumanReadableGenerator {
 	public static String generateHTMLForMeasure(String measureId,
 			String simpleXmlStr) {
 		String humanReadableHTML = "";
-		lhsID = new ArrayList<String>();
+		lhsID = new Stack<String>();
 		try {
 			org.jsoup.nodes.Document humanReadableHTMLDocument = HeaderHumanReadableGenerator
 					.generateHeaderHTMLForMeasure(simpleXmlStr);
@@ -2057,7 +2086,7 @@ public class HumanReadableGenerator {
 			boldNameElement.appendText(populationName + " =");
 			Element childPopulationULElement = populationListElement
 					.appendElement(HTML_UL);
-			System.out.println("clauseNodes.size():"+clauseNodes.size());
+			System.out.println("clauseNodes.size():"+ clauseNodes.size());
 			for (int c = 0; c < clauseNodes.size(); c++) {
 				Node clauseNode = clauseNodes.get(c);
 				Element childPopulationListElement = childPopulationULElement
