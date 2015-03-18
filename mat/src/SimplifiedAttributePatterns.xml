@@ -39,7 +39,7 @@
         <mode mode="GreaterThanEqualTo"/>
         <mode mode="LessThan"/>
         <mode mode="LessThanEqualTo"/>
-        <mode mode="ValueSet"/>
+        <!--<mode mode="ValueSet"/> Removed by Stan: 1/22/2015 4:23 P.M. -->
     </attribute>
     <attribute attribName="Discharge Datetime">
         <mode mode="IsPresent"/>
@@ -144,7 +144,10 @@
         <mode mode="LessThanEqualTo"/>
     </attribute>
     <attribute attribName="Related To">
-        <mode mode="LessThanEqualTo"/>
+       <!--  <mode mode="IsPresent"/> -->
+         <mode mode="ValueSet"/>
+         <!-- added: 1/22/2015 4:23 P.M. -->
+        <!--<mode mode="LessThanEqualTo"/> removed: 1/22/2015 4:23 P.M. -->
     </attribute>
     <attribute attribName="Removal Datetime">
         <mode mode="IsPresent"/>
@@ -179,6 +182,7 @@
     </attribute>
     <attribute attribName="Start Datetime" datatypes="Order">
         <mode mode="IsPresent"/>
+        <mode mode="Equals"/> <!-- added: 1/22/2015 4:23 P.M. -->
         <mode mode="GreaterThan"/>
         <mode mode="GreaterThanEqualTo"/>
         <mode mode="LessThan"/>
@@ -213,11 +217,11 @@
     </attribute>
     <attribute attribName="Time">
         <mode mode="IsPresent"/>
-        <mode mode="Equals"/>
+        <!--<mode mode="Equals"/>
         <mode mode="GreaterThan"/>
         <mode mode="GreaterThanEqualTo"/>
         <mode mode="LessThan"/>
-        <mode mode="LessThanEqualTo"/>
+        <mode mode="LessThanEqualTo"/> Removed: 1/22/2015 4:23 P.M. -->
     </attribute>
     <attribute attribName="Radiation Dosage">
         <mode mode="IsPresent"/>
@@ -235,7 +239,7 @@
         <mode mode="LessThan"/>
         <mode mode="LessThanEqualTo"/>
     </attribute>
-    <attribute attribName="Result" datatypeList="Physical Exam, Performed; Procedure, Performed; Intervention, Performed">
+    <!-- <attribute attribName="Result" datatypeList="Physical Exam, Performed; Procedure, Performed; Intervention, Performed">
         <mode mode="IsPresent"/>
         <mode mode="Equals"/>
         <mode mode="GreaterThan"/>
@@ -243,7 +247,7 @@
         <mode mode="LessThan"/>
         <mode mode="LessThanEqualTo"/>
         <mode mode="ValueSet"/>
-    </attribute>
+    </attribute> Commented as below is representing same mode list.-->
     <attribute attribName="Result" datatypeList="Diagnostic Study, Performed; Functional Status, Performed; Laboratory Test, Performed; Risk Category Assessment">
         <mode mode="IsPresent"/>
         <mode mode="Equals"/>
@@ -262,6 +266,11 @@
     <attribute attribName="Source">
         <mode mode="ValueSet"/>
     </attribute>
+    <attribute attribName="negation rationale">
+       <!--  <mode mode="IsPresent"/> -->
+        <mode mode="ValueSet"/>
+    </attribute>
+    
     <datatypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="Non-Order">
 
         <datatype>care goal</datatype>
