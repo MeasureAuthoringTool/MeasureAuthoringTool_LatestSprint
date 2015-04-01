@@ -193,7 +193,12 @@
                 <code nullFlavor="OTH">
                     <originalText value="NQF Number" />
                 </code>
-                <value xsi:type="ED" mediaType="text/plain" value="None" />
+                <xsl:variable name="NQFText">
+                    <xsl:call-template name="trim">
+                        <xsl:with-param name="textString" select="nqfid/@extension" />
+                    </xsl:call-template>
+                </xsl:variable>
+                <value xsi:type="ED" mediaType="text/plain" value="{$NQFText}" />
             </measureAttribute>
         </subjectOf>
 
@@ -695,13 +700,27 @@
                             <code code="ITMCNT" codeSystem="2.16.840.1.113883.5.4">
                                 <displayName value="Items to count" />
                             </code>
-
-                            <value xsi:type="II">
+							<value xsi:type="II">
                                 <xsl:attribute name="root">
                                         <xsl:value-of select="@id" />
                                     </xsl:attribute>
                                 <xsl:attribute name="extension">
-                                        <xsl:value-of select="@dataType" />
+                                		
+                                		<xsl:choose>
+	                                		<xsl:when test="exists(@instance)">
+	                                			<xsl:variable name="extVal">  
+                                					<xsl:value-of select="concat(@instance,'_',@name,'_',@dataType)"/>
+                                				</xsl:variable>
+                                				<xsl:value-of select="translate($extVal,' ','')" />
+	                                		</xsl:when>
+	                                		<xsl:otherwise>
+												<xsl:variable name="extVal">  
+                                					<xsl:value-of select="concat(@name,'_',@dataType)"/>
+                                				</xsl:variable>
+                                				<xsl:value-of select="translate($extVal,' ','')" />	                                		
+	                                		</xsl:otherwise>
+                                		</xsl:choose>
+                                        
                                     </xsl:attribute>
                             </value>
                         </measureAttribute>
@@ -763,6 +782,10 @@
     <xsl:template name="trim">
         <xsl:param name="textString" />
         <xsl:value-of select="replace(replace($textString,'\s+$',''),'^\s+','')" />
+    </xsl:template>
+    
+    <xsl:template name="constructExt">
+    	
     </xsl:template>
 
 </xsl:stylesheet>
