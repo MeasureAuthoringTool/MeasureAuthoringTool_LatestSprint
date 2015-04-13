@@ -2,8 +2,8 @@ package mat.client;
 
 import mat.client.clause.AppliedQDMPresenter;
 import mat.client.clause.QDMPresenter;
-import mat.client.clause.VSACProfileSelectionPresenter;
-import mat.client.clause.VSACProfileSelectionView;
+import mat.client.clause.QDMAppliedSelectionPresenter;
+import mat.client.clause.QDMAppliedSelectionView;
 import mat.client.clause.clauseworkspace.presenter.ClauseWorkSpacePresenter;
 import mat.client.clause.clauseworkspace.presenter.PopulationWorkspacePresenter;
 import mat.client.event.MATClickHandler;
@@ -146,7 +146,7 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 		measureComposerTabLayout = new MatTabLayoutPanel(true);
 		measureComposerTabLayout.setId("measureComposerTabLayout");
 		measureComposerTabLayout.addPresenter(metaDataPresenter, "Measure Details");
-		measureComposerTabLayout.addPresenter(qdmPresenter, "Old QDM Elements");
+		//measureComposerTabLayout.addPresenter(qdmPresenter, "Old QDM Elements");
 		measureComposerTabLayout.addPresenter(buildAppliedQDMPresenter(), "QDM Elements");
 		measureComposerTabLayout.addPresenter(clauseWorkSpacePresenter, "Clause Workspace");
 		measureComposerTabLayout.addPresenter(populationWorkspacePresenter, "Population Workspace");
@@ -382,9 +382,9 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable {
 	}
 	
 	private MatPresenter buildAppliedQDMPresenter(){
-		VSACProfileSelectionView vascProfileSelectionView = new VSACProfileSelectionView();
-		VSACProfileSelectionPresenter vsacProfileSelectionPresenter = 
-				new VSACProfileSelectionPresenter(vascProfileSelectionView);
+		QDMAppliedSelectionView vascProfileSelectionView = new QDMAppliedSelectionView();
+		QDMAppliedSelectionPresenter vsacProfileSelectionPresenter = 
+				new QDMAppliedSelectionPresenter(vascProfileSelectionView);
 		vsacProfileSelectionPresenter.getWidget();
 		return vsacProfileSelectionPresenter;
 	}
