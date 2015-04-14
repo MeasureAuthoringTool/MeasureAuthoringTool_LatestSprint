@@ -23,6 +23,7 @@ import mat.client.shared.SpacerWidget;
 import mat.client.shared.SuccessMessageDisplay;
 import mat.client.shared.WarningMessageDisplay;
 import mat.shared.ConstantMessages;
+import mat.shared.MatConstants;
 import mat.shared.UUIDUtilClient;
 import org.apache.commons.lang.StringUtils;
 import com.google.gwt.cell.client.AbstractCell;
@@ -1725,8 +1726,8 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 							&& (selectedNode.getParent().getNodeType() != CellTreeNode.CLAUSE_NODE)
 							&& (selectedNode.getParent().getNodeType() != CellTreeNode.SUBTREE_NODE)
 							&& (selectedNode.getNodeType() == CellTreeNode.SET_OP_NODE)) {
-						if( selectedNode.getParent().getName().equals("SATISFIES ALL")
-								||  selectedNode.getParent().getName().equals("SATISFIES ANY") ){
+						if( selectedNode.getParent().getName().equalsIgnoreCase(MatConstants.SATISFIES_ALL)
+								||  selectedNode.getParent().getName().equalsIgnoreCase(MatConstants.SATISFIES_ANY) ){
 							if(selectedNode.getParent().getChilds().indexOf(selectedNode) != 0){
 								copy();
 								removeNode();
@@ -2112,7 +2113,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 				}
 				if(!isClauseWorkSpace) { // Check for measure Ob and datetimediff is to be performed on Population workspace only.
 					if (!isMeasureObservations
-							&& subTreeCellTreeNode.getName().contains("DATETIMEDIFF")) {
+							&& (subTreeCellTreeNode.getName().toUpperCase().contains("DATETIMEDIFF"))) {
 						setValid(true);
 						isDateTimeDiffNotInMO = true;
 						setValidHumanReadable(false);
@@ -2259,7 +2260,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		String satisfiesAny = "SATISFIES ANY";
 		String intersection = "INTERSECTION";
 		String union = "Union";
-		String dateTimeDiff = "DateTimeDiff";
+		//String dateTimeDiff = "DateTimeDiff";
 		if (treeNode != null) {
 			String attributeValue = "";
 			CellTreeNode node = treeNode;
@@ -2343,7 +2344,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 					int checkOpChildCount = 0;
 					String invalidKeyForOpMap = null;
 					if ((node.getName().equalsIgnoreCase(intersection)) ||
-						(node.getName().equalsIgnoreCase(union))) {
+							(node.getName().equalsIgnoreCase(union))) {
 						checkOpChildCount = 2;
 						invalidKeyForOpMap = "invalidNeed2Children";
 					}
@@ -2353,7 +2354,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 						}
 					} else {
 						editNode(false, node);
-						if (invalidKeyForOpMap != null && !inValidNodeList.contains(invalidKeyForOpMap)) {
+						if ((invalidKeyForOpMap != null) && !inValidNodeList.contains(invalidKeyForOpMap)) {
 							inValidNodeList.add(invalidKeyForOpMap);
 						}
 					}
@@ -2369,35 +2370,35 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 						funcType = node.getName();
 					}
 					if ((node.getName().equalsIgnoreCase(satisfiesAll))
-						|| (node.getName().equalsIgnoreCase(satisfiesAny))) {
+							|| (node.getName().equalsIgnoreCase(satisfiesAny))) {
 						checkChildCount = 3;
 						invalidKeyForMap = "invalidNeed3Children";
-					} else if (node.getName().equalsIgnoreCase(dateTimeDiff)) {
+					} else if (node.getName().equalsIgnoreCase(MatConstants.DATETIMEDIFF)) {
 						checkChildCount = 2;
 						invalidKeyForMap = "invalidNeed2Children";
-					} else if(!MatContext.get().functions.contains(funcType)){
+					} else if (!MatContext.get().functions.contains(capWords(funcType))) {
 						invalidKeyForMap = "invalidAtFunction";
 						editNode(false, node);
-						if(!inValidNodeList.contains(invalidKeyForMap)){
+						if (!inValidNodeList.contains(invalidKeyForMap)) {
 							inValidNodeList.add(invalidKeyForMap);
 						}
 					}
-					if (((node.getChilds() != null) && (node.getChilds().size()>= checkChildCount))) {
-						if (!node.getValidNode() &&
-								!inValidNodeList.contains("invalidAtFunction")) {
+					if (((node.getChilds() != null) && (node.getChilds().size() >= checkChildCount))) {
+						if (!node.getValidNode()
+								&& !inValidNodeList.contains("invalidAtFunction")) {
 							editNode(true, node);
 						}
 					} else {
 						editNode(false, node);
-						if(!inValidNodeList.contains(invalidKeyForMap)){
+						if (!inValidNodeList.contains(invalidKeyForMap)) {
 							inValidNodeList.add(invalidKeyForMap);
 						}
 					}
 					break;
 				case CellTreeNode.SUBTREE_REF_NODE:
 					boolean checkForValidation = validateSubTreeRefNode(node);
-					if(checkForValidation){
-						if(!inValidNodeList.contains("invalidClauseLogic")){
+					if (checkForValidation) {
+						if (!inValidNodeList.contains("invalidClauseLogic")) {
 							inValidNodeList.add("invalidClauseLogic");
 						}
 						editNode(false, node);
@@ -2418,6 +2419,34 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		return inValidNodeList;
 	}
 	
+	/**
+	 * Method to convert String into Sentence/Title Case.
+	 * @param strToConvert
+	 * @return Sentence Case String
+	 */
+	private String capWords(String strToConvert) {
+		if ((strToConvert == null) && strToConvert.isEmpty()) {
+			return strToConvert;
+		} else {
+			StringBuilder sb = new StringBuilder();
+			for (String token : strToConvert.split(" ")) {
+				if (token.isEmpty()) {
+					if (sb.length() > 0) {
+						sb.append(" ");
+					}
+				} else {
+					if (sb.length() > 0) {
+						sb.append(" ");
+					}
+					sb.append(Character.toUpperCase(token.charAt(0)));
+					if (token.length() > 1) {
+						sb.append(token.substring(1).toLowerCase());
+					}
+				}
+			}
+			return sb.toString();
+		}
+	}
 	/**
 	 * @param treeNode
 	 * @param inValidNodeList

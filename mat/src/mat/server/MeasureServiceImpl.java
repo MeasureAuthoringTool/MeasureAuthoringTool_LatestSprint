@@ -60,8 +60,8 @@ MeasureService {
 	 */
 	@Override
 	public void createAndSaveElementLookUp(List<QualityDataSetDTO> list,
-			String measureID) {
-		this.getMeasureLibraryService().createAndSaveElementLookUp(list, measureID);
+			String measureID, String expProfileToAllQDM) {
+		this.getMeasureLibraryService().createAndSaveElementLookUp(list, measureID, expProfileToAllQDM);
 	}
 	
 	/* (non-Javadoc)
@@ -489,13 +489,9 @@ MeasureService {
 	}
 
 	@Override
-	public void updateMeasureXMLForExpansionProfile(
-			List<QualityDataSetDTO> modifyWithDTO, String measureId, String expansionProfile) {
-		 for(int i = 0; i<modifyWithDTO.size(); i++){
-			 QualityDataSetDTO dto = modifyWithDTO.get(i);
-			 this.getMeasureLibraryService().updateMeasureXmlForQDM(dto, measureId, expansionProfile);
-		 }
-		
-	}
-	
+	public void updateMeasureXMLForExpansionProfile(List<QualityDataSetDTO> modifyWithDTOList, 
+			String measureId, String expansionProfile) {
+		this.getMeasureLibraryService().updateMeasureXMLForExpansionProfile(modifyWithDTOList, measureId, expansionProfile);
+		}
+
 }

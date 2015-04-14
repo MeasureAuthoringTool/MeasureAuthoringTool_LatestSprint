@@ -4,15 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.TreeMap;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-
 import mat.model.clause.MeasureExport;
 import mat.server.util.XmlProcessor;
+import mat.shared.MatConstants;
 import mat.shared.UUIDUtilClient;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -63,25 +62,25 @@ public class HQMFClauseLogicGenerator implements Generator {
 	/**
 	 * MAP of Functional Ops NON Subset Type.
 	 */
-	private static final Map<String, String> FUNCTIONAL_OPS_NON_SUBSET = new HashMap<String, String>();
+	private static final Map<String, String> FUNCTIONAL_OPS_NON_SUBSET = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
 	/**
 	 * MAP of Functional Ops Subset Type.
 	 */
-	private static final Map<String, String> FUNCTIONAL_OPS_SUBSET = new HashMap<String, String>();
+	private static final Map<String, String> FUNCTIONAL_OPS_SUBSET = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
 	static {
-		FUNCTIONAL_OPS_NON_SUBSET.put("FIRST", "1");
-		FUNCTIONAL_OPS_NON_SUBSET.put("SECOND", "2");
-		FUNCTIONAL_OPS_NON_SUBSET.put("THIRD", "3");
-		FUNCTIONAL_OPS_NON_SUBSET.put("FOURTH", "4");
-		FUNCTIONAL_OPS_NON_SUBSET.put("FIFTH", "5");
+		FUNCTIONAL_OPS_NON_SUBSET.put(MatConstants.FIRST, "1");
+		FUNCTIONAL_OPS_NON_SUBSET.put(MatConstants.SECOND, "2");
+		FUNCTIONAL_OPS_NON_SUBSET.put(MatConstants.THIRD, "3");
+		FUNCTIONAL_OPS_NON_SUBSET.put(MatConstants.FOURTH, "4");
+		FUNCTIONAL_OPS_NON_SUBSET.put(MatConstants.FIFTH, "5");
 		
-		FUNCTIONAL_OPS_SUBSET.put("MOST RECENT", "QDM_LAST");
-		FUNCTIONAL_OPS_SUBSET.put("COUNT", "QDM_SUM");
-		FUNCTIONAL_OPS_SUBSET.put("MIN", "QDM_MIN");
-		FUNCTIONAL_OPS_SUBSET.put("MAX", "QDM_MAX");
-		FUNCTIONAL_OPS_SUBSET.put("SUM", "QDM_SUM");
-		FUNCTIONAL_OPS_SUBSET.put("MEDIAN", "QDM_MEDIAN");
-		FUNCTIONAL_OPS_SUBSET.put("AVG", "QDM_AVERAGE");
+		FUNCTIONAL_OPS_SUBSET.put(MatConstants.MOST_RECENT, "QDM_LAST");
+		FUNCTIONAL_OPS_SUBSET.put(MatConstants.COUNT, "QDM_SUM");
+		FUNCTIONAL_OPS_SUBSET.put(MatConstants.MIN, "QDM_MIN");
+		FUNCTIONAL_OPS_SUBSET.put(MatConstants.MAX, "QDM_MAX");
+		FUNCTIONAL_OPS_SUBSET.put(MatConstants.SUM, "QDM_SUM");
+		FUNCTIONAL_OPS_SUBSET.put(MatConstants.MEDIAN, "QDM_MEDIAN");
+		FUNCTIONAL_OPS_SUBSET.put(MatConstants.AVG, "QDM_AVERAGE");
 		
 	}
 	
@@ -108,10 +107,10 @@ public class HQMFClauseLogicGenerator implements Generator {
 	
 	
 	/** The Constant FUNCTIONAL_OP_RULES_IN_POP. */
-	private static final Map<String, List<String>> FUNCTIONAL_OP_RULES_IN_POP = new HashMap<String, List<String>>();
+	private static final Map<String, List<String>> FUNCTIONAL_OP_RULES_IN_POP = new TreeMap<String, List<String>>(String.CASE_INSENSITIVE_ORDER);
 	
 	/** The Constant FUNCTIONAL_OP_RULES_IN_MO. */
-	private static final Map<String, List<String>> FUNCTIONAL_OP_RULES_IN_MO = new HashMap<String, List<String>>();
+	private static final Map<String, List<String>> FUNCTIONAL_OP_RULES_IN_MO = new TreeMap<String, List<String>>(String.CASE_INSENSITIVE_ORDER);
 	
 	static {
 		FUNCTIONAL_OP_RULES_IN_POP.put("MEDIAN", getFunctionalOpFirstChild("MEDIAN"));
@@ -193,7 +192,7 @@ public class HQMFClauseLogicGenerator implements Generator {
 		 * If this is a Occurrence clause then we need to find the base clause and generate HQMF for the base clause.
 		 * Then we need to generate Occurrence HQMF for the occurrence clause.
 		 */
-		if(subTreeNode.getAttributes().getNamedItem(INSTANCE_OF) != null){
+		if (subTreeNode.getAttributes().getNamedItem(INSTANCE_OF) != null) {
 			String baseClauseUUID = subTreeNode.getAttributes().getNamedItem(INSTANCE_OF).getNodeValue();
 			String xpath = "/measure/subTreeLookUp/subTree[@uuid = '"+baseClauseUUID+"']";
 			Node baseSubTreeNode = measureExport.getSimpleXMLProcessor().findNode(measureExport.getSimpleXMLProcessor().getOriginalDoc(), xpath);
@@ -631,7 +630,7 @@ public class HQMFClauseLogicGenerator implements Generator {
 				String isQdmVariable = parNode.getAttributes()
 						.getNamedItem(QDM_VARIABLE).getNodeValue();
 				if (TRUE.equalsIgnoreCase(isQdmVariable)) {
-					ext = "qdm_var_" + ext;
+					//ext = "qdm_var_" + ext;
 					String occText = null;
 					// Handled Occurrence Of QDM Variable.
 					if(parNode.getAttributes().getNamedItem(INSTANCE_OF) != null){
@@ -683,12 +682,13 @@ public class HQMFClauseLogicGenerator implements Generator {
 	private Node generateSetOpHQMF( Node setOpNode, Node parentNode) throws XPathExpressionException {
 		
 		XmlProcessor hqmfXmlProcessor = measureExport.getHQMFXmlProcessor();
-		String setOpType = setOpNode.getAttributes().getNamedItem(TYPE).getNodeValue();
+		//DISPLAY NAME is used instead of type as it is in Title case.
+		String setOpType = setOpNode.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue();
 		String conjunctionType = "OR";
 		
-		if("union".equals(setOpType) || SATISFIES_ANY.equals(setOpType)){
+		if("union".equalsIgnoreCase(setOpType) || SATISFIES_ANY.equalsIgnoreCase(setOpType)){
 			conjunctionType = "OR";
-		}else if("intersection".equals(setOpType) || SATISFIES_ALL.equals(setOpType)){
+		}else if("intersection".equalsIgnoreCase(setOpType) || SATISFIES_ALL.equalsIgnoreCase(setOpType)){
 			conjunctionType = "AND";
 		}
 		
@@ -700,7 +700,7 @@ public class HQMFClauseLogicGenerator implements Generator {
 		String root = "0";
 		//String ext = setOpType.toUpperCase();
 		
-		String ext = setOpType.toUpperCase() + "_" + setOpNode.getAttributes().getNamedItem(UUID).getNodeValue();
+		String ext = setOpType + "_" + setOpNode.getAttributes().getNamedItem(UUID).getNodeValue();
 		
 		Node subTreeParentNode = checkIfSubTree(setOpNode.getParentNode());
 		if (subTreeParentNode != null) {
@@ -1721,7 +1721,7 @@ public class HQMFClauseLogicGenerator implements Generator {
 		Element excerptElement = hqmfXmlProcessor.getOriginalDoc().createElement(EXCERPT);
 		String functionalOpName = functionalOpNode.getAttributes().getNamedItem(TYPE).getNodeValue();
 		Element criteriaElement = null;
-		if(FUNCTIONAL_OPS_NON_SUBSET.containsKey(functionalOpName.toUpperCase())) {
+		if (FUNCTIONAL_OPS_NON_SUBSET.containsKey(functionalOpName)) {
 			Element sequenceElement = hqmfXmlProcessor.getOriginalDoc().createElement(SEQUENCE_NUMBER);
 			sequenceElement.setAttribute(VALUE, FUNCTIONAL_OPS_NON_SUBSET.get(functionalOpName.toUpperCase()));
 			excerptElement.appendChild(sequenceElement);
@@ -1735,7 +1735,7 @@ public class HQMFClauseLogicGenerator implements Generator {
 					excerptElement.appendChild(criteriaElement);
 				}
 			}
-		} else if (FUNCTIONAL_OPS_SUBSET.containsKey(functionalOpName.toUpperCase())) {
+		} else if (FUNCTIONAL_OPS_SUBSET.containsKey(functionalOpName)) {
 			NamedNodeMap attributeMap = functionalOpNode.getAttributes();
 			if(clonedNodeToAppendExcerpt.getNodeName().contains(GROUPER)) {
 				criteriaElement = generateCriteriaElementForSetOpExcerpt(hqmfXmlProcessor, clonedNodeToAppendExcerpt);
@@ -2464,9 +2464,9 @@ public class HQMFClauseLogicGenerator implements Generator {
 	 * @param function the function
 	 * @return the firt child list
 	 */
-	public static List<String> getFunctionalOpFirstChild(String function){
-		List<String> childList =new ArrayList<String>();
-		if(AGE_AT.equals(function)){
+	public static List<String> getFunctionalOpFirstChild(String function) {
+		List<String> childList = new ArrayList<String>();
+		if (AGE_AT.equalsIgnoreCase(function)) {
 			childList.add(SUB_TREE_REF);
 			childList.add(RELATIONAL_OP);
 			childList.add(FUNCTIONAL_OP);
@@ -2494,7 +2494,7 @@ public class HQMFClauseLogicGenerator implements Generator {
 		aggregateList.add("FOURTH");
 		aggregateList.add("FIFTH");
 		aggregateList.add("MOST RECENT");
-		if("AGGREGATE".equals(typeChild)){
+		if ("AGGREGATE".equals(typeChild)) {
 			aggregateList.add("DATETIMEDIFF");
 		}
 		return aggregateList;
@@ -2506,9 +2506,9 @@ public class HQMFClauseLogicGenerator implements Generator {
 	 * @param function the function
 	 * @return the functional op first child in mo
 	 */
-	public static List<String> getFunctionalOpFirstChildInMO(String function){
+	public static List<String> getFunctionalOpFirstChildInMO(String function) {
 		List<String> childList  = new ArrayList<String>();
-		if("DATETIMEDIFF".equals(function)){
+		if ("DATETIMEDIFF".equalsIgnoreCase(function)) {
 			childList.add(ELEMENT_REF);
 			childList.add(SUB_TREE_REF);
 			childList.add(RELATIONAL_OP);
@@ -2517,25 +2517,22 @@ public class HQMFClauseLogicGenerator implements Generator {
 			childList.addAll(getFunctionalOpFirstChild(function));
 			childList.addAll(getAggregateAndInstanceFunctionChilds("AGGREGATE"));
 		}
-		
 		return childList;
 	}
-	
-	
 	/**
 	 * Check for used Used sub tree ref Node map in Populations and Meausre Observations.
 	 */
-	private void createUsedSubTreeRefMap(){
+	private void createUsedSubTreeRefMap() {
 		
 		XmlProcessor simpleXmlProcessor = measureExport.getSimpleXMLProcessor();
-		String typeXpathString ="";
+		String typeXpathString = "";
 		List<String> usedSubTreeRefIdsPop = new ArrayList<String>();
 		List<String> usedSubTreeRefIdsMO = new ArrayList<String>();
-		for(String typeString : POPULATION_NAME_LIST){
-			typeXpathString += "@type = '"+typeString + "' or";
+		for (String typeString : POPULATION_NAME_LIST) {
+			typeXpathString += "@type = '" + typeString + "' or";
 		}
-		typeXpathString = typeXpathString.substring(0,typeXpathString.lastIndexOf(" or"));
-		String xpathForSubTreeInPOPClause = "/measure/measureGrouping//clause["+typeXpathString+"]//subTreeRef/@id";
+		typeXpathString = typeXpathString.substring(0, typeXpathString.lastIndexOf(" or"));
+		String xpathForSubTreeInPOPClause = "/measure/measureGrouping//clause[" + typeXpathString + "]//subTreeRef/@id";
 		String xpathForSubTreeInMOClause = "/measure/measureGrouping//clause[@type='measureObservation']//subTreeRef/@id";
 		try {
 			
@@ -2549,17 +2546,17 @@ public class HQMFClauseLogicGenerator implements Generator {
 				}
 			}
 			usedSubTreeRefIdsPop = checkUnUsedSubTreeRef(simpleXmlProcessor, usedSubTreeRefIdsPop);
-			for(String uuid: usedSubTreeRefIdsPop){
+			for (String uuid: usedSubTreeRefIdsPop) {
 				Node subTreeNode = createUsedSubTreeRefMap(simpleXmlProcessor, uuid);
 				subTreeNodeInPOPMap.put(uuid, subTreeNode);
 			}
 			
 			//creating used Subtree Red Map in Measure Observations
 			NodeList measureObsSubTreeNode = simpleXmlProcessor.findNodeList(simpleXmlProcessor.getOriginalDoc(), xpathForSubTreeInMOClause);
-			for(int i=0;i<measureObsSubTreeNode.getLength();i++){
+			for (int i=0;i<measureObsSubTreeNode.getLength();i++) {
 				String uuid = measureObsSubTreeNode.item(i).getNodeValue();
 				uuid = checkIfQDMVarInstanceIsPresent(uuid, simpleXmlProcessor);
-				if(!usedSubTreeRefIdsMO.contains(uuid)){
+				if (!usedSubTreeRefIdsMO.contains(uuid)) {
 					usedSubTreeRefIdsMO.add(uuid);
 				}
 			}
