@@ -60,7 +60,7 @@ public interface MeasureService extends RemoteService {
 	 *            the measure id
 	 */
 	void createAndSaveElementLookUp(List<QualityDataSetDTO> list,
-			String measureID, String expProfileToAllQDM);
+			String measureID);
 	
 	/**
 	 * Delete measure notes.

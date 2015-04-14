@@ -149,13 +149,9 @@ public class MessageDelegate {
 	public static final String RATIO_NUM_DENO_ASSOCIATION_REQUIRED = "For Ratio measures, in the case of more than one Initial Population, "
 			+ " Numerator and Denominator must contain one association.";
 	
-	public final String VSAC_EXPANSION_PROFILE_SELECTION = "Please Select VSAC Expansion Profile to Apply to QDM Elements";
-	
-	public final String VSAC_PROFILE_APPLIED_TO_QDM_ELEMENTS = "VSAC Profile Successfully Applied to QDM Elements.";
 	
 	
-
-
+	
 	/**
 	 * Gets the measure save server error message.
 	 * 
@@ -214,13 +210,13 @@ public class MessageDelegate {
 	
 	/** The atleast one child required. */
 	private final String ATLEAST_ONE_CHILD_REQUIRED = " Functions must contain at least one child node.";
-	
+
 	/** The at least three children are required. */
 	private final String AT_LEAST_TWO_CHILDREN_REQUIRED = "Union, Intersection, and Datetimediff must contain at least two or more child nodes.";
-	
+
 	/** The at least three children are required. */
 	private final String AT_LEAST_THREE_CHILDREN_REQUIRED = "Satisfies All and Satisfies Any must contain at least three or more child nodes.";
-	
+
 	/** The clause work space validation success. */
 	private final String CLAUSE_WORK_SPACE_VALIDATION_SUCCESS = "Measure logic validation successful.";
 	
@@ -617,7 +613,7 @@ public class MessageDelegate {
 	private final String COMPONENT_MEASURES_ADDED_SUCCESSFULLY="Component Measures updated successfully. Changes must be saved on the previous page.";
 	
 	/** The removed functions error message. */
-	private final String POPULATION_WORKSPACE_DATETIMEDIFF_ERROR_MESSAGE = "Highlighted clause contains Datetimediff function.";
+	private final String POPULATION_WORKSPACE_DATETIMEDIFF_ERROR_MESSAGE = "Highlighted clause contains DATETIMEDIFF function.";
 	
 	/** The clause work space invalid nested clause. */
 	private final String CLAUSE_WORK_SPACE_INVALID_NESTED_CLAUSE ="Invalid clause(s) used in logic.";
@@ -2120,7 +2116,7 @@ public class MessageDelegate {
 	public String getAT_LEAST_TWO_CHILDREN_REQUIRED() {
 		return AT_LEAST_TWO_CHILDREN_REQUIRED;
 	}
-	
+
 	
 	/**
 	 * Gets the at least three children required.
@@ -2130,7 +2126,7 @@ public class MessageDelegate {
 	public String getAT_LEAST_THREE_CHILDREN_REQUIRED() {
 		return AT_LEAST_THREE_CHILDREN_REQUIRED;
 	}
-	
+
 	
 	/**
 	 * Gets the population work space measure observation validation error.
@@ -2256,13 +2252,6 @@ public class MessageDelegate {
 	public static String getWelcomeMessage() {
 		return WELCOME_MESSAGE;
 	}
-
 	
-	public String getVsacExpansionProfileSelection() {
-		return VSAC_EXPANSION_PROFILE_SELECTION;
-	}
 	
-	public String getVsacProfileAppliedToQdmElements() {
-		return VSAC_PROFILE_APPLIED_TO_QDM_ELEMENTS;
-	}
 }

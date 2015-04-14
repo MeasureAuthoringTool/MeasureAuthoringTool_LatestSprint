@@ -7,7 +7,6 @@ package mat.shared;
  * This holds constants used across MAT.
  * These constants are available on client as well as server side.
  */
-
 public interface MatConstants {
 	/** The Constant NUMERATOR_EXCLUSIONS. */
 	String NUMERATOR_EXCLUSIONS = "numeratorExclusions";
@@ -28,37 +27,29 @@ public interface MatConstants {
 	/** The Constant DATATYPE. */
 	String DATATYPE = "datatype";
 	/** The Constant DATETIMEDIFF. */
-	String DATETIMEDIFF = "Datetimediff";
-	/** The Constant "FIRST". */
-	String FIRST = "First";
-	/** The Constant "SECOND". */
-	String SECOND = "Second";
-	/** The Constant "THIRD". */
-	String THIRD = "Third";
-	/** The Constant FOURTH. */
-	String FOURTH = "Fourth";
+	String DATETIMEDIFF = "DATETIMEDIFF";
 	/** The Constant FIFTH. */
-	String FIFTH = "Fifth";
-	/** The Constant MOST RECENT. */
-	String MOST_RECENT = "Most Recent";
+	String FIFTH = "FIFTH";
+	/** The Constant FOURTH. */
+	String FOURTH = "FOURTH";
 	/** The Constant TIMEDIFF. */
 	String TIMEDIFF = "TIMEDIFF";
 	/** The Constant SUM. */
-	String SUM = "Sum";
+	String SUM = "SUM";
 	/** The Constant MEDIAN. */
-	String MEDIAN = "Median";
+	String MEDIAN = "MEDIAN";
 	/** The Constant MIN. */
-	String MIN = "Min";
+	String MIN = "MIN";
 	/** The Constant MAX. */
-	String MAX = "Max";
+	String MAX = "MAX";
 	/** The Constant DATEDIFF. */
 	String DATEDIFF = "DATEDIFF";
 	/** The Constant COUNT. */
-	String COUNT = "Count";
+	String COUNT = "COUNT";
 	/** The Constant AVG. */
-	String AVG = "Avg";
+	String AVG = "AVG";
 	/** The Constant AGE_AT. */
-	String AGE_AT = "Age At";
+	String AGE_AT = "AGE AT";
 	/** The Constant DATE. */
 	String DATE = "date";
 	/** The Constant MODE. */
@@ -158,27 +149,7 @@ public interface MatConstants {
 	/** The Constant OPERATOR_TYPE. */
 	String OPERATOR_TYPE = "operatorType";
 	/** The Constant SATISFIES_ANY. */
-	String SATISFIES_ANY = "Satisfies Any";
+	String SATISFIES_ANY = "SATISFIES ANY";
 	/** The Constant SATISFIES_ALL. */
-	String SATISFIES_ALL = "Satisfies All";
-	/** The Constant starts concurrent with. */
-	String STARTS_CONCURRENT_WITH =  "Starts Concurrent With";
-	/** The Constant starts concurrent with end of. */
-	String STARTS_CONCURRENT_WITH_END_OF = "Starts Concurrent With End Of";
-	/** The Constant starts during. */
-	String STARTS_DURING = "Starts During";
-	/** The Constant ends concurrent with. */
-	String ENDS_CONCURRENT_WITH = "Ends Concurrent With";
-	/** The Constant ends concurrent with start of. */
-	String ENDS_CONCURRENT_WITH_START_OF = "Ends Concurrent With Start Of";
-	/** The Constant ends during. */
-	String ENDS_DURING = "Ends During";
-	/** The Constant concurrent with. */
-	String CONCURRENT_WITH =  "Concurrent With";
-	/** The Constant during. */
-	String DURING = "During";
-	/** The Constant concurrent with. */
-	String OVERLAPS =  "Overlaps";
-	
-	
+	String SATISFIES_ALL = "SATISFIES ALL";
 }

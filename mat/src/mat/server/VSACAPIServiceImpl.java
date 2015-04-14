@@ -612,9 +612,8 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 						}
 					}
 					continue;
-				} else if (("1.0".equalsIgnoreCase(qualityDataSetDTO.getVersion())
-						|| "1".equalsIgnoreCase(qualityDataSetDTO.getVersion())) 
-						&& qualityDataSetDTO.getExpansionProfile()==null ) {
+				} else if ("1.0".equalsIgnoreCase(qualityDataSetDTO.getVersion())
+						|| "1".equalsIgnoreCase(qualityDataSetDTO.getVersion())) {
 					LOGGER.info("Start ValueSetsResponseDAO...Using Proxy:" + PROXY_HOST + ":" + PROXY_PORT);
 					VSACResponseResult vsacResponseResult = null;
 					try {

@@ -28,14 +28,14 @@ public class AppliedQDMPresenter implements MatPresenter {
 	/** The QDM content widget. */
 	private SimplePanel QDMContentWidget = new SimplePanel();
 	
-	QDMAppliedSelectionPresenter  vsacProfileSelectionPresenter;
+	VSACProfileSelectionPresenter  vsacProfileSelectionPresenter;
 
 	/**
 	 * Instantiates a new applied qdm presenter.
 	 */
 	public AppliedQDMPresenter() {
-	 QDMAppliedSelectionView vascProfileSelectionView = new QDMAppliedSelectionView();
-     vsacProfileSelectionPresenter = new QDMAppliedSelectionPresenter(vascProfileSelectionView);
+	 VSACProfileSelectionView vascProfileSelectionView = new VSACProfileSelectionView();
+     vsacProfileSelectionPresenter = new VSACProfileSelectionPresenter(vascProfileSelectionView);
 	}
 
 	/*

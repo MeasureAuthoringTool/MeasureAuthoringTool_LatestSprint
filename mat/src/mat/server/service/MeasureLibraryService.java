@@ -72,7 +72,7 @@ public interface MeasureLibraryService {
 	 *            the measure id
 	 */
 	void createAndSaveElementLookUp(List<QualityDataSetDTO> list,
-			String measureID, String expProfileToAllQDM);
+			String measureID);
 	
 	/**
 	 * Delete measure notes.
@@ -543,9 +543,8 @@ public interface MeasureLibraryService {
 
 	MeasureDetailResult getUsedStewardAndDevelopersList(String measureId);
 
-	void updateMeasureXMLForExpansionProfile(
-			List<QualityDataSetDTO> modifyWithDTO, String measureId,
-			String expansionProfile);
+	void updateMeasureXmlForQDM(QualityDataSetDTO modifyWithDTO,
+			String expansionProfile, String measureId);
 
 	/**
 	 * Update steward and measure developers on deletion.

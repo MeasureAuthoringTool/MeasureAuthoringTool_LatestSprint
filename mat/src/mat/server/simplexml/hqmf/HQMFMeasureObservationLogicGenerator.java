@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
@@ -25,7 +24,7 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 	/** The clause logic map. */
 	private Map<String, Node> clauseLogicMap = new HashMap<String, Node>();
 	/** The measure grouping map. */
-	private TreeMap<String, NodeList> measureGroupingMap = new TreeMap<String, NodeList>();
+	private Map<String, NodeList> measureGroupingMap = new HashMap<String, NodeList>();
 	/** The elementRefList. */
 	//private List<Node> elementRefList;
 	/** The MeasureExport object. */
@@ -41,11 +40,11 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 	/**
 	 * MAP of Functional Ops AGGREGATE that can be used in Measure Observation.
 	 */
-	private static final Map<String, String> FUNCTIONAL_OPS_AGGREGATE = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+	private static final Map<String, String> FUNCTIONAL_OPS_AGGREGATE = new HashMap<String, String>();
 	/**
 	 * MAP of Functional Ops INCLUDED FUNCTIONS that can be used in Measure Observation.
 	 */
-	private static final Map<String, String> INCLUDED_FUNCTIONAL_NAMES = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+	private static final Map<String, String> INCLUDED_FUNCTIONAL_NAMES = new HashMap<String, String>();
 	static {
 		FUNCTIONAL_OPS_AGGREGATE.put("MAX", "MAX");
 		FUNCTIONAL_OPS_AGGREGATE.put("MIN", "MIN");
@@ -282,7 +281,7 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 		String clauseNodeName = clauseNodes.getAttributes().getNamedItem("displayName").getNodeValue();
 		List<Node> elementRefList = new ArrayList<Node>();
 		if (FUNCTIONAL_OPS_AGGREGATE.containsKey(clauseNodeName)) {
-			if (clauseNodeName.equalsIgnoreCase("DATETIMEDIFF")) {
+			if (clauseNodeName.equals("DATETIMEDIFF")) {
 				generateMOClauseLogicForDateTimeDiff(clauseNodes, elementRefList, measureObDefinitionElement);
 			} else {
 				generateMOClauseLogic(clauseNodes,  elementRefList, measureObDefinitionElement, true, null);
@@ -380,7 +379,7 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 				break;
 			case "functionalOp":
 				if (INCLUDED_FUNCTIONAL_NAMES.containsKey(firstChildNodeName)) {
-					if ("DATETIMEDIFF".equalsIgnoreCase(firstChildNodeName)) {
+					if ("DATETIMEDIFF".equals(firstChildNodeName)) {
 						generateMOClauseLogicForDateTimeDiff(firstChildNode, elementRefList
 								, measureObDefinitionElement);
 					} else {
@@ -391,7 +390,7 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 							childNodeName = childNode.getAttributes().getNamedItem("displayName")
 									.getNodeValue();
 						}
-						if (childNodeName.equalsIgnoreCase("DATETIMEDIFF")) {
+						if (childNodeName.equals("DATETIMEDIFF")) {
 							isDateTimeDiff = true;
 						}
 						if (!isDateTimeDiff) {
@@ -485,7 +484,7 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 					case "functionalOp":
 						if (INCLUDED_FUNCTIONAL_NAMES.containsKey(firstChildNodeName)) {
 							parentSubTreeNode = parentSubTreeNode.cloneNode(false);
-							if (!"DATETIMEDIFF".equalsIgnoreCase(firstChildNodeName)) {
+							if (!"DATETIMEDIFF".equals(firstChildNodeName)) {
 								Node functionalOp = firstChildNode.cloneNode(true);
 								parentSubTreeNode.appendChild(functionalOp);
 								localVariableName = generateClauseLogicForChildsInsideFnxOp(

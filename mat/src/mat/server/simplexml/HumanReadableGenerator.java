@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.TreeMap;
-
 import javax.xml.xpath.XPathExpressionException;
 import mat.server.util.XmlProcessor;
 import mat.shared.ConstantMessages;
@@ -71,12 +69,12 @@ public class HumanReadableGenerator implements MatConstants{
 	/** The Constant subsetFunctions */
 	private static List<String> subSetFunctionsList = new ArrayList<String>();
 	static {
-		subSetFunctionsList.add(MatConstants.FIRST);
-		subSetFunctionsList.add(MatConstants.SECOND);
-		subSetFunctionsList.add(MatConstants.THIRD);
-		subSetFunctionsList.add(MatConstants.FOURTH);
-		subSetFunctionsList.add(MatConstants.FIFTH);
-		subSetFunctionsList.add(MatConstants.MOST_RECENT);
+		subSetFunctionsList.add("FIRST");
+		subSetFunctionsList.add("SECOND");
+		subSetFunctionsList.add("THIRD");
+		subSetFunctionsList.add("FOURTH");
+		subSetFunctionsList.add("FIFTH");
+		subSetFunctionsList.add("MOST RECENT");
 	}
 	
 	/** The show only variable name. */
@@ -1473,11 +1471,11 @@ public class HumanReadableGenerator implements MatConstants{
 		}
 		
 		String typeAttribute = item.getAttributes().getNamedItem("type")
-				.getNodeValue().toUpperCase();
+				.getNodeValue();
 		String functionDisplayName = item.getAttributes()
-				.getNamedItem(DISPLAY_NAME).getNodeValue().toUpperCase();
+				.getNamedItem(DISPLAY_NAME).getNodeValue();
 		
-		if (MatConstants.AGE_AT.equalsIgnoreCase(typeAttribute)) {
+		if ("AGE AT".equals(typeAttribute)) {
 			functionDisplayName = item.getAttributes()
 					.getNamedItem(DISPLAY_NAME).getNodeValue().toLowerCase();
 		} else if (functionDisplayName.startsWith("AVG")) {
@@ -2051,36 +2049,18 @@ public class HumanReadableGenerator implements MatConstants{
 				simpleXMLProcessor.getOriginalDoc(),
 				"/measure/measureGrouping/group");
 		
-		TreeMap<String, Node> groupMap = new TreeMap<String, Node>();
-		
 		for (int i = 0; i < groupNodeList.getLength(); i++) {
-			Node measureGroupingNode = groupNodeList.item(i);
-			String key = measureGroupingNode.getAttributes().getNamedItem("sequence").getNodeValue();
-			groupMap.put(key, measureGroupingNode);
-		}
-		
-//		for (int i = 0; i < groupNodeList.getLength(); i++) {
-//			
-//			if (groupNodeList.getLength() > 1) {
-//				mainListElement.append("<li style=\"list-style: none;\"><br><b>------ Population Criteria "
-//						+ (i + 1) + " ------</b><br><br></li>");
-//			}
-//			
-//			Node groupNode = groupNodeList.item(i);
-//			
-//			NodeList clauseNodeList = groupNode.getChildNodes();
-//			generatePopulationNodes(clauseNodeList, mainListElement,
-//					groupNodeList.getLength(), i, simpleXMLProcessor);
-//		}
-		
-		for (String key : groupMap.keySet()) {
-			if (groupMap.size() > 1) {
+			
+			if (groupNodeList.getLength() > 1) {
 				mainListElement.append("<li style=\"list-style: none;\"><br><b>------ Population Criteria "
-						+ (key) + " ------</b><br><br></li>");
+						+ (i + 1) + " ------</b><br><br></li>");
 			}
-			NodeList clauseNodeList = groupMap.get(key).getChildNodes();
+			
+			Node groupNode = groupNodeList.item(i);
+			
+			NodeList clauseNodeList = groupNode.getChildNodes();
 			generatePopulationNodes(clauseNodeList, mainListElement,
-					groupNodeList.getLength(),Integer.parseInt(key), simpleXMLProcessor);
+					groupNodeList.getLength(), i, simpleXMLProcessor);
 		}
 	}
 	
