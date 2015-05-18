@@ -126,6 +126,15 @@ public class ManageUsersSearchView implements ManageUsersPresenter.SearchDisplay
 		};
 		cellTable.addColumn(organizationColumn, SafeHtmlUtils.fromSafeConstant(
 				"<span title=\"Organization\">" + "Organization" + "</span>"));
+		Column<Result, SafeHtml> userRoleColumn = new Column<Result, SafeHtml>(new SafeHtmlCell()) {
+			@Override
+			public SafeHtml getValue(Result object) {
+				return CellTableUtility.getColumnToolTip(object.getUserRole(), "User Role: " + object.getUserRole());
+			}
+		};
+		cellTable.addColumn(userRoleColumn, SafeHtmlUtils.fromSafeConstant(
+				"<span title=\"User Role\">" + "User Role" + "</span>"));
+
 		Column<Result, SafeHtml> statusColumn = new Column<Result, SafeHtml>(new SafeHtmlCell()) {
 			@Override
 			public SafeHtml getValue(Result object) {
@@ -175,8 +184,8 @@ public class ManageUsersSearchView implements ManageUsersPresenter.SearchDisplay
 		cellTable.setColumnWidth(2, 20.0, Unit.PCT);
 		Label invisibleLabel = (Label) LabelBuilder.buildInvisibleLabel(
 				"manageUsersSummary",
-				"In the Following Manage users table, Name is given in the first column, Organization in "
-						+ "second column and Status in the third column.");
+				"In the Following Manage users table, Name is given in the first column, Organization in the "
+						+ "second column, Status in the third column, and User Role in the fourth column.");
 		cellTable.getElement().setAttribute("id", "manageUsersCellTable");
 		cellTable.getElement().setAttribute("aria-describedby", "manageUsersSummary");
 		cellTablePanel.add(invisibleLabel);

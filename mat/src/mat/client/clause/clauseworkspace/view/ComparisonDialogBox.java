@@ -276,18 +276,23 @@ public class ComparisonDialogBox {
 			listAllUnits.setEnabled(true);
 		}
 		
-		String timing = listAllTimeOrFunction.getItemText(listAllTimeOrFunction
-				.getSelectedIndex());
 		
-		// if non-comparision operator, disable operator/quantity/units
-		if (temporalNoOperatorList.contains(timing)) {
-			quantity.setEnabled(false);
-			quantity.setValue("");
-			listAllUnits.setItemSelected(0, true);
-			listAllUnits.setEnabled(false);
-			listAllOperator.setItemSelected(0, true);
-			listAllOperator.setEnabled(false);
+		if(listAllTimeOrFunction.getItemCount()>0){
+			String timing = listAllTimeOrFunction.getItemText(listAllTimeOrFunction
+					.getSelectedIndex());
+			
+			// if non-comparision operator, disable operator/quantity/units
+			if (temporalNoOperatorList.contains(timing)) {
+				quantity.setEnabled(false);
+				quantity.setValue("");
+				listAllUnits.setItemSelected(0, true);
+				listAllUnits.setEnabled(false);
+				listAllOperator.setItemSelected(0, true);
+				listAllOperator.setEnabled(false);
+			}
 		}
+		
+		
 		
 		// changeHandler for listAllTimeOrFunction
 		listAllTimeOrFunction.addChangeHandler(new ChangeHandler() {
@@ -626,6 +631,7 @@ public class ComparisonDialogBox {
 	 * @param allFunctionsList
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	public static List<String> filterFunctions(final CellTreeNode cellTreeNode,
 			List<String> allFunctionsList) {
 		
@@ -636,7 +642,6 @@ public class ComparisonDialogBox {
 		System.out.println("nodeType:" + nodeType);
 		
 		if (nodeType == CellTreeNode.FUNCTIONS_NODE) {
-			@SuppressWarnings("unchecked")
 			String nodeText = cellTreeNode.getName();
 			HashMap<String, String> map = (HashMap<String, String>) cellTreeNode
 					.getExtraInformation(PopulationWorkSpaceConstants.EXTRA_ATTRIBUTES);
@@ -646,11 +651,14 @@ public class ComparisonDialogBox {
 			System.out.println("nodeText:" + nodeText);
 			returnList = getAllowedFunctionsList(allFunctionsList, nodeText);
 			
-		} else if ((nodeType != CellTreeNode.TIMING_NODE)
-				&& (nodeType != CellTreeNode.SET_OP_NODE)
-				&& (nodeType != CellTreeNode.RELATIONSHIP_NODE)
-				&& (nodeType != CellTreeNode.FUNCTIONS_NODE)) {
+		} else if ((nodeType == CellTreeNode.SUBTREE_NODE)) {
 			returnList = allFunctionsList;
+		} else if ((nodeType == CellTreeNode.TIMING_NODE)
+				|| (nodeType == CellTreeNode.SET_OP_NODE)
+				|| (nodeType == CellTreeNode.RELATIONSHIP_NODE)
+				) {
+			returnList = new ArrayList<String>();
+			addFunctionWithTitleCaseInList(returnList);
 		}
 		
 		System.out.println("returnList:" + returnList);
