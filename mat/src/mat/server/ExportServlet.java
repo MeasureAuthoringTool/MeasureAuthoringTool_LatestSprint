@@ -7,14 +7,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.xpath.XPathExpressionException;
-
 import mat.model.MeasureNotes;
+import mat.model.MeasureOwnerReportDTO;
 import mat.model.User;
 import mat.model.clause.Measure;
 import mat.server.service.MeasureLibraryService;
@@ -27,7 +26,6 @@ import mat.server.simplexml.MATCssUtil;
 import mat.server.util.XmlProcessor;
 import mat.shared.FileNameUtility;
 import mat.shared.InCorrectUserRoleException;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -118,10 +116,10 @@ public class ExportServlet extends HttpServlet {
 		MeasurePackageService service = getMeasurePackageService();
 		MeasureLibraryService measureLibraryService = getMeasureLibraryService();
 		
-	    String id = req.getParameter(ID_PARAM);
+		String id = req.getParameter(ID_PARAM);
 		String format = req.getParameter(FORMAT_PARAM);
 		String type = req.getParameter(TYPE_PARAM);
-		String[] matVersion ={"_v3","_v4"}; 
+		String[] matVersion ={"_v3","_v4"};
 		Measure measure = null;
 		ExportResult export = null;
 		Date exportDate = null;
@@ -131,7 +129,7 @@ public class ExportServlet extends HttpServlet {
 		if (id!= null) {
 			measure = service.getById(id);
 			exportDate = measure.getExportedDate();
-			}
+		}
 		Date releaseDate = measureLibraryService.getFormattedReleaseDate(measureLibraryService.getReleaseDate());
 		FileNameUtility fnu = new FileNameUtility();
 		try {
@@ -140,7 +138,7 @@ public class ExportServlet extends HttpServlet {
 						matVersion, measure, fnu);
 			} else if (EMEASURE.equals(format)) {
 				export = exportEmeasureXML(resp, measureLibraryService, id,
-						type, matVersion, measure, export, fnu);				
+						type, matVersion, measure, export, fnu);
 			} else if (CODELIST.equals(format)) {
 				export = exportCodeListXLS(resp, measureLibraryService, id,
 						matVersion, measure, fnu);
@@ -158,16 +156,19 @@ public class ExportServlet extends HttpServlet {
 				exportActiveOrganizationListCSV(resp, fnu);
 			} else if (EXPORT_MEASURE_NOTES_FOR_MEASURE.equals(format)) {
 				export = exportMeasureNotesCSV(resp, id, measure, fnu);
+			} else if("exportMeasureOwner".equalsIgnoreCase(format)){
+				exportActiveUserMeasureOwnershipListCSV(resp,fnu);
+				
 			}
 		} catch (Exception e) {
 			throw new ServletException(e);
 		}
-		if (!CODELIST.equals(format) && !EXPORT_ACTIVE_NON_ADMIN_USERS_CSV.equals(format)
-				&& !EXPORT_MEASURE_NOTES_FOR_MEASURE.equals(format)) {
+		if (!CODELIST.equals(format) && !EXPORT_ACTIVE_NON_ADMIN_USERS_CSV.equals(format) && !EXPORT_ACTIVE_OID_CSV.equals(format)
+				&& !EXPORT_MEASURE_NOTES_FOR_MEASURE.equals(format) && !"exportMeasureOwner".equalsIgnoreCase(format)) {
 			resp.getOutputStream().println(export.export);
 		}
 	}
-
+	
 	public ExportResult exportMeasureNotesCSV(HttpServletResponse resp,
 			String id, Measure measure, FileNameUtility fnu) throws Exception,
 			XPathExpressionException, IOException {
@@ -185,7 +186,7 @@ public class ExportServlet extends HttpServlet {
 		resp.getOutputStream().close();
 		return export;
 	}
-
+	
 	public void exportActiveOrganizationListCSV(HttpServletResponse resp,
 			FileNameUtility fnu) throws IOException {
 		String userRole = LoggedInUserUtil.getLoggedInUserRole();
@@ -200,7 +201,7 @@ public class ExportServlet extends HttpServlet {
 			resp.getOutputStream().close();
 		}
 	}
-
+	
 	public void exportActiveUserListCSV(HttpServletResponse resp,
 			FileNameUtility fnu) throws InCorrectUserRoleException, IOException {
 		String userRole = LoggedInUserUtil.getLoggedInUserRole();
@@ -215,30 +216,46 @@ public class ExportServlet extends HttpServlet {
 			resp.getOutputStream().close();
 		}
 	}
-
+	
+	public void exportActiveUserMeasureOwnershipListCSV(HttpServletResponse resp,
+			FileNameUtility fnu) throws InCorrectUserRoleException, IOException, XPathExpressionException {
+		String userRole = LoggedInUserUtil.getLoggedInUserRole();
+		if ("Administrator".equalsIgnoreCase(userRole)) {
+			String csvFileString = generateCSVOfMeasureOwnershipForActiveUser();
+			Format formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			String aCSVDate = formatter.format(new Date());
+			resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
+					+ fnu.getCSVFileName("activeUsersMeasureOwnership", aCSVDate) + ";");
+			resp.setContentType("text/csv");
+			resp.getOutputStream().write(csvFileString.getBytes());
+			resp.getOutputStream().close();
+		}
+	}
+	
+	
 	public ExportResult exportValueSetListXLS(HttpServletResponse resp,
 			MeasureLibraryService measureLibraryService, String id,
 			String[] matVersion, Measure measure, FileNameUtility fnu)
-			throws Exception, IOException {
+					throws Exception, IOException {
 		ExportResult export;
 		export = getService().getValueSetXLS(id);
-		 if (measure.getExportedDate().before(measureLibraryService.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
-		resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
-				+ fnu.getValueSetXLSName(export.valueSetName + matVersion[0], export.lastModifiedDate));
-		 } else if(measure.getExportedDate().equals(measureLibraryService
-					.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))
-					 || measure.getExportedDate().after(measureLibraryService
-							 .getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
-			 resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
-						+ fnu.getValueSetXLSName(export.valueSetName + matVersion[1], export.lastModifiedDate));
-		 }
+		if (measure.getExportedDate().before(measureLibraryService.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
+			resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
+					+ fnu.getValueSetXLSName(export.valueSetName + matVersion[0], export.lastModifiedDate));
+		} else if(measure.getExportedDate().equals(measureLibraryService
+				.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))
+				|| measure.getExportedDate().after(measureLibraryService
+						.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
+			resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
+					+ fnu.getValueSetXLSName(export.valueSetName + matVersion[1], export.lastModifiedDate));
+		}
 		resp.setContentType("application/vnd.ms-excel");
 		resp.getOutputStream().write(export.wkbkbarr);
 		resp.getOutputStream().close();
 		export.wkbkbarr = null;
 		return export;
 	}
-
+	
 	public ExportResult exportSubTreeHumanReadable(HttpServletRequest req,
 			HttpServletResponse resp, String id) throws Exception {
 		ExportResult export;
@@ -248,7 +265,7 @@ public class ExportServlet extends HttpServlet {
 		resp.setHeader(CONTENT_TYPE, TEXT_HTML);
 		return export;
 	}
-
+	
 	public ExportResult exportEmeasureZip(HttpServletResponse resp,
 			MeasureLibraryService measureLibraryService, String id,
 			String[] matVersion, Measure measure, Date exportDate,
@@ -257,11 +274,11 @@ public class ExportServlet extends HttpServlet {
 		ExportResult export;
 		export = getService().getEMeasureZIP(id,exportDate,releaseDate);
 		if(measure.getExportedDate().before(measureLibraryService.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
-		resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME + fnu.getZipName(export.measureName + matVersion[0]));
+			resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME + fnu.getZipName(export.measureName + matVersion[0]));
 		} else if(measure.getExportedDate().equals(measureLibraryService
 				.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))
-				 || measure.getExportedDate().after(measureLibraryService
-						 .getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
+				|| measure.getExportedDate().after(measureLibraryService
+						.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
 			resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME + fnu.getZipName(export.measureName + matVersion[1]));
 		}
 		resp.setContentType("application/zip");
@@ -270,20 +287,20 @@ public class ExportServlet extends HttpServlet {
 		export.zipbarr = null;
 		return export;
 	}
-
+	
 	public ExportResult exportCodeListXLS(HttpServletResponse resp,
 			MeasureLibraryService measureLibraryService, String id,
 			String[] matVersion, Measure measure, FileNameUtility fnu)
-			throws Exception, IOException {
+					throws Exception, IOException {
 		ExportResult export;
 		export = getService().getEMeasureXLS(id);
 		if(measure.getExportedDate().before(measureLibraryService.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
-		resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
-				+ fnu.getEmeasureXLSName(export.measureName + matVersion[0], export.packageDate));
+			resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
+					+ fnu.getEmeasureXLSName(export.measureName + matVersion[0], export.packageDate));
 		} else if(measure.getExportedDate().equals(measureLibraryService
 				.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))
-				 || measure.getExportedDate().after(measureLibraryService
-						 .getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
+				|| measure.getExportedDate().after(measureLibraryService
+						.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
 			resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
 					+ fnu.getEmeasureXLSName(export.measureName + matVersion[1], export.packageDate));
 		}
@@ -293,7 +310,7 @@ public class ExportServlet extends HttpServlet {
 		export.wkbkbarr = null;
 		return export;
 	}
-
+	
 	public ExportResult exportEmeasureXML(HttpServletResponse resp,
 			MeasureLibraryService measureLibraryService, String id,
 			String type, String[] matVersion, Measure measure,
@@ -304,10 +321,10 @@ public class ExportServlet extends HttpServlet {
 				resp.setHeader(CONTENT_TYPE, TEXT_HTML);
 			} else if (SAVE.equals(type)) {
 				export = getService().getEMeasureXML(id);
-//						if (measure.getExportedDate().before(measureLibraryService.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
+				//						if (measure.getExportedDate().before(measureLibraryService.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
 				resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
 						+ fnu.getEmeasureXMLName(export.measureName + matVersion[0]));
-//						}
+				//						}
 			}
 		}else{
 			if ("open".equals(type)) {
@@ -321,7 +338,7 @@ public class ExportServlet extends HttpServlet {
 		}
 		return export;
 	}
-
+	
 	public ExportResult exportSimpleXML(HttpServletResponse resp,
 			MeasureLibraryService measureLibraryService, String id,
 			String type, String[] matVersion, Measure measure,
@@ -330,22 +347,22 @@ public class ExportServlet extends HttpServlet {
 		export = getService().getSimpleXML(id);
 		if (SAVE.equals(type)) {
 			if (measure.getExportedDate().before(measureLibraryService.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))) {
-			resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
-					+ fnu.getSimpleXMLName(export.measureName + matVersion[0])); 
+				resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
+						+ fnu.getSimpleXMLName(export.measureName + matVersion[0]));
 			}
 			else if(measure.getExportedDate().equals(measureLibraryService
 					.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))
-					 || measure.getExportedDate().after(measureLibraryService
-							 .getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
+					|| measure.getExportedDate().after(measureLibraryService
+							.getFormattedReleaseDate(measureLibraryService.getReleaseDate()))){
 				resp.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME
-						+ fnu.getSimpleXMLName(export.measureName + matVersion[1])); 
+						+ fnu.getSimpleXMLName(export.measureName + matVersion[1]));
 			}
 		} else {
 			resp.setHeader(CONTENT_TYPE, TEXT_XML);
 		}
 		return export;
 	}
-
+	
 	/**
 	 * Generate html to export measure notes.
 	 *
@@ -511,6 +528,21 @@ public class ExportServlet extends HttpServlet {
 	}
 	
 	/**
+	 * Generate csv of active user emails.
+	 * 
+	 * @return the string
+	 * @throws InCorrectUserRoleException
+	 *             the in correct user role exception
+	 * @throws XPathExpressionException
+	 */
+	private String generateCSVOfMeasureOwnershipForActiveUser() throws InCorrectUserRoleException, XPathExpressionException {
+		logger.info("Generating CSV of Measure Ownership for all Active Non Admin Users...");
+		List<MeasureOwnerReportDTO> ownerReList = 	getMeasureLibraryService().getMeasuresForMeasureOwner();
+		//Iterate through the 'allNonAdminActiveUsersList' and generate a csv
+		return createCSVOfActiveUserMeasures(ownerReList);
+	}
+	
+	/**
 	 * Generate csv of active OIDs.
 	 * @return the string
 	 */
@@ -569,8 +601,45 @@ public class ExportServlet extends HttpServlet {
 		for (User user:allNonAdminActiveUsersList) {
 			csvStringBuilder.append("\"" + user.getLastName() + "\",\"" + user.getFirstName()
 					+ "\",\"" + user.getEmailAddress() + "\",\"" + user.getOrganizationName()
-					+ "\",\"" + user.getSecurityRole().getDescription() 
+					+ "\",\"" + user.getSecurityRole().getDescription()
 					+ "\",\"" + user.getOrgOID() + "\"");
+			csvStringBuilder.append("\r\n");
+		}
+		return csvStringBuilder.toString();
+	}
+	
+	
+	/**
+	 * Generates Measure and Measure Owner report for Active Non Admin Users.
+	 * @param ownerReList - List.
+	 * @return CSV String
+	 */
+	private String createCSVOfActiveUserMeasures(
+			final List<MeasureOwnerReportDTO> ownerReList) {
+		
+		StringBuilder csvStringBuilder = new StringBuilder();
+		//Add the header row
+		csvStringBuilder.append("Last Name,First Name,Organization,Measure Name,Emeasure Id , GUID ,NQF Number");
+		csvStringBuilder.append("\r\n");
+		for (MeasureOwnerReportDTO measureOwnerReportDTO : ownerReList) {
+			csvStringBuilder.append("\"" + measureOwnerReportDTO.getLastName() + "\",\"" + measureOwnerReportDTO.getFirstName()
+					+ "\",\"" + measureOwnerReportDTO.getOrganizationName()
+					+ "\",\"" + measureOwnerReportDTO.getMeasureDescription() + "\",\"");
+			if (measureOwnerReportDTO.getCmsNumber() != 0) {
+				csvStringBuilder.append(measureOwnerReportDTO.getCmsNumber() + "\",\"");
+			} else {
+				csvStringBuilder.append("" + "\",\"");
+			}
+			if (measureOwnerReportDTO.getGuid() != null) {
+				csvStringBuilder.append(measureOwnerReportDTO.getGuid() + "\"");
+			} else {
+				csvStringBuilder.append("" + "\"");
+			}
+			if (measureOwnerReportDTO.getNqfId() != null) {
+				csvStringBuilder.append(",\"\t" + measureOwnerReportDTO.getNqfId() + "\"");
+			} else {
+				csvStringBuilder.append(",\"" + "" + "\"");
+			}
 			csvStringBuilder.append("\r\n");
 		}
 		return csvStringBuilder.toString();

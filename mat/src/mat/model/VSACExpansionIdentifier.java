@@ -4,7 +4,7 @@ import mat.client.codelist.HasListBox;
 
 import com.google.gwt.user.client.rpc.IsSerializable;
 
-public class VSACProfile implements IsSerializable, HasListBox {
+public class VSACExpansionIdentifier implements IsSerializable, HasListBox {
 
 	
 	private String name;

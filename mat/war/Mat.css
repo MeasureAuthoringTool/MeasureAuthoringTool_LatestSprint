@@ -230,6 +230,18 @@ left:50px;
   	cursor: hand;
 }
 
+.customReport {
+    background: url("images/report_small.jpg");
+    background-position:center;
+    background-repeat:no-repeat;
+    height: 25px;
+    width: 30px;
+    border: 0px;
+    font-size: 0;
+    cursor: pointer;
+    cursor: hand;
+}
+
 .customCascadeButton {
     background: url("images/application_cascade.png");
     background-position:center;
@@ -1838,6 +1850,16 @@ padding: 2px;
     margin-left: 4px;
    margin-top: 8px;
     width: 99%;
+}
+
+.cellTablePanel_Report {
+    background-color: #FFFFFF;
+    border-color: #E8EEF7 #E8EEF7 #E8EFF7;
+    border-style: solid;
+    border-width: 3px;
+    margin-left: 4px;
+   margin-top: 8px;
+    width: 50%;
 }
 
 .recentSearchHeader{

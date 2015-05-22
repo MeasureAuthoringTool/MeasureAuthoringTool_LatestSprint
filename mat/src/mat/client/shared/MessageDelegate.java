@@ -150,10 +150,10 @@ public class MessageDelegate {
 			+ " Numerator and Denominator must contain one association.";
 	
 	/** The vsac expansion profile selection. */
-	public final String VSAC_EXPANSION_PROFILE_SELECTION = "Please Select VSAC Expansion Profile to Apply to QDM Elements";
+	public final String VSAC_EXPANSION_PROFILE_SELECTION = "Please Select VSAC Expansion Identifier to Apply to QDM Elements";
 	
 	/** The vsac profile applied to qdm elements. */
-	public final String VSAC_PROFILE_APPLIED_TO_QDM_ELEMENTS = "VSAC Profile Successfully Applied to QDM Elements.";
+	public final String VSAC_PROFILE_APPLIED_TO_QDM_ELEMENTS = "Successfully Applied VSAC Expansion Identifier to QDM Elements.";
 	
 	/** The successful oid retreival from vsac. */
 	public final String  SUCCESSFUL_OID_RETREIVAL_FROM_VSAC = "Successfully retrieved value set data from the VSAC.";
@@ -316,7 +316,7 @@ public class MessageDelegate {
 	private final String DOESNT_FOLLOW_RULES = "The new password you entered does not match the following rules:";
 	
 	/** The duplicate applied qdm. */
-	private final String DUPLICATE_APPLIED_QDM = "Value set with selected datatype already exists in applied elements.";
+	private final String DUPLICATE_APPLIED_QDM = "OID is already applied in combination with Datatype, Version, or Expansion Identifier.";
 	
 	/** The duplicate codes msg. */
 	private final String DUPLICATE_CODES_MSG = "All code(s) were identified as duplicates to code(s) already in the value set and were ignored upon import.";
@@ -2282,12 +2282,13 @@ public class MessageDelegate {
 	 *
 	 * @return the vsac expansion profile selection
 	 */
-	public String getVsacExpansionProfileSelection() {
+	public String getVsacExpansionIdentifierSelection() {
 		return VSAC_EXPANSION_PROFILE_SELECTION;
 	}
 	
 	/**
 	 * Gets the vsac profile applied to qdm elements.
+	 *
 	 *
 	 * @return the vsac profile applied to qdm elements
 	 */

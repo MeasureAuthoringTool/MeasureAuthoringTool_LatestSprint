@@ -3,7 +3,6 @@ package mat.client.clause;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
 import mat.client.CustomPager;
 import mat.client.ImageResources;
 import mat.client.codelist.HasListBox;
@@ -28,7 +27,6 @@ import mat.client.util.MatTextBox;
 import mat.model.QualityDataSetDTO;
 import mat.shared.ClickableSafeHtmlCell;
 import mat.shared.ConstantMessages;
-
 import com.google.gwt.cell.client.Cell;
 import com.google.gwt.cell.client.CompositeCell;
 import com.google.gwt.cell.client.FieldUpdater;
@@ -76,7 +74,7 @@ import com.google.gwt.view.client.SingleSelectionModel;
  * The Class QDMAppliedSelectionView.
  */
 public class QDMAppliedSelectionView implements QDMAppliedSelectionPresenter.SearchDisplay,
-                                                           HasSelectionHandlers<Boolean> {
+HasSelectionHandlers<Boolean> {
 	
 	/**
 	 * The Interface Observer.
@@ -114,12 +112,12 @@ public class QDMAppliedSelectionView implements QDMAppliedSelectionPresenter.Sea
 	/** The observer. */
 	private Observer observer;
 	
-	/** The profile sel. */
-	private CustomCheckBox profileSel = new CustomCheckBox("Select a Profile",
-			"Use a default Expansion Profile ?", 1);
+	/** The expansion Identifier selection. */
+	private CustomCheckBox defaultExpIdentifierSel = new CustomCheckBox("Select an Expansion Identifier",
+			"Use a default Expansion Identifier ?", 1);
 	
 	/** The vsac profile list box. */
-	private ListBoxMVP vsacProfileListBox = new ListBoxMVP();
+	private ListBoxMVP defaultExpIdentifierListBox = new ListBoxMVP();
 	
 	/** The container panel. */
 	private SimplePanel containerPanel = new SimplePanel();
@@ -153,13 +151,13 @@ public class QDMAppliedSelectionView implements QDMAppliedSelectionPresenter.Sea
 	private Button updateVSACButton = new PrimaryButton("Update From VSAC ","primaryButton");
 	
 	/** The apply button. */
-	private Button applyButton = new PrimaryButton("Apply", "primaryButton");
+	private Button applyDefaultExpansionIdButton = new PrimaryButton("Apply", "primaryButton");
 	
 	/** The version list. */
 	private List<String> versionList = new ArrayList<String>();
 	
 	/** The profile list. */
-	private List<String> profileList = new ArrayList<String>();
+	private List<String> expIdentifierList = new ArrayList<String>();
 	
 	/** The success message panel. */
 	private SuccessMessageDisplay successMessagePanel = new SuccessMessageDisplay();
@@ -171,7 +169,7 @@ public class QDMAppliedSelectionView implements QDMAppliedSelectionPresenter.Sea
 	private QualityDataSetDTO lastSelectedObject;
 	
 	/** The expansion pro list box. */
-	ListBoxMVP expansionProListBox = new ListBoxMVP();
+	ListBoxMVP qdmExpIdentifierListBox = new ListBoxMVP();
 	
 	/** The version list box. */
 	ListBoxMVP versionListBox = new ListBoxMVP();
@@ -195,7 +193,7 @@ public class QDMAppliedSelectionView implements QDMAppliedSelectionPresenter.Sea
 	private  Label searchHeader = new Label("Search");
 	
 	/** The vsac profile header. */
-	private Label vsacProfileHeader = new Label("Apply VSAC Profile");
+	private Label defaultExpIdentifierHeader = new Label("Apply Expansion Identifier");
 	
 	/** The spager. */
 	private MatSimplePager spager;
@@ -238,16 +236,8 @@ public class QDMAppliedSelectionView implements QDMAppliedSelectionPresenter.Sea
 	private CustomButton clearQDMBottomButton = (CustomButton) getImage("Clear",
 			ImageResources.INSTANCE.getErase(), "Clear");
 	
-//	private static DialogBoxWithCloseButton dialogBox = new DialogBoxWithCloseButton(
-//			StringUtils.EMPTY);
-//	
-//	public  Button yesBtn = new SecondaryButton("Yes");
-//	
-//	public  Button noBtn = new SecondaryButton("No");
-	
-	
 	/** The paste top button panel. */
-private SimplePanel pasteTopButtonPanel = new SimplePanel();
+	private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	
 	/** The paste bottom button panel. */
 	private SimplePanel pasteBottomButtonPanel = new SimplePanel();;
@@ -284,7 +274,7 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 		hp.getElement().setId("hp_HorizontalPanel");
 		hp.add(buildElementWithVSACValueSetWidget());
 		hp.add(simplePanel);
-		hp.add(buildElementWithVSACExpansionProfile());
+		hp.add(buildElementWithVSACExpansionIdentifier());
 		
 		verticalPanel.getElement().setId("vPanel_VerticalPanel");
 		verticalPanel.add(new SpacerWidget());
@@ -297,22 +287,22 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 		SimplePanel pasteTopPanel =  new SimplePanel();
 		copyQDMBottomButton.getElement().setId("copyQDMBottom_button");
 		clearQDMBottomButton.getElement().setId("clearQDMBottom_butotn");
-	
+		
 		copyQDMBottomButton.getElement().setAttribute("tabIndex", "0");
 		clearQDMBottomButton.getElement().setAttribute("tabIndex", "0");
-
+		
 		bottomButtonLayOut.getElement().setId("bottomButtonLayOut_HorzPanel");
 		pasteTopPanel.add(pasteQDMBottomButton);
 		
-        bottomButtonLayOut.add(copyQDMBottomButton);
-        bottomButtonLayOut.add(buildPasteBottomPanel(checkForEnable()));
-        bottomButtonLayOut.add(clearQDMBottomButton);
-        bottomButtonLayOut.setStyleName("continueButton");
+		bottomButtonLayOut.add(copyQDMBottomButton);
+		bottomButtonLayOut.add(buildPasteBottomPanel(checkForEnable()));
+		bottomButtonLayOut.add(clearQDMBottomButton);
+		bottomButtonLayOut.setStyleName("continueButton");
 		HorizontalPanel hPanel = new HorizontalPanel();
 		hPanel.getElement().setId("hPanel_HorizontalPanel");
 		hPanel.setWidth("930px");
 		hPanel.add(updateVSACButton);
-        hPanel.add(bottomButtonLayOut);
+		hPanel.add(bottomButtonLayOut);
 		
 		verticalPanel.add(new SpacerWidget());
 		verticalPanel.add(new SpacerWidget());
@@ -321,7 +311,7 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 		updateVSACButton.setTitle("Retrieve the most recent versions of applied value sets from VSAC");
 		updateVSACButton.getElement().setId("updateVsacButton_Button");
 		verticalPanel.add(topButtonLayOut);
-//		verticalPanel.add(new SpacerWidget());
+		//		verticalPanel.add(new SpacerWidget());
 		verticalPanel.add(cellTablePanel);
 		verticalPanel.add(new SpacerWidget());
 		verticalPanel.add(hPanel);
@@ -334,7 +324,7 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 				"subQDMAPPliedListContainerPanel");
 		containerPanel.add(mainPanel);
 		containerPanel.setStyleName("qdsContentPanel");
-		MatContext.get().setVSACProfileView(this);
+		MatContext.get().setQDMAppliedSelectionView(this);
 	}
 	
 	
@@ -344,18 +334,18 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	@Override
 	public Widget buildPasteTopPanel(final boolean isEditable){
 		pasteTopButtonPanel.clear();
-		 if(isEditable){
-			 pasteQDMTopButton = (CustomButton) getImage("Paste",
-						ImageResources.INSTANCE.getPaste(), "Paste");
-		 } else {
-			 pasteQDMTopButton = (CustomButton) getImage("Paste",
-						ImageResources.INSTANCE.getGrayScalePaste(), "Paste");
-		 }
-		 pasteQDMTopButton.getElement().setId("pasteQDMTop_button");
-		 pasteQDMTopButton.getElement().setAttribute("tabIndex", "0");
-		 pasteTopButtonPanel.add(pasteQDMTopButton);
-		 
-		 pasteQDMTopButton.addClickHandler(new ClickHandler() {
+		if(isEditable){
+			pasteQDMTopButton = (CustomButton) getImage("Paste",
+					ImageResources.INSTANCE.getPaste(), "Paste");
+		} else {
+			pasteQDMTopButton = (CustomButton) getImage("Paste",
+					ImageResources.INSTANCE.getGrayScalePaste(), "Paste");
+		}
+		pasteQDMTopButton.getElement().setId("pasteQDMTop_button");
+		pasteQDMTopButton.getElement().setAttribute("tabIndex", "0");
+		pasteTopButtonPanel.add(pasteQDMTopButton);
+		
+		pasteQDMTopButton.addClickHandler(new ClickHandler() {
 			
 			@Override
 			public void onClick(ClickEvent event) {
@@ -365,7 +355,7 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 				
 			}
 		});
-		 return pasteTopButtonPanel;
+		return pasteTopButtonPanel;
 	}
 	
 	
@@ -375,40 +365,40 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	@Override
 	public Widget buildPasteBottomPanel(final boolean isEditable){
 		pasteBottomButtonPanel.clear();
-		 if(isEditable){
-			 pasteQDMBottomButton = (CustomButton) getImage("Paste",
-				ImageResources.INSTANCE.getPaste(), "Paste");
-		 } else {
-			 pasteQDMBottomButton = (CustomButton) getImage("Paste",
-						ImageResources.INSTANCE.getGrayScalePaste(), "Paste");
-		 }
-		 pasteQDMBottomButton.getElement().setId("pasteQDMBottom_button");
-		 pasteQDMBottomButton.getElement().setAttribute("tabIndex", "0");
-		 pasteBottomButtonPanel.add(pasteQDMBottomButton);
-		 pasteQDMBottomButton.addClickHandler(new ClickHandler() {
-				
-				@Override
-				public void onClick(ClickEvent event) {
-					if(isEditable){
-						observer.onBottomQDMPasteClicked();
-					}
-					
+		if(isEditable){
+			pasteQDMBottomButton = (CustomButton) getImage("Paste",
+					ImageResources.INSTANCE.getPaste(), "Paste");
+		} else {
+			pasteQDMBottomButton = (CustomButton) getImage("Paste",
+					ImageResources.INSTANCE.getGrayScalePaste(), "Paste");
+		}
+		pasteQDMBottomButton.getElement().setId("pasteQDMBottom_button");
+		pasteQDMBottomButton.getElement().setAttribute("tabIndex", "0");
+		pasteBottomButtonPanel.add(pasteQDMBottomButton);
+		pasteQDMBottomButton.addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				if(isEditable){
+					observer.onBottomQDMPasteClicked();
 				}
-			});
-		 return pasteBottomButtonPanel;
+				
+			}
+		});
+		return pasteBottomButtonPanel;
 	}
 	
 	
 	/**
-	 * Builds the element with vsac expansion profile.
+	 * Builds the element with vsac expansion identifier.
 	 *
 	 * @return the widget
 	 */
-	private Widget buildElementWithVSACExpansionProfile() {
+	private Widget buildElementWithVSACExpansionIdentifier() {
 		VerticalPanel mainPanel = new VerticalPanel();
 		mainPanel.getElement().setId("mainPanel_VerticalPanel");
 		mainPanel.setWidth("95%");
-		mainPanel.add(buildVSAVExpProfilePanel());
+		mainPanel.add(buildDefaultExpIdentifierPanel());
 		mainPanel.add(new SpacerWidget());
 		mainPanel.add(new SpacerWidget());
 		return mainPanel;
@@ -418,35 +408,35 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	
 	
 	/**
-	 * Builds the vsav exp profile panel.
+	 * Builds the vsac exp identifier panel.
 	 *
 	 * @return the widget
 	 */
-	private Widget buildVSAVExpProfilePanel() {
-		profileSel.getElement().setId("ProfileSelection_ChkBox");
-		vsacProfileListBox.setWidth("200px");
-		vsacProfileListBox.getElement().setId("VSACProfile_ListBox");
-		vsacProfileListBox.getElement().setTitle("VSAC Profile Selection List");
-		applyButton.setTitle("Apply the profile to all the QDM Element's");
-		applyButton.getElement().setId("applyToQDM_button");
-		vsacProfileListBox.addItem("--Select--");
+	private Widget buildDefaultExpIdentifierPanel() {
+		defaultExpIdentifierSel.getElement().setId("ExpansionIdentifierSelection_ChkBox");
+		defaultExpIdentifierListBox.setWidth("200px");
+		defaultExpIdentifierListBox.getElement().setId("DefaultExpansionIdentifier_ListBox");
+		defaultExpIdentifierListBox.getElement().setTitle("Expansion Identifier Selection List");
+		applyDefaultExpansionIdButton.setTitle("Apply Expansion Identifier to all the QDM Element(s).");
+		applyDefaultExpansionIdButton.getElement().setId("applyToQDM_button");
+		defaultExpIdentifierListBox.addItem("--Select--");
 		VerticalPanel searchPanel = new VerticalPanel();
 		searchPanel.setWidth("450px");
 		searchPanel.setHeight("227px");
 		searchPanel.getElement().setId("searchPanel_VerticalPanel");
 		searchPanel.setStyleName("valueSetSearchPanel");
-		vsacProfileHeader.getElement().setId("searchHeader_Label");
-		vsacProfileHeader.setStyleName("valueSetHeader");
-		vsacProfileHeader.getElement().setAttribute("tabIndex", "0");
-		vsacProfileHeader.getElement().setTitle("Search by OID and Name");
-		searchPanel.add(vsacProfileHeader);
+		defaultExpIdentifierHeader.getElement().setId("searchHeader_Label");
+		defaultExpIdentifierHeader.setStyleName("valueSetHeader");
+		defaultExpIdentifierHeader.getElement().setAttribute("tabIndex", "0");
+		defaultExpIdentifierHeader.getElement().setTitle("Apply VSAC Expansion Identifier to Measure.");
+		searchPanel.add(defaultExpIdentifierHeader);
 		searchPanel.add(new SpacerWidget());
 		Grid queryGrid = new Grid(5, 1);
-		queryGrid.setWidget(0, 0, profileSel);
+		queryGrid.setWidget(0, 0, defaultExpIdentifierSel);
 		queryGrid.setWidget(1, 0, new SpacerWidget());
-		queryGrid.setWidget(2, 0, vsacProfileListBox);
+		queryGrid.setWidget(2, 0, defaultExpIdentifierListBox);
 		queryGrid.setWidget(3, 0, new SpacerWidget());
-		queryGrid.setWidget(4, 0, applyButton);
+		queryGrid.setWidget(4, 0, applyDefaultExpansionIdButton);
 		queryGrid.setStyleName("secondLabel");
 		searchPanel.add(queryGrid);
 		return searchPanel;
@@ -499,10 +489,10 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 		nameInput.setTitle("Enter Name");
 		nameInput.setWidth("200px");
 		
-		expansionProListBox.getElement().setId("ExpansionProfile_ListBox");
-		expansionProListBox.getElement().setTitle("Expansion Profile Selection List");
-		expansionProListBox.setEnabled(false);
-		expansionProListBox.setWidth("200px");
+		qdmExpIdentifierListBox.getElement().setId("QDMExpansionIdentifier_ListBox");
+		qdmExpIdentifierListBox.getElement().setTitle("Expansion Identifier Selection List");
+		qdmExpIdentifierListBox.setEnabled(false);
+		qdmExpIdentifierListBox.setWidth("200px");
 		versionListBox.getElement().setId("Version_ListBox");
 		versionListBox.getElement().setTitle("Version Selection List");
 		versionListBox.setEnabled(false);
@@ -523,9 +513,9 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 		queryGrid.setWidget(1, 0, nameInput);
 		queryGrid.setWidget(0, 1, LabelBuilder.buildLabel("Datatype", "Datatype"));
 		queryGrid.setWidget(1, 1, dataTypeListBox);
-		queryGrid.setWidget(2, 0, LabelBuilder.buildLabel("Expansion Profile", "Expansion Profile"));
+		queryGrid.setWidget(2, 0, LabelBuilder.buildLabel("Expansion Identifier", "Expansion Identifier"));
 		queryGrid.setWidget(2, 1, LabelBuilder.buildLabel("Version", "Version"));
-		queryGrid.setWidget(3, 0, expansionProListBox);
+		queryGrid.setWidget(3, 0, qdmExpIdentifierListBox);
 		queryGrid.setWidget(3, 1, versionListBox);
 		queryGrid.setWidget(4, 0, saveCancelButtonBar);
 		queryGrid.setWidget(4, 1, specificOcurChkBox);
@@ -574,7 +564,7 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 						.buildInvisibleLabel(
 								"appliedQDMTableSummary",
 								"In the Following Applied QDM Elements table Name in First Column"
-										+ "OID in Second Column, DataType in Third Column, Expansion Profile in Fourth Column,"
+										+ "OID in Second Column, DataType in Third Column, Expansion Identifier in Fourth Column,"
 										+ "Version in Fifth Column and Modify in Sixth Column where the user can Edit and Delete "
 										+ "the existing QDM. The Applied QDM elements are listed alphabetically in a table.");
 			} else {
@@ -582,7 +572,7 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 						.buildInvisibleLabel(
 								"appliedQDMTableSummary",
 								"In the Following Applied QDM Elements table Name in First Column"
-										+ "OID in Second Column, DataType in Third Column, Expansion Profile in Fourth Column,"
+										+ "OID in Second Column, DataType in Third Column, Expansion Identifier in Fourth Column,"
 										+ "Version in Fifth Column. The Applied QDM elements are listed alphabetically in a table.");
 			}
 			table.getElement().setAttribute("id", "AppliedQDMTable");
@@ -694,25 +684,25 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 					.fromSafeConstant("<span title=\"Datatype\">" + "Datatype"
 							+ "</span>"));
 			
-			// Expansion Profile Column
+			// Expansion Identifier Column
 			Column<QualityDataSetDTO, SafeHtml> expansionColumn = new Column<QualityDataSetDTO, SafeHtml>(
 					new SafeHtmlCell()) {
 				@Override
 				public SafeHtml getValue(QualityDataSetDTO object) {
-					if (object.getExpansionProfile() != null) {
+					if (object.getExpansionIdentifier() != null) {
 						StringBuilder title = new StringBuilder();
-						title = title.append("Expansion Profile : ").append(
-								object.getExpansionProfile());
+						title = title.append("Expansion Identifier : ").append(
+								object.getExpansionIdentifier());
 						return CellTableUtility.getColumnToolTip(
-								object.getExpansionProfile(), title.toString());
+								object.getExpansionIdentifier(), title.toString());
 					}
 					
 					return null;
 				}
 			};
 			table.addColumn(expansionColumn, SafeHtmlUtils
-					.fromSafeConstant("<span title=\"Expansion Profile\">"
-							+ "Expansion Profile" + "</span>"));
+					.fromSafeConstant("<span title=\"Expansion Identifier\">"
+							+ "Expansion Identifier" + "</span>"));
 			
 			// Version Column
 			Column<QualityDataSetDTO, SafeHtml> versionColumn = new Column<QualityDataSetDTO, SafeHtml>(
@@ -723,7 +713,7 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 					String version = null;
 					if (!object.getOid().equalsIgnoreCase(
 							ConstantMessages.USER_DEFINED_QDM_OID) ) {
-						if(object.getExpansionProfile()==null){
+						if(object.getExpansionIdentifier()==null){
 							if ((object.getVersion()!=null)  &&
 									(object.getVersion().equalsIgnoreCase("1.0")
 											|| object.getVersion().equalsIgnoreCase("1"))) {
@@ -749,17 +739,17 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 							+ "</span>"));
 			
 			
-				// Modify by Delete Column
-				table.addColumn(new Column<QualityDataSetDTO, QualityDataSetDTO>(
-						getCompositeCellForQDMModifyAndDelete(isEditable)) {
-					
-					@Override
-					public QualityDataSetDTO getValue(QualityDataSetDTO object) {
-						return object;
-					}
-				}, SafeHtmlUtils.fromSafeConstant("<span title='Modify'>"
-						+ "Modify" + "</span>"));
+			// Modify by Delete Column
+			table.addColumn(new Column<QualityDataSetDTO, QualityDataSetDTO>(
+					getCompositeCellForQDMModifyAndDelete(isEditable)) {
 				
+				@Override
+				public QualityDataSetDTO getValue(QualityDataSetDTO object) {
+					return object;
+				}
+			}, SafeHtmlUtils.fromSafeConstant("<span title='Modify'>"
+					+ "Modify" + "</span>"));
+			
 			
 			table.setColumnWidth(0, 25.0, Unit.PCT);
 			table.setColumnWidth(1, 25.0, Unit.PCT);
@@ -830,8 +820,8 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 * @return the VSAC profile input
 	 */
 	@Override
-	public HasValueChangeHandlers<Boolean> getVSACProfileInput() {
-		return profileSel;
+	public HasValueChangeHandlers<Boolean> getDefaultExpIDInput() {
+		return defaultExpIdentifierSel;
 	}
 	
 	/* (non-Javadoc)
@@ -905,13 +895,13 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getExpansionProfileValue(mat.client.shared.ListBoxMVP)
 	 */
 	/**
-	 * Gets the expansion profile value.
+	 * Gets the expansion Identifier value.
 	 *
 	 * @param inputListBox the input list box
-	 * @return the expansion profile value
+	 * @return the expansion Identifier value
 	 */
 	@Override
-	public String getExpansionProfileValue(ListBoxMVP inputListBox) {
+	public String getExpansionIdentifierValue(ListBoxMVP inputListBox) {
 		if (inputListBox.getSelectedIndex() >= 0) {
 			return inputListBox.getValue(inputListBox.getSelectedIndex());
 		} else {
@@ -927,13 +917,13 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 * getVSACProfileListBox()
 	 */
 	/**
-	 * Gets the VSAC expansion profile list box.
+	 * Gets the VSAC expansion Identifier list box.
 	 *
-	 * @return the VSAC expansion profile list box
+	 * @return the VSAC expansion Identifier list box
 	 */
 	@Override
-	public ListBoxMVP getVSACExpansionProfileListBox() {
-		return vsacProfileListBox;
+	public ListBoxMVP getVSACExpansionIdentifierListBox() {
+		return defaultExpIdentifierListBox;
 	}
 	
 	/**
@@ -970,15 +960,15 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 * setVSACProfileListBox()
 	 */
 	/**
-	 * Sets the vsac expansion profile list box.
+	 * Sets the vsac expansion identifier list box.
 	 */
 	@Override
-	public void setVSACExpansionProfileListBox() {
-		vsacProfileListBox.clear();
-		vsacProfileListBox.addItem("--Select--");
-		for (int i = 0; (i < getProfileList().size())
-				&& (getProfileList() != null); i++) {
-			vsacProfileListBox.addItem(getProfileList().get(i));
+	public void setDefaultExpansionIdentifierListBox() {
+		defaultExpIdentifierListBox.clear();
+		defaultExpIdentifierListBox.addItem("--Select--");
+		for (int i = 0; (i < getExpIdentifierList().size())
+				&& (getExpIdentifierList() != null); i++) {
+			defaultExpIdentifierListBox.addItem(getExpIdentifierList().get(i));
 		}
 		
 	}
@@ -992,8 +982,8 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 * @param texts the new VSAC profile list box
 	 */
 	@Override
-	public void setVSACProfileListBox(List<? extends HasListBox> texts){
-		setProfileListBoxItems(expansionProListBox, texts, MatContext.PLEASE_SELECT);
+	public void setQDMExpIdentifierListBox(List<? extends HasListBox> texts){
+		setQDMExpIdentifierListBoxItems(qdmExpIdentifierListBox, texts, MatContext.PLEASE_SELECT);
 	}
 	
 	
@@ -1004,7 +994,7 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 * @param itemList the item list
 	 * @param defaultOption the default option
 	 */
-	private void setProfileListBoxItems(ListBoxMVP dataTypeListBox,
+	private void setQDMExpIdentifierListBoxItems(ListBoxMVP dataTypeListBox,
 			List<? extends HasListBox> itemList, String defaultOption) {
 		dataTypeListBox.clear();
 		dataTypeListBox.addItem(defaultOption, "");
@@ -1034,7 +1024,7 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 * @param texts the new VSAC version list box options
 	 */
 	@Override
-	public void setVSACVersionListBoxOptions(List<? extends HasListBox> texts){
+	public void setQDMVersionListBoxOptions(List<? extends HasListBox> texts){
 		setVersionListBoxItems(versionListBox, texts, MatContext.PLEASE_SELECT);
 	}
 	
@@ -1077,22 +1067,22 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 */
 	@Override
 	public void resetVSACValueSetWidget() {
-		profileSel.setValue(false);
-		vsacProfileListBox.clear();
-		vsacProfileListBox.setEnabled(false);
-		vsacProfileListBox.addItem("--Select--");
+		defaultExpIdentifierSel.setValue(false);
+		defaultExpIdentifierListBox.clear();
+		defaultExpIdentifierListBox.setEnabled(false);
+		defaultExpIdentifierListBox.addItem("--Select--");
 		
 		if(checkForEnable()){
-			expansionProListBox.setEnabled(false);
+			qdmExpIdentifierListBox.setEnabled(false);
 			versionListBox.setEnabled(false);
 			specificOcurChkBox.setEnabled(false);
 			dataTypeListBox.setEnabled(false);
 			searchWidget.getSearchInput().setTitle("Enter OID");
 			nameInput.setTitle("Enter Name");
-			//saveButton.setEnabled(false); 
+			//saveButton.setEnabled(false);
 			pasteQDMTopButton.setEnabled(true);
 			pasteQDMBottomButton.setEnabled(true);
-		} else { 
+		} else {
 			pasteQDMTopButton.setEnabled(false);
 			pasteQDMBottomButton.setEnabled(false);
 		}
@@ -1485,8 +1475,8 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 * @return the apply button
 	 */
 	@Override
-	public Button getApplyButton(){
-		return applyButton;
+	public Button getApplyDefaultExpansionIdButton(){
+		return applyDefaultExpansionIdButton;
 	}
 	
 	/* (non-Javadoc)
@@ -1532,8 +1522,8 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 *
 	 * @return the profile list
 	 */
-	public List<String> getProfileList() {
-		return profileList;
+	public List<String> getExpIdentifierList() {
+		return expIdentifierList;
 	}
 	
 	/* (non-Javadoc)
@@ -1542,11 +1532,11 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	/**
 	 * Sets the profile list.
 	 *
-	 * @param profileList the new profile list
+	 * @param expIdentifierList the new profile list
 	 */
 	@Override
-	public void setProfileList(List<String> profileList) {
-		this.profileList = profileList;
+	public void setExpIdentifierList(List<String> expIdentifierList) {
+		this.expIdentifierList = expIdentifierList;
 	}
 	
 	
@@ -1598,8 +1588,8 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	 * @return the VSAC profile list box
 	 */
 	@Override
-	public ListBoxMVP getVSACProfileListBox() {
-		return expansionProListBox;
+	public ListBoxMVP getQDMExpIdentifierListBox() {
+		return qdmExpIdentifierListBox;
 	}
 	
 	/* (non-Javadoc)
@@ -1896,52 +1886,52 @@ private SimplePanel pasteTopButtonPanel = new SimplePanel();
 	}
 	
 	
-//	@Override
-//	public Button getYesButton(){
-//		return yesBtn;
-//	}
-//	
-//	@Override
-//	public Button getNoButton(){
-//		return noBtn;
-//	}
+	//	@Override
+	//	public Button getYesButton(){
+	//		return yesBtn;
+	//	}
+	//
+	//	@Override
+	//	public Button getNoButton(){
+	//		return noBtn;
+	//	}
 	
-//	@Override
-//	public void showPasteDialogBox(){
-//		dialogBox.setGlassEnabled(true);
-//		dialogBox.setAnimationEnabled(true);
-//		dialogBox.setText("Warning");
-//		//dialogBox.setVisible(true);
-//		// Create a table to layout the content
-//		VerticalPanel dialogContents = new VerticalPanel();
-//		dialogContents.getElement().setId("dialogContents_VerticalPanel");
-//		dialogContents.setWidth("28em");
-//		dialogContents.setSpacing(5);
-//		dialogBox.setWidget(dialogContents);
-//		yesBtn.setStyleName("padLeft5px");
-//		noBtn.setStyleName("padLeft5px");
-//		HorizontalPanel buttonPanel = new HorizontalPanel();
-//		buttonPanel.add(yesBtn);
-//		buttonPanel.add(noBtn);
-//		WarningMessageDisplay warningMsgDispaly = new WarningMessageDisplay();
-//		warningMsgDispaly.setMessage(MatContext.get().getMessageDelegate()
-//				.getWARNING_PASTING_IN_APPLIED_QDM_ELEMENTS());
-//		
-//		dialogContents.add(warningMsgDispaly);
-//		dialogContents.setCellHorizontalAlignment(warningMsgDispaly,
-//				HasHorizontalAlignment.ALIGN_LEFT);
-//		dialogContents.add(buttonPanel);
-//		dialogContents.setCellHorizontalAlignment(buttonPanel,
-//				HasHorizontalAlignment.ALIGN_LEFT);
-//		dialogBox.center();
-//		dialogBox.show();
-//	}
+	//	@Override
+	//	public void showPasteDialogBox(){
+	//		dialogBox.setGlassEnabled(true);
+	//		dialogBox.setAnimationEnabled(true);
+	//		dialogBox.setText("Warning");
+	//		//dialogBox.setVisible(true);
+	//		// Create a table to layout the content
+	//		VerticalPanel dialogContents = new VerticalPanel();
+	//		dialogContents.getElement().setId("dialogContents_VerticalPanel");
+	//		dialogContents.setWidth("28em");
+	//		dialogContents.setSpacing(5);
+	//		dialogBox.setWidget(dialogContents);
+	//		yesBtn.setStyleName("padLeft5px");
+	//		noBtn.setStyleName("padLeft5px");
+	//		HorizontalPanel buttonPanel = new HorizontalPanel();
+	//		buttonPanel.add(yesBtn);
+	//		buttonPanel.add(noBtn);
+	//		WarningMessageDisplay warningMsgDispaly = new WarningMessageDisplay();
+	//		warningMsgDispaly.setMessage(MatContext.get().getMessageDelegate()
+	//				.getWARNING_PASTING_IN_APPLIED_QDM_ELEMENTS());
+	//
+	//		dialogContents.add(warningMsgDispaly);
+	//		dialogContents.setCellHorizontalAlignment(warningMsgDispaly,
+	//				HasHorizontalAlignment.ALIGN_LEFT);
+	//		dialogContents.add(buttonPanel);
+	//		dialogContents.setCellHorizontalAlignment(buttonPanel,
+	//				HasHorizontalAlignment.ALIGN_LEFT);
+	//		dialogBox.center();
+	//		dialogBox.show();
+	//	}
 	
 	
-//	@Override
-//	public DialogBoxWithCloseButton getDialogBox(){
-//		return dialogBox;
-//	}
+	//	@Override
+	//	public DialogBoxWithCloseButton getDialogBox(){
+	//		return dialogBox;
+	//	}
 	
 	
 }
