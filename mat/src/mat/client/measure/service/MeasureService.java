@@ -240,8 +240,8 @@ public interface MeasureService extends RemoteService {
 	 * @param string2
 	 *            the string2
 	 */
-	void saveMeasureNote(String noteTitle, String noteDescription,
-			String string, String string2);
+	SaveMeasureNotesResult saveMeasureNote(MeasureNoteDTO model,
+			String measureId, String userId);
 	
 	/**
 	 * Save measure xml.
@@ -421,7 +421,7 @@ public interface MeasureService extends RemoteService {
 	 * @param model the model
 	 * @return true, if successful
 	 */
-	boolean validatePackageGrouping(ManageMeasureDetailModel model);
+	ValidateMeasureResult validatePackageGrouping(ManageMeasureDetailModel model);
 	
 	/**
 	 * Validate measure xmlinpopulation workspace.

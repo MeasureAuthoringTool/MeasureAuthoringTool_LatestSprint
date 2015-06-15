@@ -22,6 +22,7 @@ import mat.client.codelist.HasListBox;
 import mat.client.codelist.ManageCodeListDetailModel;
 import mat.client.codelist.ManageValueSetSearchModel;
 import mat.client.codelist.service.SaveUpdateCodeListResult;
+import mat.client.shared.QDMInputValidator;
 import mat.dao.AuthorDAO;
 import mat.dao.CategoryDAO;
 import mat.dao.CodeDAO;
@@ -221,101 +222,101 @@ public class ManageCodeListServiceImpl implements CodeListService {
 		return duplicateExists;
 	}
 	/**
-	  * Check for duplicates.
-	  * @param matValueSetTransferObject
-	  *            the mat Value Set Transfer Object
-	  * @param isVSACValueSet
-	  *            the is vsac value set
-	  * @return true if Found and false if not found.
-	  */
-	 private boolean isDuplicate(MatValueSetTransferObject matValueSetTransferObject, boolean isVSACValueSet,
-	   boolean isSpecificOccurrence) {
-	  logger.info(" checkForDuplicates Method Call Start.");
-	  boolean isQDSExist = false;
-	  boolean isExpOrVerNotEq = false;
-	  DataType dt = dataTypeDAO.find(matValueSetTransferObject.getDatatype());
-	  String qdmCompareNameOrID = "";
-	  String version = "";
-	  String expansionIdentifier = "";
-	  if (matValueSetTransferObject.isVersionDate()) {
-	   version = matValueSetTransferObject.getMatValueSet().getVersion();
-	  } else {
-	   version = "1.0";
-	  }
-	  if(matValueSetTransferObject.isExpansionProfile()){
-	   expansionIdentifier = matValueSetTransferObject.getMatValueSet().getExpansionProfile();
-	  }
-	  
-	  if (isVSACValueSet) {
-	   qdmCompareNameOrID = matValueSetTransferObject.getMatValueSet().getID();
-	  } else {
-	   qdmCompareNameOrID = matValueSetTransferObject.getCodeListSearchDTO().getName();
-	  }
-	  List<QualityDataSetDTO> existingQDSList = matValueSetTransferObject.getAppliedQDMList();
-	  for (QualityDataSetDTO dataSetDTO : existingQDSList) {
-	   //For "Element without VSAC value set", duplicates should not be checked in
-	   // elements with VSAC value set in applied QDM list.
-	   if (!isVSACValueSet && !dataSetDTO.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)) {
-	    continue;
-	   }
-	   String codeListNameOrOID = "";
-	   if (isVSACValueSet) {
-	    codeListNameOrOID = dataSetDTO.getOid();
-	   } else {
-	    codeListNameOrOID = dataSetDTO.getCodeListName();
-	   }
-	   
-	   /**
-	    * this condition is true if oid and Expansion Identifier is same
-	    * else if the newly created exp Identifier does'nt match with existing exp Identifier
-	    * then the flag isExporVerNotEq is set to true.
-	   */
-	   //for Expansion Identifier
-	   if (codeListNameOrOID.equalsIgnoreCase(qdmCompareNameOrID)
-	     && (dataSetDTO.getExpansionIdentifier() != null)) {
-	    if(!expansionIdentifier.equals(dataSetDTO.getExpansionIdentifier())) {
-	     isExpOrVerNotEq = true;
-	     break;
-	    }
-	   }
-	   
-	   
-	   /**
-	    * this condition is true if oid and version  are same
-	    * else if the newly created version does'nt match with existing version
-	    * then the flag isExporVerNotEq is set to true.
-	    * this is same in case of Most Recent
-	   */
-	   
-	   //for Version
-	   else if (codeListNameOrOID.equalsIgnoreCase(qdmCompareNameOrID)) {
-	    String versionOfDataSetDTO = null;
-	    if (dataSetDTO.getVersion().equals("1.0") || dataSetDTO.getVersion().equals("1")) {
-	     versionOfDataSetDTO = "1.0";
-	    } else {
-	     versionOfDataSetDTO = dataSetDTO.getVersion();
-	    }
-	    if (!version.equals(versionOfDataSetDTO)
-	      || !expansionIdentifier.isEmpty()) {
-	     isExpOrVerNotEq = true;
-	     break;
-	    }
-	   }
-	   
-	   if (!isSpecificOccurrence
-	     && dt.getDescription().equalsIgnoreCase(dataSetDTO.getDataType())
-	     && (codeListNameOrOID.equalsIgnoreCase(qdmCompareNameOrID))) {
-	    // if the same dataType exists and the occurrenceText is also
-	    // null
-	    // then there is a any occurrence exists for that dataType.
-	    isQDSExist = true;
-	    break;
-	   }
-	  }
-	  logger.info("checkForDuplicates Method Call End.Check resulted in :"
-	    + (isQDSExist || isExpOrVerNotEq));
-	  return (isQDSExist || isExpOrVerNotEq);
-	 }
+	 * Check for duplicates.
+	 * @param matValueSetTransferObject
+	 *            the mat Value Set Transfer Object
+	 * @param isVSACValueSet
+	 *            the is vsac value set
+	 * @return true if Found and false if not found.
+	 */
+	private boolean isDuplicate(MatValueSetTransferObject matValueSetTransferObject, boolean isVSACValueSet,
+			boolean isSpecificOccurrence) {
+		logger.info(" checkForDuplicates Method Call Start.");
+		boolean isQDSExist = false;
+		boolean isExpOrVerNotEq = false;
+		DataType dt = dataTypeDAO.find(matValueSetTransferObject.getDatatype());
+		String qdmCompareNameOrID = "";
+		String version = "";
+		String expansionIdentifier = "";
+		if (matValueSetTransferObject.isVersionDate()) {
+			version = matValueSetTransferObject.getMatValueSet().getVersion();
+		} else {
+			version = "1.0";
+		}
+		if(matValueSetTransferObject.isExpansionProfile()){
+			expansionIdentifier = matValueSetTransferObject.getMatValueSet().getExpansionProfile();
+		}
+		
+		if (isVSACValueSet) {
+			qdmCompareNameOrID = matValueSetTransferObject.getMatValueSet().getID();
+		} else {
+			qdmCompareNameOrID = matValueSetTransferObject.getCodeListSearchDTO().getName();
+		}
+		List<QualityDataSetDTO> existingQDSList = matValueSetTransferObject.getAppliedQDMList();
+		for (QualityDataSetDTO dataSetDTO : existingQDSList) {
+			//For "Element without VSAC value set", duplicates should not be checked in
+			// elements with VSAC value set in applied QDM list.
+			if (!isVSACValueSet && !dataSetDTO.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)) {
+				continue;
+			}
+			String codeListNameOrOID = "";
+			if (isVSACValueSet) {
+				codeListNameOrOID = dataSetDTO.getOid();
+			} else {
+				codeListNameOrOID = dataSetDTO.getCodeListName();
+			}
+			
+			/**
+			 * this condition is true if oid and Expansion Identifier is same
+			 * else if the newly created exp Identifier does'nt match with existing exp Identifier
+			 * then the flag isExporVerNotEq is set to true.
+			 */
+			//for Expansion Identifier
+			if (codeListNameOrOID.equalsIgnoreCase(qdmCompareNameOrID)
+					&& (dataSetDTO.getExpansionIdentifier() != null)) {
+				if(!expansionIdentifier.equals(dataSetDTO.getExpansionIdentifier())) {
+					isExpOrVerNotEq = true;
+					break;
+				}
+			}
+			
+			
+			/**
+			 * this condition is true if oid and version  are same
+			 * else if the newly created version does'nt match with existing version
+			 * then the flag isExporVerNotEq is set to true.
+			 * this is same in case of Most Recent
+			 */
+			
+			//for Version
+			else if (codeListNameOrOID.equalsIgnoreCase(qdmCompareNameOrID)) {
+				String versionOfDataSetDTO = null;
+				if (dataSetDTO.getVersion().equals("1.0") || dataSetDTO.getVersion().equals("1")) {
+					versionOfDataSetDTO = "1.0";
+				} else {
+					versionOfDataSetDTO = dataSetDTO.getVersion();
+				}
+				if (!version.equals(versionOfDataSetDTO)
+						|| !expansionIdentifier.isEmpty()) {
+					isExpOrVerNotEq = true;
+					break;
+				}
+			}
+			
+			if (!isSpecificOccurrence
+					&& dt.getDescription().equalsIgnoreCase(dataSetDTO.getDataType())
+					&& (codeListNameOrOID.equalsIgnoreCase(qdmCompareNameOrID))) {
+				// if the same dataType exists and the occurrenceText is also
+				// null
+				// then there is a any occurrence exists for that dataType.
+				isQDSExist = true;
+				break;
+			}
+		}
+		logger.info("checkForDuplicates Method Call End.Check resulted in :"
+				+ (isQDSExist || isExpOrVerNotEq));
+		return (isQDSExist || isExpOrVerNotEq);
+	}
 	/*
 	 * This method is used to find the number of occurrences that exist for the
 	 * given measure ,codeList and datType. null can be passed to
@@ -1369,6 +1370,7 @@ public class ManageCodeListServiceImpl implements CodeListService {
 		QualityDataModelWrapper wrapper = new QualityDataModelWrapper();
 		ArrayList<QualityDataSetDTO> qdsList = new ArrayList<QualityDataSetDTO>();
 		wrapper.setQualityDataDTO(qdsList);
+		valueSetTransferObject.scrubForMarkUp();
 		QualityDataSetDTO qds = new QualityDataSetDTO();
 		String dataType = valueSetTransferObject.getDatatype();
 		if (dataType != null) {
@@ -1389,26 +1391,26 @@ public class ManageCodeListServiceImpl implements CodeListService {
 			qds.setVersion(valueSetTransferObject.getMatValueSet().getVersion());
 		} else  {
 			qds.setVersion("1.0");
-		} 
-		 if(valueSetTransferObject.isExpansionProfile()){
+		}
+		if(valueSetTransferObject.isExpansionProfile()){
 			qds.setExpansionIdentifier(valueSetTransferObject.getMatValueSet().getExpansionProfile());
 		}
 		
 		
-//		if (valueSetTransferObject.isEffectiveDate()) {
-//			qds.setEffectiveDate(valueSetTransferObject.getMatValueSet().getRevisionDate());
-//		}  
-		 
-		 ArrayList<QualityDataSetDTO> qualityDataSetDTOs = (ArrayList<QualityDataSetDTO>) 
-				 valueSetTransferObject.getAppliedQDMList();
+		//		if (valueSetTransferObject.isEffectiveDate()) {
+		//			qds.setEffectiveDate(valueSetTransferObject.getMatValueSet().getRevisionDate());
+		//		}
 		
-		 if (valueSetTransferObject.isSpecificOccurrence()) {
-			 
+		ArrayList<QualityDataSetDTO> qualityDataSetDTOs = (ArrayList<QualityDataSetDTO>)
+				valueSetTransferObject.getAppliedQDMList();
+		
+		if (valueSetTransferObject.isSpecificOccurrence()) {
+			
 			if(isDuplicate(valueSetTransferObject, true, true)){
 				result.setSuccess(false);
 				result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
 				return result;
-			} 
+			}
 			int occurrenceCount = checkForOccurrenceCountVsacApi(dataType,
 					matValueSet, qualityDataSetDTOs);
 			if (occurrenceCount < ASCII_END) { // Alphabet ASCII Integer Values.
@@ -1416,12 +1418,12 @@ public class ManageCodeListServiceImpl implements CodeListService {
 				qds.setOccurrenceText("Occurrence" + " " + occTxt);
 				wrapper.getQualityDataDTO().add(qds);
 				result.setOccurrenceMessage(qds.getOccurrenceText());
-			    qualityDataSetDTOs.add(qds);
+				qualityDataSetDTOs.add(qds);
 				String qdmXMLString = addAppliedQDMInMeasureXML(wrapper);
 				result.setSuccess(true);
 				result.setAppliedQDMList(sortQualityDataSetList(qualityDataSetDTOs));
 				result.setXmlString(qdmXMLString);
-				}
+			}
 		} else { // Treat as regular QDM
 			if (!isDuplicate(valueSetTransferObject, true, false)) {
 				wrapper.getQualityDataDTO().add(qds);
@@ -1439,7 +1441,7 @@ public class ManageCodeListServiceImpl implements CodeListService {
 		return result;
 	}
 	
-
+	
 	/*
 	 * (non-Javadoc)
 	 * @see mat.server.service.CodeListService#saveUserDefinedQDStoMeasure
@@ -1450,44 +1452,53 @@ public class ManageCodeListServiceImpl implements CodeListService {
 	public SaveUpdateCodeListResult saveUserDefinedQDStoMeasure(MatValueSetTransferObject matValueSetTransferObject) {
 		SaveUpdateCodeListResult result = new SaveUpdateCodeListResult();
 		QualityDataModelWrapper wrapper = new QualityDataModelWrapper();
-		ArrayList<QualityDataSetDTO> qdsList = new ArrayList<QualityDataSetDTO>();
-		List<QualityDataSetDTO> existingQDSList = matValueSetTransferObject.getAppliedQDMList();
-		String dataType = matValueSetTransferObject.getDatatype();
-		DataType dt = dataTypeDAO.find(dataType);
-		boolean isQDSExist = false;
-		for (QualityDataSetDTO dataSetDTO : existingQDSList) {
-			if (dataSetDTO.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)) {
-				if (dt.getDescription().equalsIgnoreCase(dataSetDTO.getDataType())
-						&& (dataSetDTO.getCodeListName().equalsIgnoreCase(
-								matValueSetTransferObject.getUserDefinedText()))
-								&& (dataSetDTO.getOccurrenceText() == null)) {
-					// if the same dataType exists and the occurrenceText is also
-					// null
-					// then there is a any occurrence exists for that dataType.
-					isQDSExist = true;
-					break;
+		matValueSetTransferObject.scrubForMarkUp();
+		QDMInputValidator validator = new QDMInputValidator();
+		List<String> errorMessages = new ArrayList<String>();
+		errorMessages = validator.validate(matValueSetTransferObject);
+		if (errorMessages.size() == 0) {
+			ArrayList<QualityDataSetDTO> qdsList = new ArrayList<QualityDataSetDTO>();
+			List<QualityDataSetDTO> existingQDSList = matValueSetTransferObject.getAppliedQDMList();
+			String dataType = matValueSetTransferObject.getDatatype();
+			DataType dt = dataTypeDAO.find(dataType);
+			boolean isQDSExist = false;
+			for (QualityDataSetDTO dataSetDTO : existingQDSList) {
+				if (dataSetDTO.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)) {
+					if (dt.getDescription().equalsIgnoreCase(dataSetDTO.getDataType())
+							&& (dataSetDTO.getCodeListName().equalsIgnoreCase(
+									matValueSetTransferObject.getUserDefinedText()))
+									&& (dataSetDTO.getOccurrenceText() == null)) {
+						// if the same dataType exists and the occurrenceText is also
+						// null
+						// then there is a any occurrence exists for that dataType.
+						isQDSExist = true;
+						break;
+					}
 				}
 			}
-		}
-		if (!isQDSExist) {
-			wrapper.setQualityDataDTO(qdsList);
-			QualityDataSetDTO qds = new QualityDataSetDTO();
-			qds.setDataType(dt.getDescription());
-			qds.setOid(ConstantMessages.USER_DEFINED_QDM_OID);
-			qds.setId(UUID.randomUUID().toString());
-			qds.setCodeListName(matValueSetTransferObject.getUserDefinedText());
-			qds.setTaxonomy(ConstantMessages.USER_DEFINED_QDM_NAME);
-			qds.setUuid(UUID.randomUUID().toString());
-			qds.setVersion("1.0");
-			wrapper.getQualityDataDTO().add(qds);
-			String qdmXMLString = addAppliedQDMInMeasureXML(wrapper);
-			result.setSuccess(true);
-			result.setAppliedQDMList(sortQualityDataSetList(wrapper
-					.getQualityDataDTO()));
-			result.setXmlString(qdmXMLString);
+			if (!isQDSExist) {
+				wrapper.setQualityDataDTO(qdsList);
+				QualityDataSetDTO qds = new QualityDataSetDTO();
+				qds.setDataType(dt.getDescription());
+				qds.setOid(ConstantMessages.USER_DEFINED_QDM_OID);
+				qds.setId(UUID.randomUUID().toString());
+				qds.setCodeListName(matValueSetTransferObject.getUserDefinedText());
+				qds.setTaxonomy(ConstantMessages.USER_DEFINED_QDM_NAME);
+				qds.setUuid(UUID.randomUUID().toString());
+				qds.setVersion("1.0");
+				wrapper.getQualityDataDTO().add(qds);
+				String qdmXMLString = addAppliedQDMInMeasureXML(wrapper);
+				result.setSuccess(true);
+				result.setAppliedQDMList(sortQualityDataSetList(wrapper
+						.getQualityDataDTO()));
+				result.setXmlString(qdmXMLString);
+			} else {
+				result.setSuccess(false);
+				result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
+			}
 		} else {
-			result.setSuccess(true);
-			result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
+			result.setSuccess(false);
+			result.setFailureReason(SaveUpdateCodeListResult.SERVER_SIDE_VALIDATION);
 		}
 		return result;
 	}
@@ -1791,6 +1802,7 @@ public class ManageCodeListServiceImpl implements CodeListService {
 	@Override
 	public final SaveUpdateCodeListResult updateQDStoMeasure(MatValueSetTransferObject matValueSetTransferObject) {
 		SaveUpdateCodeListResult result = null;
+		matValueSetTransferObject.scrubForMarkUp();
 		if (matValueSetTransferObject.getMatValueSet() != null) {
 			result = updateVSACValueSetInElementLookUp(matValueSetTransferObject);
 		} else if (matValueSetTransferObject.getCodeListSearchDTO() != null) {
@@ -1807,29 +1819,36 @@ public class ManageCodeListServiceImpl implements CodeListService {
 	private SaveUpdateCodeListResult updateUserDefineQDMInElementLookUp(MatValueSetTransferObject matValueSetTransferObject) {
 		QualityDataModelWrapper wrapper = new QualityDataModelWrapper();
 		SaveUpdateCodeListResult result = new SaveUpdateCodeListResult();
-		if (!isDuplicate(matValueSetTransferObject, false, false)) {
-			ArrayList<QualityDataSetDTO> qdsList = new ArrayList<QualityDataSetDTO>();
-			wrapper.setQualityDataDTO(qdsList);
-			QualityDataSetDTO qds = matValueSetTransferObject.getQualityDataSetDTO();
-			DataType dt = dataTypeDAO.find(matValueSetTransferObject.getDatatype());
-			qds.setDataType(dt.getDescription());
-			qds.setOid(ConstantMessages.USER_DEFINED_QDM_OID);
-			qds.setId(UUID.randomUUID().toString());
-			qds.setCodeListName(matValueSetTransferObject.getCodeListSearchDTO().getName());
-			qds.setTaxonomy(ConstantMessages.USER_DEFINED_QDM_NAME);
-			qds.setOccurrenceText(null);
-			qds.setVersion("1.0");
-			wrapper = modifyAppliedElementList(qds, (ArrayList<QualityDataSetDTO>)
-					matValueSetTransferObject.getAppliedQDMList());
-			String qdmXMLString = addAppliedQDMInMeasureXML(wrapper);
-			result.setSuccess(true);
-			result.setAppliedQDMList(sortQualityDataSetList(wrapper
-					.getQualityDataDTO()));
-			result.setXmlString(qdmXMLString);
-			result.setDataSetDTO(qds);
+		QDMInputValidator validator = new QDMInputValidator();
+		List<String> messageList = validator.validate(matValueSetTransferObject);
+		if (messageList.size() == 0) {
+			if (!isDuplicate(matValueSetTransferObject, false, false)) {
+				ArrayList<QualityDataSetDTO> qdsList = new ArrayList<QualityDataSetDTO>();
+				wrapper.setQualityDataDTO(qdsList);
+				QualityDataSetDTO qds = matValueSetTransferObject.getQualityDataSetDTO();
+				DataType dt = dataTypeDAO.find(matValueSetTransferObject.getDatatype());
+				qds.setDataType(dt.getDescription());
+				qds.setOid(ConstantMessages.USER_DEFINED_QDM_OID);
+				qds.setId(UUID.randomUUID().toString());
+				qds.setCodeListName(matValueSetTransferObject.getCodeListSearchDTO().getName());
+				qds.setTaxonomy(ConstantMessages.USER_DEFINED_QDM_NAME);
+				qds.setOccurrenceText(null);
+				qds.setVersion("1.0");
+				wrapper = modifyAppliedElementList(qds, (ArrayList<QualityDataSetDTO>)
+						matValueSetTransferObject.getAppliedQDMList());
+				String qdmXMLString = addAppliedQDMInMeasureXML(wrapper);
+				result.setSuccess(true);
+				result.setAppliedQDMList(sortQualityDataSetList(wrapper
+						.getQualityDataDTO()));
+				result.setXmlString(qdmXMLString);
+				result.setDataSetDTO(qds);
+			} else {
+				result.setSuccess(false);
+				result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
+			}
 		} else {
-			result.setSuccess(true);
-			result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
+			result.setSuccess(false);
+			result.setFailureReason(SaveUpdateCodeListResult.SERVER_SIDE_VALIDATION);
 		}
 		return result;
 	}
@@ -1839,7 +1858,7 @@ public class ManageCodeListServiceImpl implements CodeListService {
 	 *            - mat Value Set Transfer Object
 	 * @return SaveUpdateCodeListResult
 	 */
-	private SaveUpdateCodeListResult updateVSACValueSetInElementLookUp(MatValueSetTransferObject 
+	private SaveUpdateCodeListResult updateVSACValueSetInElementLookUp(MatValueSetTransferObject
 			matValueSetTransferObject) {
 		SaveUpdateCodeListResult result = new SaveUpdateCodeListResult();
 		if (matValueSetTransferObject.isSpecificOccurrence()) {
@@ -1865,16 +1884,16 @@ public class ManageCodeListServiceImpl implements CodeListService {
 				qds.setVersion("1.0");
 			}
 			
-		     if(matValueSetTransferObject.isExpansionProfile()){
+			if(matValueSetTransferObject.isExpansionProfile()){
 				qds.setExpansionIdentifier(matValueSetTransferObject.getMatValueSet().getExpansionProfile());
 			} else {
 				qds.setExpansionIdentifier(null);
 			}
-//			if (matValueSetTransferObject.isEffectiveDate()) {
-//				qds.setEffectiveDate(matValueSetTransferObject.getMatValueSet().getRevisionDate());
-//			} else {
-//				qds.setEffectiveDate(null);
-//			}
+			//			if (matValueSetTransferObject.isEffectiveDate()) {
+			//				qds.setEffectiveDate(matValueSetTransferObject.getMatValueSet().getRevisionDate());
+			//			} else {
+			//				qds.setEffectiveDate(null);
+			//			}
 			int occurrenceCount = checkForOccurrenceCountVsacApi(dataType,
 					matValueSet, (ArrayList<QualityDataSetDTO>) matValueSetTransferObject.getAppliedQDMList());
 			if (occurrenceCount < ASCII_END) { // Alphabet ASCII Integer Values.
@@ -1937,11 +1956,11 @@ public class ManageCodeListServiceImpl implements CodeListService {
 					qds.setExpansionIdentifier(null);
 				}
 				
-//				if (matValueSetTransferObject.isEffectiveDate()) {
-//					qds.setEffectiveDate(matValueSetTransferObject.getMatValueSet().getRevisionDate());
-//				} else {
-//					qds.setEffectiveDate(null);
-//				}
+				//				if (matValueSetTransferObject.isEffectiveDate()) {
+				//					qds.setEffectiveDate(matValueSetTransferObject.getMatValueSet().getRevisionDate());
+				//				} else {
+				//					qds.setEffectiveDate(null);
+				//				}
 				qds.setOccurrenceText(null);
 				QualityDataModelWrapper wrapper = modifyAppliedElementList(qds,
 						(ArrayList<QualityDataSetDTO>) matValueSetTransferObject.getAppliedQDMList());

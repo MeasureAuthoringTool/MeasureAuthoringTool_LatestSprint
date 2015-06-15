@@ -1,20 +1,37 @@
 package mat.server.simplexml.hqmf;
 
 import javax.xml.xpath.XPathExpressionException;
+
 import mat.model.clause.MeasureExport;
+import mat.server.service.impl.XMLUtility;
 import mat.server.util.XmlProcessor;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+/**
+ * The Class HQMFFinalCleanUp.
+ */
 public class HQMFFinalCleanUp {
 	
 	/** The Constant logger. */
 	private static final Log logger = LogFactory
 			.getLog(HQMFFinalCleanUp.class);
 	
+	/** The Constant reverseEntryCheckFile. */
+	private static final String reverseEntryCheckFile = "xsl/final_hqmf_entry_deletion_check.xsl";
+	
+	/** The Constant deleteUnUsedEntryFile. */
+	private static final String deleteUnUsedEntryFile = "xsl/hqmf_delete_Unused_entry.xsl";
+	
+	/**
+	 * Clean.
+	 *
+	 * @param me the me
+	 */
 	public static void clean(MeasureExport me) {
 		
 		XmlProcessor hqmfProcessor = me.getHQMFXmlProcessor();
@@ -32,8 +49,15 @@ public class HQMFFinalCleanUp {
 		
 		cleanExtensions(me);
 		cleanLocalVariableNames(me);
+		deleteUnusedEntry(me);
+		reverseEntryCheck(me);
 	}
 	
+	/**
+	 * Clean extensions.
+	 *
+	 * @param me the me
+	 */
 	private static void cleanExtensions(MeasureExport me) {
 		
 		String xPathForExtensions = "//*/@extension";
@@ -53,6 +77,11 @@ public class HQMFFinalCleanUp {
 		}
 	}
 	
+	/**
+	 * Clean local variable names.
+	 *
+	 * @param me the me
+	 */
 	private static void cleanLocalVariableNames(MeasureExport me) {
 		
 		String xPathForLocalVars = "//localVariableName/@value";
@@ -99,6 +128,25 @@ public class HQMFFinalCleanUp {
 		}
 	}
 	
+	/**
+	 * Reverse entry check.
+	 *
+	 * @param me the me
+	 */
+	private static void reverseEntryCheck(MeasureExport me) {
+		XMLUtility xmlUtility = new XMLUtility();
+		String reverseEntryCheckResults = xmlUtility.applyXSL(me.getHQMFXmlProcessor().getOriginalXml(),
+				xmlUtility.getXMLResource(reverseEntryCheckFile));
+		//System.out.println("Reverse Entry Check results syso: " + reverseEntryCheckResults);
+		logger.info("Reverse Entry Check results: " + reverseEntryCheckResults); 
+	}
+	
+	/**
+	 * Gets the replace string.
+	 *
+	 * @param extValue the ext value
+	 * @return the replace string
+	 */
 	private static String getReplaceString(String extValue) {
 		if(extValue.indexOf(">=") > -1){
 			extValue = StringUtils.replace(extValue, ">=", "grtr_thn_eql_");
@@ -123,4 +171,18 @@ public class HQMFFinalCleanUp {
 		return extValue;
 	}
 	
+	
+	/**
+	 * Delete unused entry.
+	 * This method is to check and delete Unused QDM Entries 
+	 * in HQMF
+	 *
+	 * @param me the me
+	 */
+	private static void deleteUnusedEntry(MeasureExport me) {
+		XMLUtility xmlUtility = new XMLUtility();
+		String delDupEntryResults = xmlUtility.applyXSL(me.getHQMFXmlProcessor().getOriginalXml(),
+				xmlUtility.getXMLResource(deleteUnUsedEntryFile));
+		me.setHQMFXmlProcessor(new XmlProcessor(delDupEntryResults));
+	}
 }

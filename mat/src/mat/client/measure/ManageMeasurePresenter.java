@@ -27,6 +27,7 @@ import mat.client.shared.ErrorMessageDisplay;
 import mat.client.shared.ErrorMessageDisplayInterface;
 import mat.client.shared.FocusableWidget;
 import mat.client.shared.ListBoxMVP;
+import mat.client.shared.ManageMeasureModelValidator;
 import mat.client.shared.MatContext;
 import mat.client.shared.MeasureSearchFilterWidget;
 import mat.client.shared.MessageDelegate;
@@ -1925,9 +1926,10 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 *            the model
 	 * @return true, if is valid
 	 */
-	@SuppressWarnings("static-access")
 	public boolean isValid(ManageMeasureDetailModel model) {
-		List<String> message = new ArrayList<String>();
+		ManageMeasureModelValidator manageMeasureModelValidator = new ManageMeasureModelValidator();
+		List<String> message = manageMeasureModelValidator.isValidMeasure(model);
+		/*new ArrayList<String>();
 		if ((model.getName() == null) || "".equals(model.getName().trim())) {
 			message.add(MatContext.get().getMessageDelegate()
 					.getMeasureNameRequiredMessage());
@@ -1944,7 +1946,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		if ((scoring == null) || !isValidValue(model.getMeasScoring())
 				|| enteredScoringValue.equals("--Select--")) {
 			message.add(MatContext.get().getMessageDelegate().s_ERR_MEASURE_SCORE_REQUIRED);
-		}
+		}*/
 		
 		boolean valid = message.size() == 0;
 		if (!valid) {
@@ -1954,27 +1956,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			detailDisplay.getErrorMessageDisplay().clear();
 			searchDisplay.getErrorMessageDisplayForBulkExport().clear();
 		}
-		if (valid) {
-			scrubForMarkUp(model);
-		}
 		return valid;
-	}
-	
-	private void scrubForMarkUp(ManageMeasureDetailModel model) {
-		String markupRegExp = "<[^>]+>";
-		
-		String noMarkupText = model.getName().trim().replaceAll(markupRegExp, "");
-		System.out.println("measure name:"+noMarkupText);
-		if(model.getName().trim().length() > noMarkupText.length()){
-			model.setName(noMarkupText);
-		}
-		
-		noMarkupText = model.getShortName().trim().replaceAll(markupRegExp, "");
-		System.out.println("measure short-name:"+noMarkupText);
-		if(model.getShortName().trim().length() > noMarkupText.length()){
-			model.setShortName(noMarkupText);
-		}
-		
 	}
 	/**
 	 * Verifies the valid value required for the list box.
@@ -3163,6 +3145,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 					} else {
 						String message = null;
 						switch (result.getFailureReason()) {
+							case SaveMeasureResult.INVALID_DATA:
+								message = "Data Validation Failed.Please verify data.";
+								break;
 							default:
 								message = "Unknown Code "
 										+ result.getFailureReason();
@@ -3186,17 +3171,18 @@ public class ManageMeasurePresenter implements MatPresenter {
 		String measureScoring = detailDisplay.getMeasScoringValue();
 		
 		// US 421. Update the Measure scoring choice from the UI.
-		if (isValidValue(measureScoring)) {
-			currentDetails.setMeasScoring(measureScoring);
-		}
-		
+		//if (isValidValue(measureScoring)) {
+		currentDetails.setMeasScoring(measureScoring);
+		//}
+		currentDetails.scrubForMarkUp();
+		detailDisplay.getName().setValue(currentDetails.getName());
+		detailDisplay.getShortName().setValue(currentDetails.getShortName());
 		MatContext.get().setCurrentMeasureName(
-				detailDisplay.getName().getValue().trim());
+				currentDetails.getName());
 		MatContext.get().setCurrentShortName(
-				detailDisplay.getShortName().getValue().trim());
+				currentDetails.getShortName());
 		MatContext.get().setCurrentMeasureScoringType(
-				detailDisplay.getMeasScoringValue());
-		// MatContext.get().setCurrentMeasureVersion(detailDisplay.getMeasureVersion().getValue().trim());
+				currentDetails.getMeasScoring());
 	}
 	
 	/**
