@@ -109,6 +109,10 @@
 		class="mat.dao.impl.UserSecurityQuestionDAO" parent="baseDAO">
 	</bean>
 	
+	 <bean id="userPasswordHistoryDAO"
+		class="mat.dao.impl.UserPasswordHistoryDAO" parent="baseDAO">
+	</bean>
+	
 	<bean id="categoryDAO"
 		class="mat.dao.impl.CategoryDAO" parent="baseDAO">
 	</bean>
@@ -292,6 +296,7 @@
 		<property name="userDAO" ref="userDAO"/>
 		<property name="userPasswordDAO" ref="userPasswordDAO"/>
 		<property name="userSecurityQuestionDAO" ref="userSecurityQuestionDAO"/>
+		<property name="userPasswordHistoryDAO" ref="userPasswordHistoryDAO"/>
 		<property name="categoryDAO" ref="categoryDAO"/>
 		<property name="stewardDAO" ref="stewardDAO"/>
 		<property name="codeDAO" ref="codeDAO"/>

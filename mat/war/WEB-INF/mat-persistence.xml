@@ -24,18 +24,19 @@
       </property>
     </bean>
     
-    <bean id="liquibase" class="liquibase.integration.spring.SpringLiquibase">
+     <bean id="liquibase" class="liquibase.integration.spring.SpringLiquibase">
 		<property name="dataSource" ref="dataSource" />
 		<property name="changeLog" value="classpath:/liquibase/changelog.xml"  />
 		<property name="contexts" value="prod" />
 	</bean>
-    
+      
     <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
         <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
 	    <property name="url" value="jdbc:mysql://localhost:3306/MAT_APP"/>
         <property name="username" value="user"/>
         <property name="password" value="password"/>  
     </bean>
+    
     
 	<context:annotation-config />
 	
@@ -289,6 +290,10 @@
 	<bean id="organizationDAO"
             class="mat.dao.impl.OrganizationDAO" parent="baseDAO">
     </bean>
+    
+    <bean id="userPasswordHistoryDAO"
+		class="mat.dao.impl.UserPasswordHistoryDAO" parent="baseDAO">
+	</bean>
 	<bean id="daoService" class="mat.dao.service.DAOService" >
 		<property name="auditLogDAO" ref="auditLogDAO"/>
 		<property name="securityRoleDAO" ref="securityRoleDAO"/>
@@ -331,6 +336,7 @@
 		<property name="measureNotesDAO" ref="measureNotesDAO"/>
 		<property name="recentMSRActivityLogDAO" ref="recentMSRActivityLogDAO"/>
 		<property name="organizationDAO" ref="organizationDAO"/>
+		<property name="userPasswordHistoryDAO" ref="userPasswordHistoryDAO"/>
 	</bean>
 	 
 </beans>

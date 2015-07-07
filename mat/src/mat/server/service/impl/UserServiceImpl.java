@@ -24,12 +24,15 @@ import mat.dao.SecurityRoleDAO;
 import mat.dao.StatusDAO;
 import mat.dao.TransactionAuditLogDAO;
 import mat.dao.UserDAO;
+import mat.dao.UserPasswordHistoryDAO;
+import mat.dao.UserSecurityQuestionDAO;
 import mat.model.Organization;
 import mat.model.SecurityRole;
 import mat.model.Status;
 import mat.model.TransactionAuditLog;
 import mat.model.User;
 import mat.model.UserPassword;
+import mat.model.UserPasswordHistory;
 import mat.model.UserSecurityQuestion;
 import mat.server.service.CodeListService;
 import mat.server.service.UserIDNotUnique;
@@ -48,6 +51,7 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class UserServiceImpl.
  */
@@ -118,6 +122,15 @@ public class UserServiceImpl implements UserService {
 	/** The user guide url. */
 	private String userGuideUrl;
 	
+	/** The pawd history size. */
+	private final int PAWD_HISTORY_SIZE = 5;
+	
+	@Autowired
+	private UserPasswordHistoryDAO userPasswordHistoryDAO; 
+	
+	@Autowired
+	private UserSecurityQuestionDAO userSecurityQuestionDAO; 
+	
 	/* (non-Javadoc)
 	 * @see mat.server.service.UserService#generateRandomPassword()
 	 */
@@ -159,6 +172,14 @@ public class UserServiceImpl implements UserService {
 		if(user.getPassword() == null) {
 			UserPassword pwd = new UserPassword();
 			user.setPassword(pwd);
+		}
+		
+		//to maintain user password History
+		if(user.getPassword()!=null) {
+         List<UserPasswordHistory> pwdHistoryList = getUpdatedPasswordHistoryList(user, false);
+         user.getPasswordHistory().clear();
+ 		 user.getPasswordHistory().addAll(pwdHistoryList);
+        // user.setPasswordHistory(pwdHistoryList);
 		}
 		setUserPassword(user, newPassword, true);
 		userDAO.save(user);
@@ -232,8 +253,7 @@ public class UserServiceImpl implements UserService {
 		user.setLockedOutDate(null);
 		user.getPassword().setForgotPwdlockCounter(0);
 		user.getPassword().setPasswordlockCounter(0);
-	}
-	
+	}	
 	
 	
 	/* (non-Javadoc)
@@ -256,38 +276,22 @@ public class UserServiceImpl implements UserService {
 		}
 		
 		if(user == null) {
-			invalidUserCounter += 1;
-			if(invalidUserCounter == 1){
-				result.setFailureReason(ForgottenPasswordResult.SECURITY_QUESTION_MISMATCH);
-			}else if(invalidUserCounter == 2){
-				result.setFailureReason(ForgottenPasswordResult.SECURITY_QUESTION_MISMATCH);
-			}else if(invalidUserCounter == 3){
-				result.setFailureReason(ForgottenPasswordResult.SECURITY_QUESTION_MISMATCH);
-			}
-			result.setCounter(invalidUserCounter);
-			//			result.setFailureReason(ForgottenPasswordResult.USER_NOT_FOUND);
+			result.setFailureReason(ForgottenPasswordResult.SECURITY_QUESTION_MISMATCH);
 		}
 		else if(user.getSecurityQuestions().size() != 3) {
 			result.setFailureReason(ForgottenPasswordResult.SECURITY_QUESTIONS_NOT_SET);
-			result.setCounter(user.getPassword().getForgotPwdlockCounter());
 		}
 		else if(user.getLockedOutDate() != null) {
 			result.setFailureReason(ForgottenPasswordResult.SECURITY_QUESTION_MISMATCH);
-			result.setCounter(user.getPassword().getForgotPwdlockCounter());
 		}
 		else if(!securityQuestionMatch(user, securityQuestion, securityAnswer)) {
 			result.setFailureReason(ForgottenPasswordResult.SECURITY_QUESTION_MISMATCH);
 			int lockCounter = user.getPassword().getForgotPwdlockCounter() + 1;
-			if(lockCounter == 2) {
-				result.setFailureReason(ForgottenPasswordResult.SECURITY_QUESTION_MISMATCH);
-			}
 			if(lockCounter == 3) {
-				result.setFailureReason(ForgottenPasswordResult.SECURITY_QUESTION_MISMATCH);
 				user.setLockedOutDate(new Date());
 				notifyUserOfAccountLocked(user);
 			}
 			user.getPassword().setForgotPwdlockCounter(lockCounter);
-			result.setCounter(user.getPassword().getForgotPwdlockCounter());
 			userDAO.save(user);
 		}
 		else {
@@ -301,44 +305,24 @@ public class UserServiceImpl implements UserService {
 			if(isAlreadySignedIn){
 				result.setFailureReason(ForgottenPasswordResult.USER_ALREADY_LOGGED_IN);
 			}else{
+				
+				//to maitain passwordHistory
+			    List<UserPasswordHistory> pwdHistoryList = getUpdatedPasswordHistoryList(user, false);
+			    user.getPasswordHistory().clear();
+				user.getPasswordHistory().addAll(pwdHistoryList);
+			    //user.setPasswordHistory(pwdHistoryList);
 				String newPassword = generateRandomPassword();
 				setUserPassword(user, newPassword, true);
 				result.setEmailSent(true);
 				sendResetPassword(user.getEmailAddress(), newPassword);
 				user.setLockedOutDate(null);
 				user.getPassword().setForgotPwdlockCounter(0);
-				result.setCounter(0);
 				userDAO.save(user);
 			}
 		}
 		return result;
 	}
 	
-	/**
-	 * Send account locked mail.
-	 * 
-	 * @param email
-	 *            the email
-	 */
-	private void sendAccountLockedMail(String email) {
-		logger.info("In sendAccountLockedMail(String email).......");
-		SimpleMailMessage msg = new SimpleMailMessage(templateMessage);
-		msg.setSubject(ServerConstants.TEMP_PWD_SUBJECT);
-		msg.setTo(email);
-		//US 440. Re-factored to use template based framework
-		//		HashMap<String, Object> paramsMap = new HashMap<String, Object>();
-		//		paramsMap.put(ConstantMessages.PASSWORD, newPassword);
-		//		String text = templateUtil.mergeTemplate(ConstantMessages.TEMPLATE_RESET_PASSWORD, paramsMap);
-		msg.setText("hello");
-		//		System.out.println("newPassword ==============="+newPassword);
-		logger.info("Sending email to " + email);
-		try {
-			mailSender.send(msg);
-		}
-		catch(MailException exc) {
-			logger.error(exc);
-		}
-	}
 	
 	/* (non-Javadoc)
 	 * @see mat.server.service.UserService#requestForgottenLoginID(java.lang.String)
@@ -464,6 +448,9 @@ public class UserServiceImpl implements UserService {
 		return userDAO.searchForUsersByName(orgId);
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.server.service.UserService#searchForUsedOrganizations()
+	 */
 	@Override
 	public HashMap<String, Organization> searchForUsedOrganizations() {
 		return userDAO.searchAllUsedOrganizations();
@@ -1035,9 +1022,89 @@ public class UserServiceImpl implements UserService {
 		return false;
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.server.service.UserService#searchForNonTerminatedUsers()
+	 */
 	@Override
 	public List<User> searchForNonTerminatedUsers() {
 		return userDAO.searchForNonTerminatedUser();
+	}
+	
+
+	/* (non-Javadoc)
+	 * @see mat.server.service.UserService#getOldPwdCreatedDate(java.lang.String)
+	 */
+	@Override
+	public Date getOldPwdCreatedDate(String userId) {
+		return userPasswordHistoryDAO.getOldPasswordCreationDate(userId);
+	}
+	
+	
+	/**
+	 * Update password history.
+	 *
+	 * @param passwordHistory the password history
+	 * @param user the user
+	 * @return the list
+	 */
+	private List<UserPasswordHistory> updatePasswordHistory(List<UserPasswordHistory> passwordHistory, 
+			User user) {
+		String oldPwdCreationDate = formatDate(getOldPwdCreatedDate(user.getId()));
+		for(UserPasswordHistory pwdHistory : passwordHistory){
+			String currPwdCreationDate = formatDate(pwdHistory.getCreatedDate());
+			if(currPwdCreationDate.equals(oldPwdCreationDate)){
+				pwdHistory.setCreatedDate(user.getPassword().getCreatedDate());
+				pwdHistory.setSalt(user.getPassword().getSalt());
+				pwdHistory.setPassword(user.getPassword().getPassword());
+				break;
+			}
+		}
+		return passwordHistory;
+	}
+	
+	
+	
+	/**
+	 * Format date.
+	 *
+	 * @param date the date
+	 * @return the string
+	 */
+	private String formatDate(Date date){
+		String newDate = "";
+		SimpleDateFormat currentDateFormat=new SimpleDateFormat("yyyy-MM-dd");
+		newDate = currentDateFormat.format(date);
+		return newDate;
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.server.service.UserService#getUpdatedPasswordHistoryList(mat.model.User)
+	 */
+	/**
+	 *  temporary and initial sign in password should not be stored in password History
+	 *  isValidPwd boolean is set for special case where current valid password becomes temporary 
+	 *  password when it exceeds 60 days limit and it Should be added to password history.
+     * **/
+	@Override
+	public List<UserPasswordHistory> getUpdatedPasswordHistoryList(User user, boolean isValidPwd){
+     
+		//will get the UserPasswordHistory List
+		List<UserPasswordHistory> pwdHisList = userPasswordHistoryDAO.getPasswordHistory(user.getId());
+
+		if(isValidPwd || !(user.getPassword().isInitial() 
+				|| user.getPassword().isTemporaryPassword())) {
+			UserPasswordHistory passwordHistory = new UserPasswordHistory();
+			passwordHistory.setPassword(user.getPassword().getPassword());
+			passwordHistory.setSalt(user.getPassword().getSalt());
+			passwordHistory.setCreatedDate(user.getPassword().getCreatedDate());
+			if(pwdHisList.size()<5){
+				pwdHisList.add(passwordHistory);
+			} else {
+			   pwdHisList = updatePasswordHistory(pwdHisList, user);
+			}
+		}
+		
+		return pwdHisList;
 	}
 	
 }

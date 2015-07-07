@@ -11,16 +11,20 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+
 import mat.client.login.LoginModel;
 import mat.client.login.service.LoginResult;
 import mat.client.login.service.LoginService;
 import mat.client.login.service.SecurityQuestionOptions;
 import mat.client.shared.MatContext;
 import mat.dao.UserDAO;
+import mat.dao.UserPasswordHistoryDAO;
 import mat.model.SecurityQuestions;
 import mat.model.User;
+import mat.model.UserPasswordHistory;
 import mat.model.UserSecurityQuestion;
 import mat.server.model.MatUserDetails;
 import mat.server.service.LoginCredentialService;
@@ -34,10 +38,12 @@ import mat.shared.ForgottenLoginIDResult;
 import mat.shared.ForgottenPasswordResult;
 import mat.shared.PasswordVerifier;
 import mat.shared.SecurityQuestionVerifier;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import com.google.gwt.http.client.UrlBuilder;
 import com.google.gwt.user.client.Window;
 
@@ -139,9 +145,10 @@ LoginService {
 			int invalidUserCounter) {
 		
 		UserService userService = (UserService) context.getBean("userService");
+		// don't pass invalidUserCounter to server anymore
 		ForgottenPasswordResult forgottenPasswordResult = userService
 				.requestForgottenPassword(loginId, securityQuestion,
-						securityAnswer, invalidUserCounter);
+						securityAnswer, 1);
 		String ipAddress = getClientIpAddr(getThreadLocalRequest());
 		TransactionAuditService auditService = (TransactionAuditService) context
 				.getBean("transactionAuditService");
@@ -430,17 +437,33 @@ LoginService {
 	public HashMap<String, String> validateNewPassword(String userID,String newPassword) {
 		HashMap<String, String> resultMap = new HashMap<String, String>();
 		UserDAO userDAO = (UserDAO) context.getBean("userDAO");
+		UserPasswordHistoryDAO userPasswordHistoryDAO = (UserPasswordHistoryDAO) context.getBean("userPasswordHistoryDAO");
 		MatUserDetails userDetails = (MatUserDetails) userDAO.getUser(userID);
 		String ifMatched = FAILURE;
 		
 		if (userDetails != null) {
+			
 			UserService userService = (UserService) context
 					.getBean("userService");
 			String hashPassword = userService.getPasswordHash(userDetails
 					.getUserPassword().getSalt(), newPassword);
+			
 			if (hashPassword.equalsIgnoreCase(userDetails.getUserPassword()
 					.getPassword())) {
 				ifMatched = SUCCESS;
+			}
+
+			List<UserPasswordHistory> passwordHistory = userPasswordHistoryDAO.getPasswordHistory(userDetails.getId());
+			
+			if(ifMatched.equals(FAILURE)){
+				for(int i=0; i<passwordHistory.size(); i++){
+					hashPassword = userService.getPasswordHash(passwordHistory.get(i).getSalt(),
+							newPassword);
+					if (hashPassword.equalsIgnoreCase(passwordHistory.get(i).getPassword())) {
+						ifMatched = SUCCESS;
+						break;
+					}
+				}
 			}
 		}
 		
@@ -563,9 +586,5 @@ LoginService {
 		logger.info("Found...." + context.getBean("securityQuestionsService"));
 		return securityQuestionsService.getSecurityQuestions();
 	}
-	
-	
-	
-	
 	
 }

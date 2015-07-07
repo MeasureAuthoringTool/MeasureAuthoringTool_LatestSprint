@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+
 import mat.dao.search.GenericDAO;
 import mat.model.Organization;
 import mat.model.SecurityQuestions;
 import mat.model.User;
 import mat.server.model.MatUserDetails;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.Criteria;
@@ -21,6 +23,7 @@ import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.security.core.userdetails.UserDetails;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class UserDAO.
  */
@@ -152,6 +155,10 @@ mat.dao.UserDAO {
 		}*/
 		return criteria.list();
 	}
+	
+	/* (non-Javadoc)
+	 * @see mat.dao.UserDAO#searchAllUsedOrganizations()
+	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public
@@ -402,6 +409,9 @@ mat.dao.UserDAO {
 		return list.get(0);
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.dao.UserDAO#searchForNonTerminatedUser()
+	 */
 	@Override
 	public List<User> searchForNonTerminatedUser() {
 		Session session = getSessionFactory().getCurrentSession();
@@ -410,5 +420,6 @@ mat.dao.UserDAO {
 		criteria.addOrder(Order.asc("lastName"));
 		return criteria.list();
 	}
-	
+
+
 }
