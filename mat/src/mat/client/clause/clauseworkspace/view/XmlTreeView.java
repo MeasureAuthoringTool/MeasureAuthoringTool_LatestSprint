@@ -95,7 +95,6 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	 * Clause valid nested depth.
 	 */
 	public static final int CLAUSE_NESTED_DEPTH = 10;
-	
 	/**
 	 * Comment Area Max Length - Population Work Space.
 	 */
@@ -550,6 +549,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		//		savePanel.add(errorMessageDisplay);
 		vp.add(successMessageDisplay);
 		//		saveBtn.setTitle("Ctrl+Alt+s");
+		saveBtnClauseWorkSpace.getElement().setAttribute("id", "saveButton_CW");
 		savePanel.add(saveBtnClauseWorkSpace);
 		validateBtnClauseWorkSpace.setTitle("Validate");
 		clearClauseWorkSpace.setTitle("Clear Clause WorkSpace");
@@ -1941,11 +1941,10 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 		List<String> inValidNodeAtPopulationWorkspace = new ArrayList<String>();
 		setValidHumanReadable(true);
 		isSubTreeLogicValidInPopulationWorkSpace = false;
-		if ((cellNode != null) && (cellNode.getChilds()!=null)) {
-			
+		if ((cellNode != null) && (cellNode.getChilds() != null)) {
 			for (int i = 0; i < cellNode.getChilds().size(); i++) {
 				//TreeNode subTree = null;
-				CellTreeNode node =cellNode.getChilds().get(i);
+				CellTreeNode node = cellNode.getChilds().get(i);
 				validateCellTreeNodesPopulationWorkspace(node, inValidNodeAtPopulationWorkspace);
 			}
 		}
@@ -1961,18 +1960,36 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 	 */
 	public void validateCellTreeNodesPopulationWorkspace(
 			CellTreeNode cellTreeNode,
-			List<String> inValidNodeAtPopulationWorkspace){
+			List<String> inValidNodeAtPopulationWorkspace) {
 		int nodeType = cellTreeNode.getNodeType();
-		switch(nodeType){
+		switch(nodeType) {
 			case CellTreeNode.LOGICAL_OP_NODE:
-				if(cellTreeNode.getParent().getName()
-						.contains(MEASURE_OBSERVATION)){
+				if (cellTreeNode.getParent().getName()
+						.contains(MEASURE_OBSERVATION)) {
 					editNode(false, cellTreeNode);
 					setValidHumanReadable(false);
 					if(!inValidNodeAtPopulationWorkspace
 							.contains("inValidAtMeasureObservationLogicalNode")){
 						inValidNodeAtPopulationWorkspace
 						.add("inValidAtMeasureObservationLogicalNode");
+					}
+				} else if(PopulationWorkSpaceConstants.getPopulationName().contains(cellTreeNode.getParent().getParent().getName())){
+					//System.out.println("Top Level Logical Operator Found..... for :: " + cellTreeNode.getParent().getName());
+					editNode(true, cellTreeNode);
+				} else {
+					//System.out.println("Child Nodes inside Logical Operator must be greater than 0 :: " + cellTreeNode.getName());
+					if(cellTreeNode.hasChildren()){
+						editNode(true, cellTreeNode);
+						//System.out.println("Good Logical Node");
+					} else {
+						//	System.out.println("BAD Logical Node");
+						if(!inValidNodeAtPopulationWorkspace
+								.contains("inValidAtLogicalOperatorNode")){
+							inValidNodeAtPopulationWorkspace
+							.add("inValidAtLogicalOperatorNode");
+						}
+						editNode(false, cellTreeNode);
+						setValidHumanReadable(false);
 					}
 				}
 				break;
@@ -2080,6 +2097,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 					.createCellTreeNode(node, cellTreeNode.getName());
 		}
 		setValid(false);
+		
 		boolean valid = validateSubtreeNodeAtPopulation(subTreeCellTreeNode);
 		
 		return valid;
@@ -2100,6 +2118,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 			case CellTreeNode.TIMING_NODE:
 			case CellTreeNode.RELATIONSHIP_NODE:
 			case CellTreeNode.ELEMENT_REF_NODE:
+			case CellTreeNode.SUBTREE_NODE:
 				validateClauseWorkspaceCellTreeNodes(subTreeCellTreeNode,
 						PopulationWorkSpaceConstants.datatypeMap, inValideNodesList);
 				if (isValidHumanReadable) {
@@ -2215,7 +2234,7 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 			for (int i = 0; i < treeNode.getChildCount(); i++) {
 				CellTreeNode node = (CellTreeNode) treeNode.getChildValue(i);
 				validateClauseWorkspaceCellTreeNodes(node, PopulationWorkSpaceConstants.getDatatypeMap(), inValidNodeList);
-				if((node != null) && node.hasChildren()) {
+				if((node != null) && node.hasChildren() && (inValidNodeList.size() == 0)) {
 					validateClauseNodeNesting(node.getChilds().get(0),inValidNodeList,1);
 				}
 			}
@@ -2250,7 +2269,11 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 					} else if (element.equalsIgnoreCase("nestedClauseLogic")) {
 						warningMessages.add(MatContext.get().getMessageDelegate()
 								.getCLAUSE_WORK_SPACE_INVALID_NESTED_DEPTH_CLAUSE());
-					}
+					} else if (element.equalsIgnoreCase("emptyClauseLogic")) {
+					    warningMessages.add(MatContext.get().getMessageDelegate()
+							    .getCLAUSE_EMPTY());
+				}
+					
 				}
 				if (warningMessages.size() > 0) {
 					if (!warningMessages.get(0).equalsIgnoreCase(MatContext.get().getMessageDelegate()
@@ -2449,6 +2472,16 @@ public class XmlTreeView extends Composite implements  XmlTreeDisplay, TreeViewM
 					if (checkForValidation) {
 						if (!inValidNodeList.contains("invalidClauseLogic")) {
 							inValidNodeList.add("invalidClauseLogic");
+						}
+						editNode(false, node);
+					}
+					
+					break;
+				case CellTreeNode.SUBTREE_NODE:
+					//validation for empty clause logic in clauseWorkspace
+					if(node.getChilds() == null || node.getChilds().size() == 0){
+						if (!inValidNodeList.contains("emptyClauseLogic")) {
+							inValidNodeList.add("emptyClauseLogic");
 						}
 						editNode(false, node);
 					}

@@ -20,9 +20,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.DTO.MeasureNoteDTO;
 import mat.DTO.MeasureTypeDTO;
 import mat.DTO.OperatorDTO;
@@ -86,6 +88,7 @@ import mat.shared.ConstantMessages;
 import mat.shared.DateStringValidator;
 import mat.shared.DateUtility;
 import mat.shared.model.util.MeasureDetailsUtil;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang.StringUtils;
@@ -585,24 +588,13 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		ManageMeasureDetailModel measureDetailModel = null;
 		if (creatingDraft) {
 			measureDetailModel = getMeasure(oldMeasureId);// get the
-			// measureDetailsmodel
-			// object for which
-			// draft have to be
-			// created..
-			Measure measure = getService().getById(clonedMeasureId);// get the
-			// Cloned Measure Revision Number reset to '000' when cloned.
+			// measureDetailsmodel object for which draft have to be created..
+			Measure measure = getService().getById(clonedMeasureId);
+			// get the Cloned Measure Revision Number reset to '000' when cloned.
 			measure.setRevisionNumber("000");
-			// Cloned
-			// version
-			// of the
-			// Measure.
+			// Cloned version of the Measure.
 			createMeasureDetailsModelFromMeasure(measureDetailModel, measure); // apply
-			// measure
-			// values
-			// in
-			// the
-			// created
-			// MeasureDetailsModel.
+			// measure values in the created MeasureDetailsModel.
 		} else {
 			measureDetailModel = getMeasure(clonedMeasureId);
 		}
@@ -626,7 +618,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		logger.info("In easureLibraryServiceImpl.convertAddlXmlElementsToModel()");
 		manageMeasureDetailModel.setId(measure.getId());
 		manageMeasureDetailModel.setCalenderYear(manageMeasureDetailModel.getPeriodModel().isCalenderYear());
-		if(!manageMeasureDetailModel.getPeriodModel().isCalenderYear()){
+		if (!manageMeasureDetailModel.getPeriodModel().isCalenderYear()){
 			manageMeasureDetailModel.setMeasFromPeriod(manageMeasureDetailModel.getPeriodModel() != null ? manageMeasureDetailModel
 					.getPeriodModel().getStartDate() : null);
 			manageMeasureDetailModel.setMeasToPeriod(manageMeasureDetailModel.getPeriodModel() != null ? manageMeasureDetailModel
@@ -3243,26 +3235,16 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 */
 	@Override
 	public ValidateMeasureResult validatePackageGrouping(ManageMeasureDetailModel model) {
-		boolean flag = false;
 		ValidateMeasureResult result = new ValidateMeasureResult();
-		List<String> message = new ArrayList<String>();
 		logger.debug(" MeasureLibraryServiceImpl: validatePackageGrouping Start :  ");
-		
-		
 		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(model.getId());
 		if (((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml()))) {
 			/*System.out.println("MEASURE_XML: "+xmlModel.getXml());*/
-			flag = validateMeasureXmlAtCreateMeasurePackager(xmlModel);
-			if(!flag){
-				String msg = validateStratumForAtleastOneClause(xmlModel);
-				if(msg != null){
-					message.add(msg);
-				}
-			} else {
-				message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
-			}
-			
-			result.setValid(message.size() == 0);
+			result = validateMeasureXmlAtCreateMeasurePackager(xmlModel);
+		} else {
+			List<String> message = new ArrayList<String>();
+			message.add(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+			result.setValid(false);
 			result.setValidationMessages(message);
 		}
 		
@@ -3273,11 +3255,12 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @see mat.server.service.MeasureLibraryService#validateMeasureXmlInpopulationWorkspace(mat.client.clause.clauseworkspace.model.MeasureXmlModel)
 	 */
 	@Override
-	public boolean validateMeasureXmlAtCreateMeasurePackager(MeasureXmlModel measureXmlModel) {
+	public ValidateMeasureResult validateMeasureXmlAtCreateMeasurePackager(MeasureXmlModel measureXmlModel) {
 		boolean isInvalid = false;
-		
+		ValidateMeasureResult result = new ValidateMeasureResult();
+		result.setValid(true);
 		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
-		
+		List<String> message = new ArrayList<String>();
 		if ((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml())) {
 			XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
 			
@@ -3298,6 +3281,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					if(type.equals("stratification")){
 						List<String> stratificationClausesIDlist = getStratificationClasuesIDList(uuid, xmlProcessor);
 						measureGroupingIDList.addAll(stratificationClausesIDlist);
+						
 					} else {
 						measureGroupingIDList.add(uuid);
 					}
@@ -3314,7 +3298,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			
 			uuidXPathString = uuidXPathString.substring(0, uuidXPathString.lastIndexOf(" or"));
 			
-			//String XPATH_POPULATION = "/measure//clause["+uuidXPathString+"]";
+			String XPATH_POPULATION_TOP_LEVEL_LOGICAL_OP = "/measure//clause["+uuidXPathString+"]/logicalOp";
 			
 			String XPATH_POPULATION_LOGICALOP = "/measure//clause["+uuidXPathString+"]//logicalOp";
 			
@@ -3330,6 +3314,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			
 			try {
 				//list of LogicalOpNode inSide the PopulationWorkspace That are used in Grouping
+				NodeList populationTopLevelLogicalOp = (NodeList) xPath.evaluate(XPATH_POPULATION_TOP_LEVEL_LOGICAL_OP, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
 				NodeList populationLogicalOp = (NodeList) xPath.evaluate(XPATH_POPULATION_LOGICALOP, xmlProcessor.getOriginalDoc(),
 						XPathConstants.NODESET);
 				//list of Qdemelement inSide the PopulationWorkspace That are used in Grouping
@@ -3341,27 +3327,56 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				//list of functionNode inSide the PopulationWorkspace That are used in Grouping
 				NodeList populationFunctions = (NodeList) xPath.evaluate(XPATH_POPULATION_FUNCTIONS, xmlProcessor.getOriginalDoc(),
 						XPathConstants.NODESET);
-				
+				// Validation for Logical Operators.
+				String messageForLogicalOp = validateLogicalOpsInAllPopulations(populationTopLevelLogicalOp);
+				if (messageForLogicalOp != null) {
+					message.add(messageForLogicalOp);
+					result.setValid(false);
+					result.setValidationMessages(message);
+				}
+				// Validation for Stratums with No clause.
+				String msg = validateStratumForAtleastOneClause(xmlModel);
+				if (msg != null) {
+					message.add(msg);
+					result.setValid(false);
+					result.setValidationMessages(message);
+				}
+				if ((result.getValidationMessages() != null)
+						&& (result.getValidationMessages().size() > 0)) {
+					return result;
+				}
+				// Other Validations.
 				if(populationLogicalOp.getLength()>0){
-					for (int i = 0; (i <populationLogicalOp.getLength()) && !isInvalid; i++) {
+					for (int i = 0; (i <populationLogicalOp.getLength()); i++) {
 						Node childNode =populationLogicalOp.item(i);
 						String type = childNode.getParentNode().getAttributes().getNamedItem("type").getNodeValue();
 						if(type.equals("measureObservation")){
-							isInvalid = true;
-							break;
+							result.setValid(false);
+							message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+							result.setValidationMessages(message);
+							return result;
 						}
 					}
 				}
 				
-				if((populationQdemElement.getLength()>0) && !isInvalid){
-					isInvalid = true;
+				if((populationQdemElement.getLength()>0)){
+					result.setValid(false);
+					message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+					result.setValidationMessages(message);
+					return result;
 				}
 				
-				if((populationTimingElement.getLength()>0) && !isInvalid){
-					isInvalid = true;
+				if((populationTimingElement.getLength()>0)){
+					result.setValid(false);
+					message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+					result.setValidationMessages(message);
+					return result;
 				}
-				if((populationFunctions.getLength()>0) && !isInvalid){
-					isInvalid = true;
+				if((populationFunctions.getLength()>0)){
+					result.setValid(false);
+					message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+					result.setValidationMessages(message);
+					return result;
 				}
 				
 				
@@ -3379,7 +3394,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			
 			if(usedSubTreeIds.size()>0){
 				
-				for(int k=0; (k < usedSubTreeIds.size()) && !isInvalid; k++){
+				for(int k=0; (k < usedSubTreeIds.size()); k++){
 					String usedSubtreeRefId = usedSubTreeIds.get(k);
 					
 					String satisfyFunction = "@type='SATISFIES ALL' or @type='SATISFIES ANY'";
@@ -3395,8 +3410,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					String XPATH_SETOPERATOR ="/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//setOp";
 					//for DateTimeDiff Validation
 					String XPATH_DATE_TIME_DIFF_ELEMENT = "/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//functionalOp["+dateTimeDiffFunction+"]";
-					//for Nested Clause Validation
-					String XPATH_NESTED_SUBTREE_REF ="//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//subTreeRef";
+					
 					String XPATH_SUBTREE ="//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']";
 					/*System.out.println("MEASURE_XML: "+xmlModel.getXml());*/
 					try {
@@ -3414,8 +3428,6 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 								XPathConstants.NODESET);
 						NodeList nodeSDE_dateTimeDiffElement =(NodeList) xPath.evaluate(XPATH_DATE_TIME_DIFF_ELEMENT, xmlProcessor.getOriginalDoc(),
 								XPathConstants.NODESET);
-						NodeList nodeSubTreeRefList = (NodeList) xPath.evaluate(XPATH_NESTED_SUBTREE_REF, xmlProcessor.getOriginalDoc(),
-								XPathConstants.NODESET);
 						Node nodeSubTree =(Node) xPath.evaluate(XPATH_SUBTREE, xmlProcessor.getOriginalDoc(),
 								XPathConstants.NODE);
 						// Validation for Nested Clause Logic.
@@ -3427,28 +3439,40 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 						int nestedClauseCounter = 0;
 						isInvalid = validateNestedClauseLogic(nodeSubTree , nestedClauseCounter
 								, isInvalid , xmlProcessor);
+						if(isInvalid) {
+							result.setValid(false);
+							message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+							result.setValidationMessages(message);
+							return result;
+						}
 						
 						//}
-						for (int n = 0; (n <nodesSDE_timingElement.getLength()) && !isInvalid; n++) {
+						for (int n = 0; (n <nodesSDE_timingElement.getLength()); n++) {
 							
 							Node timingElementchildNode =nodesSDE_timingElement.item(n);
 							isInvalid = validateTimingRelationshipNode(timingElementchildNode, operatorTypeList, isInvalid);
 							if(isInvalid) {
-								break;
+								result.setValid(false);
+								message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+								result.setValidationMessages(message);
+								return result;
 							}
 							
 						}
-						for (int j = 0; (j < nodesSDE_satisfyElement.getLength()) && !isInvalid; j++) {
+						for (int j = 0; (j < nodesSDE_satisfyElement.getLength()); j++) {
 							
 							Node satisfyElementchildNode = nodesSDE_satisfyElement.item(j);
 							isInvalid = validateSatisfyNode(satisfyElementchildNode, isInvalid);
 							if(isInvalid) {
-								break;
+								result.setValid(false);
+								message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+								result.setValidationMessages(message);
+								return result;
 							}
 							
 						}
 						
-						for (int m = 0; (m <nodesSDE_qdmElementId.getLength()) && !isInvalid; m++) {
+						for (int m = 0; (m <nodesSDE_qdmElementId.getLength()); m++) {
 							String id = nodesSDE_qdmElementId.item(m).getNodeValue();
 							String xpathForQdmWithAttributeList ="/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//elementRef[@id='"+id+"']/attribute";
 							String xpathForQdmWithOutAttributeList ="/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//elementRef[@id='"+id+"'][not(attribute)]";
@@ -3462,52 +3486,68 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 								String attributeName = qdmWithAttributeNodeList.item(n).getAttributes().getNamedItem("name").getNodeValue();
 								isInvalid = !validateQdmNode(qdmNode, attributeName);
 								if(isInvalid){
-									break;
+									result.setValid(false);
+									message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+									result.setValidationMessages(message);
+									return result;
 								}
 							}
 							//validation for QDMwithOutAttributeList for the Id
-							if(!isInvalid && (qdmWithOutAttributeList.getLength() >0)){
+							if((qdmWithOutAttributeList.getLength() >0)){
 								String attributeName ="";
 								isInvalid = !validateQdmNode(qdmNode, attributeName);
 								if(isInvalid){
-									break;
+									result.setValid(false);
+									message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+									result.setValidationMessages(message);
+									return result;
 								}
 							}
 							
 						}
 						
-						for (int n = 0; (n < nodesSDE_functions.getLength()) && !isInvalid; n++) {
+						for (int n = 0; (n < nodesSDE_functions.getLength()); n++) {
 							
 							Node functionsChildNode =nodesSDE_functions.item(n);
 							isInvalid = validateFunctionNode(functionsChildNode, operatorTypeList, isInvalid);
 							if(isInvalid) {
-								break;
+								result.setValid(false);
+								message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+								result.setValidationMessages(message);
+								return result;
 							}
 							
 						}
 						
-						for (int n = 0; (n < nodeSDE_setoperator.getLength()) && !isInvalid; n++) {
+						for (int n = 0; (n < nodeSDE_setoperator.getLength()); n++) {
 							
 							Node setOperatorChildNode = nodeSDE_setoperator.item(n);
 							isInvalid = validateSetOperatorNode(setOperatorChildNode, isInvalid);
 							if(isInvalid) {
-								break;
+								result.setValid(false);
+								message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+								result.setValidationMessages(message);
+								return result;
 							}
 							
 						}
 						
-						for (int n = 0; (n < nodeSDE_dateTimeDiffElement.getLength()) && !isInvalid; n++) {
+						for (int n = 0; (n < nodeSDE_dateTimeDiffElement.getLength()); n++) {
 							
 							if(usedSubtreeRefIdsMap.get("subTreeIDAtPop").contains(usedSubtreeRefId) ||
 									usedSubtreeRefIdsMap.get("subTreeIDAtStrat").contains(usedSubtreeRefId)){
-								isInvalid = true;
-								break;
+								result.setValid(false);
+								message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+								result.setValidationMessages(message);
+								return result;
 							}
 							
 							Node dateTimeDiffChildNode = nodeSDE_dateTimeDiffElement.item(n);
 							if(dateTimeDiffChildNode.getChildNodes().getLength() < 2){
-								isInvalid = true;
-								break;
+								result.setValid(false);
+								message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
+								result.setValidationMessages(message);
+								return result;
 							}
 							
 							
@@ -3521,74 +3561,130 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			}
 			
 		}
-		return isInvalid;
+		return result;
 	}
+	
 	/**
-	 * Method to validate clauses having nesting not more than 10 levels.
-	 * @param nodeSubTreeRefList - NodeList
-	 * @param counter - number of subTreeRef's.
-	 * @param flag - Boolean True/false.
-	 * @param xmlProcessor - XmlProcessor instance.
-	 * @return boolean.
-	 * @throws XPathExpressionException - Exception.
+	 * This method will evaluate Logical Operators and checks if Logical operators has child nodes or not.
+	 * Default Top Level Logical Operators are not considered for this validation.
+	 * @param populationTopLevelLogicalOp - NodeList.
+	 * @return String - message
 	 */
-	/*private boolean validateNestedClauseLogic(NodeList nodeSubTreeRefList, int counter, boolean flag
-			, XmlProcessor xmlProcessor) throws XPathExpressionException {
-		for (int i = 0; ((i < nodeSubTreeRefList.getLength()) &&  !flag); i++) {
-			int currentCounter = counter;
-			System.out.println("Looping for counter -------" + counter);
-			Node node = nodeSubTreeRefList.item(i);
-			String uuid = node.getAttributes().getNamedItem("id").getNodeValue();
-			String XPATH_NESTED_SUBTREE_REF = null;
-			if (node.getAttributes().getNamedItem("instance") != null) {
-				uuid = node.getAttributes().getNamedItem("instanceOf").getNodeValue();
-			}
-			XPATH_NESTED_SUBTREE_REF  = "//subTreeLookUp/subTree[@uuid='" + uuid + "']//subTreeRef";
-			NodeList subTreeRefNodeList = (NodeList) xPath.evaluate(XPATH_NESTED_SUBTREE_REF, xmlProcessor.getOriginalDoc(),
-					XPathConstants.NODESET);
-			if (subTreeRefNodeList.getLength() > 0) {
-				currentCounter = currentCounter+1 ;
-			}
-			if (currentCounter > NESTED_CLAUSE_DEPTH) {
-				flag = true;
-				System.out.println("Breaking for UUID -------" + uuid);
-				
-				break;
-			} else {
-				flag = validateNestedClauseLogic(subTreeRefNodeList , currentCounter, flag, xmlProcessor);
+	private String validateLogicalOpsInAllPopulations(NodeList populationTopLevelLogicalOp) {
+		boolean isInvalid = false;
+		String message = null;
+		if (populationTopLevelLogicalOp.getLength() > 0) {
+			for (int i = 0; i < populationTopLevelLogicalOp.getLength(); i++) {
+				Node operatorNode = populationTopLevelLogicalOp.item(i);
+				if (operatorNode.getParentNode().getAttributes().getNamedItem("type")
+						.toString().equalsIgnoreCase("startum")) {
+					if (operatorNode.hasChildNodes()) {
+						isInvalid = findInvalidLogicalOperators(operatorNode.getChildNodes(), false);
+					} else {
+						isInvalid = true;
+					}
+					if (isInvalid) {
+						message = MatContext.get().getMessageDelegate()
+								.getCLAUSE_WORK_SPACE_INVALID_LOGICAL_OPERATOR();
+						break;
+					}
+				} else {
+					// Populations other than Stratification : dont check for default top level Logical Op.
+					if (operatorNode.hasChildNodes() && 
+							operatorNode.getChildNodes().getLength()>1) {
+							isInvalid = findInvalidLogicalOperators(operatorNode.getChildNodes(), true);
+							
+							if (isInvalid) {
+								message = MatContext.get().getMessageDelegate()
+										.getCLAUSE_WORK_SPACE_INVALID_LOGICAL_OPERATOR();
+								break;
+						}
+					}
+				}
 			}
 		}
-		return flag;
-	}*/
+		return message;
+	}
+	
+	
+	/**
+	 * Find invalid logical operators.
+	 *
+	 * @param populationTopLevelLogicalOp the population top level logical op
+	 * @return true, if successful
+	 */
+	private boolean findInvalidLogicalOperators(NodeList populationTopLevelLogicalOp, boolean isTopLevelLogicalOp) {
+		boolean isInvalid = false;
+		if((populationTopLevelLogicalOp != null)){
+			for (int i=0; i < populationTopLevelLogicalOp.getLength();i++) {
+				Node operatorNode = populationTopLevelLogicalOp.item(i);
+			    if (operatorNode.getNodeName().equalsIgnoreCase("comment")) {
+			    	//ignore the comment for the top Level Logical Operator
+			    	if(!isTopLevelLogicalOp) {
+			    		isInvalid = true;
+			    	} else {
+			    		isTopLevelLogicalOp = false;
+			    	}
+			    	continue; 
+				}
+			    
+				if (operatorNode.getNodeName().equalsIgnoreCase("subTreeRef")) {
+					isInvalid = false;
+				} else {
+					if (operatorNode.hasChildNodes()) {
+						isInvalid = findInvalidLogicalOperators(operatorNode.getChildNodes(), false);
+					} else {
+						if(!isTopLevelLogicalOp){
+							isInvalid = true;
+						} else {
+				    		isTopLevelLogicalOp = false;
+				    	}
+					}
+				}
+				if(isInvalid){
+					break;
+				}
+			}
+		}
+		return isInvalid;
+	}
+	
 	
 	/**
 	 * Validate Clause should have depth up to 10 Levels.
-	 * @param nodeSubTreeRefList
-	 * @param counter
-	 * @param flag
-	 * @param xmlProcessor
-	 * @return
-	 * @throws XPathExpressionException
+	 *
+	 * @param nodeSubTreeRef the node sub tree ref
+	 * @param counter the counter
+	 * @param flag the flag
+	 * @param xmlProcessor the xml processor
+	 * @return true, if successful
+	 * @throws XPathExpressionException the x path expression exception
 	 */
-	private boolean validateNestedClauseLogic(Node nodeSubTreeRefList, int counter, boolean flag
+	private boolean validateNestedClauseLogic(Node nodeSubTreeRef, int counter, boolean flag
 			, XmlProcessor xmlProcessor) throws XPathExpressionException {
-		NodeList children = nodeSubTreeRefList.getChildNodes();
+		NodeList children = nodeSubTreeRef.getChildNodes();
+		String subTreeNodeName = nodeSubTreeRef.getNodeName();
+		if ((children.getLength() == 0) && subTreeNodeName.equalsIgnoreCase("subTree")
+				&& (nodeSubTreeRef.getAttributes().getNamedItem("instanceOf")==null)) {
+			flag = true;
+			return flag;
+		}
 		for (int i = 0; ((i < children.getLength()) &&  !flag); i++) {
 			int currentCounter = counter;
 			System.out.println("Looping for counter -------" + counter);
 			Node node = children.item(i);
 			//String uuid = node.getAttributes().getNamedItem("id").getNodeValue();
-			if(node.getNodeName().equalsIgnoreCase("subTreeRef")) {
+			if (node.getNodeName().equalsIgnoreCase("subTreeRef")) {
 				String uuid = node.getAttributes().getNamedItem("id").getNodeValue();
 				if (node.getAttributes().getNamedItem("instance") != null) {
 					uuid = node.getAttributes().getNamedItem("instanceOf").getNodeValue();
 				}
-				String XPATH_SUBTREE ="//subTreeLookUp/subTree[@uuid='"+uuid+"']";
-				node =(Node) xPath.evaluate(XPATH_SUBTREE, xmlProcessor.getOriginalDoc(),
+				String XPATH_SUBTREE = "//subTreeLookUp/subTree[@uuid='"+uuid+"']";
+				node = (Node) xPath.evaluate(XPATH_SUBTREE, xmlProcessor.getOriginalDoc(),
 						XPathConstants.NODE);
 			}
 			if (node.hasChildNodes()) {
-				currentCounter = currentCounter+1 ;
+				currentCounter = currentCounter + 1;
 			}
 			if (currentCounter > NESTED_CLAUSE_DEPTH) {
 				flag = true;
@@ -3597,6 +3693,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			} else {
 				flag = validateNestedClauseLogic(node , currentCounter, flag, xmlProcessor);
 			}
+			
 		}
 		return flag;
 	}

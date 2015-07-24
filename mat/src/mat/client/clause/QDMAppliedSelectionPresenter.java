@@ -445,6 +445,7 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 	/** The is expansion profile. */
 	private boolean isExpansionProfile = false;
 	
+	private boolean  isAllOIDsUpdated = false;
 	
 	/**
 	 * Instantiates a new VSAC profile selection presenter.
@@ -715,6 +716,8 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 						searchDisplay.getQDMExpIdentifierListBox().addItem(expIdentifierToAllQDM,
 								expIdentifierToAllQDM);
 					} else {
+						searchDisplay.setQDMExpIdentifierListBox(getProfileList(
+								MatContext.get().getVsacExpIdentifierList()));
 						getVSACVersionListByOID(oid);
 						searchDisplay.getQDMExpIdentifierListBox().setEnabled(true);
 						searchDisplay.getVersionListBox().setEnabled(true);
@@ -751,8 +754,6 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 				if (result.getVsacVersionResp() != null) {
 					searchDisplay.setQDMVersionListBoxOptions(getVersionList(result
 							.getVsacVersionResp()));
-					searchDisplay.setQDMExpIdentifierListBox(getProfileList(
-							MatContext.get().getVsacExpIdentifierList()));
 				}
 			}
 			@Override
@@ -955,6 +956,9 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 			@Override
 			public void onDeleteClicked(QualityDataSetDTO result, final int index) {
 				resetQDSMsgPanel();
+				if(modifyValueSetDTO!=null && modifyValueSetDTO.getId().equalsIgnoreCase(result.getId())){
+					isModified = false;
+				}
 				service.getAppliedQDMFromMeasureXml(MatContext.get()
 						.getCurrentMeasureId(), false,
 						new AsyncCallback<QualityDataModelWrapper>() {
@@ -983,7 +987,7 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 					
 					@Override
 					public void onFailure(Throwable caught) {
-						// TODO Auto-generated method stub
+						
 						
 					}
 				});
@@ -1753,6 +1757,7 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 		String expansionProfile = searchDisplay.getExpansionIdentifierValue(
 				searchDisplay.getQDMExpIdentifierListBox());
 		MatValueSetTransferObject matValueSetTransferObject = new MatValueSetTransferObject();
+		matValueSetTransferObject.setMeasureId(MatContext.get().getCurrentMeasureId());
 		matValueSetTransferObject.setDatatype(dataType);
 		matValueSetTransferObject.setMatValueSet(matValueSet);
 		matValueSetTransferObject.setCodeListSearchDTO(codeListSearchDTO);
@@ -1800,6 +1805,7 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 				if(result.isSuccess()){
 					isModified = false;
 					appliedQDMList = result.getAppliedQDMList();
+					isAllOIDsUpdated = result.isAllOIDsUpdated();
 					updateMeasureXML(result.getDataSetDTO() , qualityDataSetDTO, isUSerDefined);
 					resetQDMSearchPanel();
 				} else{
@@ -1895,8 +1901,12 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 			
 			@Override
 			public void onSuccess(final Void result) {
-				searchDisplay.getSuccessMessageDisplay().setMessage(
-						MatContext.get().getMessageDelegate().getSuccessfulModifyQDMMsg());
+				List<String> messages = new ArrayList<String>();
+				messages.add(MatContext.get().getMessageDelegate().getSuccessfulModifyQDMMsg());
+				if(isAllOIDsUpdated){
+					messages.add(MatContext.get().getMessageDelegate().getSUCCESSFULLY_MODIFIED_ALL_OIDS());
+				}
+				searchDisplay.getSuccessMessageDisplay().setMessages(messages);
 				modifyValueSetDTO = modifyWithDTO;
 				getAppliedQDMList(true);
 			}

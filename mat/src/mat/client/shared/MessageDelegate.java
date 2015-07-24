@@ -163,7 +163,7 @@ public class MessageDelegate {
 			"If you want to continue say Yes or No to cancel.";
 	
 	/** The successfully pasted qdm elements in measure. */
-	public final String SUCCESSFULLY_PASTED_QDM_ELEMENTS_IN_MEASURE = "Selected QDM elements have been pasted successfully";
+	public final String SUCCESSFULLY_PASTED_QDM_ELEMENTS_IN_MEASURE = "Selected QDM elements have been pasted successfully.";
 	
 	/** The copy qdm select atleast one. */
 	public final String COPY_QDM_SELECT_ATLEAST_ONE  = "Please select at least one applied QDM element to copy.";
@@ -176,8 +176,9 @@ public class MessageDelegate {
 	
 	public final String WARNING_MEASURE_PACKAGE_CREATION_STRATA = "Unable to create measure package. Stratum must contain at least one clause.";
 	
-	
-	
+	public final String SUCCESSFULLY_MODIFIED_ALL_OIDS = "All QDM elements and/or attributes using the same value set OID have been modified " +
+			                                 "to the selected Version and/or Expansion Identifier.";
+
 	/**
 	 * Gets the measure save server error message.
 	 * 
@@ -271,6 +272,8 @@ public class MessageDelegate {
 	
 	/** The code required. */
 	private final String CODE_REQUIRED = "Code is required.";
+	
+	private final String CLAUSE_EMPTY = "Clause must contain logic.";
 	
 	/**
 	 * Gets the population work space validation error.
@@ -569,7 +572,7 @@ public class MessageDelegate {
 	private final String STEWARD_REQUIRED = "Steward is required.";
 	
 	/** The successful modify applied qdm. */
-	private final String SUCCESSFUL_MODIFY_APPLIED_QDM = "Selected QDM element has been modified successfully";
+	private final String SUCCESSFUL_MODIFY_APPLIED_QDM = "Selected QDM element has been modified successfully.";
 	
 	/** The system error. */
 	private final String SYSTEM_ERROR = "Import failed due to system error. Please try again.";
@@ -649,6 +652,10 @@ public class MessageDelegate {
 	
 	/** The clause work space invalid nested clause. */
 	private final String CLAUSE_WORK_SPACE_INVALID_NESTED_DEPTH_CLAUSE = "Clause Exceeds Maximum Number of Nested Logic Levels (10).";
+	
+	/** The clause work space invalid nested clause. */
+	private final String CLAUSE_WORK_SPACE_INVALID_LOGICAL_OPERATOR = "Any logical operator under a top-level logical operator must contain at least one logical operator or clause. " +
+			"                         Any terminal logical operator under a top-level logical operator must contain at least one clause.";
 	/**
 	 * Gets the component measures added successfully.
 	 *
@@ -2349,8 +2356,23 @@ public class MessageDelegate {
 	public String getWARNING_MEASURE_PACKAGE_CREATION_STRATA() {
 		return WARNING_MEASURE_PACKAGE_CREATION_STRATA;
 	}
-
+	
 	public String getCLAUSE_WORK_SPACE_INVALID_ATTRIBUTE_IN_SAT_ALL_ANY() {
 		return CLAUSE_WORK_SPACE_INVALID_ATTRIBUTE_IN_SAT_ALL_ANY;
+	}
+	
+	public String getCLAUSE_WORK_SPACE_INVALID_LOGICAL_OPERATOR() {
+		return CLAUSE_WORK_SPACE_INVALID_LOGICAL_OPERATOR;
+	}
+
+	/**
+	 * @return the cLAUSE_EMPTY
+	 */
+	public String getCLAUSE_EMPTY() {
+		return CLAUSE_EMPTY;
+	}
+	
+	public String getSUCCESSFULLY_MODIFIED_ALL_OIDS() {
+		return SUCCESSFULLY_MODIFIED_ALL_OIDS;
 	}
 }
