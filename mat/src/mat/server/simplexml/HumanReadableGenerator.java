@@ -10,9 +10,11 @@ import java.util.Stack;
 import java.util.TreeMap;
 
 import javax.xml.xpath.XPathExpressionException;
+
 import mat.server.util.XmlProcessor;
 import mat.shared.ConstantMessages;
 import mat.shared.MatConstants;
+
 import org.apache.commons.lang.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -88,6 +90,43 @@ public class HumanReadableGenerator implements MatConstants{
 	/** The initial population hash. */
 	private static Map<String, String> initialPopulationHash = new HashMap<String, String>();
 	
+	/**
+	 * Generate html for measure.
+	 *
+	 * @param measureId the measure id
+	 * @param simpleXmlStr the simple xml str
+	 * @return the string
+	 */
+	public static String generateHTMLForMeasure(String measureId,
+			String simpleXmlStr) {
+		String humanReadableHTML = "";
+		lhsID = new Stack<String>();
+		try {
+			org.jsoup.nodes.Document humanReadableHTMLDocument = HeaderHumanReadableGenerator
+					.generateHeaderHTMLForMeasure(simpleXmlStr);
+			XmlProcessor simpleXMLProcessor = resolveSubTreesInPopulations(simpleXmlStr);
+			if (simpleXMLProcessor == null) {
+				org.jsoup.nodes.Document htmlDocument = createBaseHumanReadableDocument();
+				Element bodyElement = htmlDocument.body();
+				Element mainDivElement = bodyElement.appendElement("div");
+				Element mainListElement = mainDivElement.appendElement(HTML_UL);
+				Element populationListElement = mainListElement
+						.appendElement(HTML_LI);
+				populationListElement
+				.appendText("Human readable encountered problems. "
+						+ "Most likely you have included a clause within clause which is causing an infinite loop.");
+				return htmlDocument.toString();
+			}
+			resolveRemainingSubTreeRefs(simpleXMLProcessor);
+			
+			generateHumanReadable(humanReadableHTMLDocument, simpleXMLProcessor);
+			humanReadableHTML = humanReadableHTMLDocument.toString();
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return humanReadableHTML;
+	}
 	
 	/**
 	 * Generate html for population or subtree.
@@ -1454,8 +1493,9 @@ public class HumanReadableGenerator implements MatConstants{
 			unitValue = attributeNode.getAttributes().getNamedItem("unit")
 					.getNodeValue();
 		}
-		if (unitValue.equals("celsius")) {
-			unitValue = "\u2103";
+		
+		if (unitValue.equals("L")) {
+			unitValue = "Liter";
 		} else if (unitValue.equals("years") || unitValue.equals("year")) {
 			unitValue = "year(s)";
 		} else if (unitValue.equals("month") || unitValue.equals("months")) {
@@ -1490,12 +1530,11 @@ public class HumanReadableGenerator implements MatConstants{
 		
 		String typeAttribute = item.getAttributes().getNamedItem("type")
 				.getNodeValue().toUpperCase();
-		String functionDisplayName = item.getAttributes()
-				.getNamedItem(DISPLAY_NAME).getNodeValue().toUpperCase();
+		String functionDisplayName = item.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue();
 		
 		if (MatConstants.AGE_AT.equalsIgnoreCase(typeAttribute)) {
 			functionDisplayName = item.getAttributes()
-					.getNamedItem(DISPLAY_NAME).getNodeValue().toLowerCase();
+					.getNamedItem(DISPLAY_NAME).getNodeValue();
 		} else if (functionDisplayName.startsWith("AVG")) {
 			functionDisplayName = functionDisplayName.replaceFirst("AVG",
 					"Average") + " of";
@@ -1537,8 +1576,8 @@ public class HumanReadableGenerator implements MatConstants{
 			functionDisplayName = functionDisplayName.replaceFirst(unit,
 					getUnitString(item));
 		}
-		functionDisplayName = StringUtils.capitalize(functionDisplayName
-				.toLowerCase());
+//		functionDisplayName = StringUtils.capitalize(functionDisplayName
+//				.toLowerCase());
 		
 		return functionDisplayName + ": ";
 	}
@@ -1579,44 +1618,6 @@ public class HumanReadableGenerator implements MatConstants{
 	private static void appendStyleNode(Element head) {
 		String styleTagString = MATCssUtil.getCSS();
 		head.append(styleTagString);
-	}
-	
-	/**
-	 * Generate html for measure.
-	 *
-	 * @param measureId the measure id
-	 * @param simpleXmlStr the simple xml str
-	 * @return the string
-	 */
-	public static String generateHTMLForMeasure(String measureId,
-			String simpleXmlStr) {
-		String humanReadableHTML = "";
-		lhsID = new Stack<String>();
-		try {
-			org.jsoup.nodes.Document humanReadableHTMLDocument = HeaderHumanReadableGenerator
-					.generateHeaderHTMLForMeasure(simpleXmlStr);
-			XmlProcessor simpleXMLProcessor = resolveSubTreesInPopulations(simpleXmlStr);
-			if (simpleXMLProcessor == null) {
-				org.jsoup.nodes.Document htmlDocument = createBaseHumanReadableDocument();
-				Element bodyElement = htmlDocument.body();
-				Element mainDivElement = bodyElement.appendElement("div");
-				Element mainListElement = mainDivElement.appendElement(HTML_UL);
-				Element populationListElement = mainListElement
-						.appendElement(HTML_LI);
-				populationListElement
-				.appendText("Human readable encountered problems. "
-						+ "Most likely you have included a clause within clause which is causing an infinite loop.");
-				return htmlDocument.toString();
-			}
-			resolveRemainingSubTreeRefs(simpleXMLProcessor);
-			
-			generateHumanReadable(humanReadableHTMLDocument, simpleXMLProcessor);
-			humanReadableHTML = humanReadableHTMLDocument.toString();
-		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return humanReadableHTML;
 	}
 	
 	/**
@@ -2067,12 +2068,12 @@ public class HumanReadableGenerator implements MatConstants{
 				simpleXMLProcessor.getOriginalDoc(),
 				"/measure/measureGrouping/group");
 		
-		TreeMap<String, Node> groupMap = new TreeMap<String, Node>();
+		TreeMap<Integer, Node> groupMap = new TreeMap<Integer, Node>();
 		
 		for (int i = 0; i < groupNodeList.getLength(); i++) {
 			Node measureGroupingNode = groupNodeList.item(i);
 			String key = measureGroupingNode.getAttributes().getNamedItem("sequence").getNodeValue();
-			groupMap.put(key, measureGroupingNode);
+			groupMap.put(Integer.parseInt(key), measureGroupingNode);
 		}
 		
 //		for (int i = 0; i < groupNodeList.getLength(); i++) {
@@ -2089,14 +2090,14 @@ public class HumanReadableGenerator implements MatConstants{
 //					groupNodeList.getLength(), i, simpleXMLProcessor);
 //		}
 		
-		for (String key : groupMap.keySet()) {
+		for (Integer key : groupMap.keySet()) {
 			if (groupMap.size() > 1) {
 				mainListElement.append("<li style=\"list-style: none;\"><br><b>------ Population Criteria "
-						+ (key) + " ------</b><br><br></li>");
+						+ (key.toString()) + " ------</b><br><br></li>");
 			}
 			NodeList clauseNodeList = groupMap.get(key).getChildNodes();
 			generatePopulationNodes(clauseNodeList, mainListElement,
-					groupNodeList.getLength(),Integer.parseInt(key), simpleXMLProcessor);
+					groupNodeList.getLength(),key, simpleXMLProcessor);
 		}
 	}
 	

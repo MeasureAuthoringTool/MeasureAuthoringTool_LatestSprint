@@ -26,7 +26,7 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 	/** The clause logic map. */
 	private Map<String, Node> clauseLogicMap = new HashMap<String, Node>();
 	/** The measure grouping map. */
-	private TreeMap<String, NodeList> measureGroupingMap = new TreeMap<String, NodeList>();
+	private TreeMap<Integer, NodeList> measureGroupingMap = new TreeMap<Integer, NodeList>();
 	/** The elementRefList. */
 	//private List<Node> elementRefList;
 	/** The MeasureExport object. */
@@ -106,7 +106,7 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 	 * @throws XPathExpressionException - Exception
 	 */
 	private void generateMeasureObSection(MeasureExport me) throws XPathExpressionException {
-		for (String key : measureGroupingMap.keySet()) {
+		for (Integer key : measureGroupingMap.keySet()) {
 			NodeList groupingChildList = measureGroupingMap.get(key);
 			for (int i = 0; i < groupingChildList.getLength(); i++) {
 				String popType = groupingChildList.item(i).getAttributes().getNamedItem(TYPE).getNodeValue();
@@ -268,6 +268,11 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 			String nodeName = node.getNodeName();
 			if ("subTree".equals(nodeName)) {
 				displayName = node.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue();
+				if (node.getAttributes().getNamedItem("qdmVariable") != null) {
+					if (node.getAttributes().getNamedItem("qdmVariable").getNodeValue().equalsIgnoreCase("true")) {
+						displayName = "qdm_var_" + displayName.replace("$", "");
+					}
+				}
 			} else {
 				displayName = findSubTreeDisplayName(node.getParentNode());
 			}
@@ -869,7 +874,7 @@ public class HQMFMeasureObservationLogicGenerator extends HQMFClauseLogicGenerat
 		for (int i = 0; i < measureGroupings.getLength(); i++) {
 			String measureGroupingSequence = measureGroupings.item(i).getAttributes().getNamedItem("sequence").getNodeValue();
 			NodeList childNodeList = measureGroupings.item(i).getChildNodes();
-			measureGroupingMap.put(measureGroupingSequence, childNodeList);
+			measureGroupingMap.put(Integer.parseInt(measureGroupingSequence), childNodeList);
 		}
 	}
 }
