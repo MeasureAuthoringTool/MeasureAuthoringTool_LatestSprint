@@ -438,7 +438,7 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 	
 	/** The is modfied. */
 	private boolean isModified = false;
-	
+		
 	/** The modify value set dto. */
 	private QualityDataSetDTO modifyValueSetDTO;
 	
@@ -1376,8 +1376,15 @@ public class QDMAppliedSelectionPresenter implements MatPresenter {
 			@Override
 			public void onSuccess(Void result) {
 				getAppliedQDMList(true);
+				CustomCheckBox chkBox = (CustomCheckBox)searchDisplay.getDefaultExpIDInput();
+				if (!chkBox.getValue()) {
+				searchDisplay.getSuccessMessageDisplay().setMessage(MatContext.get()
+						.getMessageDelegate().getDefaultExpansionIdRemovedMessage());
+
+				} else {
 				searchDisplay.getSuccessMessageDisplay().setMessage(MatContext.get()
 						.getMessageDelegate().getVsacProfileAppliedToQdmElements());
+				}
 			}
 			
 			@Override
