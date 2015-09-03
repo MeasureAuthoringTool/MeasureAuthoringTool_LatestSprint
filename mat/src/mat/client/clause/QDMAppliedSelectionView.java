@@ -69,12 +69,18 @@ import com.google.gwt.view.client.MultiSelectionModel;
 import com.google.gwt.view.client.SelectionChangeEvent;
 import com.google.gwt.view.client.SingleSelectionModel;
 
+
+
+
 // TODO: Auto-generated Javadoc
 /**
  * The Class QDMAppliedSelectionView.
  */
 public class QDMAppliedSelectionView implements QDMAppliedSelectionPresenter.SearchDisplay,
 HasSelectionHandlers<Boolean> {
+	
+	static final String GROUPING_QDM = " (G)";
+	static final String EXTENSIONAL_QDM = " (E)";
 	
 	/**
 	 * The Interface Observer.
@@ -623,17 +629,27 @@ HasSelectionHandlers<Boolean> {
 				@Override
 				public SafeHtml getValue(QualityDataSetDTO object) {
 					StringBuilder title = new StringBuilder();
-					String value = null;
+					StringBuilder value = new StringBuilder();
+					String qdmType = new String();
+					// if the QDM element is not user defined, add (G) for Grouping or (E) for extensional.
+					if (!object.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)) {
+						if (object.getTaxonomy().equalsIgnoreCase("Grouping")) {
+							qdmType = GROUPING_QDM;
+						} else {
+							qdmType = EXTENSIONAL_QDM;
+						}
+					}
 					if ((object.getOccurrenceText() != null)
 							&& !object.getOccurrenceText().equals("")) {
-						value = object.getOccurrenceText() + " of "
-								+ object.getCodeListName();
+						value = value.append(object.getOccurrenceText() + " of "
+								+ object.getCodeListName()).append(qdmType);
 						title = title.append("Name : ").append(value);
 					} else {
-						value = object.getCodeListName();
+						value = value.append(object.getCodeListName()).append(qdmType);
 						title = title.append("Name : ").append(value);
 					}
-					return CellTableUtility.getColumnToolTip(value,
+					title.append("");
+					return CellTableUtility.getColumnToolTip(value.toString(),
 							title.toString());
 				}
 			};

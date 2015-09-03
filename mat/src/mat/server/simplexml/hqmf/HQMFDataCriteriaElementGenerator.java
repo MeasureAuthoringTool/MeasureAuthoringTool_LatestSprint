@@ -23,6 +23,8 @@ import org.w3c.dom.NodeList;
  * The Class HQMFDataCriteriaGenerator.
  */
 public class HQMFDataCriteriaElementGenerator implements Generator {
+	
+	
 	/** The occurrence map. */
 	private Map<String, Node> occurrenceMap = new HashMap<String, Node>();
 	
@@ -820,7 +822,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 						dataCriteriaXMLProcessor, simpleXmlprocessor, attributeQDMNode);
 			}
 			dataCriteriaSectionElem.appendChild(entryElem);
-			addCommentNode(dataCriteriaXMLProcessor, entryCommentText, entryElem);
+			//addCommentNode(dataCriteriaXMLProcessor, entryCommentText, entryElem);
 		}
 		
 	}
@@ -1137,7 +1139,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			Node childNode = subTemplateNodeChilds.item(i);
 			Node nodeToAttach = dataCriteriaXMLProcessor.getOriginalDoc().importNode(childNode, true);
 			XmlProcessor.clean(nodeToAttach);
-			dataCriteriaElem.appendChild(nodeToAttach);
+			checkIfOutBoundOcc(dataCriteriaElem, nodeToAttach);
 		}
 	}
 	
@@ -1187,7 +1189,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			Node childNode = subTemplateNodeChilds.item(i);
 			Node nodeToAttach = dataCriteriaXMLProcessor.getOriginalDoc().importNode(childNode, true);
 			XmlProcessor.clean(nodeToAttach);
-			dataCriteriaElem.appendChild(nodeToAttach);
+			checkIfOutBoundOcc(dataCriteriaElem, nodeToAttach);
 		}
 		Element timeNode = dataCriteriaXMLProcessor.getOriginalDoc().createElement(TIME);
 		generateDateTimeAttributesTag(timeNode, attrNode, dataCriteriaElem, dataCriteriaXMLProcessor, isOrder);
@@ -1334,6 +1336,30 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 						attribute.setNodeValue("ANY.NONNULL");
 						attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(attribute);
 					} else if (VALUE_SET.equalsIgnoreCase(attrMode)) {
+						String version = attrNode.getAttributes().getNamedItem("version")
+								.getNodeValue();
+						boolean addVersionToValueTag = false;
+						if ("1.0".equals(version) || "1".equals(version)) {
+							if (attrNode.getAttributes().getNamedItem("expansionIdentifier") != null) {
+								version = "vsac:profile:" + attrNode.getAttributes().getNamedItem("expansionIdentifier").getNodeValue();
+								addVersionToValueTag = true;
+							} else {
+								addVersionToValueTag = false;
+							}
+						} else {
+							addVersionToValueTag = true;
+							version = "vsac:version:" + attrNode.getAttributes().getNamedItem("version")
+									.getNodeValue();
+						}
+						if(addVersionToValueTag){
+							Attr valuesetVersionAttr = attributedToBeChangedInNode.item(0).getOwnerDocument().createAttribute("valueSetVersion");
+							valuesetVersionAttr.setNodeValue(version);
+							attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(valuesetVersionAttr);
+						} else {
+							if(attributedToBeChangedInNode.item(0).getAttributes().getNamedItem("valueSetVersion") != null) {
+								attributedToBeChangedInNode.item(0).getAttributes().removeNamedItem("valueSetVersion");
+							}
+						}
 						if (attributedToBeChangedInNode.item(0).hasAttributes()) {
 							((Element) attributedToBeChangedInNode.item(0)).removeAttribute("flavorId");
 						}
@@ -1362,7 +1388,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			Node childNode = subTemplateNode.getChildNodes().item(i);
 			Node nodeToAttach = dataCriteriaXMLProcessor.getOriginalDoc().importNode(childNode, true);
 			XmlProcessor.clean(nodeToAttach);
-			dataCriteriaElem.appendChild(nodeToAttach);
+			checkIfOutBoundOcc(dataCriteriaElem, nodeToAttach);
 		}
 	}
 	/**
@@ -1416,7 +1442,11 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		} else if (attributeName.equalsIgnoreCase(INCISION_DATETIME)) {
 			generateIncisionDateTimeTypeAttributes(qdmNode, dataCriteriaElem,
 					dataCriteriaXMLProcessor, simpleXmlprocessor, attributeQDMNode);
-		}else if (VALUE_SET.equals(attributeMode)
+		} else if (attributeName.equalsIgnoreCase(PRINCIPAL_DIAGNOSIS)
+				|| attributeName.equalsIgnoreCase(DIAGNOSIS)) {
+			generatePrincipalAndDiagnosisAttributes(qdmNode, dataCriteriaElem,
+					dataCriteriaXMLProcessor, simpleXmlprocessor, attributeQDMNode);
+		} else if (VALUE_SET.equals(attributeMode)
 				|| CHECK_IF_PRESENT.equals(attributeMode)
 				|| attributeMode.startsWith(LESS_THAN)
 				|| attributeMode.startsWith(GREATER_THAN)
@@ -1426,6 +1456,8 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 					dataCriteriaXMLProcessor, simpleXmlprocessor, attributeQDMNode);
 		}
 	}
+	
+	
 	
 	/**
 	 * Generate dose type attributes.
@@ -1447,11 +1479,11 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		Node attrVersion = attributeQDMNode.getAttributes().getNamedItem("version");
 		boolean isLengthOfStayValueSet = false;
 		XmlProcessor templateXMLProcessor = TemplateXMLSingleton.getTemplateXmlProcessor();
-		Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/template[text()='"
+		Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/AttrTemplate[text()='"
 				+ attrName.toLowerCase() + "']");
 		Node targetNode = templateNode.getAttributes().getNamedItem("target");
 		Element targetQuantityTag = null;
-		if (targetNode!=null) {
+		if (targetNode != null) {
 			targetQuantityTag = dataCriteriaElem.getOwnerDocument().createElement(targetNode.getNodeValue());
 		}
 		Node unitAttrib = attributeQDMNode.getAttributes().getNamedItem("unit");
@@ -1487,16 +1519,19 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 				}
 				Element displayNameElem = dataCriteriaXMLProcessor.getOriginalDoc()
 						.createElement(DISPLAY_NAME);
-				String newQdmName = HQMFDataCriteriaGenerator.removeOccurrenceFromName(attributeQDMNode.getAttributes().getNamedItem(NAME).getNodeValue());
-				displayNameElem.setAttribute(VALUE, newQdmName
-						+ " " + attributeQDMNode.getAttributes().getNamedItem(TAXONOMY).getNodeValue() + " Value Set");
+				String newQdmName = HQMFDataCriteriaGenerator.removeOccurrenceFromName(attributeQDMNode.
+						getAttributes().getNamedItem(NAME).getNodeValue());
+				displayNameElem.setAttribute(VALUE, newQdmName + " "
+						+ attributeQDMNode.getAttributes().getNamedItem(TAXONOMY).getNodeValue() + " Value Set");
 				translationNode.appendChild(displayNameElem);
 				targetQuantityTag.appendChild(translationNode);
 			}
-		} else if(attrMode.startsWith(Generator.LESS_THAN) || attrMode.startsWith(Generator.GREATER_THAN) || attrMode.equals(Generator.EQUAL_TO)){
-			if(attrMode.equals(Generator.EQUAL_TO)){
-				targetQuantityTag.setAttribute("value", attributeQDMNode.getAttributes().getNamedItem("comparisonValue").getNodeValue());
-				if(unitAttrib!=null){
+		} else if (attrMode.startsWith(Generator.LESS_THAN) || attrMode.startsWith(Generator.GREATER_THAN)
+				|| attrMode.equals(Generator.EQUAL_TO)) {
+			if (attrMode.equals(Generator.EQUAL_TO)) {
+				targetQuantityTag.setAttribute("value", attributeQDMNode.getAttributes().
+						getNamedItem("comparisonValue").getNodeValue());
+				if (unitAttrib != null) {
 					targetQuantityTag.setAttribute("unit", getUnitString(unitAttrib.getNodeValue()));
 				}
 			} else if(attrMode.startsWith(Generator.LESS_THAN)){
@@ -1505,9 +1540,9 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 					uncertainRangeNode.setAttribute("highClosed", "false");
 				}
 				Element lowNode = dataCriteriaElem.getOwnerDocument().createElement(LOW);
-				if(attrName.equalsIgnoreCase(LENGTH_OF_STAY)){
-					lowNode.setAttribute("xsi:type", "PQ");
-				}
+				/*if(attrName.equalsIgnoreCase(LENGTH_OF_STAY)){*/
+				lowNode.setAttribute("xsi:type", "PQ");
+				//				}
 				lowNode.setAttribute("nullFlavor", "NINF");
 				Element highNode = dataCriteriaElem.getOwnerDocument().createElement(HIGH);
 				highNode.setAttribute("xsi:type", "PQ");
@@ -1532,9 +1567,9 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 					lowNode.setAttribute("unit", getUnitString(unitAttrib.getNodeValue()));
 				}
 				Element highNode = dataCriteriaElem.getOwnerDocument().createElement(HIGH);
-				if(attrName.equalsIgnoreCase(LENGTH_OF_STAY)){
-					highNode.setAttribute("xsi:type", "PQ");
-				}
+				//if(attrName.equalsIgnoreCase(LENGTH_OF_STAY)){
+				highNode.setAttribute("xsi:type", "PQ");
+				//}
 				highNode.setAttribute("nullFlavor", "PINF");
 				uncertainRangeNode.appendChild(lowNode);
 				uncertainRangeNode.appendChild(highNode);
@@ -1549,15 +1584,15 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 					outBoundElement.getParentNode().insertBefore(targetQuantityTag, outBoundElement);
 				} else {
 					if(!isLengthOfStayValueSet){
-						dataCriteriaElem.appendChild(targetQuantityTag);
+						checkIfOutBoundOcc(dataCriteriaElem, targetQuantityTag);
 					}
 				}
 			} else {
-				dataCriteriaElem.appendChild(targetQuantityTag);
+				checkIfOutBoundOcc(dataCriteriaElem, targetQuantityTag);
 			}
 		} else {
 			if(!isLengthOfStayValueSet){
-				dataCriteriaElem.appendChild(targetQuantityTag);
+				checkIfOutBoundOcc(dataCriteriaElem, targetQuantityTag);
 			}
 		}
 		
@@ -1576,7 +1611,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 	protected void generateFacilityLocationTypeAttributes(Node qdmNode, Element dataCriteriaElem, XmlProcessor dataCriteriaXMLProcessor, XmlProcessor simpleXmlprocessor, Node attributeQDMNode) throws XPathExpressionException {
 		String attributeName = (String) attributeQDMNode.getUserData(ATTRIBUTE_NAME);
 		XmlProcessor templateXMLProcessor = TemplateXMLSingleton.getTemplateXmlProcessor();
-		Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/template[text()='"
+		Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/AttrTemplate[text()='"
 				+ attributeName.toLowerCase() + "']");
 		if(templateNode == null){
 			return;
@@ -1602,7 +1637,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			XmlProcessor simpleXmlprocessor, Node attributeQDMNode) throws XPathExpressionException {
 		String attributeName = (String) attributeQDMNode.getUserData(ATTRIBUTE_NAME);
 		XmlProcessor templateXMLProcessor = TemplateXMLSingleton.getTemplateXmlProcessor();
-		Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/template[text()='"
+		Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/AttrTemplate[text()='"
 				+ attributeName.toLowerCase() + "']");
 		if(templateNode == null){
 			return;
@@ -1661,7 +1696,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			String attribUUID = (String)attributeQDMNode.getUserData(ATTRIBUTE_UUID);
 			
 			XmlProcessor templateXMLProcessor = TemplateXMLSingleton.getTemplateXmlProcessor();
-			Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/template[text()='"
+			Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/AttrTemplate[text()='"
 					+ attrName + "']");
 			logger.info("----------");
 			logger.info(attributeQDMNode.getNodeName());
@@ -1736,6 +1771,143 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		}
 	}
 	
+	protected void generatePrincipalAndDiagnosisAttributes(Node qdmNode, Element dataCriteriaElem,
+			XmlProcessor dataCriteriaXMLProcessor, XmlProcessor simpleXmlprocessor, Node attributeQDMNode) throws XPathExpressionException {
+		String attrName = (String) attributeQDMNode.getUserData(ATTRIBUTE_NAME);
+		String attrMode = (String) attributeQDMNode.getUserData(ATTRIBUTE_MODE);
+		
+		XmlProcessor templateXMLProcessor = TemplateXMLSingleton.getTemplateXmlProcessor();
+		Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/AttrTemplate[text()='"
+				+ attrName.toLowerCase() + "']");
+		if (templateNode == null) {
+			return;
+		} else {
+			Element outboundRelationshipElem = null;
+			Element actCriteriaElem = null;
+			outboundRelationshipElem = dataCriteriaXMLProcessor.getOriginalDoc()
+					.createElement(OUTBOUND_RELATIONSHIP);
+			outboundRelationshipElem.setAttribute(TYPE_CODE, templateNode.getAttributes().getNamedItem(TYPE).getNodeValue());
+			actCriteriaElem = dataCriteriaXMLProcessor.getOriginalDoc()
+					.createElement("actCriteria");
+			actCriteriaElem.setAttribute(CLASS_CODE, templateNode.getAttributes().getNamedItem(CLASS).getNodeValue());
+			actCriteriaElem.setAttribute(MOOD_CODE, templateNode.getAttributes().getNamedItem(MOOD).getNodeValue());
+			Element idElem = dataCriteriaXMLProcessor.getOriginalDoc()
+					.createElement(ID);
+			idElem.setAttribute(ROOT, UUIDUtilClient.uuid());
+			idElem.setAttribute("extension", UUIDUtilClient.uuid());
+			actCriteriaElem.appendChild(idElem);
+			Element codeElem = createCodeForDatatype(templateNode, dataCriteriaXMLProcessor);
+			actCriteriaElem.appendChild(codeElem);
+			Element titleElem = dataCriteriaXMLProcessor.getOriginalDoc()
+					.createElement(TITLE);
+			titleElem.setAttribute(VALUE, "Encounter " + attrName);
+			actCriteriaElem.appendChild(titleElem);
+			
+			outboundRelationshipElem.appendChild(actCriteriaElem);
+			
+			String subTemplateName = templateNode.getAttributes().getNamedItem("includeSubTemplate").getNodeValue();
+			Node  subTemplateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/subtemplates/"
+					+ subTemplateName);
+			NodeList subTemplateNodeChilds = templateXMLProcessor.findNodeList(templateXMLProcessor.getOriginalDoc(), "/templates/subtemplates/"
+					+ subTemplateName + "/child::node()");
+			
+			if (subTemplateNode.getAttributes().getNamedItem("changeAttribute") != null) {
+				String[] attributeToBeModified = subTemplateNode.getAttributes().
+						getNamedItem("changeAttribute").getNodeValue().split(",");
+				for (String changeAttribute : attributeToBeModified) {
+					NodeList  attributedToBeChangedInNode = null;
+					attributedToBeChangedInNode = templateXMLProcessor.findNodeList(templateXMLProcessor.getOriginalDoc()
+							, "/templates/subtemplates/" + subTemplateName + "//" + changeAttribute);
+					if (changeAttribute.equalsIgnoreCase(ID)) {
+						String rootId = qdmNode.getAttributes().getNamedItem("uuid").getNodeValue();
+						attributedToBeChangedInNode.item(0).getAttributes().getNamedItem("root").
+						setNodeValue(rootId);
+						attributedToBeChangedInNode.item(0).getAttributes().getNamedItem("extension").
+						setNodeValue(UUIDUtilClient.uuid());
+					} else if (changeAttribute.equalsIgnoreCase(VALUE)) {
+						if (CHECK_IF_PRESENT.equals(attrMode)) {
+							if (attributedToBeChangedInNode.item(0).hasAttributes()) {
+								if (attributedToBeChangedInNode.item(0).hasAttributes()) {
+									((Element) attributedToBeChangedInNode.item(0)).removeAttribute("valueSet");
+									((Element) attributedToBeChangedInNode.item(0)).removeAttribute("flavorId");
+									((Element) attributedToBeChangedInNode.item(0)).removeAttribute("xsi:type");
+								}
+							}
+							if (attributedToBeChangedInNode.item(0).hasChildNodes()) {
+								attributedToBeChangedInNode.item(0).removeChild(
+										attributedToBeChangedInNode.item(0).getFirstChild());
+							}
+							Attr attribute = attributedToBeChangedInNode.item(0).getOwnerDocument().createAttribute("flavorId");
+							attribute.setNodeValue("ANY.NONNULL");
+							attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(attribute);
+							
+							Attr attributeXSIType = attributedToBeChangedInNode.item(0).getOwnerDocument().createAttribute("xsi:type");
+							attributeXSIType.setNodeValue("ANY");
+							attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(attributeXSIType);
+						} else if (VALUE_SET.equalsIgnoreCase(attrMode)) {
+							String version = attributeQDMNode.getAttributes().getNamedItem("version")
+									.getNodeValue();
+							boolean addVersionToValueTag = false;
+							if ("1.0".equals(version) || "1".equals(version)) {
+								if (attributeQDMNode.getAttributes().getNamedItem("expansionIdentifier") != null) {
+									version = "vsac:profile:" + attributeQDMNode.getAttributes().getNamedItem("expansionIdentifier").getNodeValue();
+									addVersionToValueTag = true;
+								} else {
+									addVersionToValueTag = false;
+								}
+							} else {
+								addVersionToValueTag = true;
+								version = "vsac:version:" + attributeQDMNode.getAttributes().getNamedItem("version")
+										.getNodeValue();
+							}
+							if(addVersionToValueTag){
+								Attr valuesetVersionAttr = attributedToBeChangedInNode.item(0).getOwnerDocument().createAttribute("valueSetVersion");
+								valuesetVersionAttr.setNodeValue(version);
+								attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(valuesetVersionAttr);
+							} else {
+								if(attributedToBeChangedInNode.item(0).getAttributes().getNamedItem("valueSetVersion") != null) {
+									attributedToBeChangedInNode.item(0).getAttributes().removeNamedItem("valueSetVersion");
+								}
+							}
+							if (attributedToBeChangedInNode.item(0).hasAttributes()) {
+								((Element)attributedToBeChangedInNode.item(0)).removeAttribute("valueSet");
+								((Element) attributedToBeChangedInNode.item(0)).removeAttribute("flavorId");
+								((Element)attributedToBeChangedInNode.item(0)).removeAttribute("xsi:type");
+							}
+							if (attributedToBeChangedInNode.item(0).hasChildNodes()) {
+								((Element) attributedToBeChangedInNode.item(0)).removeChild(attributedToBeChangedInNode.item(0).getFirstChild());
+							}
+							String attributeValueSetName =attributeQDMNode.getAttributes()
+									.getNamedItem(NAME).getNodeValue();
+							String attributeOID = attributeQDMNode.getAttributes()
+									.getNamedItem(OID).getNodeValue();
+							String attributeTaxonomy = attributeQDMNode.getAttributes()
+									.getNamedItem(TAXONOMY).getNodeValue();
+							Attr attribute = attributedToBeChangedInNode.item(0).getOwnerDocument().createAttribute("valueSet");
+							attribute.setNodeValue(attributeOID);
+							attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(attribute);
+							Attr attributeXSIType = attributedToBeChangedInNode.item(0).getOwnerDocument().createAttribute("xsi:type");
+							attributeXSIType.setNodeValue("CD");
+							attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(attributeXSIType);
+							Element valueDisplayNameElem = attributedToBeChangedInNode.item(0).getOwnerDocument()
+									.createElement(DISPLAY_NAME);
+							valueDisplayNameElem.setAttribute(VALUE, HQMFDataCriteriaGenerator.removeOccurrenceFromName(attributeValueSetName)+" "+attributeTaxonomy+" Value Set");
+							attributedToBeChangedInNode.item(0).appendChild(valueDisplayNameElem);
+							
+						}
+					}
+				}
+			}
+			for (int i = 0; i < subTemplateNodeChilds.getLength(); i++) {
+				Node childNode = subTemplateNodeChilds.item(i);
+				Node nodeToAttach = dataCriteriaXMLProcessor.getOriginalDoc().importNode(childNode, true);
+				XmlProcessor.clean(nodeToAttach);
+				actCriteriaElem.appendChild(nodeToAttach);
+			}
+			
+			dataCriteriaElem.appendChild(outboundRelationshipElem);
+		}
+	}
 	/**
 	 * Generate other attribute entries.
 	 *
@@ -1761,11 +1933,11 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 				|| "Risk Category Assessment".equalsIgnoreCase(qdmName));
 		
 		XmlProcessor templateXMLProcessor = TemplateXMLSingleton.getTemplateXmlProcessor();
-		Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/template[text()='"
+		Node templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/AttrTemplate[text()='"
 				+ attrName.toLowerCase() + "']");
 		boolean isRadiation = false;
 		if (templateNode == null) {
-			templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/template[text()='"
+			templateNode = templateXMLProcessor.findNode(templateXMLProcessor.getOriginalDoc(), "/templates/AttrTemplate[text()='"
 					+ attrName.toLowerCase() + "-" + attrMode.toLowerCase() + "']");
 			if (templateNode == null) {
 				return;
@@ -1922,7 +2094,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 				repeatNumberElement.setAttribute("xsi:type", "ANY");
 			}
 			repeatNumberElement.setAttribute(FLAVOR_ID, "ANY.NONNULL");
-			dataCriteriaElem.appendChild(repeatNumberElement);
+			checkIfOutBoundOcc(dataCriteriaElem, repeatNumberElement);
 		}  else if (EQUAL_TO.equals(attrMode) || attrMode.startsWith(LESS_THAN) || attrMode.startsWith(GREATER_THAN)) {
 			if(elementNameToCreate.equalsIgnoreCase(VALUE)){
 				repeatNumberElement.setAttribute("xsi:type", "IVL_PQ");
@@ -1940,7 +2112,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 				}
 				repeatNumberElement.appendChild(lowElem);
 				repeatNumberElement.appendChild(highElem);
-				dataCriteriaElem.appendChild(repeatNumberElement);
+				checkIfOutBoundOcc(dataCriteriaElem, repeatNumberElement);
 			} else if(attrMode.startsWith(GREATER_THAN)) {
 				if (attrMode.equals(GREATER_THAN)) {
 					repeatNumberElement.setAttribute("lowClosed", "false");
@@ -1955,7 +2127,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 				}
 				
 				repeatNumberElement.appendChild(highElem);
-				dataCriteriaElem.appendChild(repeatNumberElement);
+				checkIfOutBoundOcc(dataCriteriaElem, repeatNumberElement);
 			}else if(attrMode.startsWith(LESS_THAN)){
 				if(attrMode.equals(LESS_THAN)){
 					repeatNumberElement.setAttribute("highClosed", "false");
@@ -1969,7 +2141,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 					highElem.setAttribute("unit", getUnitString(unitAttrib.getNodeValue()));
 				}
 				repeatNumberElement.appendChild(highElem);
-				dataCriteriaElem.appendChild(repeatNumberElement);
+				checkIfOutBoundOcc(dataCriteriaElem, repeatNumberElement);
 			}
 		}
 	}
@@ -1989,7 +2161,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 				.createElement("dischargeDispositionCode");
 		if (CHECK_IF_PRESENT.equalsIgnoreCase(attrMode)) {
 			dischargeDispositionElement.setAttribute(FLAVOR_ID, "ANY.NONNULL");
-			dataCriteriaElem.appendChild(dischargeDispositionElement);
+			checkIfOutBoundOcc(dataCriteriaElem, dischargeDispositionElement);
 		}  else if (VALUE_SET.equalsIgnoreCase(attrMode)) {
 			String attributeValueSetName = attributeQDMNode.getAttributes()
 					.getNamedItem(NAME).getNodeValue();
@@ -2004,7 +2176,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 					.createElement(DISPLAY_NAME);
 			valueDisplayNameElem.setAttribute(VALUE, HQMFDataCriteriaGenerator.removeOccurrenceFromName(attributeValueSetName)+" "+attributeTaxonomy+" Value Set");
 			dischargeDispositionElement.appendChild(valueDisplayNameElem);
-			dataCriteriaElem.appendChild(dischargeDispositionElement);
+			checkIfOutBoundOcc(dataCriteriaElem, dischargeDispositionElement);
 		}
 	}
 	
@@ -2200,44 +2372,28 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 					+ " " + attributeQDMNode.getAttributes().getNamedItem(TAXONOMY).getNodeValue() + " Value Set");
 			valueElem.appendChild(displayNameElem);
 			targetSiteCodeElement.appendChild(valueElem);
-			if (insertBeforeNodeName != null) {
+			if (insertBeforeNodeName != null && dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0)!=null) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0);
-				if (outBoundElement != null) {
-					Node parentOfOutBoundElement = outBoundElement.getParentNode();
-					parentOfOutBoundElement.insertBefore(targetSiteCodeElement, outBoundElement);
-				} else {
-					dataCriteriaElem.appendChild(targetSiteCodeElement);
-				}
-			} else if (insertAfterNodeName != null) {
+				Node parentOfOutBoundElement = outBoundElement.getParentNode();
+				parentOfOutBoundElement.insertBefore(targetSiteCodeElement, outBoundElement);
+			} else if (insertAfterNodeName != null && dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0)!=null) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0).getNextSibling();
-				if (outBoundElement != null) {
-					outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
-				} else {
-					dataCriteriaElem.appendChild(targetSiteCodeElement);
-				}
+				outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
 			} else {
-				dataCriteriaElem.appendChild(targetSiteCodeElement);
+				checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
 			}
 		} else if (templateNode.getAttributes().getNamedItem(FLAVOR_ID) != null) {
 			String flavorIdValue = templateNode.getAttributes().getNamedItem(FLAVOR_ID).getNodeValue();
 			targetSiteCodeElement.setAttribute(FLAVOR_ID, flavorIdValue);
-			if (insertBeforeNodeName != null) {
+			if (insertBeforeNodeName != null && dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0)!=null) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0);
-				if (outBoundElement != null) {
-					Node parentOfOutBoundElement = outBoundElement.getParentNode();
-					parentOfOutBoundElement.insertBefore(targetSiteCodeElement, outBoundElement);
-				} else {
-					dataCriteriaElem.appendChild(targetSiteCodeElement);
-				}
-			} else if (insertAfterNodeName != null) {
+				Node parentOfOutBoundElement = outBoundElement.getParentNode();
+				parentOfOutBoundElement.insertBefore(targetSiteCodeElement, outBoundElement);
+			} else if (insertAfterNodeName != null && dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0)!=null) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0).getNextSibling();
-				if (outBoundElement != null) {
-					outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
-				} else {
-					dataCriteriaElem.appendChild(targetSiteCodeElement);
-				}
+				outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
 			} else {
-				dataCriteriaElem.appendChild(targetSiteCodeElement);
+				checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
 			}
 		} else if (templateNode.getAttributes().getNamedItem("addValueSet") != null) {
 			String qdmOidValue = attributeQDMNode.getAttributes().getNamedItem(OID)
@@ -2250,16 +2406,12 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			displayNameElem.setAttribute(VALUE, newQdmName
 					+ " " + attributeQDMNode.getAttributes().getNamedItem(TAXONOMY).getNodeValue() + " Value Set");
 			targetSiteCodeElement.appendChild(displayNameElem);
-			if (insertBeforeNodeName != null) {
+			if (insertBeforeNodeName != null && dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0)!=null) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0);
-				if (outBoundElement != null) {
-					Node parentOfOutBoundElement = outBoundElement.getParentNode();
-					parentOfOutBoundElement.insertBefore(targetSiteCodeElement, outBoundElement);
-				} else {
-					dataCriteriaElem.appendChild(targetSiteCodeElement);
-				}
+				Node parentOfOutBoundElement = outBoundElement.getParentNode();
+				parentOfOutBoundElement.insertBefore(targetSiteCodeElement, outBoundElement);
 			} else {
-				dataCriteriaElem.appendChild(targetSiteCodeElement);
+				checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
 			}
 		}
 	}
@@ -2403,7 +2555,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 							dataCriteriaElem.insertBefore(dateTimeNode
 									, statusCodeNodeList.item(0).getNextSibling());
 						} else {
-							dataCriteriaElem.appendChild(dateTimeNode);
+							checkIfOutBoundOcc(dataCriteriaElem, dateTimeNode);
 						}
 					}
 				}
@@ -2428,7 +2580,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 						if ((nodeListParticipation != null) && (nodeListParticipation.getLength() > 0)) {
 							dataCriteriaElem.insertBefore(dateTimeNode, nodeListParticipation.item(0));
 						} else {
-							dataCriteriaElem.appendChild(dateTimeNode);
+							checkIfOutBoundOcc(dataCriteriaElem, dateTimeNode);
 						}
 					}
 				}
@@ -2730,4 +2882,23 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		
 		return returnString;
 	}
+	
+	
+	/**
+	 * Check if out bound is occurrence and append the Attribute entry
+	 * before Temporal and outBoundRelationShip Tag.
+	 *
+	 * @param dataCriteriaElem the data criteria elem
+	 * @param dateTimeNode the date time node
+	 */
+	private void checkIfOutBoundOcc(Element dataCriteriaElem, Node dateTimeNode){
+		Node outBoundOccNode = dataCriteriaElem.getElementsByTagName("outboundRelationship").item(0);
+		if (outBoundOccNode != null && outBoundOccNode.getAttributes().getNamedItem("typeCode")
+				.getNodeValue().equalsIgnoreCase("OCCR")) {
+			dataCriteriaElem.insertBefore(dateTimeNode, outBoundOccNode);
+		} else {
+			dataCriteriaElem.appendChild(dateTimeNode);
+		}
+	}
+	
 }
