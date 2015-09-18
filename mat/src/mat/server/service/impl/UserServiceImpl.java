@@ -614,7 +614,11 @@ public class UserServiceImpl implements UserService {
 	 * @see mat.server.service.UserService#saveExisting(mat.model.User)
 	 */
 	@Override
-	public void saveExisting(User user) {
+	public void saveExisting(User user) throws UserIDNotUnique {
+		/*if(userDAO.userExists(user.getEmailAddress()) && (userDAO.findByEmail(user.getEmailAddress()) != user)) {
+			throw new UserIDNotUnique();
+		}*/
+		//TODO figure out why it's still saving after exception thrown.
 		userDAO.save(user);
 	}
 	
@@ -687,6 +691,7 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public SaveUpdateUserResult saveUpdateUser(ManageUsersDetailModel model) {
 		SaveUpdateUserResult result = new SaveUpdateUserResult();
+		try {
 		User user = null;
 		if(model.isExistingUser()) {
 			user = getById(model.getKey());
@@ -699,15 +704,20 @@ public class UserServiceImpl implements UserService {
 		if(model.isActive() && (user.getStatus()!= null) && !user.getStatus().getId().equals("1")) {
 			reactivatingUser = true;
 		}
-		
+		if(userDAO.userExists(model.getEmailAddress()) && (userDAO.findByEmail(model.getEmailAddress()) != user)) {
+			throw new UserIDNotUnique();
+		}
+
 		setModelFieldsOnUser(model, user);
 		
-		try {
+		
 			if(model.isExistingUser()) {
 				if(reactivatingUser) {
 					requestResetLockedPassword(user.getId());
 				}
+				
 				saveExisting(user);
+			
 			}
 			else {
 				saveNew(user);

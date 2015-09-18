@@ -6,6 +6,16 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import mat.client.login.LoginModel;
 import mat.client.shared.MatContext;
 import mat.dao.UserDAO;
@@ -17,17 +27,8 @@ import mat.server.hibernate.HibernateUserDetailService;
 import mat.server.model.MatUserDetails;
 import mat.server.service.LoginCredentialService;
 import mat.server.service.SecurityQuestionsService;
+import mat.server.service.UserIDNotUnique;
 import mat.server.service.UserService;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextImpl;
-import org.springframework.security.core.userdetails.UserDetails;
 
 // TODO: Auto-generated Javadoc
 /** The Class LoginCredentialServiceImpl. */
@@ -68,6 +69,9 @@ public class LoginCredentialServiceImpl implements LoginCredentialService {
 		user.getPassword().setInitial(false);
 		logger.info("Saving security questions");
 		List<UserSecurityQuestion> secQuestions = user.getSecurityQuestions();
+		for (UserSecurityQuestion question: secQuestions) {
+			logger.info("Question ID: " +  question.getSecurityQuestionId()  + "Question Answer: " + question.getSecurityAnswer());
+		}
 		while (secQuestions.size() < 3) {
 			UserSecurityQuestion newQuestion = new UserSecurityQuestion();
 			secQuestions.add(newQuestion);
@@ -91,7 +95,12 @@ public class LoginCredentialServiceImpl implements LoginCredentialService {
 		secQuestions.get(2).setSecurityQuestions(secQue3);
 		secQuestions.get(2).setSecurityAnswer(model.getQuestion3Answer());
 		user.setSecurityQuestions(secQuestions);
-		userService.saveExisting(user);
+		try {
+			userService.saveExisting(user);
+		} catch (UserIDNotUnique e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		MatUserDetails userDetails = (MatUserDetails) hibernateUserService
 				.loadUserByUsername(user.getLoginId());
 		if (userDetails != null) {
