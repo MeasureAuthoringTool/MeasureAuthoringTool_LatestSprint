@@ -105,6 +105,7 @@ import org.springframework.context.ApplicationContext;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -143,6 +144,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 */
 	private static final String XPATH_EXPRESSION_DEVELOPERS = "/measure//measureDetails//developers";
 		
+	/** The current release version. */
 	private String currentReleaseVersion;
 	
 	/** The is measure created. */
@@ -3385,13 +3387,13 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			List<String> operatorTypeList = getAllOperatorsTypeList();
 			
 			if(usedSubTreeIds.size()>0){
-				
 				for(int k=0; (k < usedSubTreeIds.size()); k++){
 					String usedSubtreeRefId = usedSubTreeIds.get(k);
 					
 					String satisfyFunction = "@type='SATISFIES ALL' or @type='SATISFIES ANY'";
 					String otherThanSatisfyfunction = "@type!='SATISFIES ALL' or @type!='SATISFIES ANY'";
 					String dateTimeDiffFunction = "@type='DATETIMEDIFF'";
+					String qdmVariable = "@qdmVariable='true'";
 					//geting list of IDs
 					String XPATH_QDMELEMENT = "/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//elementRef/@id";
 					//geting Unique Ids only
@@ -3404,6 +3406,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					String XPATH_DATE_TIME_DIFF_ELEMENT = "/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']//functionalOp["+dateTimeDiffFunction+"]";
 					
 					String XPATH_SUBTREE ="//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"']";
+					String XPATH_QDMVARAIBLES = "/measure//subTreeLookUp/subTree[@uuid='"+usedSubtreeRefId+"'and "+qdmVariable+"]";
 					/*System.out.println("MEASURE_XML: "+xmlModel.getXml());*/
 					try {
 						
@@ -3419,6 +3422,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 						NodeList nodeSDE_setoperator =(NodeList) xPath.evaluate(XPATH_SETOPERATOR, xmlProcessor.getOriginalDoc(),
 								XPathConstants.NODESET);
 						NodeList nodeSDE_dateTimeDiffElement =(NodeList) xPath.evaluate(XPATH_DATE_TIME_DIFF_ELEMENT, xmlProcessor.getOriginalDoc(),
+								XPathConstants.NODESET);
+						NodeList nodesSDE_qdmVariables =(NodeList) xPath.evaluate(XPATH_QDMVARAIBLES, xmlProcessor.getOriginalDoc(),
 								XPathConstants.NODESET);
 						Node nodeSubTree =(Node) xPath.evaluate(XPATH_SUBTREE, xmlProcessor.getOriginalDoc(),
 								XPathConstants.NODE);
@@ -3502,13 +3507,14 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 							
 							Node functionsChildNode =nodesSDE_functions.item(n);
 							isInvalid = validateFunctionNode(functionsChildNode, operatorTypeList, isInvalid);
-							if(isInvalid) {
+							
+							if(isInvalid || (usedSubtreeRefIdsMap.get("subTreeIDAtMO").contains(usedSubtreeRefId) && 
+									validateFunctionNodeInMO(functionsChildNode))) {
 								result.setValid(false);
 								message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_GENERIC());
 								result.setValidationMessages(message);
 								return result;
 							}
-							
 						}
 						
 						for (int n = 0; (n < nodeSDE_setoperator.getLength()); n++) {
@@ -3542,8 +3548,32 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 								return result;
 							}
 							
+							//Verifying no datetime dif funcitons are not in riskAdjustmentVariables
+							String RISK_ADJUSTMENT_DATETIMEDIF_RETRIVAL = "/measure/riskAdjustmentVariables/subTreeRef[@id='"+ usedSubtreeRefId +"']";
+							NodeList riskAdjustmentNodes = (NodeList) xPath.evaluate(RISK_ADJUSTMENT_DATETIMEDIF_RETRIVAL, xmlProcessor.getOriginalDoc(),
+									XPathConstants.NODESET);
+							if(riskAdjustmentNodes.getLength() > 0){
+								result.setValid(false);
+								message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_RISK_ADJUSTMENT());
+								result.setValidationMessages(message);
+								return result;
+							}
 							
 						}
+						//verifying no qdm variables are in riskAjustmentVariables
+						for(int p = 0; p<nodesSDE_qdmVariables.getLength(); p++){
+							String nodeUUID = nodesSDE_qdmVariables.item(p).getAttributes().getNamedItem("uuid").getNodeValue();
+							String RISK_ADJUSTMENT_QDM_RETRIVAL = "/measure/riskAdjustmentVariables/subTreeRef[@id='"+ nodeUUID +"']";
+							NodeList riskAdjustmentNodes = (NodeList) xPath.evaluate(RISK_ADJUSTMENT_QDM_RETRIVAL, xmlProcessor.getOriginalDoc(),
+									XPathConstants.NODESET);
+							if(riskAdjustmentNodes.getLength()>0){
+								result.setValid(false);
+								message.add(MatContext.get().getMessageDelegate().getWARNING_MEASURE_PACKAGE_CREATION_RISK_ADJUSTMENT());
+								result.setValidationMessages(message);
+								return result;
+							}
+						}
+						
 						
 					} catch (XPathExpressionException e) {
 						
@@ -3556,6 +3586,22 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		return result;
 	}
 	
+	/**
+	 * Validate function node in measure observation.
+	 *
+	 * @param functionsChildNode the functions child node
+	 * @return true, if successful
+	 */
+	private boolean validateFunctionNodeInMO(Node functionsChildNode) {
+	
+		String displayName = functionsChildNode.getAttributes().getNamedItem("displayName").getNodeValue();
+		String type = functionsChildNode.getAttributes().getNamedItem("type").getNodeValue();
+		if(!type.equalsIgnoreCase(displayName)) {
+			return true;
+			}
+		return false;
+	}
+
 	/**
 	 * This method will evaluate Logical Operators and checks if Logical operators has child nodes or not.
 	 * Default Top Level Logical Operators are not considered for this validation.
@@ -3603,6 +3649,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * Find invalid logical operators.
 	 *
 	 * @param populationTopLevelLogicalOp the population top level logical op
+	 * @param isTopLevelLogicalOp the is top level logical op
 	 * @return true, if successful
 	 */
 	private boolean findInvalidLogicalOperators(NodeList populationTopLevelLogicalOp, boolean isTopLevelLogicalOp) {
@@ -3746,6 +3793,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		subTreeIdsAtStrat.removeAll(subTreeIdsAtRAV);
 		subTreeIdsAtRAV.addAll(subTreeIdsAtStrat);
 		
+		for(int i=0; i<subTreeIdsAtRAV.size();i++){
+			System.out.println("SUBTREE NODES " + subTreeIdsAtRAV.get(i));
+		}
+		
 		return subTreeIdsAtRAV;
 	}
 	
@@ -3775,7 +3826,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		
 		
-		return subTreeRefRAVList;
+		return checkUnUsedSubTreeRef(xmlProcessor, subTreeRefRAVList);
 	}
 	
 	
@@ -4644,10 +4695,16 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		return message;
 	}
 
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#getCurrentReleaseVersion()
+	 */
 	public String getCurrentReleaseVersion() {
 		return currentReleaseVersion;
 	}
 
+	/* (non-Javadoc)
+	 * @see mat.server.service.MeasureLibraryService#setCurrentReleaseVersion(java.lang.String)
+	 */
 	public void setCurrentReleaseVersion(String releaseVersion) {
 		this.currentReleaseVersion = releaseVersion;
 	}
