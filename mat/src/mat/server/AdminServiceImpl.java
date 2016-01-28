@@ -105,38 +105,35 @@ public class AdminServiceImpl extends SpringRemoteServiceServlet implements Admi
 		model.setLocked(user.getLockedOutDate() != null);
 		model.setRole(user.getSecurityRole().getId());
 		model.setOid(user.getOrgOID());
-		// model.setRootOid(user.getRootOID());
 		model.setOrganization(user.getOrganizationName());
 		model.setOrganizationId(user.getOrganizationId());
 		boolean v = isCurrentUserAdminForUser(user);
 		model.setCurrentUserCanChangeAccountStatus(v);
-		boolean revoked = false;
-		if (user.getStatus().getId().equals("2")) {
-			revoked = true;
-		} 
-		model.setRevokeDate(getUserRevokeDate(revoked, user.getSignInDate(), user.getTerminationDate()));
+		model.setRevokeDate(getUserRevokeDate(user));
 		model.setCurrentUserCanUnlock(v);
 		model.setPasswordExpirationMsg(getUserPwdCreationMsg(user.getLoginId()));
 		return model;
 	}
 	
-	private String getUserRevokeDate(boolean revoked, Date signOutDate, Date terminationDate) {
+	private String getUserRevokeDate(User user) {
 		String revokedDate = null;
 		SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 		Calendar calendar = Calendar.getInstance();
-		
-		if (revoked) {
-			calendar.setTime(terminationDate);
+		boolean revoked = false;
+		// if user revoked
+		if (user.getStatus().getId().equals("2")) {
+			calendar.setTime(user.getTerminationDate());
 			revokedDate = "(" + dateFormat.format(calendar.getTime()) + ")";
 		} else {
-			if (signOutDate != null) {
-				
-				calendar.setTime(signOutDate);
+			if (user.getSignInDate() != null) {
+				calendar.setTime(user.getSignInDate());
 				//String tempDate = dateFormat.format(calendar.getTime());
 				//System.out.println("Last Signed In Date: " + tempDate);
 				calendar.add(Calendar.DATE, 180);
 				revokedDate = "(" + dateFormat.format(calendar.getTime()) + ")";
 				//System.out.println("Revoked Date: " + revokedDate);
+			} else {  // since user has never signed in yet, put "(Not Activated)"
+				revokedDate = "(Not Activated)";
 			}
 		}
 		return revokedDate;
@@ -292,6 +289,7 @@ public class AdminServiceImpl extends SpringRemoteServiceServlet implements Admi
 		getUserService().requestResetLockedPassword(userid);
 	}
 	
+	
 	/** Save update organization.
 	 * 
 	 * @param currentModel the current model
@@ -425,5 +423,13 @@ public class AdminServiceImpl extends SpringRemoteServiceServlet implements Admi
 		logger.info("Searching users on " + key);
 		
 		return model;
+	}
+	
+	@Override
+	public ManageUsersDetailModel getUserByEmail(String emailId) throws InCorrectUserRoleException{
+		checkAdminUser();
+		logger.info("Retrieving user " + emailId);
+		User user = getUserService().findByEmailID(emailId);
+		return extractUserModel(user);
 	}
 }
