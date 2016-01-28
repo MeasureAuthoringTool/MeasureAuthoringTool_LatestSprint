@@ -875,7 +875,7 @@ public class HQMFClauseLogicGenerator implements Generator {
 			grouperElem.appendChild(excerptElement);
 		}
 		Element localVarElem = hqmfXmlProcessor.getOriginalDoc().createElement(LOCAL_VARIABLE_NAME);
-		localVarElem.setAttribute(VALUE, localVariableName);
+		localVarElem.setAttribute(VALUE, StringUtils.deleteWhitespace(localVariableName));
 		entryElem.appendChild(localVarElem);
 		
 		entryElem.appendChild(grouperElem);
@@ -1149,6 +1149,13 @@ public class HQMFClauseLogicGenerator implements Generator {
 			Element outBoundForFunction = measureExport.getHQMFXmlProcessor().getOriginalDoc().createElement(OUTBOUND_RELATIONSHIP);
 			outBoundForFunction.setAttribute(TYPE_CODE, "COMP");
 			Node idNodeForFunctionEntryNode = findNode(functionEntryNode,"ID");
+			Node excerptNodeForFunctionEntryNode = findNode(functionEntryNode,"excerpt");
+			Node idNodeInExcerptNode = findNode(excerptNodeForFunctionEntryNode, "id"); 
+			String newExtension = StringUtils.deleteWhitespace(clauseName) + "_" + idNodeForFunctionEntryNode.getAttributes().getNamedItem(EXTENSION).getNodeValue();
+			
+			idNodeForFunctionEntryNode.getAttributes().getNamedItem(EXTENSION).setNodeValue(newExtension);
+			idNodeInExcerptNode.getAttributes().getNamedItem(EXTENSION).setNodeValue(newExtension);
+			
 			if(idNodeForFunctionEntryNode != null){
 								
 				Node firstChildOfFunctionEntryElem = functionEntryNode.getFirstChild();
@@ -1166,10 +1173,9 @@ public class HQMFClauseLogicGenerator implements Generator {
 					criteriaReference.appendChild(idNodeForFunctionEntryNode_Clone);
 					
 					outBoundForFunction.appendChild(criteriaReference);
-					entryElem.appendChild(outBoundForFunction);
+					grouperElem.appendChild(outBoundForFunction);
 				}
-			}
-			
+			}			
 			dataCriteriaSectionElem.appendChild(entryElem);
 		}
 		return entryElem;
@@ -1188,10 +1194,11 @@ public class HQMFClauseLogicGenerator implements Generator {
 		
 		String nodeName = node.getNodeName();
 		if(FUNCTIONAL_OP.equalsIgnoreCase(nodeName)){
-			Node childNode = node.getFirstChild();
+			returnFunctionalNode = node;
+			/*Node childNode = node.getFirstChild();
 			if(childNode != null && ELEMENT_REF.equals(childNode.getNodeName())){
 				returnFunctionalNode = node;
-			}
+			}*/
 		}else if(SUB_TREE_REF.equals(nodeName)){
 			String subTreeUUID = node.getAttributes().getNamedItem(ID).getNodeValue();
 						
@@ -1202,8 +1209,7 @@ public class HQMFClauseLogicGenerator implements Generator {
 			if(childNode != null){
 				returnFunctionalNode = checkLHSFunctionalOpWithChildQDM(childNode);
 			}
-		}
-		
+		}		
 		return returnFunctionalNode;
 	}
 
