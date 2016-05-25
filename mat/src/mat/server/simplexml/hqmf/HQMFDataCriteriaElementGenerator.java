@@ -142,7 +142,8 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		String xPathForQDMAttributes = "/measure/elementLookUp/qdm[@datatype = 'attribute']";
 		String xpathForSupplementalQDMs = "/measure/elementLookUp/qdm[@suppDataElement = 'true']";
 		String xpathForOtherSupplementalQDMs = "/measure/supplementalDataElements/elementRef/@id";
-		String xpathForMeasureGroupingItemCount = "/measure/measureGrouping//itemCount/elementRef/@id";
+		String xpathForMeasureGroupingItemCount = "/measure//itemCount/elementRef/@id";
+		
 		
 		try {
 			
@@ -213,7 +214,7 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 		
 		NodeList measureGroupingElementRefNodeList = me.getSimpleXMLProcessor().findNodeList(me.getSimpleXMLProcessor().getOriginalDoc(),
 				xpathforElementLookUpElements);
-		generateSupplementalDataQDMEntries(me, dataCriteriaXMLProcessor, measureGroupingElementRefNodeList);
+		generateItemCountQDMEntries(me, dataCriteriaXMLProcessor, measureGroupingElementRefNodeList);
 	}
 	
 	/**
@@ -259,6 +260,37 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			String qdmDatatype = qdmNode.getAttributes().getNamedItem("datatype").getNodeValue();
 			String qdmUUID = qdmNode.getAttributes().getNamedItem("uuid").getNodeValue();
 			String qdmExtension = qdmName.replaceAll("\\s", "") +"_"+ qdmDatatype.replaceAll("\\s", "");
+			String xpathForQDMEntry = "/root/component/dataCriteriaSection/entry/*/id[@root='"+
+					qdmUUID+"'][@extension=\""+qdmExtension+"\"]";
+			Node qmdEntryIDNode = dataCriteriaXMLProcessor.findNode(dataCriteriaXMLProcessor.getOriginalDoc(),
+					xpathForQDMEntry);
+			if (qmdEntryIDNode==null) {
+				createXmlForDataCriteria(qdmNode, dataCriteriaXMLProcessor, me.getSimpleXMLProcessor(), null);
+			}
+		}
+	}
+	
+	/**
+	 * Generate Item Count qdm entries.
+	 *
+	 * @param me the me
+	 * @param dataCriteriaXMLProcessor the data criteria xml processor
+	 * @param qdmNodeList the qdm node list
+	 * @throws XPathExpressionException the x path expression exception
+	 */
+	private void generateItemCountQDMEntries(MeasureExport me, XmlProcessor dataCriteriaXMLProcessor,
+			NodeList qdmNodeList) throws XPathExpressionException{
+		for(int j=0; j<qdmNodeList.getLength(); j++){
+			Node qdmNode = qdmNodeList.item(j);
+			String qdmName = qdmNode.getAttributes().getNamedItem("name").getNodeValue();
+			String qdmDatatype = qdmNode.getAttributes().getNamedItem("datatype").getNodeValue();
+			String qdmUUID = qdmNode.getAttributes().getNamedItem("uuid").getNodeValue();
+			String qdmExtension = qdmName.replaceAll("\\s", "") +"_"+ qdmDatatype.replaceAll("\\s", "");
+			if(qdmNode.getAttributes().getNamedItem("instance") != null){
+				String instanceOfValue = qdmNode.getAttributes().getNamedItem("instance").getNodeValue();
+				String newExtension = instanceOfValue.replaceAll("\\s", "") + "_" + qdmExtension;
+				qdmExtension = newExtension;
+			}
 			String xpathForQDMEntry = "/root/component/dataCriteriaSection/entry/*/id[@root='"+
 					qdmUUID+"'][@extension=\""+qdmExtension+"\"]";
 			Node qmdEntryIDNode = dataCriteriaXMLProcessor.findNode(dataCriteriaXMLProcessor.getOriginalDoc(),
@@ -2379,11 +2411,18 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			targetSiteCodeElement.appendChild(valueElem);
 			if ((insertBeforeNodeName != null) && (dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0)!=null)) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0);
-				Node parentOfOutBoundElement = outBoundElement.getParentNode();
-				parentOfOutBoundElement.insertBefore(targetSiteCodeElement, outBoundElement);
+				if(outBoundElement != null){
+					outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
+				} else {
+					checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
+				}
 			} else if ((insertAfterNodeName != null) && (dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0)!=null)) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0).getNextSibling();
-				outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
+				if(outBoundElement != null){
+					outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
+				} else {
+					checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
+				}
 			} else {
 				checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
 			}
@@ -2392,11 +2431,18 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			targetSiteCodeElement.setAttribute(FLAVOR_ID, flavorIdValue);
 			if ((insertBeforeNodeName != null) && (dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0)!=null)) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0);
-				Node parentOfOutBoundElement = outBoundElement.getParentNode();
-				parentOfOutBoundElement.insertBefore(targetSiteCodeElement, outBoundElement);
+				if(outBoundElement != null){
+					outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
+				} else {
+					checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
+				}
 			} else if ((insertAfterNodeName != null) && (dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0)!=null)) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertAfterNodeName).item(0).getNextSibling();
-				outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
+				if(outBoundElement!=null){
+					outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
+				} else {
+					checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
+				}
 			} else {
 				checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
 			}
@@ -2413,8 +2459,11 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			targetSiteCodeElement.appendChild(displayNameElem);
 			if ((insertBeforeNodeName != null) && (dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0)!=null)) {
 				Node outBoundElement =  dataCriteriaElem.getElementsByTagName(insertBeforeNodeName).item(0);
-				Node parentOfOutBoundElement = outBoundElement.getParentNode();
-				parentOfOutBoundElement.insertBefore(targetSiteCodeElement, outBoundElement);
+				if(outBoundElement != null){
+					outBoundElement.getParentNode().insertBefore(targetSiteCodeElement, outBoundElement);
+				} else {
+					checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
+				}
 			} else {
 				checkIfOutBoundOcc(dataCriteriaElem, targetSiteCodeElement);
 			}
@@ -2888,6 +2937,12 @@ public class HQMFDataCriteriaElementGenerator implements Generator {
 			returnString = "{copies}/mL";
 		}else if(unitString.equals("IU")){
 			returnString = "[iU]";
+		}else if(unitString.equals("IU/L")){
+			returnString = "[iU]/L";
+		}else if(unitString.equals("AU")){
+			returnString = "[AU]";
+		}else if(unitString.equals("BAU")){
+			returnString = "[BAU]";
 		}
 		
 		return returnString;

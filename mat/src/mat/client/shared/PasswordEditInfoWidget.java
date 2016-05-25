@@ -19,8 +19,9 @@ public class PasswordEditInfoWidget extends Composite {
 	 */
 	public PasswordEditInfoWidget() {
 		FlowPanel container = new FlowPanel();
-		container.getElement().setId("container_FlowPanel");
-		password.getElement().setId("password_PasswordTextBox");
+		container.getElement().setId("container_FlowPanel_passwordEditInfo");
+		password.getElement().setId("password_ExistingPasswordTextBox");
+		password.setTitle("Enter existing password to confirm changes");
 		container.add(LabelBuilder.buildRequiredLabel(password, "Enter existing password to confirm changes"));
 		container.add(new SpacerWidget());
 		container.add(wrap(password));

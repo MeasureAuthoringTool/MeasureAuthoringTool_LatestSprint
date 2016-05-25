@@ -23,7 +23,14 @@ import mat.model.Organization;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
+import mat.model.cql.CQLDefinition;
+import mat.model.cql.CQLDefinitionsWrapper;
+import mat.model.cql.CQLFunctions;
+import mat.model.cql.CQLKeywords;
+import mat.model.cql.CQLModel;
+import mat.model.cql.CQLParameter;
 import mat.server.service.MeasureLibraryService;
+import mat.shared.SaveUpdateCQLResult;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -39,9 +46,8 @@ MeasureService {
 	 * @see mat.client.measure.service.MeasureService#appendAndSaveNode(mat.client.clause.clauseworkspace.model.MeasureXmlModel, java.lang.String)
 	 */
 	@Override
-	public void appendAndSaveNode(MeasureXmlModel measureXmlModel,
-			String nodeName) {
-		this.getMeasureLibraryService().appendAndSaveNode(measureXmlModel, nodeName);
+	public void appendAndSaveNode(MeasureXmlModel measureXmlModel, String nodeName, MeasureXmlModel newMeasureXmlModel, String newNodeName) {
+		this.getMeasureLibraryService().appendAndSaveNode(measureXmlModel, nodeName, newMeasureXmlModel, newNodeName);
 		
 	}
 	
@@ -202,8 +208,8 @@ MeasureService {
 	 * @see mat.client.measure.service.MeasureService#saveAndDeleteMeasure(java.lang.String)
 	 */
 	@Override
-	public void saveAndDeleteMeasure(String measureID) {
-		this.getMeasureLibraryService().saveAndDeleteMeasure(measureID);
+	public void saveAndDeleteMeasure(String measureID,  String loginUserId) {
+		this.getMeasureLibraryService().saveAndDeleteMeasure(measureID,loginUserId);
 	}
 	
 	/* (non-Javadoc)
@@ -423,14 +429,6 @@ MeasureService {
 		return this.getMeasureLibraryService().validateForGroup(model);
 	}
 	
-	/* (non-Javadoc)
-	 * @see mat.client.measure.service.MeasureService#getAppliedQDMForItemCount(java.lang.String, boolean)
-	 */
-	@Override
-	public List<QualityDataSetDTO> getAppliedQDMForItemCount(
-			String measureId, boolean checkForSupplementData) {
-		return this.getMeasureLibraryService().getAppliedQDMForItemCount(measureId, checkForSupplementData);
-	}
 	
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#getAllMeasureTypes()
@@ -483,21 +481,110 @@ MeasureService {
 		return this.getMeasureLibraryService().getMeasureXmlForMeasureAndSortedSubTreeMap(currentMeasureId);
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#getUsedStewardAndDevelopersList(java.lang.String)
+	 */
 	@Override
 	public MeasureDetailResult getUsedStewardAndDevelopersList(String measureId) {
 		return this.getMeasureLibraryService().getUsedStewardAndDevelopersList(measureId);
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#updateMeasureXMLForExpansionIdentifier(java.util.List, java.lang.String, java.lang.String)
+	 */
 	@Override
 	public void updateMeasureXMLForExpansionIdentifier(List<QualityDataSetDTO> modifyWithDTOList,
 			String measureId, String expansionProfile) {
 		this.getMeasureLibraryService().updateMeasureXMLForExpansionIdentifier(modifyWithDTOList, measureId, expansionProfile);
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#getDefaultSDEFromMeasureXml(java.lang.String)
+	 */
 	@Override
 	public QualityDataModelWrapper getDefaultSDEFromMeasureXml(String measureId) {
 		// TODO Auto-generated method stub
 		return this.getMeasureLibraryService().getDefaultSDEFromMeasureXml(measureId);
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#parseCQL(java.lang.String)
+	 */
+	@Override
+	public CQLModel parseCQL(String cqlBuilder) {
+		return this.getMeasureLibraryService().parseCQL(cqlBuilder);
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#getCQLData(java.lang.String)
+	 */
+	@Override
+	public SaveUpdateCQLResult getCQLData(String measureId) {
+		return this.getMeasureLibraryService().getCQLData(measureId);
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#getCQLData(java.lang.String)
+	 */
+	@Override
+	public SaveUpdateCQLResult getCQLFileData(String measureId) {
+		return this.getMeasureLibraryService().getCQLFileData(measureId);
+	}
+	
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#saveAndModifyDefinitions(java.lang.String, mat.model.cql.CQLDefinition, mat.model.cql.CQLDefinition, java.util.List)
+	 */
+	@Override
+	public SaveUpdateCQLResult saveAndModifyDefinitions(String measureId, CQLDefinition toBemodifiedObj,
+			CQLDefinition currentObj, List<CQLDefinition> definitionList){
+		return this.getMeasureLibraryService().saveAndModifyDefinitions(measureId, toBemodifiedObj, currentObj, definitionList);
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#saveAndModifyParameters(java.lang.String, mat.model.cql.CQLParameter, mat.model.cql.CQLParameter, java.util.List)
+	 */
+	@Override
+	public SaveUpdateCQLResult saveAndModifyParameters(String measureId, CQLParameter toBemodifiedObj,
+			CQLParameter currentObj, List<CQLParameter> parameterList){
+		return this.getMeasureLibraryService().saveAndModifyParameters(measureId, toBemodifiedObj, currentObj, parameterList);
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#saveAndModifyFunctions(java.lang.String, mat.model.cql.CQLFunctions, mat.model.cql.CQLFunctions, java.util.List)
+	 */
+	@Override
+	public SaveUpdateCQLResult saveAndModifyFunctions(String measureId, CQLFunctions toBeModifiedObj,
+			CQLFunctions currentObj, List<CQLFunctions> functionsList){
+		return this.getMeasureLibraryService().saveAndModifyFunctions(measureId, toBeModifiedObj, currentObj, functionsList);
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#saveAndModifyCQLGeneralInfo(java.lang.String, java.lang.String)
+	 */
+	@Override
+	public SaveUpdateCQLResult saveAndModifyCQLGeneralInfo(
+			String currentMeasureId, String context) {
+		return this.getMeasureLibraryService().saveAndModifyCQLGeneralInfo(currentMeasureId, context);
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#getCQLDataTypeList()
+	 */
+	@Override
+	public CQLKeywords getCQLKeywordsList() {
+		return this.getMeasureLibraryService().getCQLKeywordsLists();
+	}
+
+	@Override
+	public String getJSONObjectFromXML() {
+		return this.getMeasureLibraryService().getJSONObjectFromXML();
+	}
+
+	@Override
+	public void createAndSaveCQLLookUp(List<QualityDataSetDTO> list, String measureID, String expProfileToAllQDM) {
+		this.getMeasureLibraryService().createAndSaveCQLLookUp(list, measureID, expProfileToAllQDM);
+		
 	}
 	
 }

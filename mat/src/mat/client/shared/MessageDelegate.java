@@ -189,6 +189,26 @@ public class MessageDelegate {
 	public final String SUCCESSFULLY_MODIFIED_ALL_OIDS = "All QDM elements and/or attributes using the same value set OID have been modified " +
 			"to the selected Version and/or Expansion Identifier.";
 	
+	public final String SUCCESSFUL_SAVED_CQL_GEN_INFO  = "Successfully saved CQL general information.";
+	public final String SUCCESSFUL_SAVED_CQL_DEFINITION  = "Successfully saved definition into CQL.";
+	public final String SUCCESSFUL_SAVED_CQL_FUNCTIONS  = "Successfully saved function into CQL.";
+	
+	
+	public final String SUCCESSFUL_SAVED_CQL_PARAMETER  = "Successfully saved parameter into CQL.";
+	public final String ERROR_SAVE_CQL_DEFINITION  = "Please enter definition name.";
+	public final String ERROR_SAVE_CQL_PARAMETER  = "Please enter parameter name.";
+	public final String ERROR_SAVE_CQL_FUNCTION  = "Please enter function name.";
+	public final String ERROR_DUPLICATE_IDENTIFIER_NAME  = "Name already exists.";
+	public final String SUCESS_DEFINITION_MODIFY  = "Successfully modified definition.";
+	public final String SUCESS_PARAMETER_MODIFY  = "Successfully modified parameter.";
+	public final String SUCESS_FUNCTION_MODIFY  = "Successfully modified function.";
+	public final String ERROR_PARAMETER_NAME_NO_SPECIAL_CHAR  = "Invalid Parameter name. " +
+			"Duplicate name or use of restricted character(s).";
+	public final String ERROR_DEFINITION_NAME_NO_SPECIAL_CHAR  = "Invalid Definition name. " +
+			"Duplicate name or use of restricted character(s).";
+	public final String ERROR_FUNCTION_NAME_NO_SPECIAL_CHAR  = "Invalid Function and/or Argument name. " +
+			"Duplicate name or use of restricted character(s).";
+	
 	/**
 	 * Gets the measure save server error message.
 	 * 
@@ -380,7 +400,7 @@ public class MessageDelegate {
 	private final String LAST_MODIFIED_DATE_NOT_UNIQUE = "The Last Modified date and time entered is already is use for this value set.";
 	
 	/** The login failed. */
-	private final String LOGIN_FAILED = "Invalid username and/or password. MAT accounts are locked after three invalid login attempts.";
+	private final String LOGIN_FAILED = "Invalid username and/or password and/or One Time Security code. MAT accounts are locked after three invalid login attempts.";
 	
 	/** The login failed temp password expired. */
 	private final String LOGIN_FAILED_TEMP_PASSWORD_EXPIRED = "Unable to login. Your temporary password has expired. Please contact HelpDesk to renew your password.";
@@ -487,6 +507,9 @@ public class MessageDelegate {
 	
 	/** The password wrong length. */
 	private final String PASSWORD_WRONG_LENGTH = "Must be between 8 and 16 characters long.";
+	
+	/** Security-code/OneTimePassword required. */
+	private final String SECURITYCODE_REQUIRED = "Security Code is required.";
 	
 	/** The PHON e_10_ digit. */
 	private final String PHONE_10_DIGIT = "Phone Number is required to be 10 digits.";
@@ -669,7 +692,7 @@ public class MessageDelegate {
 	
 	/** The clause work space invalid nested clause. */
 	private final String CLAUSE_WORK_SPACE_INVALID_LOGICAL_OPERATOR = "Any logical operator under a top-level logical operator must contain at least one logical operator or clause. " +
-			                                                        "Any terminal logical operator under a top-level logical operator must contain at least one clause.";
+			"Any terminal logical operator under a top-level logical operator must contain at least one clause.";
 	
 	/** The measure observation validation for functions. */
 	private final String MEASURE_OBSERVATION_VALIDATION_FOR_FUNCTIONS = "Contents of the clause logic are not permitted for Measure Observations.";
@@ -679,7 +702,7 @@ public class MessageDelegate {
 	public String getONLY_ONE_CHILD_REQUIRED() {
 		return ONLY_ONE_CHILD_REQUIRED;
 	}
-
+	
 	/**
 	 * Gets the measure observation validation for functions.
 	 *
@@ -688,7 +711,7 @@ public class MessageDelegate {
 	public String getMEASURE_OBSERVATION_VALIDATION_FOR_FUNCTIONS() {
 		return MEASURE_OBSERVATION_VALIDATION_FOR_FUNCTIONS;
 	}
-
+	
 	/**
 	 * Gets the component measures added successfully.
 	 *
@@ -1539,6 +1562,15 @@ public class MessageDelegate {
 	 */
 	public String getPasswordRequiredMessage() {
 		return PASSWORD_REQUIRED;
+	}
+	
+	/**
+	 * Gets the security code required message.
+	 * 
+	 * @return String
+	 */
+	public String getSecurityCodeRequiredMessage() {
+		return SECURITYCODE_REQUIRED;
 	}
 	
 	/**
@@ -2455,7 +2487,7 @@ public class MessageDelegate {
 	public String getSUCCESSFULLY_MODIFIED_ALL_OIDS() {
 		return SUCCESSFULLY_MODIFIED_ALL_OIDS;
 	}
-
+	
 	/**
 	 * Gets the comparison diloag box unit error display.
 	 *
@@ -2463,5 +2495,60 @@ public class MessageDelegate {
 	 */
 	public String getCOMPARISON_DILOAG_BOX_UNIT_ERROR_DISPLAY() {
 		return COMPARISON_DILOAG_BOX_UNIT_ERROR_DISPLAY;
+	}
+	
+	public String getSUCCESSFUL_SAVED_CQL_GEN_INFO() {
+		return SUCCESSFUL_SAVED_CQL_GEN_INFO;
+	}
+	
+	public String getSUCCESSFUL_SAVED_CQL_DEFINITION() {
+		return SUCCESSFUL_SAVED_CQL_DEFINITION;
+	}
+	
+	public String getSUCCESSFUL_SAVED_CQL_PARAMETER() {
+		return SUCCESSFUL_SAVED_CQL_PARAMETER;
+	}
+	
+	public String getERROR_SAVE_CQL_DEFINITION() {
+		return ERROR_SAVE_CQL_DEFINITION;
+	}
+	
+	public String getERROR_SAVE_CQL_PARAMETER() {
+		return ERROR_SAVE_CQL_PARAMETER;
+	}
+	
+	public String getERROR_DUPLICATE_IDENTIFIER_NAME() {
+		return ERROR_DUPLICATE_IDENTIFIER_NAME;
+	}
+	
+	public String getSUCESS_DEFINITION_MODIFY() {
+		return SUCESS_DEFINITION_MODIFY;
+	}
+	
+	public String getSUCESS_PARAMETER_MODIFY() {
+		return SUCESS_PARAMETER_MODIFY;
+	}
+	public String getSUCCESSFUL_SAVED_CQL_FUNCTIONS() {
+		return SUCCESSFUL_SAVED_CQL_FUNCTIONS;
+	}
+	
+	public String getERROR_SAVE_CQL_FUNCTION() {
+		return ERROR_SAVE_CQL_FUNCTION;
+	}
+	
+	public String getSUCESS_FUNCTION_MODIFY() {
+		return SUCESS_FUNCTION_MODIFY;
+	}
+	
+	public String getERROR_PARAMETER_NAME_NO_SPECIAL_CHAR() {
+		return ERROR_PARAMETER_NAME_NO_SPECIAL_CHAR;
+	}
+	
+	public String getERROR_DEFINITION_NAME_NO_SPECIAL_CHAR() {
+		return ERROR_DEFINITION_NAME_NO_SPECIAL_CHAR;
+	}
+	
+	public String getERROR_FUNCTION_NAME_NO_SPECIAL_CHAR() {
+		return ERROR_FUNCTION_NAME_NO_SPECIAL_CHAR;
 	}
 }

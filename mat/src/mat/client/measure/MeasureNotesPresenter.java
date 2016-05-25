@@ -1,6 +1,9 @@
 package mat.client.measure;
 
 import java.util.List;
+
+import org.gwtbootstrap3.extras.summernote.client.ui.Summernote;
+
 import mat.DTO.MeasureNoteDTO;
 import mat.client.Mat;
 import mat.client.MatPresenter;
@@ -72,7 +75,7 @@ public class MeasureNotesPresenter implements MatPresenter{
 		 * 
 		 * @return the measure note composer
 		 */
-		public RichTextArea getMeasureNoteComposer();
+		//public RichTextArea getMeasureNoteComposer();
 		
 		/**
 		 * Gets the success message display.
@@ -129,6 +132,8 @@ public class MeasureNotesPresenter implements MatPresenter{
 		 *            the new notes result
 		 */
 		public void setNotesResult(MeasureNotesModel notesResult);
+
+		Summernote getToolBar();
 	}
 	
 	/**
@@ -186,20 +191,23 @@ public class MeasureNotesPresenter implements MatPresenter{
 				notesDisplay.setObserver(new Observer() {
 					@Override
 					public void onDeleteClicked(MeasureNoteDTO result) {
-						service.deleteMeasureNotes(result, new AsyncCallback<Void>() {
-							@Override
-							public void onSuccess(Void result) {
-								clearMessages();
-								notesDisplay.getSuccessMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getMEASURE_NOTES_DELETE_SUCCESS_MESSAGE());
-								search();
-							}
-							@Override
-							public void onFailure(Throwable caught) {
-								showSearchingBusy(false);
-								clearMessages();
-								notesDisplay.getErrorMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-							}
-						});
+						if(MatContext.get().getMeasureLockService().checkForEditPermission()){
+							service.deleteMeasureNotes(result, new AsyncCallback<Void>() {
+								@Override
+								public void onSuccess(Void result) {
+									clearMessages();
+									notesDisplay.getSuccessMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getMEASURE_NOTES_DELETE_SUCCESS_MESSAGE());
+									search();
+								}
+								@Override
+								public void onFailure(Throwable caught) {
+									showSearchingBusy(false);
+									clearMessages();
+									notesDisplay.getErrorMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+								}
+							});
+						}
+						
 					}
 					
 					@Override
@@ -234,7 +242,8 @@ public class MeasureNotesPresenter implements MatPresenter{
 	 */
 	private void saveMeasureNote(){
 		String noteTitle = notesDisplay.getMeasureNoteTitle().getText();
-		String noteDescription = notesDisplay.getMeasureNoteComposer().getHTML();
+//		String noteDescription = notesDisplay.getMeasureNoteComposer().getHTML();
+		String noteDescription = notesDisplay.getToolBar().getCode();
 		MeasureNoteDTO model = new MeasureNoteDTO();
 		model.setNoteTitle(noteTitle);
 		model.setNoteDesc(noteDescription);
@@ -251,7 +260,7 @@ public class MeasureNotesPresenter implements MatPresenter{
 						showSearchingBusy(false);
 						notesDisplay.getErrorMessageDisplay().clear();
 						notesDisplay.getSuccessMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getMEASURE_NOTES_SAVE_SUCCESS_MESSAGE());
-						notesDisplay.getMeasureNoteComposer().setText("");
+						notesDisplay.getToolBar().setCode("");
 						notesDisplay.getMeasureNoteTitle().setText("");
 						search();
 					} else {
@@ -542,7 +551,8 @@ public class MeasureNotesPresenter implements MatPresenter{
 	 */
 	private void resetWidget() {
 		clearMessages();
-		notesDisplay.getMeasureNoteComposer().setText("");
+		notesDisplay.getToolBar().clear();
+		notesDisplay.getToolBar().setCode("");
 		notesDisplay.getMeasureNoteTitle().setText("");
 	}
 	

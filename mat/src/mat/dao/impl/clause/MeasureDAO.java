@@ -356,7 +356,8 @@ mat.dao.clause.MeasureDAO {
 	 *            the measure
 	 * @return the measure share dto
 	 */
-	private MeasureShareDTO extractDTOFromMeasure(Measure measure) {
+	@Override
+	public MeasureShareDTO extractDTOFromMeasure(Measure measure) {
 		MeasureShareDTO dto = new MeasureShareDTO();
 		
 		dto.setMeasureId(measure.getId());
@@ -1326,5 +1327,25 @@ mat.dao.clause.MeasureDAO {
 		return isMeasureDeleted;
 	}
 	
+	
+	/* (non-Javadoc)
+	 * @see mat.dao.clause.MeasureDAO#findShareLevelForUser(java.lang.String, java.lang.String)
+	 */
+	@Override
+	 public ShareLevel findShareLevelForUser(String measureId, String userID){
+	  
+	  ShareLevel shareLevel = null;
+	  
+	  Criteria shareCriteria = getSessionFactory().getCurrentSession()
+	    .createCriteria(MeasureShare.class);
+	  shareCriteria.add(Restrictions.eq("measure.id", measureId));
+	  shareCriteria.add(Restrictions.eq("shareUser.id",userID));
+	  List<MeasureShare> shareList = shareCriteria.list();
+	  if(!shareList.isEmpty()){
+	   shareLevel = shareList.get(0).getShareLevel();
+	  }
+	  
+	  return shareLevel;
+	 }
 	
 }
