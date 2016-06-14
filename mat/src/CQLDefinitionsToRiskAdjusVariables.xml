@@ -8,7 +8,7 @@
 		<field name="riskAdjVarDTOList" type="mat.model.RiskAdjustmentDTO"
 			get-method="getRiskAdjVarDTOList" set-method="setRiskAdjVarDTOList"
 			collection="arraylist">
-			<bind-xml name="cqlDefinition" location="riskAdjustmentVariables">
+			<bind-xml name="cqldefinition" location="riskAdjustmentVariables">
 				<class name="mat.model.RiskAdjustmentDTO">
 					<field name="uuid" type="java.lang.String">
 						<bind-xml name="id" node="attribute" />

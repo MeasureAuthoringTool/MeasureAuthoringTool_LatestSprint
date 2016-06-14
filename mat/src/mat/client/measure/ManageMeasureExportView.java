@@ -40,6 +40,8 @@ public class ManageMeasureExportView implements ManageMeasurePresenter.ExportDis
 	/** The e measure package radio. */
 	private RadioButton eMeasurePackageRadio = new RadioButton("format", "eMeasure Package");
 	
+	private RadioButton cqlLibraryRadio = new RadioButton("format", "CQL Library");
+	
 	/** The save button. */
 	private PrimaryButton saveButton = new PrimaryButton("Save","primaryButton");
 	
@@ -68,6 +70,7 @@ public class ManageMeasureExportView implements ManageMeasurePresenter.ExportDis
 		content.add(wrapRadioButton(simpleXMLRadio));
 		content.add(wrapRadioButton(eMeasureRadio));
 		content.add(wrapRadioButton(codeListRadio));
+		content.add(wrapRadioButton(cqlLibraryRadio));
 		content.add(wrapRadioButton(eMeasurePackageRadio));
 		content.add(new SpacerWidget());
 		content.add(new SpacerWidget());
@@ -176,5 +179,10 @@ public class ManageMeasureExportView implements ManageMeasurePresenter.ExportDis
 	@Override
 	public boolean isEMeasurePackage() {
 		return eMeasurePackageRadio.getValue();
+	}
+	
+	@Override
+	public boolean isCQLLibrary() {
+		return cqlLibraryRadio.getValue();
 	}
 }

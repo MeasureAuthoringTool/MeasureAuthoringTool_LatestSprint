@@ -20,9 +20,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.DTO.MeasureNoteDTO;
 import mat.DTO.MeasureTypeDTO;
 import mat.DTO.OperatorDTO;
@@ -97,6 +99,7 @@ import mat.shared.DateStringValidator;
 import mat.shared.DateUtility;
 import mat.shared.SaveUpdateCQLResult;
 import mat.shared.model.util.MeasureDetailsUtil;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang.StringUtils;
@@ -596,28 +599,28 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @param xmlProcessor the xml processor
 	 */
 	public void checkForDefaultCQLDefinitionsAndAppend(XmlProcessor xmlProcessor) {
-List<String> missingDefaultCQLDefinitions = xmlProcessor.checkForDefaultDefinitions();
 		
-		if (missingDefaultCQLDefinitions.isEmpty()) {
+		NodeList defaultCQLDefNodeList = findDefaultDefinitions(xmlProcessor);
+		
+		if (defaultCQLDefNodeList != null && defaultCQLDefNodeList.getLength() == 4) {
 			logger.info("All Default parameter elements present in the measure.");
 			return;
 		}
-		logger.info("Found the following Default definition elements missing:" + missingDefaultCQLDefinitions);
+		
 		CQLDefinition definition = new CQLDefinition();
 		
-		List<String> SupplementalData = new ArrayList<String>();
-		SupplementalData.add("Ethnicity");
-		SupplementalData.add("Payer");
-		SupplementalData.add("Race");
-		SupplementalData.add("Sex");
+		List<String> supplementalData = new ArrayList<String>();
+		supplementalData.add("Ethnicity");
+		supplementalData.add("Payer");
+		supplementalData.add("Race");
+		supplementalData.add("Sex");
 		
-		for(String sData : SupplementalData){
+		for(String sData : supplementalData){
 			definition.setId(UUID.randomUUID().toString());
 			definition.setDefinitionName(sData);
 			if(definition.getDefinitionName().equalsIgnoreCase("Sex")){
 				definition.setDefinitionLogic("ONC Administrative Sex");
-			}
-			else{
+			}else{
 				definition.setDefinitionLogic(sData);
 			}
 			definition.setContext(CQLWorkSpaceConstants.CQL_DEFAULT_DEFINITON_CONTEXT);
@@ -633,6 +636,27 @@ List<String> missingDefaultCQLDefinitions = xmlProcessor.checkForDefaultDefiniti
 			}
 		}
 		
+	}
+	
+	/**
+	 * This method will look into XPath "/measure/cqlLookUp/definitions/" and try and NodeList for Definitions with the following names;
+	 * 'Ethnicity','Payer','Race','Sex'.
+	 * @param xmlProcessor
+	 * @return
+	 */
+	public NodeList findDefaultDefinitions(XmlProcessor xmlProcessor) {
+		NodeList returnNodeList = null;
+		Document originalDoc = xmlProcessor.getOriginalDoc();
+		
+		if (originalDoc != null) {
+			try {				
+				String defaultDefinitionsXPath = "/measure/cqlLookUp/definitions/definition[@name ='Ethnicity' or @name='Payer' or @name='Race' or @name='Sex']";
+				returnNodeList = xmlProcessor.findNodeList(originalDoc, defaultDefinitionsXPath);
+			} catch (XPathExpressionException e) {
+				e.printStackTrace();
+			}
+		}
+		return returnNodeList;
 	}
 	
 	/**
@@ -2068,9 +2092,11 @@ List<String> missingDefaultCQLDefinitions = xmlProcessor.checkForDefaultDefiniti
 				setMeasureCreated(false);
 				pkg = new Measure();
 				/*model.setMeasureStatus("In Progress");*/
+				pkg.setReleaseVersion("v4.5");
 				model.setRevisionNumber("000");
 				measureSet = new MeasureSet();
 				measureSet.setId(UUID.randomUUID().toString());
+				
 				getService().save(measureSet);
 			}
 			pkg.setMeasureSet(measureSet);
@@ -2259,7 +2285,7 @@ List<String> missingDefaultCQLDefinitions = xmlProcessor.checkForDefaultDefiniti
 	 */
 	@Override
 	public final void saveMeasureXml(final MeasureXmlModel measureXmlModel) {
-			
+
 		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
 		if ((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml())) {
 			if(MatContextServiceUtil.get().isCurrentMeasureEditable(getMeasureDAO(),measureXmlModel.getMeasureId())){
@@ -2293,35 +2319,55 @@ List<String> missingDefaultCQLDefinitions = xmlProcessor.checkForDefaultDefiniti
 			processor.checkForScoringType();
 			checkForTimingElementsAndAppend(processor);
 			checkForDefaultCQLParametersAndAppend(processor);
-			checkForDefaultCQLDefinitionsAndAppend(processor);
-			measureXmlModel.setXml(processor.transform(processor.getOriginalDoc()));
+			checkForDefaultCQLDefinitionsAndAppend(processor);			
 			
+			//Add QDM elements for Supplemental Definitions for Race, Payer, Sex, Ethnicity
+			measureXmlModel.setXml(processor.transform(processor.getOriginalDoc()));
 			QualityDataModelWrapper wrapper = getMeasureXMLDAO().createSupplimentalQDM(
 					measureXmlModel.getMeasureId(), false, null);
-			// Object to XML for elementLookUp
+			
 			ByteArrayOutputStream streamQDM = XmlProcessor.convertQualityDataDTOToXML(wrapper);
-			// Object to XML for supplementalDataElements
-			ByteArrayOutputStream streamSuppDataEle = XmlProcessor.convertQDMOToSuppleDataXML(wrapper);
-			//Object to xml for RiskAdjustment
-			//ByteArrayOutputStream streamRiskAdjVar = XmlProcessor.convertclauseToRiskAdjVarXML(riskAdjWrapper);
-			// Remove <?xml> and then replace.
+						
 			String filteredString = removePatternFromXMLString(
 					streamQDM.toString().substring(streamQDM.toString().indexOf("<measure>", 0)), "<measure>", "");
 			filteredString = removePatternFromXMLString(filteredString, "</measure>", "");
-			// Remove <?xml> and then replace.
-			String filteredStringSupp = removePatternFromXMLString(
-					streamSuppDataEle.toString().substring(streamSuppDataEle.toString().
-							indexOf("<measure>", 0)), "<measure>", "");
-			filteredStringSupp = removePatternFromXMLString(filteredStringSupp, "</measure>", "");
-			// Add Supplemental data to elementLoopUp
+			
 			String result = callAppendNode(measureXmlModel, filteredString, "qdm", "/measure/elementLookUp");
 			measureXmlModel.setXml(result);
-			// Add Supplemental data to supplementalDataElements
-			result = callAppendNode(measureXmlModel, filteredStringSupp, "elementRef", "/measure/supplementalDataElements");
-			measureXmlModel.setXml(result);
-			XmlProcessor processor1 = new XmlProcessor(measureXmlModel.getXml());
-			measureXmlModel.setXml(processor1.checkForStratificationAndAdd());
-			getService().saveMeasureXml(measureXmlModel);
+			processor = new XmlProcessor(measureXmlModel.getXml());
+			
+			Document measureXMLDocument = processor.getOriginalDoc();
+			
+			//find the "<supplementalDataElements>" tag.
+			String supplementalDataElementsXPath = "/measure/supplementalDataElements";
+			try {
+				
+				Node supplementalDataElementNode = processor.findNode(measureXMLDocument, supplementalDataElementsXPath);
+
+				//create a tag "<supplementalDataElements>" under "<measure>" tag if "<supplementalDataElements>" is not present.
+				if(supplementalDataElementNode == null){
+					supplementalDataElementNode = measureXMLDocument.getFirstChild().appendChild(measureXMLDocument.createElement("supplementalDataElements"));
+				}
+
+				//append CQL definitions created for supplemental section to supplementalDataElement tag
+				NodeList defaultCQLDefNodeList = findDefaultDefinitions(processor);
+
+				//create "<cqldefinition>" tag with displayName and uuid pointing to the default CQL definitions and append it to "<supplementalDataElements>"
+				for(int i=0;i<defaultCQLDefNodeList.getLength();i++){
+					Node cqlDefNode = defaultCQLDefNodeList.item(i);
+					Element cqlDefinitionRefNode = measureXMLDocument.createElement("cqldefinition");
+					cqlDefinitionRefNode.setAttribute("name", cqlDefNode.getAttributes().getNamedItem("name").getNodeValue());
+					cqlDefinitionRefNode.setAttribute("id", cqlDefNode.getAttributes().getNamedItem("id").getNodeValue());
+					supplementalDataElementNode.appendChild(cqlDefinitionRefNode);
+				}
+
+				processor.checkForStratificationAndAdd();
+				measureXmlModel.setXml(processor.transform(processor.getOriginalDoc()));
+				getService().saveMeasureXml(measureXmlModel);
+			} catch (XPathExpressionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	

@@ -28,8 +28,10 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import mat.model.QualityDataModelWrapper;
 import mat.shared.UUIDUtilClient;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -941,13 +943,13 @@ public class XmlProcessor {
 			.insertBefore(elementLookUpElement,
 					supplementaDataElementsElement.getNextSibling());
 		}
-		/*if (findNode(originalDoc, XPATH_MEASURE_SUBTREE_LOOKUP) == null) {
+		if (findNode(originalDoc, XPATH_MEASURE_SUBTREE_LOOKUP) == null) {
 			Element subTreeLookUpElement = originalDoc
 					.createElement("subTreeLookUp");
 			((Element) supplementaDataElementsElement.getParentNode())
 			.insertBefore(subTreeLookUpElement,
 					supplementaDataElementsElement.getNextSibling());
-		}*/
+		}
 		
 		if (findNode(originalDoc, XPATH_DTLS_COMPONENT_MEASURE) == null) {
 			Element componentMeasureElement = originalDoc
@@ -1461,9 +1463,9 @@ public class XmlProcessor {
 	 *
 	 * @return Xml String.
 	 */
-	public String checkForStratificationAndAdd() {
+	public void checkForStratificationAndAdd() {
 		if (originalDoc == null) {
-			return "";
+			return;
 		}
 		try {
 			Node strataNode = findNode(originalDoc, XPATH_STRATA);
@@ -1488,7 +1490,7 @@ public class XmlProcessor {
 		} catch (XPathExpressionException e) {
 			e.printStackTrace();
 		}
-		return transform(originalDoc);
+		
 	}
 	
 	/**
@@ -1705,45 +1707,5 @@ public class XmlProcessor {
 		return missingDefaultParameterList;
 	}
 
-	public List<String> checkForDefaultDefinitions() {
-		List<String> missingDefaultDefinitionsList = new ArrayList<String>();
-		
-		if (originalDoc != null) {
-			try {
-				// Ethinicity
-				Node ethinicityNode = this.findNode(originalDoc,
-						"/measure/cqlLookUp//definition[@name='"
-								+ "Ethnicity" + "']");
-				if (ethinicityNode == null) {
-					missingDefaultDefinitionsList.add("Ethnicity");
-				}
-				// Payer
-				Node payerNode = this.findNode(originalDoc,
-						"/measure/cqlLookUp//definition[@name='"
-								+ "Payer" + "']");
-				if (payerNode == null) {
-					missingDefaultDefinitionsList.add("Payer");
-				}
-				// Race
-				Node raceNode = this.findNode(originalDoc,
-						"/measure/cqlLookUp//definition[@name='"
-								+ "Race" + "']");
-				if (raceNode == null) {
-					missingDefaultDefinitionsList.add("Race");
-				}
-				// ONC Administrative Sex
-				Node oncAdminSexNode = this.findNode(originalDoc,
-						"/measure/cqlLookUp//definition[@name='"
-								+ "Sex" + "']");
-				if (oncAdminSexNode == null) {
-					missingDefaultDefinitionsList.add("Sex");
-				}
-				
-			} catch (XPathExpressionException e) {
-				e.printStackTrace();
-			}
-		}
-		return missingDefaultDefinitionsList;
-	}
 	
 }
