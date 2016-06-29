@@ -28,6 +28,10 @@ import mat.model.clause.Measure;
 import mat.model.clause.MeasureXML;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLDefinitionsWrapper;
+import mat.model.cql.parser.CQLDefinitionModelObject;
+import mat.model.cql.parser.CQLFileObject;
+import mat.server.CQLUtilityClass;
+import mat.server.cqlparser.MATCQLParser;
 import mat.server.service.PackagerService;
 import mat.server.util.ResourceLoader;
 import mat.server.util.XmlProcessor;
@@ -69,22 +73,22 @@ public class PackagerServiceImpl implements PackagerService {
 	/** The Constant XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_ELEMENTREF. */
 	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_ELEMENTREF = "/measure/supplementalDataElements/elementRef/@id";
 	
-	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_CQLDEFINITION = "/measure/supplementalDataElements/cqldefinition/@id";
+	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_CQLDEFINITION = "/measure/supplementalDataElements/cqldefinition/@uuid";
 	
 	/** The Constant XPATH_MEASURE_RISK_ADJ_VARIABLES. */
 	private static final String XPATH_MEASURE_RISK_ADJ_VARIABLES = "/measure/riskAdjustmentVariables/subTreeRef/@id";
 	
-	private static final String XPATH_MEASURE_NEW_RISK_ADJ_VARIABLES = "/measure/riskAdjustmentVariables/cqldefinition/@id";
+	private static final String XPATH_MEASURE_NEW_RISK_ADJ_VARIABLES = "/measure/riskAdjustmentVariables/cqldefinition/@uuid";
 	
 	/** The Constant XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_EXPRESSION. */
 	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_EXPRESSION = "/measure/supplementalDataElements/elementRef[@id";
 	
-	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_CQLDEF_EXPRESSION = "/measure/supplementalDataElements/cqldefinition[@id";
+	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_CQLDEF_EXPRESSION = "/measure/supplementalDataElements/cqldefinition[@uuid";
 	
 	/** The Constant XPATH_MEASURE_RISK_ADJ_VARIABLES_EXPRESSION. */
 	private static final String XPATH_MEASURE_RISK_ADJ_VARIABLES_EXPRESSION = "/measure/riskAdjustmentVariables/subTreeRef[@id";
 	
-	private static final String XPATH_MEASURE_NEW_RISK_ADJ_VARIABLES_EXPRESSION = "/measure/riskAdjustmentVariables/cqldefinition[@id";
+	private static final String XPATH_MEASURE_NEW_RISK_ADJ_VARIABLES_EXPRESSION = "/measure/riskAdjustmentVariables/cqldefinition[@uuid";
 	/** The Constant XPATH_MEASURE_ELEMENT_LOOKUP_QDM. */
 	private static final String XPATH_MEASURE_ELEMENT_LOOKUP_QDM = "/measure/elementLookUp/qdm";
 	
@@ -270,7 +274,7 @@ public class PackagerServiceImpl implements PackagerService {
 			overview.setPackages(pkgs);
 			overview.setReleaseVersion(measure.getReleaseVersion());
 			if(measure.getReleaseVersion() != null && 
-					measure.getReleaseVersion().equalsIgnoreCase("v4.5")){
+					measure.getReleaseVersion().equalsIgnoreCase("v5.0")){
 				qdmAndSupplDataforMeasurePackager(overview, processor);
 				getNewRiskAdjVariablesForMeasurePackager(overview, processor);
 			} else {
@@ -537,7 +541,7 @@ public class PackagerServiceImpl implements PackagerService {
 			Node newNode = riskAdjustmentVarNodeList.item(j);					
 			RiskAdjustmentDTO riskDTO = new RiskAdjustmentDTO();
 			riskDTO.setName(newNode.getAttributes().getNamedItem("displayName").getNodeValue());
-			riskDTO.setUuid(newNode.getAttributes().getNamedItem("id").getNodeValue());
+			riskDTO.setUuid(newNode.getAttributes().getNamedItem("uuid").getNodeValue());
 			riskAdkVariableList.add(riskDTO);
 		}
 		String uuidXPathString = "";
@@ -591,7 +595,7 @@ public class PackagerServiceImpl implements PackagerService {
 			Node newNode = riskAdjustmentVarNodeList.item(j);					
 			RiskAdjustmentDTO riskDTO = new RiskAdjustmentDTO();
 			riskDTO.setName(newNode.getAttributes().getNamedItem("displayName").getNodeValue());
-			riskDTO.setUuid(newNode.getAttributes().getNamedItem("id").getNodeValue());
+			riskDTO.setUuid(newNode.getAttributes().getNamedItem("uuid").getNodeValue());
 			riskAdkVariableList.add(riskDTO);
 		}
 		String uuidXPathString = "";
@@ -888,7 +892,7 @@ public class PackagerServiceImpl implements PackagerService {
 						XPATH_MEASURE_CQL_LOOKUP_DEFINITIONS.concat("["));
 				for (int i = 0; i < nodesSupplementalData.getLength(); i++) {
 					Node newNode = nodesSupplementalData.item(i);
-					String nodeID = newNode.getAttributes().getNamedItem("id")
+					String nodeID = newNode.getAttributes().getNamedItem("uuid")
 							.getNodeValue();
 					expression = expression.append("@id!= '").append(nodeID)
 							.append("'").append(" and ");
@@ -939,16 +943,49 @@ public class PackagerServiceImpl implements PackagerService {
 				}
 			}
 		
+			System.out.println("supplementalDataList:"+supplementalDataList);
+			
+			try{
+				checkForPossibleSupplementalCQLDefinitions(processor, definitionList);
+			}catch(Exception ee){
+				ee.printStackTrace();
+			}
+			System.out.println("definitionList:"+definitionList);
 			
 			overview.setCqlQdmElements(definitionList);
 			overview.setCqlSuppDataElements(supplementalDataList);
-
 		}catch (XPathExpressionException e) {
 			logger.info("Error while getting default supplemental data elements : " +e.getMessage());
 		}
 	}
 	
 	
+	private void checkForPossibleSupplementalCQLDefinitions(
+			XmlProcessor processor, List<CQLDefinition> definitionList) {
+		
+		String measureXML = processor.transform(processor.getOriginalDoc());
+		
+		MATCQLParser matcqlParser = new MATCQLParser();
+
+		String cqlFileString = CQLUtilityClass.getCqlString(CQLUtilityClass.getCQLStringFromMeasureXML(measureXML,""),"").toString();
+
+		CQLFileObject cqlFileObject = matcqlParser.parseCQL(cqlFileString);
+		
+		List<CQLDefinition> possibleSuppDefinitionList = new ArrayList<CQLDefinition>();
+		
+		for(CQLDefinition cqlDefinition:definitionList){
+			System.out.println("Check:"+cqlDefinition.getDefinitionName());
+			CQLDefinitionModelObject cqlDefinitionModelObject = cqlFileObject.getDefinitionsMap().get("\"" + cqlDefinition.getDefinitionName() + "\"");
+			if(cqlDefinitionModelObject != null && cqlDefinitionModelObject.isPossibleSupplementalDef()){
+				possibleSuppDefinitionList.add(cqlDefinition);
+			}
+		}
+		
+		definitionList.retainAll(possibleSuppDefinitionList);
+		
+	}
+
+
 	/**
 	 * Creates measureGrouping XML chunk from MeasurePackageDetail using castor
 	 * and "MeasurePackageClauseDetail.xml" mapping file. Finds the Group Node
@@ -1016,7 +1053,7 @@ public class PackagerServiceImpl implements PackagerService {
 	public void saveQDMData(MeasurePackageDetail detail) {
 		Measure measure = measureDAO.find(detail.getMeasureId());
 		MeasureXML measureXML = measureXMLDAO.findForMeasure( measure.getId());
-		if(measure.getReleaseVersion().equalsIgnoreCase("v4.5")){
+		if(measure.getReleaseVersion().equalsIgnoreCase("v5.0")){
 			saveDefinitionsData(measureXML, detail.getCqlSuppDataElements());
 		} else {
 			saveQDMData(measureXML, detail.getSuppDataElements());
@@ -1115,7 +1152,7 @@ public class PackagerServiceImpl implements PackagerService {
 		XmlProcessor processor = new XmlProcessor(
 				measureXML.getMeasureXMLAsString());
 		if(measure.getReleaseVersion() != null 
-				&& measure.getReleaseVersion().equalsIgnoreCase("v4.5")){
+				&& measure.getReleaseVersion().equalsIgnoreCase("v5.0")){
 			saveRiskAdjVariableWithDefinitions(allRiskAdjVars, processor);
 		} else {
 			saveRiskAdjVariableWithClauses(allRiskAdjVars, processor);

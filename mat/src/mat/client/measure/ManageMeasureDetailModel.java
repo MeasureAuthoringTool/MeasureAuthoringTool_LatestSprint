@@ -69,6 +69,9 @@ public class ManageMeasureDetailModel implements IsSerializable , BaseModel{
 	/** The nqf id. */
 	private String nqfId;
 	
+	/** Is patient based measure */
+	private Boolean isPatientBasedMeasure = true; 
+	
 	/** The description. */
 	private String description;
 	
@@ -771,6 +774,14 @@ public class ManageMeasureDetailModel implements IsSerializable , BaseModel{
 		return nqfId;
 	}
 	
+	public Boolean getIsPatientBasedMeasure() {
+		return isPatientBasedMeasure;
+	}
+
+	public void setIsPatientBasedMeasure(Boolean isPatientBasedMeasure) {
+		this.isPatientBasedMeasure = isPatientBasedMeasure;
+	}
+
 	/**
 	 * Sets the nqf id.
 	 * 

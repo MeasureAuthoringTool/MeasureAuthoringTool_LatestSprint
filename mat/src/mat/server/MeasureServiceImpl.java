@@ -1,8 +1,19 @@
 package mat.server;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.apache.commons.lang.StringUtils;
+import org.cqframework.cql.cql2elm.CQLtoELM;
+import org.cqframework.cql.cql2elm.CqlTranslator;
+import org.cqframework.cql.cql2elm.CqlTranslatorException;
+
 import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
@@ -29,7 +40,11 @@ import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLKeywords;
 import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
+import mat.server.cqlparser.CQLErrorListener;
+import mat.server.cqlparser.cqlLexer;
+import mat.server.cqlparser.cqlParser;
 import mat.server.service.MeasureLibraryService;
+import mat.shared.CQLErrors;
 import mat.shared.SaveUpdateCQLResult;
 
 // TODO: Auto-generated Javadoc
@@ -201,6 +216,7 @@ MeasureService {
 	 */
 	@Override
 	public SaveMeasureResult save(ManageMeasureDetailModel model) {
+		System.out.println(model.getIsPatientBasedMeasure());
 		return this.getMeasureLibraryService().save(model);
 	}
 	
@@ -586,5 +602,62 @@ MeasureService {
 		this.getMeasureLibraryService().createAndSaveCQLLookUp(list, measureID, expProfileToAllQDM);
 		
 	}
+
+	@Override
+	public SaveUpdateCQLResult parseCQLForErrors(String measureId) {
+		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
+		List<String> Errors = new ArrayList<String>();
+		MeasureXmlModel measureXML = getMeasureXmlForMeasure(measureId);
+		//MATCQLParser matcqlParser = new MATCQLParser();
+		String cqlFileString = CQLUtilityClass.getCqlString(CQLUtilityClass.getCQLStringFromMeasureXML(measureXML.getXml(),measureId),"").toString();
+		/*cqlLexer lexer = new cqlLexer(new ANTLRInputStream(cqlFileString));
+		System.out.println(cqlFileString);
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		cqlParser parser = new cqlParser(tokens);
+		CQLErrorListener cqlErrorListener = new CQLErrorListener();
+		parser.addErrorListener(cqlErrorListener);
+		parser.setBuildParseTree(true);
+
+		ParserRuleContext tree = parser.logic();
+		parser.notifyErrorListeners("");
+
+		System.out.println(parser.getNumberOfSyntaxErrors());
+		System.out.println(cqlErrorListener.getErrors());
+
+		if(cqlErrorListener.getErrors().size()!=0){
+			//result.setValid(false);
+			result.setCqlErrors(cqlErrorListener.getErrors());
+		} else {
+			//result.setValid(true);
+		}*/
+
+		
+		List<CqlTranslatorException> cqlErrorsList = new ArrayList<CqlTranslatorException>();
+		List<CQLErrors> errors = new ArrayList<CQLErrors>();
+		try {
+			if(!StringUtils.isBlank(cqlFileString)){
+				String elmString = CQLtoELM.doTranslation(cqlFileString.trim(), "XML", false, false, true);
+				cqlErrorsList.addAll(CqlTranslator.getErrors());
+			}
+			
+			for(CqlTranslatorException cte : cqlErrorsList){
+				//Errors.add(cte.getMessage());
+				//result.getCqlErrors().add(cte);
+				CQLErrors cqlErrors = new CQLErrors();
+				cqlErrors.setErrorInLine(cte.getLocator().getStartLine());
+				cqlErrors.setErrorAtOffeset(cte.getLocator().getStartChar());
+				cqlErrors.setErrorMessage(cte.getMessage());
+				errors.add(cqlErrors);
+			}
+			
+			result.setCqlErrors(errors);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	return result;
+	}
+	
+	
 	
 }

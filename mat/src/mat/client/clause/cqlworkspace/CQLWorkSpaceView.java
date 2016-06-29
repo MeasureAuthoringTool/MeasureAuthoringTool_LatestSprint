@@ -9,6 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import mat.client.CustomPager;
+import mat.client.admin.ManageOrganizationPresenter.SearchDisplay;
 import mat.client.shared.CQLButtonToolBar;
 import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.MatContext;
@@ -513,6 +514,8 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		cqlAceEditor.setAutocompleteEnabled(true);
 		cqlAceEditor.setReadOnly(true);
 		cqlAceEditor.setUseWrapMode(true);
+		cqlAceEditor.clearAnnotations();
+		cqlAceEditor.redisplay();
 		Label viewCQlFileLabel = new Label(LabelType.INFO);
 		viewCQlFileLabel.setText("View CQL file here");
 		viewCQlFileLabel.setTitle("View CQL file here");
@@ -538,6 +541,9 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		getParameterNameListBox().addDoubleClickHandler(new DoubleClickHandler() {
 			@Override
 			public void onDoubleClick(DoubleClickEvent event) {
+				parameterAceEditor.clearAnnotations();
+				parameterAceEditor.removeAllMarkers();
+				parameterAceEditor.redisplay();
 				System.out.println("In addParameterEventHandler on DoubleClick isPageDirty = " + getIsPageDirty() + " selectedIndex = " + getParameterNameListBox().getSelectedIndex());
 				setIsDoubleClick(true);
 				setIsNavBarClick(false);
@@ -576,6 +582,9 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		getDefineNameListBox().addDoubleClickHandler(new DoubleClickHandler() {
 			@Override
 			public void onDoubleClick(DoubleClickEvent event) {
+				defineAceEditor.clearAnnotations();
+				defineAceEditor.removeAllMarkers();
+				defineAceEditor.redisplay();
 				setIsDoubleClick(true);
 				if (getIsPageDirty()) {
 					showUnsavedChangesWarning();
@@ -620,6 +629,9 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		funcNameListBox.addDoubleClickHandler(new DoubleClickHandler() {
 			@Override
 			public void onDoubleClick(DoubleClickEvent event) {
+				functionBodyAceEditor.clearAnnotations();
+				functionBodyAceEditor.removeAllMarkers();
+				functionBodyAceEditor.redisplay();
 				setIsDoubleClick(true);
 				setIsNavBarClick(false);
 				if (getIsPageDirty()) {
@@ -1148,7 +1160,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		parameterNameTxtArea.setText("");
 		//parameterNameTxtArea.setPlaceholder("Enter Parameter Name here.");
 		parameterNameTxtArea.setSize("260px", "25px");
-		//parameterNameTxtArea.setId("parameterNameField");
+		parameterNameTxtArea.getElement().setId("parameterNameField");
 		parameterNameTxtArea.setName("parameterName");
 		parameterLabel.setText("Parameter");
 		
@@ -1164,6 +1176,9 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		parameterAceEditor.setAutocompleteEnabled(true);
 		parameterAceEditor.addAutoCompletions();
 		parameterAceEditor.setUseWrapMode(true);
+		parameterAceEditor.clearAnnotations();
+		parameterAceEditor.removeAllMarkers();
+		parameterAceEditor.redisplay();
 		parameterAceEditor.getElement().setAttribute("id", "Parameter_AceEditorID");
 		paramAceEditorPanel.add(parameterAceEditor);
 		paramAceEditorPanel.getElement().setAttribute("id", "SimplePanel_Parameter_AceEditor");
@@ -1303,7 +1318,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		defineNameTxtArea.setText("");
 		//defineNameTxtArea.setPlaceholder("Enter Definition Name here.");
 		defineNameTxtArea.setSize("260px", "25px");
-		//defineNameTxtArea.setId("defineNameField");
+		defineNameTxtArea.getElement().setId("defineNameField");
 		defineNameTxtArea.setName("defineName");
 		defineLabel.setText("Definition Name");
 		
@@ -1317,6 +1332,9 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		defineAceEditor.setAutocompleteEnabled(true);
 		defineAceEditor.addAutoCompletions();
 		defineAceEditor.setUseWrapMode(true);
+		defineAceEditor.removeAllMarkers();
+		defineAceEditor.clearAnnotations();
+		defineAceEditor.redisplay();
 		defineAceEditor.getElement().setAttribute("id", "Define_AceEditorID");
 		defAceEditorPanel.add(defineAceEditor);
 		defAceEditorPanel.getElement().setAttribute("id", "SimplePanel_Define_AceEditor");
@@ -1474,7 +1492,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		funcNameTxtArea.setText("");
 		//funcNameTxtArea.setPlaceholder("Enter Function Name here.");
 		funcNameTxtArea.setSize("260px", "25px");
-		//funcNameTxtArea.setId("FunctionNameField");
+		funcNameTxtArea.getElement().setId("FunctionNameField");
 		funcNameTxtArea.setName("FunctionName");
 		functionNameLabel.setText("Function Name");
 		
@@ -1488,6 +1506,9 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		functionBodyAceEditor.setAutocompleteEnabled(true);
 		functionBodyAceEditor.addAutoCompletions();
 		functionBodyAceEditor.setUseWrapMode(true);
+		functionBodyAceEditor.clearAnnotations();
+		functionBodyAceEditor.removeAllMarkers();
+		functionBodyAceEditor.redisplay();
 		functionBodyAceEditor.getElement().setAttribute("id", "Func_AceEditorID");
 		funcAceEditorPanel.add(functionBodyAceEditor);
 		funcAceEditorPanel.getElement().setAttribute("id", "SimplePanel_Function_AceEditor");
@@ -1498,6 +1519,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		
 		addNewArgument.setTitle("Add Argument");
 		addNewArgument.setText("Add Argument");
+		addNewArgument.setId("Add_Argument_ID");
 		addNewArgument.setIcon(IconType.PLUS);
 		addNewArgument.setSize(ButtonSize.SMALL);
 		

@@ -82,6 +82,8 @@ import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLKeywords;
 import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
+import mat.model.cql.parser.CQLFileObject;
+import mat.server.cqlparser.MATCQLParser;
 import mat.server.model.MatUserDetails;
 import mat.server.service.InvalidValueSetDateException;
 import mat.server.service.MeasureLibraryService;
@@ -98,6 +100,7 @@ import mat.shared.ConstantMessages;
 import mat.shared.DateStringValidator;
 import mat.shared.DateUtility;
 import mat.shared.SaveUpdateCQLResult;
+import mat.shared.UUIDUtilClient;
 import mat.shared.model.util.MeasureDetailsUtil;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -584,7 +587,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		filteredString = removePatternFromXMLString(filteredString, "</measure>", "");
 		
 		try {
+			System.out.println("timing qdm String:"+filteredString);
 			xmlProcessor.appendNode(filteredString, "qdm", "/measure/elementLookUp");
+			String cqlValueSetString = filteredString.replaceAll("<qdm", "<valueset");
+			System.out.println("timing cql valueset string:"+cqlValueSetString);
+			xmlProcessor.appendNode(cqlValueSetString, "valueset", "/measure/cqlLookUp/valuesets");
 		} catch (SAXException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -607,40 +614,37 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			return;
 		}
 		
-		CQLDefinition definition = new CQLDefinition();
-		
-		List<String> supplementalData = new ArrayList<String>();
-		supplementalData.add("Ethnicity");
-		supplementalData.add("Payer");
-		supplementalData.add("Race");
-		supplementalData.add("Sex");
-		
-		for(String sData : supplementalData){
-			definition.setId(UUID.randomUUID().toString());
-			definition.setDefinitionName(sData);
-			if(definition.getDefinitionName().equalsIgnoreCase("Sex")){
-				definition.setDefinitionLogic("ONC Administrative Sex");
-			}else{
-				definition.setDefinitionLogic(sData);
-			}
-			definition.setContext(CQLWorkSpaceConstants.CQL_DEFAULT_DEFINITON_CONTEXT);
-			definition.setSupplDataElement(true);
-			String defStr = getCqlService().createDefinitionsXML(definition);
+		String defStr = getCqlService().getSupplementalDefinitions();
+		System.out.println("defStr:"+defStr);
+		try {
+			xmlProcessor.appendNode(defStr, "definition", "/measure/cqlLookUp/definitions");
 			
-			try {
-				xmlProcessor.appendNode(defStr, "definition", "/measure/cqlLookUp/definitions");
-			} catch (SAXException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
+			NodeList supplementalDefnNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), 
+					"/measure/cqlLookUp/definitions/definition[@supplDataElement='true']");
+			
+			if(supplementalDefnNodes != null){
+				System.out.println("suppl data elems..setting ids");
+				for(int i=0;i<supplementalDefnNodes.getLength();i++){
+					Node supplNode = supplementalDefnNodes.item(i);
+				    System.out.println("name:"+supplNode.getAttributes().getNamedItem("name").getNodeValue());
+				    System.out.println("id:"+supplNode.getAttributes().getNamedItem("id").getNodeValue());
+					supplNode.getAttributes().getNamedItem("id").setNodeValue(UUIDUtilClient.uuid());
+				}
 			}
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		
 	}
+	
 	
 	/**
 	 * This method will look into XPath "/measure/cqlLookUp/definitions/" and try and NodeList for Definitions with the following names;
-	 * 'Ethnicity','Payer','Race','Sex'.
+	 * 'SDE Ethnicity','SDE Payer','SDE Race','SDE Sex'.
 	 * @param xmlProcessor
 	 * @return
 	 */
@@ -650,7 +654,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 		if (originalDoc != null) {
 			try {				
-				String defaultDefinitionsXPath = "/measure/cqlLookUp/definitions/definition[@name ='Ethnicity' or @name='Payer' or @name='Race' or @name='Sex']";
+				String defaultDefinitionsXPath = "/measure/cqlLookUp/definitions/definition[@name ='SDE Ethnicity' or @name='SDE Payer' or @name='SDE Race' or @name='SDE Sex']";
 				returnNodeList = xmlProcessor.findNodeList(originalDoc, defaultDefinitionsXPath);
 			} catch (XPathExpressionException e) {
 				e.printStackTrace();
@@ -2092,11 +2096,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				setMeasureCreated(false);
 				pkg = new Measure();
 				/*model.setMeasureStatus("In Progress");*/
-				pkg.setReleaseVersion("v4.5");
+				pkg.setReleaseVersion("v5.0");
 				model.setRevisionNumber("000");
 				measureSet = new MeasureSet();
-				measureSet.setId(UUID.randomUUID().toString());
-				
+				measureSet.setId(UUID.randomUUID().toString());				
 				getService().save(measureSet);
 			}
 			pkg.setMeasureSet(measureSet);
@@ -2336,6 +2339,14 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			measureXmlModel.setXml(result);
 			processor = new XmlProcessor(measureXmlModel.getXml());
 			
+			String cqlFilteredString = filteredString.replaceAll("<qdm", "<valueset");
+			try {
+				processor.appendNode(cqlFilteredString, "valueset", "/measure/cqlLookUp/valuesets");
+			} catch (SAXException | IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
 			Document measureXMLDocument = processor.getOriginalDoc();
 			
 			//find the "<supplementalDataElements>" tag.
@@ -2356,8 +2367,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				for(int i=0;i<defaultCQLDefNodeList.getLength();i++){
 					Node cqlDefNode = defaultCQLDefNodeList.item(i);
 					Element cqlDefinitionRefNode = measureXMLDocument.createElement("cqldefinition");
-					cqlDefinitionRefNode.setAttribute("name", cqlDefNode.getAttributes().getNamedItem("name").getNodeValue());
-					cqlDefinitionRefNode.setAttribute("id", cqlDefNode.getAttributes().getNamedItem("id").getNodeValue());
+					cqlDefinitionRefNode.setAttribute("displayName", cqlDefNode.getAttributes().getNamedItem("name").getNodeValue());
+					cqlDefinitionRefNode.setAttribute("uuid", cqlDefNode.getAttributes().getNamedItem("id").getNodeValue());
 					supplementalDataElementNode.appendChild(cqlDefinitionRefNode);
 				}
 
@@ -3476,11 +3487,113 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		return result;
 	}
 	
+	
+	@Override
+	public ValidateMeasureResult validateMeasureXmlAtCreateMeasurePackager(MeasureXmlModel measureXmlModel) {
+		boolean isInvalid = false;
+		ValidateMeasureResult result = new ValidateMeasureResult();
+		result.setValid(true);
+		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
+		List<String> message = new ArrayList<String>();
+		message.add(MatContext.get().getMessageDelegate().getINVALID_LOGIC_POPULATION_WORK_SPACE());
+		if ((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml())) {
+			XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
+			
+			//validate only from MeasureGrouping
+			String XAPTH_MEASURE_GROUPING="/measure/measureGrouping/ group/packageClause" +
+					"[not(@uuid = preceding:: group/packageClause/@uuid)]";
+			
+			List<String> measureGroupingIDList = new ArrayList<String>();;
+			
+			try {
+				NodeList measureGroupingNodeList = (NodeList) xPath.evaluate(XAPTH_MEASURE_GROUPING, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
+				
+				for(int i=0 ; i<measureGroupingNodeList.getLength();i++){
+					Node childNode = measureGroupingNodeList.item(i);
+					String uuid = childNode.getAttributes().getNamedItem("uuid").getNodeValue();
+					String type = childNode.getAttributes().getNamedItem("type").getNodeValue();
+					if(type.equals("stratification")){
+						List<String> stratificationClausesIDlist = getStratificationClasuesIDList(uuid, xmlProcessor);
+						measureGroupingIDList.addAll(stratificationClausesIDlist);
+						
+					} else {
+						measureGroupingIDList.add(uuid);
+					}
+				}
+			} catch (XPathExpressionException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+			
+			String uuidXPathString = "";
+			for (String uuidString: measureGroupingIDList) {
+				uuidXPathString += "@uuid = '" + uuidString + "' or";
+			}
+			
+			uuidXPathString = uuidXPathString.substring(0, uuidXPathString.lastIndexOf(" or"));
+			System.out.println("UUID: "+uuidXPathString);
+			
+			String XPATH_POPULATION = "/measure//clause["+uuidXPathString+"]";
+			
+			try {
+				NodeList measureGroupingNodeList = (NodeList) xPath.evaluate(XPATH_POPULATION, xmlProcessor.getOriginalDoc(),
+						XPathConstants.NODESET);
+				for(int i=0; i<measureGroupingNodeList.getLength(); i++){
+					Node clauseNode = measureGroupingNodeList.item(i);
+					if(clauseNode.hasChildNodes()) {
+						Node childNode = clauseNode.getFirstChild();
+						if(!childNode.getNodeName().equalsIgnoreCase("cqldefinition") && 
+								!childNode.getNodeName().equalsIgnoreCase("cqlaggfunction") && 
+								!childNode.getNodeName().equalsIgnoreCase("cqlfunction")) {
+							result.setValid(false);
+							result.setValidationMessages(message);
+						} else { //if the Measure is a CQL Measure.
+							
+							isInvalid = parseCQLFile(measureXmlModel.getXml(),
+									measureXmlModel.getMeasureId());
+							if(isInvalid) {
+								result.setValid(false);
+								result.setValidationMessages(message);
+							}
+						}
+					}
+					
+				}
+			} catch (XPathExpressionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		
+//		result.setValid(false);
+//		result.setValidationMessages(message);
+		return result;
+	}
+	
+	
+	private boolean validateCQLMeasure(String measureXML, String measureId){
+		boolean isInvalid = false;
+		isInvalid = parseCQLFile(measureXML, measureXML);
+		return isInvalid;
+	}
+	
+	private boolean parseCQLFile(String measureXML, String measureId){
+		boolean isInvalid = false;
+		String cqlFileString = CQLUtilityClass.getCqlString(CQLUtilityClass.getCQLStringFromMeasureXML(measureXML,measureId), "").toString();
+		MATCQLParser matcqlParser = new MATCQLParser();
+		CQLFileObject cqlFileObject = matcqlParser.parseCQL(cqlFileString);
+		if(matcqlParser.getCQLErrorListener().getErrors().size()>0){
+			isInvalid = true;
+		}
+		return isInvalid;
+	}	
 	/* (non-Javadoc)
 	 * @see mat.server.service.MeasureLibraryService#validateMeasureXmlInpopulationWorkspace(mat.client.clause.clauseworkspace.model.MeasureXmlModel)
 	 */
-	@Override
-	public ValidateMeasureResult validateMeasureXmlAtCreateMeasurePackager(MeasureXmlModel measureXmlModel) {
+	//@Override
+	public ValidateMeasureResult validateMeasureXmlAtbyCreateMeasurePackager(MeasureXmlModel measureXmlModel) {
 		boolean isInvalid = false;
 		ValidateMeasureResult result = new ValidateMeasureResult();
 		result.setValid(true);

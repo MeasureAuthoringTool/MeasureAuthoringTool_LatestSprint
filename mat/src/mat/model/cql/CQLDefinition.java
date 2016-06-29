@@ -15,6 +15,7 @@ public class CQLDefinition implements IsSerializable, Cell<CQLDefinition>{
 	private String definitionLogic;
 	private String context;
 	private boolean supplDataElement;
+	private boolean popDefinition;
 	
 	
 	
@@ -45,11 +46,11 @@ public static class Comparator implements java.util.Comparator<CQLDefinition>, I
 		this.definitionName = definitionName.trim();
 	}
 	public String getDefinitionLogic() {
-		return definitionLogic;
+		return definitionLogic.trim();
 	}
 	public void setDefinitionLogic(String definitionLogic) {
 		//this.definitionLogic = "<![CDATA[" + definitionLogic + "]]>";
-		this.definitionLogic = definitionLogic;
+		this.definitionLogic = definitionLogic.trim();
 	}
 	public String getContext() {
 		return context;
@@ -96,5 +97,16 @@ public static class Comparator implements java.util.Comparator<CQLDefinition>, I
 	@Override
 	public void setValue(com.google.gwt.cell.client.Cell.Context context, Element parent, CQLDefinition value) {
 		
+	}
+	
+	@Override
+	public String toString() {
+		return this.definitionName;
+	}
+	public boolean isPopDefinition() {
+		return popDefinition;
+	}
+	public void setPopDefinition(boolean popDefinition) {
+		this.popDefinition = popDefinition;
 	}
 }
