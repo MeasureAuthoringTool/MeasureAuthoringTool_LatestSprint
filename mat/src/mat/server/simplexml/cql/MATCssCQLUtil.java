@@ -10,7 +10,6 @@ public class MATCssCQLUtil {
 			"	background-color: rgb(255,255,255);\r\n" + 
 			"	font-family: Verdana, Tahoma, sans-serif;\r\n" + 
 			"	font-size: 11px;\r\n" + 
-			"    width: 100%;\r\n" + 
 			"    overflow-y: auto;\r\n" + 
 			"}\r\n" + 
 			"\r\n" + 
@@ -56,8 +55,10 @@ public class MATCssCQLUtil {
 			"	background-color: rgb(255,255,255);*/\r\n" + 
 			"}\r\n" + 
 			"\r\n" + 
-			"table {\r\n" + 
-			"	line-height: 10pt;\r\n" + 
+			"table {"+ " \n " + 
+			"line-height: 10pt;"+ " \n " +
+			"width: 80%;"+ " \n " +
+			"font-size: 11px;"+ " \n " +
 			"}\r\n" + 
 			"\r\n" + 
 			"/*div {\r\n" + 
@@ -74,7 +75,7 @@ public class MATCssCQLUtil {
 			"}\r\n" + 
 			"\r\n" + 
 			".list-header {\r\n" + 
-			"    font-size: 14px;\r\n" + 
+			"    font-size: 12px;\r\n" + 
 			"    color: rgb(0, 0, 238);\r\n" + 
 			"}\r\n" + 
 			"\r\n" + 
@@ -86,11 +87,11 @@ public class MATCssCQLUtil {
 			"    font-family: Consolas,Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace,sans-serif;\r\n" + 
 			"    color:black;\r\n" + 
 			"    background-color:rgb(250,250,250);\r\n" + 
-			"    margin-top: 1em;\r\n" + 
-			"    margin-bottom: 1em;\r\n" + 
+			//"    margin-top: 1em;\r\n" + 
+			//"    margin-bottom: 1em;\r\n" + 
 			"    padding: 10px;\r\n" + 
-			"    line-height: 1.5em;\r\n" + 
-			"    font-size: 14px;\r\n" + 
+			//"    line-height: 1.5em;\r\n" + 
+			"    font-size: 12px;\r\n" + 
 			"    overflow: auto;\r\n" + 
 			"}\r\n" + 
 			"\r\n" + 
@@ -188,7 +189,7 @@ public class MATCssCQLUtil {
 			"\r\n" + 
 			".treeview input[type=checkbox] ~ ul {\r\n" + 
 			"  max-height: 100%;\r\n" + 
-			"  max-width: 100%;\r\n" + 
+			"  max-width: 80%;\r\n" + 
 			"  opacity: 1;  \r\n" + 
 			"}\r\n" + 
 			"\r\n" + 

@@ -28,4 +28,17 @@ public class HumanReadableGenerator {
 		return html;
 	}
 	
+	public static String generateHTMLForMeasure(String measureId,String simpleXmlStr, String measureReleaseVersion){
+		
+		String html = "";
+		System.out.println("Generating human readable for ver:"+measureReleaseVersion);
+		if(measureReleaseVersion.equals("v5.0")){
+			html = CQLHumanReadableGenerator.generateHTMLForMeasure(measureId, simpleXmlStr);
+		}else{
+			html = HQMFHumanReadableGenerator.generateHTMLForMeasure(measureId,simpleXmlStr);
+		}
+		
+		return html;
+	}
+	
 }
