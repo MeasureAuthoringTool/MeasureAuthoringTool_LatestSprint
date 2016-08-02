@@ -5,30 +5,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import mat.model.clause.MeasureExport;
-import mat.server.util.XmlProcessor;
-import mat.shared.UUIDUtilClient;
+
 import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import mat.model.clause.MeasureExport;
+import mat.server.util.XmlProcessor;
+import mat.shared.UUIDUtilClient;
 
 // TODO: Auto-generated Javadoc
 /**
  * The Class HQMFPopulationLogicGenerator.
  */
 public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogicGenerator {
-	/** The clause logic map. */
-	private Map<String, String> clauseLogicMap = new HashMap<String, String>();
-	
-	/** The measure grouping map. */
-	//	private Map<String, NodeList> measureGroupingMap = new HashMap<String, NodeList>();
 	
 	private TreeMap<Integer, NodeList> measureGroupingMap = new TreeMap<Integer, NodeList>();
 	
@@ -65,7 +62,6 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 		 **/
 		measureExport = me;
 		getMeasureScoringType(me);
-		generateClauseLogicMap(me);
 		getAllMeasureGroupings(me);
 		generatePopulationCriteria(me);
 		return null;
@@ -87,13 +83,13 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 						initialPopulation = groupingChildList.item(i);
 						generatePopulationTypeCriteria(groupingChildList.item(i)
 								, populationCriteriaComponentElement , me
-								, "initialPopulationCriteria", "IPOP", null);
+								, "initialPopulationCriteria", "IPOP");
 						break;
 					case "denominator" :
 						if(checkForRequiredClauseByScoring(me, popType, groupingChildList.item(i))){
 							generatePopulationTypeCriteria(groupingChildList.item(i)
 									, populationCriteriaComponentElement , me
-									, "denominatorCriteria", "DENOM", null);
+									, "denominatorCriteria", "DENOM");
 						}
 						break;
 					case "denominatorExclusions" :
@@ -101,7 +97,7 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 						if(checkForRequiredClauseByScoring(me, popType, groupingChildList.item(i))){
 							generatePopulationTypeCriteria(groupingChildList.item(i)
 									, populationCriteriaComponentElement , me
-									, "denominatorExclusionCriteria", "DENEX", null);
+									, "denominatorExclusionCriteria", "DENEX");
 						}
 						break;
 					case "denominatorExceptions" :
@@ -109,14 +105,14 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 						if(checkForRequiredClauseByScoring(me, popType, groupingChildList.item(i))){
 							generatePopulationTypeCriteria(groupingChildList.item(i)
 									, populationCriteriaComponentElement , me
-									, "denominatorExceptionCriteria", "DENEXCEP", null);
+									, "denominatorExceptionCriteria", "DENEXCEP");
 						}
 						break;
 					case "numerator" :
 						if(checkForRequiredClauseByScoring(me, popType, groupingChildList.item(i))){
 							generatePopulationTypeCriteria(groupingChildList.item(i)
 									, populationCriteriaComponentElement , me
-									, "numeratorCriteria", "NUMER", null);
+									, "numeratorCriteria", "NUMER");
 						}
 						break;
 					case "numeratorExclusions" :
@@ -124,14 +120,14 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 						if(checkForRequiredClauseByScoring(me, popType, groupingChildList.item(i))){
 							generatePopulationTypeCriteria(groupingChildList.item(i)
 									, populationCriteriaComponentElement , me
-									, "numeratorExclusionCriteria", "NUMEX", null);
+									, "numeratorExclusionCriteria", "NUMEX");
 						}
 						break;
 					case "measurePopulation" :
 						if(checkForRequiredClauseByScoring(me, popType, groupingChildList.item(i))){
 							generatePopulationTypeCriteria(groupingChildList.item(i)
 									, populationCriteriaComponentElement , me
-									, "measurePopulationCriteria", "MSRPOPL", null);
+									, "measurePopulationCriteria", "MSRPOPL");
 						}
 						break;
 					case "measurePopulationExclusions" :
@@ -140,17 +136,15 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 						if(checkForRequiredClauseByScoring(me, popType, groupingChildList.item(i))){
 							generatePopulationTypeCriteria(groupingChildList.item(i)
 									, populationCriteriaComponentElement , me
-									, "measurePopulationExclusionCriteria", "MSRPOPLEX", null);
+									, "measurePopulationExclusionCriteria", "MSRPOPLEX");
 						}
 						break;
 					case "measureObservation" :
-						//No top Logical Op.
 						break;
 					case "stratum" :
-						//No top Logical Op.
 						if(checkForRequiredClauseByScoring(me, popType, groupingChildList.item(i))){
-							generateStratifierCriteria(groupingChildList.item(i)
-									, populationCriteriaComponentElement, me, key.toString());
+							generatePopulationTypeCriteria(groupingChildList.item(i)
+									, populationCriteriaComponentElement, me, "stratifierCriteria", "STRAT");
 						}
 						break;
 					default:
@@ -159,70 +153,13 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 				}
 			}
 			//for creating SupplementalDataElements Criteria Section
-			//createSupplementalDataElmStratifier(me,populationCriteriaComponentElement.getFirstChild());
+			createSupplementalDataElmStratifier(me,populationCriteriaComponentElement.getFirstChild());
+			createRiskAdjustmentStratifier(me, populationCriteriaComponentElement.getFirstChild());
 		}
+		
 		
 	}
 	
-	/**
-	 * Generate Stratification Criteria Tag inside populationCrtieriaSection.
-	 * @param item - Node.
-	 * @param populationCriteriaComponentElement - Element.
-	 * @param me - MeasureExport.
-	 * @param groupingSequence - Measure Group Sequence.
-	 * @throws XPathExpressionException - Exception.
-	 */
-	private void generateStratifierCriteria(Node item, Node populationCriteriaComponentElement
-			, MeasureExport me, String groupingSequence) throws XPathExpressionException {
-		Document doc = populationCriteriaComponentElement.getOwnerDocument();
-		Element populationCriteriaElement = (Element) populationCriteriaComponentElement.getFirstChild();
-		//Node stratifierCriteraNode = null;
-		/*Node populationCriteria = null;*/
-		// Code to identify correct PopulationCriteria/StratificationCriteria Node based on Grouping Key.
-		/*NodeList idNodeList = me.getHQMFXmlProcessor().findNodeList(doc, "//component/populationCriteriaSection/child::id");
-		for (int i = 0; i < idNodeList.getLength(); i++) {
-			String extension = idNodeList.item(i).getAttributes().getNamedItem("extension").getNodeValue();
-			String extensionToBeCompared = "PopulationCriteria" + groupingSequence;
-			if (extensionToBeCompared.equalsIgnoreCase(extension)) {
-				populationCriteria = idNodeList.item(i).getParentNode();
-				Node lastChild = populationCriteria.getLastChild();
-				if ((lastChild.getChildNodes() != null)
-						&& lastChild.getChildNodes().item(0).getNodeName().equalsIgnoreCase("stratifierCriteria")) {
-					stratifierCriteraNode = lastChild.getChildNodes().item(0);
-				}
-			}
-		}*/
-		if (populationCriteriaElement != null) {
-			Element componentElement = doc.createElement("component");
-			componentElement.setAttribute(TYPE_CODE, "COMP");
-			Element stratCriteriaElement = doc.createElement("stratifierCriteria");
-			Element idElement = doc.createElement(ID);
-			idElement.setAttribute(ROOT, item.getAttributes().getNamedItem(UUID).getNodeValue());
-			idElement.setAttribute("extension", "Stratifiers");
-			stratCriteriaElement.appendChild(idElement);
-			Element codeElem = doc.createElement(CODE);
-			codeElem.setAttribute(CODE, "STRAT");
-			codeElem.setAttribute(CODE_SYSTEM, "2.16.840.1.113883.5.4");
-			codeElem.setAttribute(CODE_SYSTEM_NAME, "HL7 Observation Value");
-			Element displayNameElement = doc.createElement(DISPLAY_NAME);
-			displayNameElement.setAttribute(VALUE, "Stratification");
-			codeElem.appendChild(displayNameElement);
-			stratCriteriaElement.appendChild(codeElem);
-			componentElement.appendChild(stratCriteriaElement);
-			populationCriteriaElement.appendChild(componentElement);
-			/*else {
-			
-			stratCriteriaElement = (Element) stratifierCriteraNode;
-			componentElement = (Element) stratCriteriaElement.getParentNode();
-		}*/
-			/*Element preConditionElem = doc.createElement("precondition");
-		preConditionElem.setAttribute(TYPE_CODE, "PRCN");*/
-			if (item.getChildNodes().item(0) != null) {
-				generatePopulationLogic(stratCriteriaElement, item.getChildNodes().item(0), me);
-			}
-		}
-		/*stratCriteriaElement.appendChild(preConditionElem);*/
-	}
 	
 	/**
 	 * Method to generate default criteriaTag for all population types included in measure grouping.
@@ -234,28 +171,37 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 	 * @param topLogicalOpName - top Logical op type.
 	 * @throws XPathExpressionException - Exception
 	 */
-	//Except for Stratification , do not include top level Logical Op as per Stan.
 	private void generatePopulationTypeCriteria(Node item, Node populationCriteriaComponentElement
-			, MeasureExport me, String criteriaTagName, String criteriaTagCodeName
-			, String topLogicalOpName) throws XPathExpressionException {
+			, MeasureExport me, String criteriaTagName, String criteriaTagCodeName) throws XPathExpressionException {
+		String idExtenstion = "";
+		/*String displayValue = "";*/
 		Document doc = populationCriteriaComponentElement.getOwnerDocument();
 		Element populationCriteriaElement = (Element) populationCriteriaComponentElement.getFirstChild();
 		Element componentElement = doc.createElement("component");
 		componentElement.setAttribute(TYPE_CODE, "COMP");
 		Element initialPopCriteriaElement = doc.createElement(criteriaTagName);
-		initialPopCriteriaElement.setAttribute(CLASS_CODE, "OBS");
-		initialPopCriteriaElement.setAttribute(MOOD_CODE, "EVN");
+		
+		if(criteriaTagName.equalsIgnoreCase("stratifierCriteria")){
+			idExtenstion = "Stratifiers";
+		//	displayValue = "Stratification";
+		} else {
+			initialPopCriteriaElement.setAttribute(CLASS_CODE, "OBS");
+			initialPopCriteriaElement.setAttribute(MOOD_CODE, "EVN");
+			idExtenstion = StringUtils.deleteWhitespace(item.getAttributes().getNamedItem(TYPE).getNodeValue());
+			//displayValue = item.getAttributes().getNamedItem(TYPE).getNodeValue();
+		}
 		Element idElement = doc.createElement(ID);
 		idElement.setAttribute(ROOT, item.getAttributes().getNamedItem(UUID).getNodeValue());
-		idElement.setAttribute("extension", StringUtils.deleteWhitespace(item.getAttributes().getNamedItem(TYPE).getNodeValue()));
+		idElement.setAttribute("extension", idExtenstion);
 		initialPopCriteriaElement.appendChild(idElement);
 		Element codeElem = doc.createElement(CODE);
 		codeElem.setAttribute(CODE, criteriaTagCodeName);
 		codeElem.setAttribute(CODE_SYSTEM, "2.16.840.1.113883.5.4");
-		codeElem.setAttribute(CODE_SYSTEM_NAME, "HL7 Observation Value");
-		Element displayNameElement = doc.createElement(DISPLAY_NAME);
-		displayNameElement.setAttribute(VALUE, item.getAttributes().getNamedItem(TYPE).getNodeValue());
-		codeElem.appendChild(displayNameElement);
+		codeElem.setAttribute(CODE_SYSTEM_NAME, "Act Code");
+		// displayName inside <code> not needed for populations as per stan
+	/*	Element displayNameElement = doc.createElement(DISPLAY_NAME);
+		displayNameElement.setAttribute(VALUE, displayValue);
+		codeElem.appendChild(displayNameElement);*/
 		initialPopCriteriaElement.appendChild(codeElem);
 		/*Element preConditionElem = doc.createElement("precondition");
 		preConditionElem.setAttribute(TYPE_CODE, "PRCN");*/
@@ -282,32 +228,12 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 		Document mainDocument = populationCritieriaElem.getOwnerDocument();
 		Element preConditionElem = mainDocument.createElement("precondition");
 		preConditionElem.setAttribute(TYPE_CODE, "PRCN");
-		if (scoringType.equalsIgnoreCase("Proportion") && nodeType.equalsIgnoreCase("denominator")) {
-			Element criteriaRef = mainDocument.createElement("criteriaReference");
-			criteriaRef.setAttribute(CLASS_CODE, "OBS");
-			criteriaRef.setAttribute(MOOD_CODE, "EVN");
-			Element idElement = mainDocument.createElement(ID);
-			idElement.setAttribute(ROOT, initialPopulation.getAttributes().getNamedItem(UUID).getNodeValue());
-			idElement.setAttribute("extension"
-					, StringUtils.deleteWhitespace(initialPopulation.getAttributes()
-							.getNamedItem(TYPE).getNodeValue()));
-			criteriaRef.appendChild(idElement);
-			preConditionElem.appendChild(criteriaRef);
-			populationCritieriaElem.appendChild(preConditionElem);
-		} else if (scoringType.equalsIgnoreCase("Continuous Variable") && nodeType.equalsIgnoreCase("measurePopulation")) {
-			Element criteriaRef = mainDocument.createElement("criteriaReference");
-			criteriaRef.setAttribute(CLASS_CODE, "OBS");
-			criteriaRef.setAttribute(MOOD_CODE, "EVN");
-			Element idElement = mainDocument.createElement(ID);
-			idElement.setAttribute(ROOT, initialPopulation.getAttributes().getNamedItem(UUID).getNodeValue());
-			idElement.setAttribute("extension", StringUtils.deleteWhitespace(
-					initialPopulation.getAttributes().getNamedItem(TYPE).getNodeValue()));
-			criteriaRef.appendChild(idElement);
-			preConditionElem.appendChild(criteriaRef);
-			populationCritieriaElem.appendChild(preConditionElem);
-		} else if (scoringType.equalsIgnoreCase("Ratio") && (nodeType.equalsIgnoreCase("denominator")
+	
+		if (scoringType.equalsIgnoreCase("Ratio") && (nodeType.equalsIgnoreCase("denominator")
 				|| nodeType.equalsIgnoreCase("numerator"))) {
+			
 			String associatedIPUUID = initialPopulation.getAttributes().getNamedItem(UUID).getNodeValue();
+			
 			if (item.getAttributes().getNamedItem("associatedPopulationUUID") != null) {
 				associatedIPUUID = item.getAttributes().getNamedItem("associatedPopulationUUID").getNodeValue();
 			}
@@ -320,37 +246,12 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 			criteriaRef.appendChild(idElement);
 			preConditionElem.appendChild(criteriaRef);
 			populationCritieriaElem.appendChild(preConditionElem);
+			
 		}
 		
 	}
 	
-	/**
-	 * Method to generate tags for logical Operators.
-	 * @param doc - Document.
-	 * @param type - Logical Op type.
-	 * @return Element.
-	 */
-	/*private Element generateLogicalOperator(Document doc , String type) {
-		Element logicalOpElement = null;
-		switch (type) {
-			case "and":
-				logicalOpElement = doc.createElement("allTrue");
-				break;
-			case "or":
-				logicalOpElement = doc.createElement("atLeastOneTrue");
-				break;
-			case "andNot":
-				logicalOpElement = doc.createElement("allFalse");
-				break;
-			case "orNot":
-				logicalOpElement = doc.createElement("atLeastOneFalse");
-				break;
-			default:
-				//do nothing
-				break;
-		}
-		return logicalOpElement;
-	}*/
+	
 	/**
 	 * Method to generate tags for logic used inside population.
 	 * @param populationTypeCriteriaElement - Element.
@@ -377,22 +278,9 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 					case "comment":
 						// skipping comment node as of now.
 						break;
-					//case "itemCount":
-					//	generatePopulationLogic(populationTypeCriteriaElement, childNode , me);
-						//break;
-					case "elementRef":
-						//generateItemCountElementRef(me, populationTypeCriteriaElement, childNode, me.getHQMFXmlProcessor());
+					case "cqlfunction":
 						break;
-					/*case "and":
-					case "or":
-					case "andNot":
-					case "orNot":
-						Element logicalOpNode = generateLogicalOperator(
-								populationTypeCriteriaElement.getOwnerDocument(), nodeType);
-						preConditionElement.appendChild(logicalOpNode);
-						if (childNode.getChildNodes().getLength() > 0) {
-							generatePopulationLogic(logicalOpNode, childNode , me);
-						}*/
+
 					default:
 						break;
 				}
@@ -458,29 +346,7 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 		javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
 		scoringType = (String) xPath.evaluate(xPathScoringType, me.getSimpleXMLProcessor().getOriginalDoc(), XPathConstants.STRING);
 	}
-	/**
-	 * Method to populate clause UUID and displayName.
-	 * @param me - MeasureExport
-	 * @throws XPathExpressionException - {@link Exception}
-	 */
-	private void generateClauseLogicMap(MeasureExport me) throws XPathExpressionException {
-		String xPath = "/measure/subTreeLookUp/subTree";
-		NodeList subTreeNodeList = me.getSimpleXMLProcessor().findNodeList(me.getSimpleXMLProcessor().getOriginalDoc(), xPath);
-		for (int i = 0; i < subTreeNodeList.getLength(); i++) {
-			String uuid = subTreeNodeList.item(i).getAttributes().getNamedItem(UUID).getNodeValue();
-			Node firstChildNode = subTreeNodeList.item(i).getFirstChild();
-			String firstChildName = firstChildNode.getNodeName();
-			String displayName = null;
-			switch (firstChildName) {
-				case "elementRef":
-					displayName = firstChildNode.getAttributes().getNamedItem(ID).getNodeValue();
-					break;
-				default:
-					displayName = firstChildNode.getAttributes().getNamedItem(DISPLAY_NAME).getNodeValue();
-			}
-			clauseLogicMap.put(uuid, displayName);
-		}
-	}
+	
 	
 	/**
 	 * Method to populate all measure groupings in measureGroupingMap.
@@ -498,66 +364,7 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 			measureGroupingMap.put(Integer.parseInt(measureGroupingSequence), childNodeList);
 		}
 	}
-	/**
-	 * Creates the supplemental date criteria section.
-	 *
-	 * @param me the me
-	 * @return the node
-	 * @throws XPathExpressionException the x path expression exception
-	 */
-	private Element createSupplementalDataElmComponentNode(MeasureExport me) throws XPathExpressionException {
-		XmlProcessor outputProcessor = me.getHQMFXmlProcessor();
-		Element componentElement = outputProcessor.getOriginalDoc().createElement("component");
-		componentElement.setAttribute(TYPE_CODE, "COMP");
-		Node stratCriteriaElem = outputProcessor.getOriginalDoc()
-				.createElement("stratifierCriteria");
-		Element idElement = outputProcessor.getOriginalDoc()
-				.createElement(ID);
-		idElement.setAttribute(ROOT, UUIDUtilClient.uuid());
-		idElement.setAttribute("extension", "Stratifiers");
-		stratCriteriaElem.appendChild(idElement);
-		Element codeElem = outputProcessor.getOriginalDoc()
-				.createElement(CODE);
-		codeElem.setAttribute(CODE, "STRAT");
-		codeElem.setAttribute(CODE_SYSTEM, "2.16.840.1.113883.5.4");
-		codeElem.setAttribute(CODE_SYSTEM_NAME, "HL7 Observation Value");
-		Element displayNameElement = outputProcessor.getOriginalDoc().createElement(DISPLAY_NAME);
-		displayNameElement.setAttribute(VALUE, "Stratification");
-		codeElem.appendChild(displayNameElement);
-		stratCriteriaElem.appendChild(codeElem);
-		componentElement.appendChild(stratCriteriaElem);
-		return componentElement;
-	}
-	/**
-	 * Creates the measure attribute component.
-	 *
-	 * @param me the me
-	 * @param parentElem the parent elem
-	 */
-	private void createMeasureAttributeComponent(MeasureExport me, Node parentElem) {
-		XmlProcessor outputProcessor = me.getHQMFXmlProcessor();
-		Element componentElement = outputProcessor.getOriginalDoc().createElement("component");
-		componentElement.setAttribute(TYPE_CODE, "COMP");
-		Node measureAttributeElem = outputProcessor.getOriginalDoc()
-				.createElement("measureAttribute");
-		Element codeElement = outputProcessor.getOriginalDoc()
-				.createElement(CODE);
-		codeElement.setAttribute(CODE, "SDE");
-		codeElement.setAttribute(CODE_SYSTEM, "2.16.840.1.113883.5.4");
-		Element displayNameElem = outputProcessor.getOriginalDoc()
-				.createElement("displayName");
-		displayNameElem.setAttribute(VALUE, "Supplemental Data Element");
-		codeElement.appendChild(displayNameElem);
-		Element valueElem = outputProcessor.getOriginalDoc()
-				.createElement("value");
-		valueElem.setAttribute(XSI_TYPE, "ED");
-		valueElem.setAttribute("mediaType", "text/plain");
-		valueElem.setAttribute(VALUE, "Supplemental Data Elements");
-		measureAttributeElem.appendChild(codeElement);
-		measureAttributeElem.appendChild(valueElem);
-		componentElement.appendChild(measureAttributeElem);
-		parentElem.appendChild(componentElement);
-	}
+	
 	
 	/**
 	 * Gets the required clauses.
@@ -639,6 +446,109 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 	}
 	
 	/**
+	 * Create the risk adjustment components. This will create a create a component tag underneath 
+	 * population critiera section for risk adjustment variables. 
+	 * @param me the measure export
+	 * @param parentNode the parent node 
+	 * @throws XPathExpressionException
+	 */
+	private void createRiskAdjustmentStratifier(MeasureExport me, Node parentNode) throws XPathExpressionException {
+	
+		String xPathForRiskAdjustmentVariables = "/measure/riskAdjustmentVariables/cqldefinition"; 
+		XmlProcessor simpleXmlProcessor = me.getSimpleXMLProcessor(); 
+		NodeList riskAdjustmentVariables = simpleXmlProcessor.findNodeList(simpleXmlProcessor.getOriginalDoc(), 
+																			xPathForRiskAdjustmentVariables);		
+		String xPathForLibraryName = "/measure/cqlLookUp/library"; 
+		Node libraryNode = simpleXmlProcessor.findNode(simpleXmlProcessor.getOriginalDoc(), xPathForLibraryName);
+		String libraryName = libraryNode.getTextContent();
+		
+		String xPathForCQLUUID = "/measure/measureDetails/cqlUUID"; 
+		Node cqluuidNode = simpleXmlProcessor.findNode(simpleXmlProcessor.getOriginalDoc(), xPathForCQLUUID); 
+		String cqlUUID = cqluuidNode.getTextContent(); 
+		
+		for (int i = 0; i < riskAdjustmentVariables.getLength(); i++) {
+			Node current = riskAdjustmentVariables.item(i); 
+			String riskAdjustmentDefName = current.getAttributes().getNamedItem("displayName").getNodeValue(); 
+						
+			Element component = createRiskAdjustmentComponentNode(me, cqlUUID, libraryName, riskAdjustmentDefName, "MSRADJ");
+			parentNode.appendChild(component);
+		}
+	}
+	
+	/**
+	 * Creates the component for a risk adjustment variable in the hqmf document
+	 * @param me the measure export
+	 * @param riskAdjustmentUUID the risk adjustment variable uuid
+	 * @param cqlUUID the cql file uuid 
+	 * @param libraryName the cql library name
+	 * @param riskAdjustmentDefName the risk adjustment definition name
+	 * @return the component element
+	 */
+	private Element createRiskAdjustmentComponentNode(MeasureExport me, String cqlUUID, String libraryName, String riskAdjustmentDefName, String type) {
+		XmlProcessor processor = me.getHQMFXmlProcessor(); 
+		
+		Element component = processor.getOriginalDoc().createElement("component"); 
+		component.setAttribute("typeCode", "COMP");
+		
+		Element stratifierCriteria = processor.getOriginalDoc().createElement("stratifierCriteria"); 
+		
+		Element id = processor.getOriginalDoc().createElement("id");
+		id.setAttribute("extension", "Stratifiers");
+		id.setAttribute("root", UUIDUtilClient.uuid());
+		stratifierCriteria.appendChild(id); 
+		
+		Element code = processor.getOriginalDoc().createElement("code"); 
+		code.setAttribute("code", "STRAT");
+		code.setAttribute("codeSystem", "2.16.840.1.113883.5.4");
+		code.setAttribute("codeSystemName", "Act Code");
+		stratifierCriteria.appendChild(code);
+		
+		Element precondition = processor.getOriginalDoc().createElement("precondition"); 
+		precondition.setAttribute("typeCode", "PRCN");
+		stratifierCriteria.appendChild(precondition); 
+		
+		Element criteriaReference = processor.getOriginalDoc().createElement("criteriaReference"); 
+		criteriaReference.setAttribute("moodCode", "EVN");
+		criteriaReference.setAttribute("classCode", "OBS");
+		precondition.appendChild(criteriaReference);
+		
+		Element criteriaReferenceId = processor.getOriginalDoc().createElement("id");
+		criteriaReferenceId.setAttribute("root", cqlUUID);
+		String extensionString = String.format("%s.\"%s\"", libraryName, riskAdjustmentDefName);
+		criteriaReferenceId.setAttribute("extension", extensionString);
+		criteriaReference.appendChild(criteriaReferenceId);
+		
+		Element innerComponent = processor.getOriginalDoc().createElement("component");
+		innerComponent.setAttribute("typeCode", "COMP");
+		stratifierCriteria.appendChild(innerComponent);
+		
+		Element measureAttribute = processor.getOriginalDoc().createElement("measureAttribute");
+		innerComponent.appendChild(measureAttribute); 
+		
+		Element measureAttributeCode = processor.getOriginalDoc().createElement("code");
+		measureAttributeCode.setAttribute("code", type);
+		measureAttributeCode.setAttribute("codeSystem", "2.16.840.1.113883.5.4");
+		measureAttributeCode.setAttribute("codeSystemName", "Act Code");
+		measureAttribute.appendChild(measureAttributeCode);
+		
+		String value="";
+		if(type.equalsIgnoreCase("MSRADJ")){
+			value = "Risk Adjustment";
+		} else {
+			value = "Supplemental Data Elements";
+		}
+		Element measureAttributeValue = processor.getOriginalDoc().createElement("value");
+		measureAttributeValue.setAttribute("mediaType", "text/plain");
+		measureAttributeValue.setAttribute("value", value);
+		measureAttributeValue.setAttribute("xsi:type", "ED");
+		measureAttribute.appendChild(measureAttributeValue);
+		
+		component.appendChild(stratifierCriteria);
+	
+		return component;
+		
+	}
+	/**
 	 * Creates Logic for Each Supplemental Data Element Nodes.
 	 *
 	 * @param me the me
@@ -646,9 +556,18 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 	 * @throws XPathExpressionException the x path expression exception
 	 */
 	private void createSupplementalDataElmStratifier(MeasureExport me, Node parentNode) throws XPathExpressionException {
-		String xpathForOtherSupplementalQDMs = "/measure/supplementalDataElements/elementRef/@id";
+		String xpathForOtherSupplementalQDMs = "/measure/supplementalDataElements/cqldefinition/@uuid";
 		NodeList supplementalDataElements = me.getSimpleXMLProcessor().findNodeList(me.getSimpleXMLProcessor().getOriginalDoc(),
 				xpathForOtherSupplementalQDMs);
+		String xPathForLibraryName = "/measure/cqlLookUp/library"; 
+		Node libraryNode = me.getSimpleXMLProcessor().findNode(me.getSimpleXMLProcessor().getOriginalDoc(), xPathForLibraryName);
+		String libraryName = libraryNode.getTextContent();
+		
+		String xPathForCQLUUID = "/measure/measureDetails/cqlUUID"; 
+		Node cqluuidNode = me.getSimpleXMLProcessor().findNode(me.getSimpleXMLProcessor().getOriginalDoc(), xPathForCQLUUID); 
+		String cqlUUID = cqluuidNode.getTextContent(); 
+		
+		
 		if ((supplementalDataElements == null)
 				|| (supplementalDataElements.getLength() < 1)) {
 			return;
@@ -660,10 +579,10 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 		
 		String uuidXPathString = "";
 		for (String uuidString: supplementalElemenRefIds) {
-			uuidXPathString += "@uuid = '" + uuidString + "' or";
+			uuidXPathString += "@id = '" + uuidString + "' or ";
 		}
-		uuidXPathString = uuidXPathString.substring(0, uuidXPathString.lastIndexOf(" or"));
-		String xpathforOtherSupplementalDataElements = "/measure/elementLookUp/qdm[" + uuidXPathString + "]";
+		uuidXPathString = uuidXPathString.substring(0, uuidXPathString.lastIndexOf(" or "));
+		String xpathforOtherSupplementalDataElements = "/measure/cqlLookUp/definitions/definition[" + uuidXPathString + "]";
 		NodeList supplementalQDMNodeList = me.getSimpleXMLProcessor().findNodeList(me.getSimpleXMLProcessor().getOriginalDoc(),
 				xpathforOtherSupplementalDataElements);
 		if (supplementalQDMNodeList.getLength() < 1) {
@@ -671,60 +590,14 @@ public class CQLBasedHQMFPopulationLogicGenerator extends CQLBasedHQMFClauseLogi
 		}
 		
 		for (int i = 0; i < supplementalQDMNodeList.getLength(); i++) {
-			Element componentElement = createSupplementalDataElmComponentNode(me);
-			Node stratCriteriaElem = componentElement.getFirstChild();
 			Node qdmNode = supplementalQDMNodeList.item(i);
 			String qdmName = qdmNode.getAttributes().getNamedItem("name").getNodeValue();
-			String qdmDatatype = qdmNode.getAttributes().getNamedItem("datatype").getNodeValue();
-			String qdmUUID = qdmNode.getAttributes().getNamedItem("uuid").getNodeValue();
-			String qdmExtension = qdmName.replaceAll("\\s", "") + "_" + qdmDatatype.replaceAll("\\s", "");
-			createPreConditionTag(me.getHQMFXmlProcessor(), stratCriteriaElem, qdmUUID, qdmExtension);
-			createMeasureAttributeComponent(me, stratCriteriaElem);
-			componentElement.appendChild(stratCriteriaElem);
+			
+			//createRiskAdjustmentComponentNode is good enough for this too.
+		    Element componentElement = createRiskAdjustmentComponentNode(me, cqlUUID, libraryName, qdmName, "SDE");
 			parentNode.appendChild(componentElement);
 		}
 		
-	}
-	
-	/**
-	 * Creates the pre condition tag.
-	 *
-	 * @param hqmfXmlProcessor the hqmf xml processor
-	 * @param parentElem the parent elem
-	 * @param id the id
-	 * @param extension the extension
-	 * @throws XPathExpressionException the x path expression exception
-	 */
-	private void createPreConditionTag(XmlProcessor hqmfXmlProcessor,
-			Node parentElem, String id, String extension)
-					throws XPathExpressionException {
-		Node idNodeQDM = hqmfXmlProcessor.findNode(
-				hqmfXmlProcessor.getOriginalDoc(), "//entry/*/id[@root='" + id
-				+ "'][@extension=\"" + extension + "\"]");
-		if (idNodeQDM != null) {
-			Node parent = idNodeQDM.getParentNode();
-			if (parent != null) {
-				NamedNodeMap attribMap = parent.getAttributes();
-				String classCode = attribMap.getNamedItem(CLASS_CODE)
-						.getNodeValue();
-				String moodCode = attribMap.getNamedItem(MOOD_CODE)
-						.getNodeValue();
-				Element preConditionElem = hqmfXmlProcessor.getOriginalDoc()
-						.createElement("precondition");
-				preConditionElem.setAttribute(TYPE_CODE, "PRCN");
-				Element criteriaRefElem = hqmfXmlProcessor.getOriginalDoc()
-						.createElement("criteriaReference");
-				criteriaRefElem.setAttribute(CLASS_CODE, classCode);
-				criteriaRefElem.setAttribute(MOOD_CODE, moodCode);
-				Element criteriaRefIDElem = hqmfXmlProcessor.getOriginalDoc()
-						.createElement("id");
-				criteriaRefIDElem.setAttribute("root", id);
-				criteriaRefIDElem.setAttribute("extension", extension);
-				criteriaRefElem.appendChild(criteriaRefIDElem);
-				preConditionElem.appendChild(criteriaRefElem);
-				parentElem.appendChild(preConditionElem);
-			}
-		}
 	}
 	
 }

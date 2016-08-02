@@ -1,9 +1,12 @@
 package mat.server.simplexml.cql;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import javax.xml.xpath.XPathExpressionException;
@@ -24,6 +27,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.DocumentType;
 import org.jsoup.nodes.Element;
 import org.w3c.dom.DOMException;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -141,14 +145,48 @@ public class CQLHumanReadableHTMLCreator {
 		generateTableOfContents(humanReadableHTMLDocument, simpleXMLProcessor);
 		generatePopulationCriteriaHumanReadable(humanReadableHTMLDocument,
 				simpleXMLProcessor, cqlFileObject);
+		generateQDMDataElements(humanReadableHTMLDocument, simpleXMLProcessor); 
 //		generateQDMVariables(humanReadableHTMLDocument, simpleXMLProcessor);
 //		generateDataCriteria(humanReadableHTMLDocument, simpleXMLProcessor);
-//		generateSupplementalData(humanReadableHTMLDocument, simpleXMLProcessor);
-//		generateRiskAdjustmentVariables(humanReadableHTMLDocument, simpleXMLProcessor);
+		generateSupplementalData(humanReadableHTMLDocument, simpleXMLProcessor);
+		generateRiskAdjustmentVariables(humanReadableHTMLDocument, simpleXMLProcessor, cqlFileObject);
 		HeaderHumanReadableGenerator.addMeasureSet(simpleXMLProcessor,
 				humanReadableHTMLDocument);
 	}
 	
+	private static void generateRiskAdjustmentVariables(
+			Document humanReadableHTMLDocument, XmlProcessor simpleXMLProcessor, CQLFileObject cqlFileObject)
+					throws XPathExpressionException {
+		definitionsOrFunctionsAlreadyDisplayed.clear();
+		Element bodyElement = humanReadableHTMLDocument.body();
+		bodyElement
+		.append("<h3><a name=\"d1e879\" href=\"#toc\">Risk Adjustment Variables</a></h3>");
+		
+		Element mainDivElement = bodyElement.appendElement("div");
+		Element mainListElement = mainDivElement.appendElement(HTML_UL);
+		
+		NodeList elements = simpleXMLProcessor.findNodeList(
+				simpleXMLProcessor.getOriginalDoc(),
+				"/measure/riskAdjustmentVariables/cqldefinition");
+		
+		if (elements.getLength() > 0) {
+			for(int i=0;i<elements.getLength();i++){
+				Node childNode = elements.item(i);
+				String uuid = childNode.getAttributes().getNamedItem("uuid").getNodeValue();
+				String xpathforSubTree = "/measure/cqlLookUp//definition[@id='"+ uuid +"']";
+				Node defineNode = simpleXMLProcessor.findNode(simpleXMLProcessor.getOriginalDoc(),
+						xpathforSubTree);
+				String defineNodeName = defineNode.getAttributes().getNamedItem("name").getNodeValue();
+				defineNodeName = "\"" + defineNodeName + "\"";
+				generatePopulationCriteria(mainListElement, cqlFileObject, childNode, defineNodeName, defineNodeName);
+				
+			}
+		} else {
+			mainListElement.appendElement(HTML_LI).appendText("None");
+		}
+	}
+	
+
 	/**
 	 * Generate table of contents.
 	 *
@@ -196,8 +234,7 @@ public class CQLHumanReadableHTMLCreator {
 					throws XPathExpressionException {
 		
 		Element bodyElement = humanReadableHTMLDocument.body();
-		bodyElement
-		.append("<h3><a name=\"d1e405\" href=\"#toc\">Population Criteria</a></h3>");
+		bodyElement.append("<h3><a name=\"d1e405\" href=\"#toc\">Population Criteria</a></h3>");
 		
 		Element mainDivElement = bodyElement.appendElement("div");
 		Element mainListElement = mainDivElement.appendElement(HTML_UL);
@@ -222,6 +259,45 @@ public class CQLHumanReadableHTMLCreator {
 			NodeList clauseNodeList = groupMap.get(key).getChildNodes();
 			generatePopulationNodes(clauseNodeList, mainListElement,
 					groupNodeList.getLength(),key, simpleXMLProcessor, cqlFileObject);
+		}
+	}
+	
+	/**
+	 * Generate the qdm elements in the Human Readable
+	 * 
+	 * @param humanReadableHTMLDocument the human readable html document
+	 * @param simpleXMLProcessor the simple xml processor
+	 */
+	private static void generateQDMDataElements(Document humanReadableHTMLDocument, XmlProcessor simpleXMLProcessor) {
+		Element bodyElement = humanReadableHTMLDocument.body();
+		bodyElement.append("<h3><a name=\"d1e647\" href=\"#toc\">Data Criteria (QDM Data Elements)</a></h3>");
+		
+		Element qdmElementUL = bodyElement.appendElement(HTML_UL);
+		
+		try {
+			
+			NodeList qdmElementList = simpleXMLProcessor.findNodeList(simpleXMLProcessor.getOriginalDoc(), 
+														"/measure/cqlLookUp/valuesets/valueset[@suppDataElement='false']");
+			if(qdmElementList.getLength() < 1) {
+				String output = "None"; 
+				Element qdmElementLI = qdmElementUL.appendElement(HTML_LI);   
+				qdmElementLI.append(output);
+			}
+			
+			else {
+				for(int i = 0; i < qdmElementList.getLength(); i++) {
+					String dataTypeName = qdmElementList.item(i).getAttributes().getNamedItem("datatype").getNodeValue(); 
+					String name = qdmElementList.item(i).getAttributes().getNamedItem("name").getNodeValue(); 
+					String oid = qdmElementList.item(i).getAttributes().getNamedItem("oid").getNodeValue(); 
+					String taxonomy = qdmElementList.item(i).getAttributes().getNamedItem("taxonomy").getNodeValue(); 
+					
+					String output = String.format("\"%s: %s\" using \"%s %s Value Set (%s)\"", dataTypeName, name, name, taxonomy, oid); 
+					Element qdmElementLI = qdmElementUL.appendElement(HTML_LI);   
+					qdmElementLI.append(output);	
+				}
+			} 
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -297,12 +373,12 @@ public class CQLHumanReadableHTMLCreator {
 				String itemCountText = getItemCountText(clauseNode);
 				String popassoc = getPopAssoc(clauseNode, simpleXMLProcessor);
 				
-				if(!childPopulationName.startsWith("Initial Population")){
+				/*if(!childPopulationName.startsWith("Initial Population")){
 					populationListElement.appendText(childPopulationName
 							+ (popassoc.length() > 0 ? popassoc : "")
 							+ (itemCountText.length() > 0 ? itemCountText : "")
 							+ " =");
-				}
+				}*/
 				
 				/*if(childPopulationName.startsWith("Measure Observation")){
 					populationListElement = populationListElement.appendElement(HTML_UL);
@@ -432,6 +508,87 @@ public class CQLHumanReadableHTMLCreator {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * Generate supplemental data.
+	 *
+	 * @param humanReadableHTMLDocument the human readable html document
+	 * @param simpleXMLProcessor the simple xml processor
+	 * @throws XPathExpressionException the x path expression exception
+	 */
+	private static void generateSupplementalData(
+			Document humanReadableHTMLDocument, XmlProcessor simpleXMLProcessor)
+					throws XPathExpressionException {
+		Element bodyElement = humanReadableHTMLDocument.body();
+		bodyElement
+		.append("<h3><a name=\"d1e767\" href=\"#toc\">Supplemental Data Elements</a></h3>");
+		
+		Element mainDivElement = bodyElement.appendElement("div");
+		Element mainListElement = mainDivElement.appendElement(HTML_UL);
+		String XPATH_SUPPLEMENTAL_DATA_ELEMENTS = "/measure/supplementalDataElements/cqldefinition/@uuid";
+		NodeList supplementalDefnNodes = simpleXMLProcessor.findNodeList(simpleXMLProcessor.getOriginalDoc(), 
+				XPATH_SUPPLEMENTAL_DATA_ELEMENTS);
+		Map<String, Node> qdmNodeMap = new HashMap<String, Node>();
+		if(supplementalDefnNodes != null && supplementalDefnNodes.getLength()>0){
+			Map<String, String> dataType = new HashMap<String, String>();
+			for(int i=0;i<supplementalDefnNodes.getLength();i++){
+				Node node = supplementalDefnNodes.item(i);
+				if(node != null ){
+					String id = node.getNodeValue();
+				    Node logicElement = simpleXMLProcessor.findNode(
+							simpleXMLProcessor.getOriginalDoc(),
+							"/measure/cqlLookUp/definitions/definition[@id='" + id + "']/logic");
+				    if(logicElement != null){
+							if(logicElement.hasChildNodes()){
+								
+								NodeList defLogicMap = logicElement.getChildNodes();
+								if(defLogicMap.getLength() > 0){
+									String defLogic = defLogicMap.item(0).getNodeValue();
+									String[] pairs = defLogic.split("\"");
+									dataType.put(pairs[1].trim(), pairs[3].trim());
+								}
+							}
+					}
+				    for(Entry<String, String> entry : dataType.entrySet()){
+				    	Node qdm = simpleXMLProcessor.findNode(
+								simpleXMLProcessor.getOriginalDoc(),
+								"/measure/cqlLookUp/valuesets/valueset[@datatype='" + entry.getKey() + "']");
+						NamedNodeMap qdmMap = qdm.getAttributes();
+						qdmNodeMap.put(qdmMap.getNamedItem("datatype").getNodeValue()
+								+ ": " + qdmMap.getNamedItem("name").getNodeValue(),
+								qdm); 
+				    }
+				}
+
+			}
+			List<String> qdmNameList = new ArrayList<String>(qdmNodeMap.keySet());
+			Collections.sort(qdmNameList, new Comparator<String>() {
+				@Override
+				public int compare(String o1, String o2) {
+					return o1.compareToIgnoreCase(o2);
+				}
+			});
+			
+			for (String s : qdmNameList) {
+				Node qdm = qdmNodeMap.get(s);
+				NamedNodeMap qdmMap = qdm.getAttributes();
+				Element listItem = mainListElement.appendElement(HTML_LI);
+				
+				listItem.appendText("\""
+						+ qdmMap.getNamedItem("datatype").getNodeValue() + ": "
+						+ qdmMap.getNamedItem("name").getNodeValue()
+						+ "\" using \""
+						+ qdmMap.getNamedItem("name").getNodeValue() + " "
+						+ qdmMap.getNamedItem("taxonomy").getNodeValue()
+						+ " Value Set ("
+						+ qdmMap.getNamedItem("oid").getNodeValue() + ")\"");
+			}
+		}
+		else {
+			mainListElement.appendElement(HTML_LI).appendText("None");
+		}
+	}
+	
 	
 	/**
 	 * Parses the child.
@@ -976,11 +1133,11 @@ public class CQLHumanReadableHTMLCreator {
 				+ (int) (Math.random() * 1000);
 		checkBoxElement.attr("id", id);
 
-		if (definitionsOrFunctionsAlreadyDisplayed.contains(populationDisplayName)) {
+		/*if (definitionsOrFunctionsAlreadyDisplayed.contains(populationDisplayName)) {
 			checkBoxElement.attr("checked", "");
 		} else {
 			definitionsOrFunctionsAlreadyDisplayed.add(populationDisplayName);
-		}
+		}*/
 
 		Element definitionLabelElement = mainliElement.appendElement("label");
 		definitionLabelElement.attr("for", id);
@@ -1019,11 +1176,11 @@ public class CQLHumanReadableHTMLCreator {
 				+ (int) (Math.random() * 1000);
 		checkBoxElement.attr("id", id);
 
-		if (definitionsOrFunctionsAlreadyDisplayed.contains(populationDisplayName)) {
+		/*if (definitionsOrFunctionsAlreadyDisplayed.contains(populationDisplayName)) {
 			checkBoxElement.attr("checked", "");
 		} else {
 			definitionsOrFunctionsAlreadyDisplayed.add(populationDisplayName);
-		}
+		}*/
 
 		Element definitionLabelElement = mainliElement.appendElement("label");
 		definitionLabelElement.attr("for", id);
@@ -1033,7 +1190,7 @@ public class CQLHumanReadableHTMLCreator {
 		strongElement.appendText(populationDisplayName);
 		
 		definitionLabelElement.appendText(" (click to expand/collapse)");
-		System.out.println(mainDefinitionName);
+		System.out.println("Main Defintion Name: " + mainDefinitionName);
 		generateHTMLForDefinitionOrFunction(cqlBaseStatementObject, mainliElement, true);
 	}
 
