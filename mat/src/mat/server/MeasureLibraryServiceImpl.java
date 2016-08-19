@@ -1425,8 +1425,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		MeasureXmlModel measureXmlModel = getMeasureXmlForMeasure(measureId);
 		QualityDataModelWrapper details = convertXmltoQualityDataDTOModel(measureXmlModel);
 		//add expansion Profile if existing
-		String expProfilestr = getExpansionIdentifier(measureId);
-		if(!expProfilestr.isEmpty()){
+		String expProfilestr = getDefaultExpansionIdentifier(measureId);
+		if(expProfilestr != null){
 			details.setVsacExpIdentifier(expProfilestr);
 		}
 		ArrayList<QualityDataSetDTO> finalList = new ArrayList<QualityDataSetDTO>();
@@ -1463,32 +1463,6 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 	}
 	
-	
-	/**
-	 * Gets the expansion identifier.
-	 *
-	 * @param measureId the measure id
-	 * @return the expansion identifier
-	 */
-	private String getExpansionIdentifier(String measureId){
-		MeasureXmlModel model = getMeasureXmlForMeasure(measureId);
-		String vsacExpIdentifier = "";
-		if (model != null) {
-			XmlProcessor processor = new XmlProcessor(model.getXml());
-			String XPATH_FOR_ELEMLOOKUP_ATTR = "/measure/elementLookUp/@vsacExpIdentifier";
-			try {
-				Node attrNode = (Node)xPath.evaluate(XPATH_FOR_ELEMLOOKUP_ATTR,
-						processor.getOriginalDoc(), XPathConstants.NODE);
-				if(attrNode!=null){
-					vsacExpIdentifier = attrNode.getNodeValue();
-				}
-			} catch (XPathExpressionException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		return vsacExpIdentifier;
-	}
 	
 	/**
 	 * Gets the attribute dao.
@@ -4929,7 +4903,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		if (model != null) {
 			XmlProcessor processor = new XmlProcessor(model.getXml());
 			
-			String XPATH_VSAC_EXPANSION_IDENTIFIER = "/measure/elementLookUp/@vsacExpansionIdnetifier";
+			String XPATH_VSAC_EXPANSION_IDENTIFIER = "/measure/elementLookUp/@vsacExpIdentifier";
 			
 			try {
 				Node vsacExpIdAttr = (Node) xPath.evaluate(XPATH_VSAC_EXPANSION_IDENTIFIER, processor.getOriginalDoc(),

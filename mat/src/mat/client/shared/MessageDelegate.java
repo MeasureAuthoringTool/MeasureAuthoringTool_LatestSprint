@@ -149,6 +149,8 @@ public class MessageDelegate {
 	public static final String RATIO_NUM_DENO_ASSOCIATION_REQUIRED = "For Ratio measures, in the case of more than one Initial Population, "
 			+ " Numerator and Denominator must contain one association.";
 	
+	public static final String RATIO_MEASURE_OBS_ASSOCIATION_REQUIRED = "For Ratio measures, each Measure Observation requires an association be made to the Numerator or the Denominator.";
+	
 	/** The vsac expansion profile selection. */
 	public final String VSAC_EXPANSION_PROFILE_SELECTION = "Please Select VSAC Expansion Identifier to Apply to QDM Elements";
 	
@@ -576,6 +578,9 @@ public class MessageDelegate {
 	
 	/** The stratification validation for grouping. */
 	private final String STRATIFICATION_VALIDATION_FOR_GROUPING = " Measure Grouping cannot contain more than one Stratification.";
+	
+	/** The measure observation validation for grouping. */
+	private final String MEASURE_OBS_VALIDATION_FOR_GROUPING = " A ratio measure may not contain more than 2 measure observations in a Measure grouping.";
 	
 	
 	/** The rationale required. */
@@ -2184,6 +2189,15 @@ public class MessageDelegate {
 	}
 	
 	/**
+	 * Gets the ratio measure observation association required.
+	 *
+	 * @return the ratioMeasureObsAssociationRequired
+	 */
+	public String getRatioMeasureObsAssociationRequired() {
+		return RATIO_MEASURE_OBS_ASSOCIATION_REQUIRED;
+	}
+	
+	/**
 	 * Gets the measure logic is incomplete.
 	 *
 	 * @return the mEASURE_LOGIC_IS_INCOMPLETE
@@ -2274,6 +2288,15 @@ public class MessageDelegate {
 	 */
 	public String getSTRATIFICATION_VALIDATION_FOR_GROUPING() {
 		return STRATIFICATION_VALIDATION_FOR_GROUPING;
+	}
+	
+	/**
+	 * Gets the measure observation validation for grouping.
+	 *
+	 * @return the measure observation validation for grouping
+	 */
+	public String getMEASURE_OBS_VALIDATION_FOR_GROUPING() {
+		return MEASURE_OBS_VALIDATION_FOR_GROUPING;
 	}
 	
 	/**
