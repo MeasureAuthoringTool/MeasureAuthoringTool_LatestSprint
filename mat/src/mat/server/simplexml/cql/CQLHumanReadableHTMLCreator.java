@@ -498,7 +498,11 @@ public class CQLHumanReadableHTMLCreator {
 				}
 			}*/
 			//for (int i = 0; i < childNodes.getLength(); i++) {
-				generatePopulationCriteria(populationOrSubtreeListElement, cqlFileObject, clauseNode, parentName, PopulationDisplayName);
+				Node cqlNode = clauseNode;
+				if(clauseNode.hasChildNodes()){
+					cqlNode = clauseNode.getFirstChild();
+				}
+				generatePopulationCriteria(populationOrSubtreeListElement, cqlFileObject, cqlNode, parentName, PopulationDisplayName);
 			//}
 		} catch (DOMException e) {
 			// TODO Auto-generated catch block
@@ -1069,10 +1073,6 @@ public class CQLHumanReadableHTMLCreator {
 		 * );
 		 */
 		
-		if(cqlNode.hasChildNodes()){
-			cqlNode = cqlNode.getFirstChild();
-		}
-
 		Element mainDivElement = bodyElement.appendElement("div");
 		mainDivElement.attr("class", "treeview hover p-l-10");
 
@@ -1092,6 +1092,7 @@ public class CQLHumanReadableHTMLCreator {
 					populationName, populationDisplayName, cqlName);
 		} else if ("cqlfunction".equals(cqlNodeType)){
 			cqlName = "\"" + cqlName + "\"";
+			System.out.println("Functions map:"+cqlFileObject.getFunctionsMap());
 			generateHTMLForPopulation(mainULElement, cqlFileObject.getFunctionsMap().get(cqlName),
 					populationName, populationDisplayName, cqlName);
 		} else if("cqlaggfunction".equals(cqlNodeType)){
