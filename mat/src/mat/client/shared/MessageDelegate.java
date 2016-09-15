@@ -150,6 +150,8 @@ public class MessageDelegate {
 			+ " Numerator and Denominator must contain one association.";
 	
 	public static final String RATIO_MEASURE_OBS_ASSOCIATION_REQUIRED = "For Ratio Measures, each Measure Observation requires an association be made to the Numerator or the Denominator.";
+
+	private static final String ERROR_IN_SAVING_QDM_ELEMENTS = "Valuesets with different OIDs can not have the same valueset name.";
 	
 	/** The vsac expansion profile selection. */
 	public final String VSAC_EXPANSION_PROFILE_SELECTION = "Please Select VSAC Expansion Identifier to Apply to QDM Elements";
@@ -560,7 +562,7 @@ public class MessageDelegate {
 	private final String RATIO_TOO_FEW_POPULATIONS = "For a Ratio measure, a grouping must contain at least one Initial Population.";
 	
 	/** The invalid logic population work space. */
-	private final String INVALID_LOGIC_POPULATION_WORK_SPACE = "Measure Logic is incomplete.Please validate your measure logic in both Population Workspace and CQL Workspace.";
+	private final String INVALID_LOGIC_CQL_WORK_SPACE = "Measure Logic is incomplete.Please validate your measure logic in CQL Workspace.";
 	
 	/** The invalidlogic clause work space. */
 	private final String INVALIDLOGIC_CLAUSE_WORK_SPACE = "Clause logic is incomplete.Please validate your clause logic.";
@@ -711,6 +713,8 @@ public class MessageDelegate {
 	private final String MEASURE_OBSERVATION_VALIDATION_FOR_FUNCTIONS = "Contents of the clause logic are not permitted for Measure Observations.";
 	
 	private final String ONLY_ONE_CHILD_REQUIRED = " Functions must contain only one child node.";
+	
+	private final String INVALID_LOGIC_MEASURE_PACKAGER = "Populations or Measure Observations within a Measure Grouping must contain a valid Definition or Function.";
 	
 	public String getONLY_ONE_CHILD_REQUIRED() {
 		return ONLY_ONE_CHILD_REQUIRED;
@@ -2340,8 +2344,8 @@ public class MessageDelegate {
 	 *
 	 * @return the iNVALID_LOGIC_POPULATION_WORK_SPACE
 	 */
-	public String getINVALID_LOGIC_POPULATION_WORK_SPACE() {
-		return INVALID_LOGIC_POPULATION_WORK_SPACE;
+	public String getINVALID_LOGIC_CQL_WORK_SPACE() {
+		return INVALID_LOGIC_CQL_WORK_SPACE;
 	}
 	
 	/**
@@ -2426,6 +2430,15 @@ public class MessageDelegate {
 	 */
 	public String getWARNING_PASTING_IN_APPLIED_QDM_ELEMENTS() {
 		return WARNING_PASTING_IN_APPLIED_QDM_ELEMENTS;
+	}
+	
+	/**
+	 * Gets the error saving in  qdm elements.
+	 *
+	 * @return the error saving in qdm elements
+	 */
+	public String getERROR_IN_SAVING_QDM_ELEMENTS() {
+		return ERROR_IN_SAVING_QDM_ELEMENTS;
 	}
 	
 	/**
@@ -2605,6 +2618,10 @@ public class MessageDelegate {
 
 	public String getSUCESS_FUNCTION_MODIFY_WITH_ERRORS() {
 		return SUCESS_FUNCTION_MODIFY_WITH_ERRORS;
+	}
+
+	public String getINVALID_LOGIC_MEASURE_PACKAGER() {
+		return INVALID_LOGIC_MEASURE_PACKAGER;
 	}
 
 

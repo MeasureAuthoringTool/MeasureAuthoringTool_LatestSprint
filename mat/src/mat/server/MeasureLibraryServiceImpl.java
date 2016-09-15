@@ -91,6 +91,7 @@ import mat.server.service.MeasureNotesService;
 import mat.server.service.MeasurePackageService;
 import mat.server.service.UserService;
 import mat.server.service.impl.MatContextServiceUtil;
+import mat.server.util.ExportSimpleXML;
 import mat.server.util.MeasureUtility;
 import mat.server.util.ResourceLoader;
 import mat.server.util.UuidUtility;
@@ -108,6 +109,8 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.cqframework.cql.cql2elm.CQLtoELM;
+import org.cqframework.cql.cql2elm.CqlTranslator;
 import org.exolab.castor.mapping.Mapping;
 import org.exolab.castor.mapping.MappingException;
 import org.exolab.castor.xml.MarshalException;
@@ -2280,6 +2283,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					checkForTimingElementsAndAppend(xmlProcessor);
 					checkForDefaultCQLParametersAndAppend(xmlProcessor);
 					checkForDefaultCQLDefinitionsAndAppend(xmlProcessor);
+					updateCQLVersion(xmlProcessor);
 					if(! scoringTypeBeforeNewXml.equalsIgnoreCase(scoringTypeAfterNewXml)) {
 						deleteExistingGroupings(xmlProcessor);
 					}
@@ -2296,7 +2300,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			processor.checkForScoringType();
 			checkForTimingElementsAndAppend(processor);
 			checkForDefaultCQLParametersAndAppend(processor);
-			checkForDefaultCQLDefinitionsAndAppend(processor);			
+			checkForDefaultCQLDefinitionsAndAppend(processor);
+			updateCQLVersion(processor);
 			
 			//Add QDM elements for Supplemental Definitions for Race, Payer, Sex, Ethnicity
 			measureXmlModel.setXml(processor.transform(processor.getOriginalDoc()));
@@ -2357,6 +2362,20 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	}
 	
 	
+	private void updateCQLVersion(XmlProcessor processor) {
+		String cqlVersionXPath = "/measure/cqlLookUp/version";
+		try {
+			String version = (String) xPath.evaluate(
+					"/measure/measureDetails/version/text()",
+					processor.getOriginalDoc().getDocumentElement(), XPathConstants.STRING);
+			Node node = (Node)xPath.evaluate(cqlVersionXPath, processor.getOriginalDoc().getDocumentElement(), XPathConstants.NODE);
+			node.setTextContent(version);
+		} catch (XPathExpressionException e) {
+			logger.error(e.getMessage());
+		}
+		
+	}
+
 	/**
 	 * Deletes the existing groupings when scoring type selection is changed and saved.
 	 *
@@ -3469,7 +3488,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		result.setValid(true);
 		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
 		List<String> message = new ArrayList<String>();
-		message.add(MatContext.get().getMessageDelegate().getINVALID_LOGIC_POPULATION_WORK_SPACE());
+		message.add(MatContext.get().getMessageDelegate().getINVALID_LOGIC_MEASURE_PACKAGER());
 		if ((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml())) {
 			XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
 			
@@ -3522,45 +3541,62 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 								!childNode.getNodeName().equalsIgnoreCase("cqlfunction")) {
 							result.setValid(false);
 							result.setValidationMessages(message);
-						} else { //if the Measure is a CQL Measure.
-							
-							isInvalid = parseCQLFile(measureXmlModel.getXml(),
-									measureXmlModel.getMeasureId());
-							if(isInvalid) {
+							break;
+						} 
+						//aggregate function should have user define function as a child
+						if(childNode.getNodeName().equalsIgnoreCase("cqlaggfunction")){
+							if(!childNode.hasChildNodes()){
 								result.setValid(false);
 								result.setValidationMessages(message);
+								break;
 							}
 						}
+					} else {
+						result.setValid(false);
+						result.setValidationMessages(message);
+						break;
 					}
-					
 				}
+				//Parse CQL Data
+				if(result.isValid()) {
+					isInvalid = parseCQLFile(measureXmlModel.getXml(),
+					measureXmlModel.getMeasureId());
+					if(isInvalid) {
+						result.setValid(false);
+						result.setValidationMessages(message);
+						}
+					}
 			} catch (XPathExpressionException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
 		}
 		
-//		result.setValid(false);
-//		result.setValidationMessages(message);
 		return result;
 	}
 	
 	
-	private boolean validateCQLMeasure(String measureXML, String measureId){
-		boolean isInvalid = false;
-		isInvalid = parseCQLFile(measureXML, measureXML);
-		return isInvalid;
-	}
-	
 	private boolean parseCQLFile(String measureXML, String measureId){
 		boolean isInvalid = false;
+		MeasureXML newXml = getMeasureXMLDAO().findForMeasure(measureId);
 		String cqlFileString = CQLUtilityClass.getCqlString(CQLUtilityClass.getCQLStringFromMeasureXML(measureXML,measureId), "").toString();
 		MATCQLParser matcqlParser = new MATCQLParser();
 		CQLFileObject cqlFileObject = matcqlParser.parseCQL(cqlFileString);
-		if(matcqlParser.getCQLErrorListener().getErrors().size()>0){
-			isInvalid = true;
+		List<String> message= new ArrayList<String>();
+		String exportedXML = ExportSimpleXML.export(newXml, message, measureDAO,organizationDAO, cqlFileObject);
+		CQLModel cqlModel = new CQLModel();
+		cqlModel = CQLUtilityClass.getCQLStringFromMeasureXML(exportedXML,measureId);
+		StringBuilder cqlString = getCqlService().getCqlString(cqlModel);
+		if(!StringUtils.isBlank(cqlString.toString())){
+			try {
+				String elmString = CQLtoELM.doTranslation(cqlString.toString(), "XML", false, false, true);
+				if(CqlTranslator.getErrors().size()>0){
+					isInvalid = true;
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+		
 		return isInvalid;
 	}	
 	/* (non-Javadoc)
