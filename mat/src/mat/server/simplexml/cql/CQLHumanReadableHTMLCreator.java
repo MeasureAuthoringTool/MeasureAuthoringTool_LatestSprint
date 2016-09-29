@@ -11,6 +11,7 @@ import java.util.TreeMap;
 
 import javax.xml.xpath.XPathExpressionException;
 
+import mat.model.cql.CQLParameter;
 import mat.model.cql.parser.CQLBaseStatementInterface;
 import mat.model.cql.parser.CQLDefinitionModelObject;
 import mat.model.cql.parser.CQLFileObject;
@@ -1315,15 +1316,21 @@ public class CQLHumanReadableHTMLCreator {
 		if(!(cqlBaseStatementObject instanceof CQLAggregateFunction)){
 			
 			Element spanElem = getSpanElementWithClass(subDivElement, "cql_keyword");
-			if(cqlBaseStatementObject instanceof CQLFunctionModelObject){
-				spanElem.appendText("define function ");
-			}else {
-				spanElem.appendText("define ");
-			}
-	
 			Element spanElemDefName = getSpanElementWithClass(subDivElement,
 					"cql-class");
-			spanElemDefName.appendText(statementSignature + ":");
+			if(cqlBaseStatementObject instanceof CQLFunctionModelObject){
+				spanElem.appendText("define function ");
+				spanElemDefName.appendText(statementSignature + ":");
+			}else if(cqlBaseStatementObject instanceof CQLDefinitionModelObject) {
+				spanElem.appendText("define ");
+				spanElemDefName.appendText(statementSignature + ":");
+			} else {
+				spanElem.appendText("parameter ");
+				spanElemDefName.appendText(statementSignature);
+			}
+	 
+			
+			
 			
 			List<String> codeLineList = getDefnOrFuncLineList(cqlBaseStatementObject);
 			
@@ -1353,6 +1360,12 @@ public class CQLHumanReadableHTMLCreator {
 		
 		for(CQLFunctionModelObject referredToFunctionModelObject : referredToFunctionsModelObjectList){
 			generateHTMLForDefinitionOrFunction(referredToFunctionModelObject, subDivElement, false);
+		}
+		
+        List<CQLParameterModelObject> referredToParameterModelObjectList = cqlBaseStatementObject.getReferredToParameters();
+		
+		for(CQLParameterModelObject referredToParameterModelObject : referredToParameterModelObjectList){
+			generateHTMLForDefinitionOrFunction(referredToParameterModelObject, subDivElement, false);
 		}
 		
 	}

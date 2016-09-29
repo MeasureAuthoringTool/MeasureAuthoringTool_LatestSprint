@@ -64,7 +64,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 	 */
 	public void generateAttributeTagForFunctionalOp(MeasureExport measureExport, Node qdmNode, Element excerptElement
 			, Node attributeQDMNode) throws XPathExpressionException {
-		getExtensionValueBasedOnVersion(measureExport);
+		//getExtensionValueBasedOnVersion(measureExport);
 		createDataCriteriaForAttributes(qdmNode, excerptElement, measureExport.getHQMFXmlProcessor()
 				, measureExport.getSimpleXMLProcessor(), attributeQDMNode , true);
 	}
@@ -76,6 +76,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 	 * @return the HQMF xml string
 	 */
 	private String getHQMFXmlString(MeasureExport me) {
+		getExtensionValueBasedOnVersion(me);
 		XmlProcessor dataCriteriaXMLProcessor = createDateCriteriaTemplate(me);
 		me.setHQMFXmlProcessor(dataCriteriaXMLProcessor);
 		
@@ -109,7 +110,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 		Element itemChild = outputProcessor.getOriginalDoc()
 				.createElement(ITEM);
 		itemChild.setAttribute(ROOT, "2.16.840.1.113883.10.20.28.2.2");
-		itemChild.setAttribute("extension", extensionValue);
+		itemChild.setAttribute("extension", getDataCriteriaExtValueBasedOnVersion(me));
 		templateId.appendChild(itemChild);
 		// creating Code Element for DataCriteria
 		Element codeElem = outputProcessor.getOriginalDoc()
@@ -131,6 +132,19 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 		return outputProcessor;
 	}
 	
+	private String getDataCriteriaExtValueBasedOnVersion(MeasureExport me) {
+		if(me!=null){
+			String releaseVersion = me.getMeasure().getReleaseVersion();
+			if(releaseVersion.equalsIgnoreCase("v4")){
+				return VERSION_4_1_2_ID;
+			}else if(releaseVersion.equalsIgnoreCase("v5.0")) {
+				return VERSION_5_0_ID; 
+			} else {
+				return VERSION_4_3_ID;
+			}
+		}
+		return "";
+	}
 	/**
 	 * Creates the data criteria for qdm elements.
 	 *
@@ -185,7 +199,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 			String releaseVersion = me.getMeasure().getReleaseVersion();
 			if(releaseVersion.equalsIgnoreCase("v4")){
 				extensionValue = VERSION_4_1_2_ID;
-			} else {
+			}else {
 				extensionValue = VERSION_4_3_ID;
 			}
 		}

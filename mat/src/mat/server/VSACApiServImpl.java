@@ -7,16 +7,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Map.Entry;
 import mat.client.umls.service.VsacApiResult;
 import mat.dao.DataTypeDAO;
 import mat.model.DataType;
+import mat.model.MatConcept;
 import mat.model.MatValueSet;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.model.VSACExpansionIdentifierWrapper;
 import mat.model.VSACValueSetWrapper;
 import mat.model.VSACVersionWrapper;
+import mat.model.cql.CQLCodeSystem;
 import mat.server.service.MeasureLibraryService;
 import mat.server.service.VSACApiService;
 import mat.server.util.ResourceLoader;
@@ -551,6 +554,9 @@ public class VSACApiServImpl implements VSACApiService{
 										qualityDataSetDTO.setTaxonomy(StringUtils.EMPTY);
 									}
 								}
+								getUniqueCodeSystems(wrapper);
+								qualityDataSetDTO.setCodeSystemList(getCodeSystemList(wrapper.getValueSetList().get(0)
+										.getConceptList().getConceptList(), qualityDataSetDTO.getOid()));
 								updateInMeasureXml.put(qualityDataSetDTO, toBeModifiedQDM);
 								toBeModifiedQDM.setHasModifiedAtVSAC(true); // Used at Applied QDM Tab
 								//to show icons in CellTable.
@@ -683,6 +689,7 @@ public class VSACApiServImpl implements VSACApiService{
 						&& (!StringUtils.isEmpty(vsacResponseResult.getXmlPayLoad()))) {
 					result.setSuccess(true);
 					VSACValueSetWrapper wrapper = convertXmltoValueSet(vsacResponseResult.getXmlPayLoad());
+					getUniqueCodeSystems(wrapper);
 					result.setVsacResponse(wrapper.getValueSetList());
 					LOGGER.info("Successfully converted valueset object from vsac xml payload.");
 				} else {
@@ -752,6 +759,9 @@ public class VSACApiServImpl implements VSACApiService{
 						qualityDataSetDTO.setTaxonomy(StringUtils.EMPTY);
 					}
 				}
+				getUniqueCodeSystems(wrapper);
+				qualityDataSetDTO.setCodeSystemList(getCodeSystemList(wrapper.getValueSetList().get(0)
+						.getConceptList().getConceptList(), qualityDataSetDTO.getOid()));
 				updateInMeasureXml.put(qualityDataSetDTO, toBeModifiedQDM);
 			}
 		}
@@ -862,6 +872,37 @@ public class VSACApiServImpl implements VSACApiService{
 	 * */
 	public final MeasureLibraryService getMeasureLibraryService() {
 		return (MeasureLibraryService) context.getBean("measureLibraryService");
+	}
+	
+	private void getUniqueCodeSystems(VSACValueSetWrapper wrapper) {
+
+		List<String> uniqueList = new ArrayList<String>();
+		List<MatConcept> conceptList = wrapper.getValueSetList().get(0).getConceptList().getConceptList();
+		List<MatConcept> uniqueConceptList = new ArrayList<MatConcept>();
+		String codesystemStr = null;
+		for (int i = 0; i < conceptList.size(); i++) {
+			codesystemStr = conceptList.get(i).getCodeSystemName() + ":" + conceptList.get(i).getCodeSystemVersion();
+			if(!uniqueList.contains(codesystemStr)){
+				uniqueList.add(codesystemStr);
+				uniqueConceptList.add(conceptList.get(i));
+			}
+		}
+		wrapper.getValueSetList().get(0).getConceptList().getConceptList().clear();
+		wrapper.getValueSetList().get(0).getConceptList().getConceptList().addAll(uniqueConceptList);
+	}
+	
+	private List<CQLCodeSystem> getCodeSystemList(List<MatConcept> conceptList, String oid){
+		List<CQLCodeSystem> codeSystemList = new ArrayList<CQLCodeSystem>();
+		for(int i=0; i<conceptList.size(); i++ ){
+			CQLCodeSystem codeSystem = new CQLCodeSystem();
+			codeSystem.setId(UUID.randomUUID().toString().replaceAll("-", ""));
+			codeSystem.setCodeSystem(conceptList.get(i).getCodeSystem());
+			codeSystem.setCodeSystemName(conceptList.get(i).getCodeSystemName());
+			codeSystem.setCodeSystemVersion(conceptList.get(i).getCodeSystemVersion());
+			codeSystem.setValueSetOID(oid);
+			codeSystemList.add(codeSystem);
+		}
+		return codeSystemList;
 	}
 	
 }

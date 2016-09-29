@@ -2,6 +2,7 @@ package mat.server;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -10,6 +11,8 @@ import javax.xml.xpath.XPathExpressionException;
 import mat.client.clause.cqlworkspace.CQLWorkSpaceConstants;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
+import mat.model.cql.CQLCodeSystem;
+import mat.model.cql.CQLCodeSystemWrapper;
 import mat.model.cql.CQLDataModel;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLDefinitionsWrapper;
@@ -23,6 +26,7 @@ import mat.model.cql.CQLParametersWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.util.ResourceLoader;
 import mat.server.util.XmlProcessor;
+import mat.shared.ConstantMessages;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -67,14 +71,32 @@ public class CQLUtilityClass {
 			cqlStr = cqlStr.append("\n\n");
 			
 			cqlStr = cqlStr.append("using QDM");
-			//Uncomment after CQLToElmParser is ready to accept version beside QDM.
-			/*cqlStr = cqlStr.append(" version ");
+			
+			cqlStr = cqlStr.append(" version ");
 			cqlStr = cqlStr.append("'");
 			cqlStr = cqlStr.append(cqlModel.getUsedModel().getQdmVersion());
-			cqlStr = cqlStr.append("'");*/
+			cqlStr = cqlStr.append("'");
 			cqlStr = cqlStr.append("\n\n");
 		}
 
+		//CodeSystems
+		List<CQLCodeSystem> codeSystemList = cqlModel.getCodeSystemList();
+		List<String> codeSystemAlreadyUsed = new ArrayList<String>();
+		if(codeSystemList != null){
+			for(CQLCodeSystem codeSystem : codeSystemList){
+				String codeSysStr = codeSystem.getCodeSystemName() + ":" 
+			                          + codeSystem.getCodeSystemVersion();
+				String version = codeSystem.getCodeSystemVersion().replaceAll(" ", "%20");
+				if(!codeSystemAlreadyUsed.contains(codeSysStr)){
+					cqlStr = cqlStr.append("codesystem \"" + codeSysStr+'"').append(": ")
+							.append("'urn:oid:" + codeSystem.getCodeSystem() +"' ");
+					cqlStr = cqlStr.append("version 'urn:hl7:version:" + version +"'");
+					cqlStr = cqlStr.append("\n\n");
+					codeSystemAlreadyUsed.add(codeSysStr);
+				}
+				
+			}
+		}
 		
 		//Valuesets
 		List<CQLQualityDataSetDTO> valueSetList = cqlModel.getValueSetList();
@@ -82,11 +104,37 @@ public class CQLUtilityClass {
 		if (valueSetList != null) {
 			for (CQLQualityDataSetDTO valueset : valueSetList) {
 				if(!valueSetAlreadyUsed.contains(valueset.getCodeListName())){
+					String expIdentifier = "";
+					String version = valueset.getVersion().replaceAll(" ", "%20");
+					if(valueset.getExpansionIdentifier() != null){
+						expIdentifier = valueset.getExpansionIdentifier().replaceAll(" ", "%20");
+					}
 					cqlStr = cqlStr.append("valueset "
 							+'"'+ valueset.getCodeListName() +'"'+ ": "
-							+"'"+ valueset.getOid()+"'"
+							+"'urn:oid:"+ valueset.getOid()+"' "
 							);
-
+					List<String> codeSysName = getCodeSysName(valueset.getOid(),cqlModel);
+					
+					//Check if QDM has expansionidentifier or not.
+					if(expIdentifier.equalsIgnoreCase("")){
+						if(!version.equalsIgnoreCase("1.0")){
+							cqlStr = cqlStr.append("version 'urn:hl7:version:" + version +"' ");
+						}
+					}
+					else{
+						cqlStr = cqlStr.append("version 'urn:hl7:profile:" + expIdentifier +"' ");
+					}
+					if(!valueset.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)){
+						cqlStr = cqlStr.append("codesystems {"+'"');
+						Iterator<String> codeSysNameIterator = codeSysName.iterator();
+						while (codeSysNameIterator.hasNext()) {
+							cqlStr = cqlStr.append(codeSysNameIterator.next());
+							if(codeSysNameIterator.hasNext()){
+								cqlStr = cqlStr.append('"'+", "+'"');
+							}
+						}
+						cqlStr = cqlStr.append('"'+"}");
+					}
 					cqlStr = cqlStr.append("\n\n");
 					valueSetAlreadyUsed.add(valueset.getCodeListName());
 				}
@@ -131,6 +179,21 @@ public class CQLUtilityClass {
 
 	}
 	
+
+	private static List<String> getCodeSysName(String oid, CQLModel cqlModel) {
+		//CodeSystems
+		List<String> endresult = new ArrayList<String>();
+		List<CQLCodeSystem> codeSystemList = cqlModel.getCodeSystemList();
+		for (CQLCodeSystem existingList : codeSystemList) {
+			if(existingList.getValueSetOID().equalsIgnoreCase(oid)){
+				if(existingList.getCodeSystemName()!=null && existingList.getCodeSystemVersion()!=null){
+					endresult.add(existingList.getCodeSystemName()+":"+existingList.getCodeSystemVersion());
+				}
+			}
+		}
+		return endresult;
+	}
+
 
 	/** The Constant logger. */
 	private static final Log logger = LogFactory.getLog(CQLUtilityClass.class);
@@ -282,6 +345,7 @@ public class CQLUtilityClass {
 		
 		if(StringUtils.isNotBlank(cqlLookUpXMLString)){
 			getCQLGeneralInfo(cqlModel, measureXMLProcessor);
+			getCodeSystems(cqlModel, cqlLookUpXMLString);
 			getValueSet(cqlModel, cqlLookUpXMLString);
 			getCQLDefinitionsInfo(cqlModel, cqlLookUpXMLString);
 			getCQLParametersInfo(cqlModel,cqlLookUpXMLString);
@@ -291,6 +355,26 @@ public class CQLUtilityClass {
 		return cqlModel;
 	}
 	
+	private static void getCodeSystems(CQLModel cqlModel, String cqlLookUpXMLString) {
+		CQLCodeSystemWrapper codeSystemWrapper;
+		try {			 
+
+			Mapping mapping = new Mapping();
+			mapping.loadMapping(new ResourceLoader().getResourceAsURL("CodeSystemsMapping.xml"));
+			Unmarshaller unmarshaller = new Unmarshaller(mapping);
+			unmarshaller.setClass(CQLCodeSystemWrapper.class);
+			unmarshaller.setWhitespacePreserve(true);
+
+			codeSystemWrapper = (CQLCodeSystemWrapper) unmarshaller.unmarshal(new InputSource(new StringReader(cqlLookUpXMLString)));
+			if(!codeSystemWrapper.getCqlCodeSystemList().isEmpty()){
+				cqlModel.setCodeSystemList(codeSystemWrapper.getCqlCodeSystemList());
+			}
+		} catch (Exception e) {
+			logger.info("Error while getting valueset :" +e.getMessage());
+		}
+		
+	}
+
 	private static void getValueSet(CQLModel cqlModel, String cqlLookUpXMLString){
 		QualityDataModelWrapper valuesetWrapper;
 		try {			 
@@ -443,6 +527,9 @@ public class CQLUtilityClass {
 					convertedCQLDataSet.setType(tempDataSet.getType());
 					convertedCQLDataSet.setUuid(tempDataSet.getUuid());
 					convertedCQLDataSet.setVersion(tempDataSet.getVersion());
+					convertedCQLDataSet.setDataTypeHasRemoved(tempDataSet.isDataTypeHasRemoved());
+					convertedCQLDataSet.setExpansionIdentifier(tempDataSet.getExpansionIdentifier());
+					convertedCQLDataSet.setVsacExpIdentifier(tempDataSet.getVsacExpIdentifier());
 					convertedCQLDataSetList.add(convertedCQLDataSet);
 				}
 				
