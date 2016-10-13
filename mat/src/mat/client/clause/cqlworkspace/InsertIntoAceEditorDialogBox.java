@@ -242,6 +242,19 @@ public class InsertIntoAceEditorDialogBox {
 										sb = sb.append("[\"" + str[1] + "\"");
 										sb = sb.append(": \"").append(str[0] + "\"]");
 										itemNameToBeInserted = sb.toString();
+									} else if(itemTypeName.equalsIgnoreCase("definitions") || itemTypeName.equalsIgnoreCase("parameters")) {
+										StringBuilder sb = new StringBuilder(); 
+										sb = sb.append("\""); 
+										sb = sb.append(itemNameToBeInserted);
+										sb = sb.append("\""); 
+										itemNameToBeInserted = sb.toString(); 
+									} else if(itemTypeName.equalsIgnoreCase("functions")) {
+										StringBuilder sb = new StringBuilder(); 
+										sb = sb.append("\""); 
+										itemNameToBeInserted = itemNameToBeInserted.replace("()", "");
+										sb = sb.append(itemNameToBeInserted); 
+										sb = sb.append("\"()");
+										itemNameToBeInserted = sb.toString(); 
 									}
 									editor.insertAtCursor(itemNameToBeInserted);
 									editor.focus();
@@ -464,10 +477,6 @@ public class InsertIntoAceEditorDialogBox {
 			public void onSuccess(List<QDSAttributes> result) {
 				List<String> filterAttrByDataTypeList = new ArrayList<String>();
 				for (QDSAttributes qdsAttributes : result) {
-					if (NEGATION_RATIONALE.equals(qdsAttributes
-									.getName())) {
-						continue;
-					}
 					filterAttrByDataTypeList.add(qdsAttributes.getName());
 				}
 				availableAttributesToInsert.clear();

@@ -2,23 +2,27 @@ package mat.server.cqlparser;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import mat.model.cql.parser.CQLBaseStatementInterface;
+import mat.model.cql.parser.CQLCodeModelObject;
+import mat.model.cql.parser.CQLCodeSystemModelObject;
 import mat.model.cql.parser.CQLDefinitionModelObject;
 import mat.model.cql.parser.CQLFileObject;
 import mat.model.cql.parser.CQLFunctionModelObject;
 import mat.model.cql.parser.CQLParameterModelObject;
 import mat.model.cql.parser.CQLValueSetModelObject;
-import mat.server.cqlparser.cqlParser.AliasedQuerySourceContext;
+import mat.server.cqlparser.cqlParser.CodeDefinitionContext;
+import mat.server.cqlparser.cqlParser.CodesystemDefinitionContext;
+import mat.server.cqlparser.cqlParser.ExpressionContext;
 import mat.server.cqlparser.cqlParser.ExpressionDefinitionContext;
 import mat.server.cqlparser.cqlParser.FunctionDefinitionContext;
 import mat.server.cqlparser.cqlParser.LogicContext;
 import mat.server.cqlparser.cqlParser.OperandDefinitionContext;
 import mat.server.cqlparser.cqlParser.QueryContext;
-import mat.server.cqlparser.cqlParser.QuerySourceContext;
 import mat.server.cqlparser.cqlParser.RetrieveContext;
-import mat.server.cqlparser.cqlParser.SingleSourceClauseContext;
-import mat.server.cqlparser.cqlParser.SourceClauseContext;
+import mat.server.cqlparser.cqlParser.StatementContext;
+import mat.server.cqlparser.cqlParser.WhereClauseContext;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 //import mat.cql.humanreadable.GenerateCQLHumanReadable;
@@ -66,6 +70,41 @@ public class MATCQLListener extends cqlBaseListener {
 		//System.out.println(ctx.valuesetId().getText());
 		//System.out.println("\r\n");
 		extractValueSetDetails(ctx);
+	}
+	
+	@Override
+	public void exitCodesystemDefinition(CodesystemDefinitionContext ctx) {
+		System.out.println("Found codesystem:"+ctx.identifier().getText());
+		System.out.println(ctx.codesystemId().getText());
+		System.out.println(ctx.versionSpecifier().getText());
+		
+		CQLCodeSystemModelObject codeSystemModelObject = new CQLCodeSystemModelObject();
+		codeSystemModelObject.setIdentifier(ctx.identifier().getText());
+		codeSystemModelObject.setCodeSystemId(ctx.codesystemId().getText());
+		codeSystemModelObject.setVersionSpecifier(ctx.versionSpecifier().getText());
+		
+		this.cqlFileObject.getCodeSystemMap().put(ctx.identifier().getText(), codeSystemModelObject);
+	}
+	
+	@Override
+	public void exitCodeDefinition(CodeDefinitionContext ctx) {
+		System.out.println("Found code:"+ctx.identifier().getText());
+		System.out.println(ctx.codeId().getText());
+		System.out.println(ctx.codesystemIdentifier().getText());
+		System.out.println(ctx.displayClause().getText());
+		
+		CQLCodeModelObject cqlCodeModelObject = new CQLCodeModelObject();
+		cqlCodeModelObject.setCodeIdentifier(ctx.identifier().getText());
+		cqlCodeModelObject.setCodeId(ctx.codeId().getText());
+		cqlCodeModelObject.setCodeSystemIdentifier(ctx.codesystemIdentifier().getText());
+		cqlCodeModelObject.setDisplayClause(ctx.displayClause().getText());
+		
+		CQLCodeSystemModelObject codeSystemModelObject = this.cqlFileObject.getCodeSystemMap().get(cqlCodeModelObject.getCodeSystemIdentifier());
+		if(codeSystemModelObject != null){
+			cqlCodeModelObject.setCqlCodeSystemModelObject(codeSystemModelObject);
+		}
+		
+		this.cqlFileObject.getCodesMap().put(cqlCodeModelObject.getCodeIdentifier(), cqlCodeModelObject);
 	}
 
 	public void exitStatement(cqlParser.StatementContext ctx) { 
@@ -123,11 +162,14 @@ public class MATCQLListener extends cqlBaseListener {
 		System.out.println("Found Function definition...");
 		System.out.println(ctx.functionDefinition().identifier().getText());
 
-		
-
 		CQLFunctionModelObject cqlFunctionModelObject = new CQLFunctionModelObject();
-		List<String> childTokens = findFunctionChildren(ctx, cqlFunctionModelObject);
 		cqlFunctionModelObject.setIdentifier(ctx.functionDefinition().identifier().getText());
+		
+		System.out.println("Check attributes:"+cqlFunctionModelObject.getIdentifier());
+		checkForValuesetAttributes(ctx, cqlFunctionModelObject);
+		
+		List<String> childTokens = findFunctionChildren(ctx, cqlFunctionModelObject);
+		
 
 		if(ctx.functionDefinition().accessModifier() != null){
 			cqlFunctionModelObject.setAccessModifier(ctx.functionDefinition().accessModifier().getText());
@@ -150,7 +192,6 @@ public class MATCQLListener extends cqlBaseListener {
 			cqlFunctionModelObject.getArguments().add(functionArgument);
 		}
 
-
 		this.cqlFileObject.getFunctionsMap().put(cqlFunctionModelObject.getIdentifier(), cqlFunctionModelObject);
 	}
 
@@ -165,6 +206,8 @@ public class MATCQLListener extends cqlBaseListener {
 
 		//boolean possibleSupplementalDef = checkForSupplimentalDefinitions(ctx);
 		//cqlDefinitionModelObject.setPossibleSupplementalDef(possibleSupplementalDef);
+		//System.out.println("Check attributes:"+cqlDefinitionModelObject.getIdentifier());
+		checkForValuesetAttributes(ctx, cqlDefinitionModelObject);
 
 		if(ctx.expressionDefinition().accessModifier() != null){
 			cqlDefinitionModelObject.setAccessModifier(ctx.expressionDefinition().accessModifier().getText());
@@ -172,7 +215,72 @@ public class MATCQLListener extends cqlBaseListener {
 		List<String> childTokens = findDefinitionChildren(ctx, cqlDefinitionModelObject);
 		cqlDefinitionModelObject.setChildTokens(childTokens);
 		this.cqlFileObject.getDefinitionsMap().put(cqlDefinitionModelObject.getIdentifier(), cqlDefinitionModelObject);
-		System.out.println(cqlDefinitionModelObject.getIdentifier() + ":Referred to value sets:"+cqlDefinitionModelObject.getReferredToValueSets());
+		//System.out.println(cqlDefinitionModelObject.getIdentifier() + ":Referred to value sets:"+cqlDefinitionModelObject.getReferredToValueSets());
+	}
+
+	private void checkForValuesetAttributes(StatementContext ctx,
+			CQLBaseStatementInterface cqlModelObject) {
+		
+		ExpressionContext expressionContext = null;
+		
+		if(ctx.expressionDefinition() != null){		
+			ExpressionDefinitionContext expressionDefinitionContext = ctx.expressionDefinition();
+			expressionContext = expressionDefinitionContext.expression();
+		}else if(ctx.functionDefinition() != null){
+			FunctionDefinitionContext functionDefinitionContext = ctx.functionDefinition();
+			expressionContext = functionDefinitionContext.functionBody().expression();
+		}
+		
+		List<WhereClauseContext>  whereClauseContextList = collectWhereClauses(expressionContext);
+		CQLDefinitionModelObject dummyModelObject = new CQLDefinitionModelObject();
+		
+		Set<String> valueSetNames = this.cqlFileObject.getValueSetsMap().keySet();
+		//System.out.println("@@@@@@@@@@@@@@ $$$$$$$$$$$ ValueSetNames:"+valueSetNames);
+		
+		for(WhereClauseContext whereClauseContext : whereClauseContextList){
+			//System.out.println(whereClauseContext.expression().getText());
+			List<String> childTokens = new ArrayList<String>(); 
+			findWhereClauseIdentifiers(whereClauseContext.expression().children, childTokens, dummyModelObject);
+			//System.out.println("childtokens:"+childTokens);
+			
+			for(String valueSetName:valueSetNames){
+				if(childTokens.contains(valueSetName)){
+					CQLValueSetModelObject cqlValueSetModelObject = this.getCqlFileObject().getValueSetsMap().get(valueSetName);
+					cqlModelObject.getReferredToValueSets().add(cqlValueSetModelObject);
+					setReferredByInValueSet(cqlModelObject, cqlValueSetModelObject);
+				}
+			}
+		}
+	}
+
+	private void findWhereClauseIdentifiers(List<ParseTree> children,
+			List<String> childTokens, CQLDefinitionModelObject dummyModelObject) {
+		
+		for(ParseTree tree:children){
+			findStatementChildren(tree, childTokens, dummyModelObject);
+		}
+		
+	}
+
+	private List<WhereClauseContext> collectWhereClauses(
+			ExpressionContext expressionContext) {
+		
+		List<WhereClauseContext> whereClauseContextList = new ArrayList<WhereClauseContext>();
+		
+		if(expressionContext != null){
+			List<ParseTree> parseTreeList = expressionContext.children;
+			
+			for(ParseTree parseTree:parseTreeList){
+				if(parseTree.getClass().getSimpleName().equals("QueryContext")){
+					QueryContext queryContext = (QueryContext)parseTree;
+					if(queryContext.whereClause() != null){
+						whereClauseContextList.add(queryContext.whereClause());
+					}
+				}
+			}
+		}
+		
+		return whereClauseContextList;
 	}
 
 	/**
@@ -333,8 +441,8 @@ public class MATCQLListener extends cqlBaseListener {
 
 		for(int i=0;i<childTokens.size();i++){
 			String token = childTokens.get(i).trim();
-			//System.out.println("token:"+token);
-			if(i==0 && token.equals("parameter")){
+			System.out.println("token:"+token);
+			if(i == 0 && token.equals("parameter")){
 				removeTokens.add(childTokens.get(i));
 				removeTokens.add(childTokens.get(i+1));
 				break;
@@ -346,12 +454,12 @@ public class MATCQLListener extends cqlBaseListener {
 				removeTokens.add(childTokens.get(i));
 			}
 		}
-		//System.out.println(removeTokens);
+		System.out.println(removeTokens);
 		for(int j=0;j<removeTokens.size();j++){
 			childTokens.remove(removeTokens.get(j));
 		}
 
-		//System.out.println("Tokens:"+childTokens);
+		System.out.println("Tokens:"+childTokens);
 		return childTokens;
 	}
 
@@ -367,10 +475,19 @@ public class MATCQLListener extends cqlBaseListener {
 				
 				if(retrieveContext.valueset() != null){
 					String valueSetIdentifier = retrieveContext.valueset().qualifiedIdentifier().identifier().getText();
+					String valueSetDataType = "";
+					if(retrieveContext.namedTypeSpecifier() != null){
+						valueSetDataType = retrieveContext.namedTypeSpecifier().identifier().getText();
+					}					
 					
 					if(this.cqlFileObject.getValueSetsMap().get(valueSetIdentifier) != null){
 						baseStatementInterface.getReferredToValueSets().add(this.cqlFileObject.getValueSetsMap().get(valueSetIdentifier));
 						setReferredByInValueSet(baseStatementInterface, this.cqlFileObject.getValueSetsMap().get(valueSetIdentifier));
+					}else if(this.cqlFileObject.getCodesMap().get(valueSetIdentifier) != null){
+						CQLCodeModelObject cqlCodeModelObject = this.cqlFileObject.getCodesMap().get(valueSetIdentifier);
+						cqlCodeModelObject.setDataTypeUsed(valueSetDataType);
+						baseStatementInterface.getReferredToCodes().add(cqlCodeModelObject);
+						setReferredByInValueSet(baseStatementInterface, cqlCodeModelObject);
 					}
 				}
 				

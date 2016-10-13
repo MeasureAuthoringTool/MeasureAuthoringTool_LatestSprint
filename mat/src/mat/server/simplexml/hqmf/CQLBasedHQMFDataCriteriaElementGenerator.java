@@ -199,7 +199,10 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 			String releaseVersion = me.getMeasure().getReleaseVersion();
 			if(releaseVersion.equalsIgnoreCase("v4")){
 				extensionValue = VERSION_4_1_2_ID;
-			}else {
+				
+			} else if(releaseVersion.equalsIgnoreCase("v5.0")) {
+				extensionValue = VERSION_5_0_ID; 
+			} else {
 				extensionValue = VERSION_4_3_ID;
 			}
 		}
@@ -759,6 +762,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 				.getNamedItem(NAME).getNodeValue();
 		String qdmTaxonomy = qdmNode.getAttributes()
 				.getNamedItem(TAXONOMY).getNodeValue();
+		Node actionNegInd = templateNode.getAttributes().getNamedItem("actionNegationInd");
 		String entryCommentText = dataType;
 		// Local variable changes.
 		String qdmLocalVariableName = qdmName + "_" + dataType;
@@ -810,6 +814,10 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 		entryElem.appendChild(dataCriteriaElem);
 		dataCriteriaElem.setAttribute(CLASS_CODE, classCodeValue);
 		dataCriteriaElem.setAttribute(MOOD_CODE, moodValue);
+		//adding actionNegationInd for Negative Datatypes
+		if(actionNegInd!=null){
+			dataCriteriaElem.setAttribute(ACTION_NEGATION_IND, actionNegInd.getNodeValue());	
+		}
 		Element templateId = dataCriteriaXMLProcessor
 				.getOriginalDoc().createElement(TEMPLATE_ID);
 		dataCriteriaElem.appendChild(templateId);
@@ -817,8 +825,12 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 				.createElement(ITEM);
 		itemChild.setAttribute(ROOT, oidValue);
 		if (templateNode.getAttributes().getNamedItem("addExtensionInTemplate") == null) {
+			if(dataType.equalsIgnoreCase("Patient Characteristic Sex")){
+				itemChild.setAttribute("extension", VERSION_PATIENT_CHARACTERISTIC_SEX);
+			} else {
+				itemChild.setAttribute("extension", extensionValue);
+			}
 			
-			itemChild.setAttribute("extension", extensionValue);
 		}
 		templateId.appendChild(itemChild);
 		Element idElem = dataCriteriaXMLProcessor.getOriginalDoc()
@@ -920,13 +932,13 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 		boolean addVersionToValueTag = false;
 		if ("1.0".equals(valueSetVersion) || "1".equals(valueSetVersion)) {
 			if (qdmNode.getAttributes().getNamedItem("expansionIdentifier") != null) {
-				valueSetVersion = "vsac:profile:" + qdmNode.getAttributes().getNamedItem("expansionIdentifier").getNodeValue();
+				valueSetVersion = "urn:hl7:profile:" + qdmNode.getAttributes().getNamedItem("expansionIdentifier").getNodeValue().replaceAll(" ", "%20");
 				addVersionToValueTag = true;
 			} else {
 				addVersionToValueTag = false;
 			}
 		} else {
-			valueSetVersion = "vsac:version:" + qdmNode.getAttributes().getNamedItem("version").getNodeValue();
+			valueSetVersion = "urn:hl7:version:" + qdmNode.getAttributes().getNamedItem("version").getNodeValue().replaceAll(" ", "%20");
 			addVersionToValueTag = true;
 		}
 		if (addVersionToValueTag) {
@@ -1021,7 +1033,8 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 		//Patient Characteristic data type - contains code tag with valueSetId attribute and no title and value set tag.
 		boolean isPatientChar = templateNode.getAttributes().getNamedItem("valueSetId") != null;
 		boolean isAddValueSetInCodeTrue =templateNode.getAttributes().getNamedItem("addValueSetInCode")!=null;
-		boolean isIntervention = ("Intervention, Order".equals(dataType) || "Intervention, Performed".equals(dataType) || "Intervention, Recommended".equals(dataType));
+		boolean isIntervention = ("Intervention, Order".equalsIgnoreCase(dataType) || "Intervention, Performed".equalsIgnoreCase(dataType) || "Intervention, Recommended".equalsIgnoreCase(dataType)
+				|| "Intervention, Not Ordered".equalsIgnoreCase(dataType) || "Intervention, Not Performed".equalsIgnoreCase(dataType) || "Intervention, Not Recommended".equalsIgnoreCase(dataType));
 		if (isAddValueSetInCodeTrue)  {
 			Element codeElem = dataCriteriaXMLProcessor.getOriginalDoc()
 					.createElement(CODE);
@@ -1043,6 +1056,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 			Element codeElem = dataCriteriaXMLProcessor.getOriginalDoc()
 					.createElement(CODE);
 			codeElem.setAttribute(templateNode.getAttributes().getNamedItem("valueSetId").getNodeValue(), qdmOidValue);
+			addValueSetVersion(qdmNode, codeElem);
 			Element displayNameElem = dataCriteriaXMLProcessor.getOriginalDoc()
 					.createElement(DISPLAY_NAME);
 			displayNameElem.setAttribute(VALUE, HQMFDataCriteriaGenerator.removeOccurrenceFromName(qdmName)+" "+qdmTaxonomy+" Value Set");
@@ -1052,6 +1066,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 			Element codeElem = dataCriteriaXMLProcessor.getOriginalDoc()
 					.createElement(CODE);
 			codeElem.setAttribute("valueSet", qdmOidValue);
+			addValueSetVersion(qdmNode, codeElem);
 			Element displayNameElem = dataCriteriaXMLProcessor.getOriginalDoc()
 					.createElement(DISPLAY_NAME);
 			displayNameElem.setAttribute(VALUE, HQMFDataCriteriaGenerator.removeOccurrenceFromName(qdmName)+" "+qdmTaxonomy+" Value Set");
@@ -1077,11 +1092,11 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 				.getNodeValue();
 		if ("1.0".equals(version) || "1".equals(version)) {
 			if (qdmNode.getAttributes().getNamedItem("expansionIdentifier") != null) {
-				version = "vsac:profile:" + qdmNode.getAttributes().getNamedItem("expansionIdentifier").getNodeValue();
+				version = "urn:hl7:profile:" + qdmNode.getAttributes().getNamedItem("expansionIdentifier").getNodeValue().replaceAll(" ", "%20");
 			}
 		} else {
-			version = "vsac:version:" + qdmNode.getAttributes().getNamedItem("version")
-					.getNodeValue();
+			version = "urn:hl7:version:" + qdmNode.getAttributes().getNamedItem("version")
+					.getNodeValue().replaceAll(" ", "%20");
 		}
 		return version;
 	}
@@ -1125,7 +1140,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 					attributedToBeChangedInNode.item(0).getAttributes().
 					getNamedItem("valueSet").setNodeValue(qdmOidValue);
 					String valueSetVersion = valueSetVersionStringValue(qdmNode);
-					if (valueSetVersion.contains("vsac")) {
+					if (valueSetVersion.contains("urn:hl7")) {
 						Attr attrNode = attributedToBeChangedInNode.item(0).getOwnerDocument().createAttribute("valueSetVersion");
 						attrNode.setNodeValue(valueSetVersion);
 						attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(attrNode);
@@ -1421,7 +1436,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 					} else if (VALUE_SET.equalsIgnoreCase(attrMode)) {
 						
 						String valueSetVersion = valueSetVersionStringValue(attrNode);
-						if (valueSetVersion.contains("vsac")) {
+						if (valueSetVersion.contains("urn:hl7")) {
 							Attr valuesetVersionAttr = attributedToBeChangedInNode.item(0).getOwnerDocument().createAttribute("valueSetVersion");
 							valuesetVersionAttr.setNodeValue(valueSetVersion);
 							attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(valuesetVersionAttr);
@@ -1583,7 +1598,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 			translationNode.setAttribute("valueSet", attrOID.getNodeValue());
 			
 			String valueSetVersion = valueSetVersionStringValue(attributeQDMNode);
-			if (valueSetVersion.contains("vsac")) {
+			if (valueSetVersion.contains("urn:hl7")) {
 				translationNode.setAttribute("valueSetVersion", valueSetVersion);
 			} else {
 				if (translationNode.getAttributes().getNamedItem("valueSetVersion") != null) {
@@ -1929,7 +1944,7 @@ public class CQLBasedHQMFDataCriteriaElementGenerator implements Generator {
 						} else if (VALUE_SET.equalsIgnoreCase(attrMode)) {
 							
 							String valueSetVersion = valueSetVersionStringValue(attributeQDMNode);
-							if(valueSetVersion.contains("vsac")){
+							if(valueSetVersion.contains("urn:hl7")){
 								Attr valuesetVersionAttr = attributedToBeChangedInNode.item(0).getOwnerDocument().createAttribute("valueSetVersion");
 								valuesetVersionAttr.setNodeValue(valueSetVersion);
 								attributedToBeChangedInNode.item(0).getAttributes().setNamedItem(valuesetVersionAttr);

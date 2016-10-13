@@ -92,7 +92,7 @@ public class MATCssCQLUtil {
 			"    padding: 10px;\r\n" + 
 			//"    line-height: 1.5em;\r\n" + 
 			"    font-size: 12px;\r\n" + 
-			"    overflow: auto;\r\n" + 
+			//"    overflow: auto;\r\n" + 
 			"}\r\n" + 
 			"\r\n" + 
 			".p-l-10 {\r\n" + 
@@ -118,6 +118,14 @@ public class MATCssCQLUtil {
 			"}\r\n" + 
 			"\r\n" + 
 			".cql_keyword {\r\n" + 
+			"    color: rgb(127, 0, 85);\r\n" + 
+			"    font-weight: 700;\r\n" + 
+			"}\r\n" +
+			".cql_function {\r\n" + 
+			"    color: rgb(127, 0, 85);\r\n" + 
+			"    font-weight: 700;\r\n" + 
+			"}\r\n" +
+			".cql_attribute {\r\n" + 
 			"    color: rgb(127, 0, 85);\r\n" + 
 			"    font-weight: 700;\r\n" + 
 			"}\r\n" +

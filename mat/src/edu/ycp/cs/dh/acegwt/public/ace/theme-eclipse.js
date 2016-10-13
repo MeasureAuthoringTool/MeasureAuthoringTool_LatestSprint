@@ -23,7 +23,12 @@ color: black;\
 }\
 .ace-eclipse .ace_storage,\
 .ace-eclipse .ace_keyword,\
+.ace-eclipse .ace_matTimingKeyword,\
+.ace-eclipse .ace_constant.ace_language,\
 .ace-eclipse .ace_variable {\
+color: rgb(127, 0, 85);\
+}\
+.ace-eclipse .ace_matFunctionKeyword {\
 color: rgb(127, 0, 85);\
 }\
 .ace-eclipse .ace_constant.ace_buildin {\

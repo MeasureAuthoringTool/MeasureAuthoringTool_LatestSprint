@@ -2,7 +2,6 @@ package mat.server;
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -11,8 +10,10 @@ import javax.xml.xpath.XPathExpressionException;
 import mat.client.clause.cqlworkspace.CQLWorkSpaceConstants;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
+import mat.model.cql.CQLCode;
 import mat.model.cql.CQLCodeSystem;
 import mat.model.cql.CQLCodeSystemWrapper;
+import mat.model.cql.CQLCodeWrapper;
 import mat.model.cql.CQLDataModel;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLDefinitionsWrapper;
@@ -26,7 +27,6 @@ import mat.model.cql.CQLParametersWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.util.ResourceLoader;
 import mat.server.util.XmlProcessor;
-import mat.shared.ConstantMessages;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -124,7 +124,7 @@ public class CQLUtilityClass {
 					else{
 						cqlStr = cqlStr.append("version 'urn:hl7:profile:" + expIdentifier +"' ");
 					}
-					if(!valueset.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)){
+					/*if(!valueset.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)){
 						cqlStr = cqlStr.append("codesystems {"+'"');
 						Iterator<String> codeSysNameIterator = codeSysName.iterator();
 						while (codeSysNameIterator.hasNext()) {
@@ -134,13 +134,33 @@ public class CQLUtilityClass {
 							}
 						}
 						cqlStr = cqlStr.append('"'+"}");
-					}
+					}*/
 					cqlStr = cqlStr.append("\n\n");
 					valueSetAlreadyUsed.add(valueset.getCodeListName());
 				}
 			}
 		}
 
+		//Codes
+				List<CQLCode> codeList = cqlModel.getCodeList();
+				List<String> codesAlreadyUsed = new ArrayList<String>();
+				if(codeSystemList != null){
+					for(CQLCode codes : codeList){
+						String codesStr = '"'+codes.getCodeName()+'"'+ ":" 
+					                          +"'" +codes.getCodeOID()+"'";
+						String codeSysStr = codes.getCodeSystemName() + ":" 
+		                          + codes.getCodeSystemVersion().replaceAll(" ", "%20");
+						if(!codesAlreadyUsed.contains(codesStr)){
+							cqlStr = cqlStr.append("code " + codesStr).append(" ")
+									.append("from " + '"' + codeSysStr + '"' +" ");
+							cqlStr = cqlStr.append("display " +"'" +codes.getDisplayName()+"'");
+							cqlStr = cqlStr.append("\n\n");
+							codesAlreadyUsed.add(codesStr);
+						}
+						
+					}
+				}
+		
 		// parameters
 		List<CQLParameter> paramList = cqlModel.getCqlParameters();
 		if (paramList != null) {
@@ -174,7 +194,7 @@ public class CQLUtilityClass {
 		/*if(!toBeInsertedAtEnd.toString().isEmpty()){
 			cqlStr = cqlStr.append(toBeInsertedAtEnd.toString());
 		}*/
-
+		
 		return cqlStr;
 
 	}
@@ -184,9 +204,9 @@ public class CQLUtilityClass {
 		//CodeSystems
 		List<String> endresult = new ArrayList<String>();
 		List<CQLCodeSystem> codeSystemList = cqlModel.getCodeSystemList();
-		for (CQLCodeSystem existingList : codeSystemList) {
-			if(existingList.getValueSetOID().equalsIgnoreCase(oid)){
-				if(existingList.getCodeSystemName()!=null && existingList.getCodeSystemVersion()!=null){
+		if(oid != null && codeSystemList!=null){
+			for (CQLCodeSystem existingList : codeSystemList) {
+				if(existingList.getValueSetOID()!=null && existingList.getValueSetOID().equalsIgnoreCase(oid)){
 					endresult.add(existingList.getCodeSystemName()+":"+existingList.getCodeSystemVersion());
 				}
 			}
@@ -340,6 +360,7 @@ public class CQLUtilityClass {
 	public static CQLModel getCQLStringFromMeasureXML(String measureXML,String measureId){
 		
 		CQLModel cqlModel = new CQLModel();
+		System.out.println("Measure XML:"+measureXML);
 		XmlProcessor measureXMLProcessor = new XmlProcessor(measureXML);
 		String cqlLookUpXMLString = measureXMLProcessor.getXmlByTagName("cqlLookUp");
 		
@@ -347,6 +368,7 @@ public class CQLUtilityClass {
 			getCQLGeneralInfo(cqlModel, measureXMLProcessor);
 			getCodeSystems(cqlModel, cqlLookUpXMLString);
 			getValueSet(cqlModel, cqlLookUpXMLString);
+			getCodes(cqlModel, cqlLookUpXMLString);
 			getCQLDefinitionsInfo(cqlModel, cqlLookUpXMLString);
 			getCQLParametersInfo(cqlModel,cqlLookUpXMLString);
 			getCQLFunctionsInfo(cqlModel, cqlLookUpXMLString);
@@ -370,7 +392,27 @@ public class CQLUtilityClass {
 				cqlModel.setCodeSystemList(codeSystemWrapper.getCqlCodeSystemList());
 			}
 		} catch (Exception e) {
-			logger.info("Error while getting valueset :" +e.getMessage());
+			logger.info("Error while getting codesystems :" +e.getMessage());
+		}
+		
+	}
+	
+	private static void getCodes(CQLModel cqlModel, String cqlLookUpXMLString) {
+		CQLCodeWrapper codeWrapper;
+		try {			 
+
+			Mapping mapping = new Mapping();
+			mapping.loadMapping(new ResourceLoader().getResourceAsURL("CodeMapping.xml"));
+			Unmarshaller unmarshaller = new Unmarshaller(mapping);
+			unmarshaller.setClass(CQLCodeWrapper.class);
+			unmarshaller.setWhitespacePreserve(true);
+
+			codeWrapper = (CQLCodeWrapper) unmarshaller.unmarshal(new InputSource(new StringReader(cqlLookUpXMLString)));
+			if(!codeWrapper.getCqlCodeList().isEmpty()){
+				cqlModel.setCodeList(codeWrapper.getCqlCodeList());
+			}
+		} catch (Exception e) {
+			logger.info("Error while getting codes :" +e.getMessage());
 		}
 		
 	}
