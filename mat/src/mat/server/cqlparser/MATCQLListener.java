@@ -246,6 +246,7 @@ public class MATCQLListener extends cqlBaseListener {
 			for(String valueSetName:valueSetNames){
 				if(childTokens.contains(valueSetName)){
 					CQLValueSetModelObject cqlValueSetModelObject = this.getCqlFileObject().getValueSetsMap().get(valueSetName);
+					cqlValueSetModelObject.setDataTypeUsed("Attribute");
 					cqlModelObject.getReferredToValueSets().add(cqlValueSetModelObject);
 					setReferredByInValueSet(cqlModelObject, cqlValueSetModelObject);
 				}
@@ -478,13 +479,15 @@ public class MATCQLListener extends cqlBaseListener {
 					String valueSetDataType = "";
 					if(retrieveContext.namedTypeSpecifier() != null){
 						valueSetDataType = retrieveContext.namedTypeSpecifier().identifier().getText();
-					}					
+					}	
 					
 					if(this.cqlFileObject.getValueSetsMap().get(valueSetIdentifier) != null){
-						baseStatementInterface.getReferredToValueSets().add(this.cqlFileObject.getValueSetsMap().get(valueSetIdentifier));
-						setReferredByInValueSet(baseStatementInterface, this.cqlFileObject.getValueSetsMap().get(valueSetIdentifier));
+						CQLValueSetModelObject cqlValueSetModelObject = new CQLValueSetModelObject(this.cqlFileObject.getValueSetsMap().get(valueSetIdentifier));
+						cqlValueSetModelObject.setDataTypeUsed(valueSetDataType);
+						baseStatementInterface.getReferredToValueSets().add(cqlValueSetModelObject);
+						setReferredByInValueSet(baseStatementInterface, cqlValueSetModelObject);
 					}else if(this.cqlFileObject.getCodesMap().get(valueSetIdentifier) != null){
-						CQLCodeModelObject cqlCodeModelObject = this.cqlFileObject.getCodesMap().get(valueSetIdentifier);
+						CQLCodeModelObject cqlCodeModelObject = new CQLCodeModelObject(this.cqlFileObject.getCodesMap().get(valueSetIdentifier));
 						cqlCodeModelObject.setDataTypeUsed(valueSetDataType);
 						baseStatementInterface.getReferredToCodes().add(cqlCodeModelObject);
 						setReferredByInValueSet(baseStatementInterface, cqlCodeModelObject);
@@ -557,11 +560,28 @@ public class MATCQLListener extends cqlBaseListener {
 			List<CQLDefinitionModelObject> definitionsList, List<CQLFunctionModelObject> functionsList) {
 
 		String cqlFunctionName = cqlFunctionModelObject.getIdentifier();
+		String cqlFunctionNameNoQuotes = "";
+		
+		if(cqlFunctionName.indexOf(' ') == -1){
+			if(cqlFunctionName.startsWith("\"") && cqlFunctionName.endsWith("\"")){
+				cqlFunctionNameNoQuotes = cqlFunctionName.substring(1, cqlFunctionName.length() - 1);
+			}
+		}
 
 		for(CQLFunctionModelObject cqlFuncModelObject:functionsList){
 			if(cqlFuncModelObject.getChildTokens().contains(cqlFunctionName)){
 				cqlFuncModelObject.getReferredToFunctions().add(cqlFunctionModelObject);
 				cqlFunctionModelObject.getReferredByFunctions().add(cqlFuncModelObject);
+			}
+			/**
+			 * If the 'cqlFunctionName' has no spaces in it, then we need to strip of the leading " & 
+			 * check the child tokens again. 
+			 */
+			else if(cqlFunctionNameNoQuotes.length() > 0){
+				if(cqlFuncModelObject.getChildTokens().contains(cqlFunctionNameNoQuotes)){
+					cqlFuncModelObject.getReferredToFunctions().add(cqlFunctionModelObject);
+					cqlFunctionModelObject.getReferredByFunctions().add(cqlFuncModelObject);
+				}
 			}
 		}
 
@@ -569,6 +589,16 @@ public class MATCQLListener extends cqlBaseListener {
 			if(cqlDefnModelObject.getChildTokens().contains(cqlFunctionName)){
 				cqlDefnModelObject.getReferredToFunctions().add(cqlFunctionModelObject);
 				cqlFunctionModelObject.getReferredByDefinitions().add(cqlDefnModelObject);
+			}
+			/**
+			 * If the 'cqlFunctionName' has no spaces in it, then we need to strip of the leading " & 
+			 * check the child tokens again. 
+			 */
+			else if(cqlFunctionNameNoQuotes.length() > 0){
+				if(cqlDefnModelObject.getChildTokens().contains(cqlFunctionNameNoQuotes)){
+					cqlDefnModelObject.getReferredToFunctions().add(cqlFunctionModelObject);
+					cqlFunctionModelObject.getReferredByDefinitions().add(cqlDefnModelObject);
+				}
 			}
 		}
 
@@ -578,11 +608,29 @@ public class MATCQLListener extends cqlBaseListener {
 			List<CQLDefinitionModelObject> definitionsList, List<CQLFunctionModelObject> functionsList) {
 
 		String cqlDefinitionName = cqlDefinitionModelObject.getIdentifier();
+		String cqlDefinitionNameNoQuotes = "";
+		
+		if(cqlDefinitionName.indexOf(' ') == -1){
+			if(cqlDefinitionName.startsWith("\"") && cqlDefinitionName.endsWith("\"")){
+				cqlDefinitionNameNoQuotes = cqlDefinitionName.substring(1, cqlDefinitionName.length() - 1);
+			}
+		}
+		
 
 		for(CQLFunctionModelObject cqlFunctionModelObject:functionsList){
 			if(cqlFunctionModelObject.getChildTokens().contains(cqlDefinitionName)){
 				cqlFunctionModelObject.getReferredToDefinitions().add(cqlDefinitionModelObject);
 				cqlDefinitionModelObject.getReferredByFunctions().add(cqlFunctionModelObject);
+			}
+			/**
+			 * If the 'cqlDefinitionName' has no spaces in it, then we need to strip of the leading " & 
+			 * check the child tokens again. 
+			 */
+			else if(cqlDefinitionNameNoQuotes.length() > 0){
+				if(cqlFunctionModelObject.getChildTokens().contains(cqlDefinitionNameNoQuotes)){
+					cqlFunctionModelObject.getReferredToDefinitions().add(cqlDefinitionModelObject);
+					cqlDefinitionModelObject.getReferredByFunctions().add(cqlFunctionModelObject);
+				}
 			}
 		}
 
@@ -590,6 +638,16 @@ public class MATCQLListener extends cqlBaseListener {
 			if(cqlDefnModelObject.getChildTokens().contains(cqlDefinitionName)){
 				cqlDefnModelObject.getReferredToDefinitions().add(cqlDefinitionModelObject);
 				cqlDefinitionModelObject.getReferredByDefinitions().add(cqlDefnModelObject);
+			}
+			/**
+			 * If the 'cqlDefinitionName' has no spaces in it, then we need to strip of the leading " & 
+			 * check the child tokens again. 
+			 */
+			else if(cqlDefinitionNameNoQuotes.length() > 0){
+				if(cqlDefnModelObject.getChildTokens().contains(cqlDefinitionNameNoQuotes)){
+					cqlDefnModelObject.getReferredToDefinitions().add(cqlDefinitionModelObject);
+					cqlDefinitionModelObject.getReferredByDefinitions().add(cqlDefnModelObject);
+				}
 			}
 		}
 
@@ -623,20 +681,47 @@ for(CQLDefinitionModelObject cqlDefnModelObject:definitionsList){
 
 
 		String cqlParameterName = cqlParameterModelObject.getIdentifier();
+		String cqlParameterNameNoQuotes = "";
+		
+		if(cqlParameterName.indexOf(' ') == -1){
+			if(cqlParameterName.startsWith("\"") && cqlParameterName.endsWith("\"")){
+				cqlParameterNameNoQuotes = cqlParameterName.substring(1, cqlParameterName.length() - 1);
+			}
+		}
 
 		for(CQLFunctionModelObject cqlFunctionModelObject:functionsList){
 			if(cqlFunctionModelObject.getChildTokens().contains(cqlParameterName)){
 				cqlFunctionModelObject.getReferredToParameters().add(cqlParameterModelObject);
 				cqlParameterModelObject.getReferredByFunctions().add(cqlFunctionModelObject);
 			}
+			/**
+			 * If the 'cqlParameterName' has no spaces in it, then we need to strip of the leading " & 
+			 * check the child tokens again. 
+			 */
+			else if(cqlParameterNameNoQuotes.length() > 0){
+				if(cqlFunctionModelObject.getChildTokens().contains(cqlParameterNameNoQuotes)){
+					cqlFunctionModelObject.getReferredToParameters().add(cqlParameterModelObject);
+					cqlParameterModelObject.getReferredByFunctions().add(cqlFunctionModelObject);
+				}
+			}
 		}
 
 		for(CQLDefinitionModelObject cqlDefnModelObject:definitionsList){
 			if(cqlDefnModelObject.getChildTokens().contains(cqlParameterName)){
 				cqlDefnModelObject.getReferredToParameters().add(cqlParameterModelObject);
-				cqlParameterModelObject.getReferredByDefinitions().add(cqlDefnModelObject);}
+				cqlParameterModelObject.getReferredByDefinitions().add(cqlDefnModelObject);
 			}
-
+			/**
+			 * If the 'cqlParameterName' has no spaces in it, then we need to strip of the leading " & 
+			 * check the child tokens again. 
+			 */
+			else if(cqlParameterNameNoQuotes.length() > 0){
+				if(cqlDefnModelObject.getChildTokens().contains(cqlParameterNameNoQuotes)){
+					cqlDefnModelObject.getReferredToParameters().add(cqlParameterModelObject);
+					cqlParameterModelObject.getReferredByDefinitions().add(cqlDefnModelObject);}
+				}
+			}
+		
 
 	}
 

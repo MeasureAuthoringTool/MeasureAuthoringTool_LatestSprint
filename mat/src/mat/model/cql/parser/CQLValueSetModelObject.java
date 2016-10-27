@@ -7,7 +7,30 @@ import mat.model.cql.parser.CQLFunctionModelObject.FunctionArgument;
 
 public class CQLValueSetModelObject extends CQLBaseModelDefinitionObject implements CQLBaseStatementInterface{
 	
+	public CQLValueSetModelObject(CQLValueSetModelObject cqlValueSetModelObject) {
+		super();
+		this.setIdentifier(cqlValueSetModelObject.getIdentifier());
+		this.setAccessModifier(cqlValueSetModelObject.getAccessModifier());
+		this.valueSetId = cqlValueSetModelObject.valueSetId;
+		this.dataTypeUsed = cqlValueSetModelObject.dataTypeUsed;
+		this.childTokens = cqlValueSetModelObject.childTokens;
+		this.referredToDefinitions = cqlValueSetModelObject.referredToDefinitions;
+		this.referredByDefinitions = cqlValueSetModelObject.referredByDefinitions;
+		this.referredToFunctions = cqlValueSetModelObject.referredToFunctions;
+		this.referredByFunctions = cqlValueSetModelObject.referredByFunctions;
+		this.referredToValueSets = cqlValueSetModelObject.referredToValueSets;
+		this.referredByValueSets = cqlValueSetModelObject.referredByValueSets;
+		this.referredToParameters = cqlValueSetModelObject.referredToParameters;
+		this.referredByParameters = cqlValueSetModelObject.referredByParameters;
+	}
+
+	public CQLValueSetModelObject() {
+		
+	}
+
 	private String valueSetId;
+	
+	private String dataTypeUsed = "";
 	
 	private List<String> childTokens = new ArrayList<String>();
 	
@@ -143,6 +166,14 @@ public class CQLValueSetModelObject extends CQLBaseModelDefinitionObject impleme
 	public List<CQLCodeModelObject> getReferredToCodes() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	public String getDataTypeUsed() {
+		return dataTypeUsed;
+	}
+	
+	public void setDataTypeUsed(String dataTypeUsed) {
+		this.dataTypeUsed = dataTypeUsed;
 	}
 	
 }
