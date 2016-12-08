@@ -1,16 +1,9 @@
 package mat.client.clause.cqlworkspace;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import mat.client.clause.QDSAttributesService;
-import mat.client.clause.QDSAttributesServiceAsync;
-import mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay;
-import mat.client.shared.CustomDateTimeTextBox;
-import mat.client.shared.ListBoxMVP;
-import mat.client.shared.MatContext;
-import mat.model.clause.QDSAttributes;
-import mat.model.cql.CQLFunctionArgument;
-import mat.model.cql.CQLFunctions;
+
 import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.ButtonToolBar;
 import org.gwtbootstrap3.client.ui.FieldSet;
@@ -22,13 +15,13 @@ import org.gwtbootstrap3.client.ui.Modal;
 import org.gwtbootstrap3.client.ui.ModalBody;
 import org.gwtbootstrap3.client.ui.ModalFooter;
 import org.gwtbootstrap3.client.ui.ModalSize;
-import org.gwtbootstrap3.client.ui.TextBox;
 import org.gwtbootstrap3.client.ui.constants.ButtonDismiss;
 import org.gwtbootstrap3.client.ui.constants.ButtonSize;
 import org.gwtbootstrap3.client.ui.constants.ButtonType;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.constants.ModalBackdrop;
 import org.gwtbootstrap3.client.ui.constants.ValidationState;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.BlurEvent;
 import com.google.gwt.event.dom.client.BlurHandler;
@@ -37,15 +30,24 @@ import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.i18n.client.DateTimeFormat.PredefinedFormat;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Grid;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.ListBox;
-import com.google.gwt.user.datepicker.client.DateBox;
 
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
+import mat.client.clause.QDSAttributesService;
+import mat.client.clause.QDSAttributesServiceAsync;
+import mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay;
+import mat.client.shared.CustomDateTimeTextBox;
+import mat.client.shared.CustomQuantityTextBox;
+import mat.client.shared.JSONAttributeModeUtility;
+import mat.client.shared.ListBoxMVP;
+import mat.client.shared.MatContext;
+import mat.model.clause.QDSAttributes;
+import mat.model.cql.CQLFunctionArgument;
+import mat.model.cql.CQLFunctions;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -62,6 +64,8 @@ public class InsertIntoAceEditorDialogBox {
 	
 	/** The all attributes. */
 	private static List<String> allAttributes = MatContext.get().getAllAttributeList();
+	
+	private static List<String> allUnits = MatContext.get().getAllUnitsList(); 
 	
 	/** The attribute service. */
 	private static QDSAttributesServiceAsync attributeService = (QDSAttributesServiceAsync) GWT
@@ -109,8 +113,18 @@ public class InsertIntoAceEditorDialogBox {
 	final static CustomDateTimeTextBox ssTxtBox = new CustomDateTimeTextBox(2);
 	
 	/** The Constant msTxtBox. */
-	final static CustomDateTimeTextBox msTxtBox = new CustomDateTimeTextBox(2);
+	final static CustomDateTimeTextBox msTxtBox = new CustomDateTimeTextBox(3);
 	
+	final static FormGroup yearFormGroup = new FormGroup();
+	final static FormGroup mmFormGroup = new FormGroup();
+	final static FormGroup ddFormGroup = new FormGroup();
+	final static FormGroup hourFormGroup = new FormGroup();
+	final static FormGroup minFormGroup = new FormGroup();
+	final static FormGroup secondsFormGroup = new FormGroup();
+	final static FormGroup millisecFormGroup = new FormGroup();
+	
+    final static CustomQuantityTextBox QuantityTextBox = new CustomQuantityTextBox(30);
+	final static ListBoxMVP UnitslistBox = new ListBoxMVP();
 	/**
 	 * Public static method to build Pop up for Insert into Ace Editor.
 	 * @param searchDisplay - ViewDisplay.
@@ -354,6 +368,7 @@ public class InsertIntoAceEditorDialogBox {
 		DtAttriblistBox.getElement().setId("DataTypeBtAtrr_listBox");
 		//setting itemcount value to 1 turns listbox into a drop-down list.
 		DtAttriblistBox.setVisibleItemCount(1);
+		DtAttriblistBox.setStyleName("form-control");
 
 		final ListBoxMVP AttriblistBox = new ListBoxMVP();
 		AttriblistBox.setWidth("18em");
@@ -361,40 +376,41 @@ public class InsertIntoAceEditorDialogBox {
 		AttriblistBox.getElement().setId("Atrr_listBox");
 		//setting itemcount value to 1 turns listbox into a drop-down list.
 		AttriblistBox.setVisibleItemCount(1);
+		AttriblistBox.setStyleName("form-control");
 
 		final ListBoxMVP ModelistBox = new ListBoxMVP();
 		ModelistBox.setWidth("18em");
 		ModelistBox.setVisibleItemCount(10);
 		ModelistBox.getElement().setId("Mode_listBox");
-		ModelistBox.addItem("Select");
 		//setting itemcount value to 1 turns listbox into a drop-down list.
 		ModelistBox.setVisibleItemCount(1);
-
+		ModelistBox.setStyleName("form-control");
+		//Disabled by Default and enabled by other selections made.
+		ModelistBox.setEnabled(false);
 		final ListBoxMVP ModeDetailslistBox = new ListBoxMVP();
 		ModeDetailslistBox.setWidth("18em");
 		ModeDetailslistBox.setVisibleItemCount(10);
 		ModeDetailslistBox.getElement().setId("ModeDetails_listBox");
-		ModeDetailslistBox.addItem("Select");
 		//setting itemcount value to 1 turns listbox into a drop-down list.
 		ModeDetailslistBox.setVisibleItemCount(1);
-
-		// Define date format
-		DateTimeFormat dateFormat = DateTimeFormat.getFormat(PredefinedFormat.DATE_FULL);
-		final DateBox dateBox = new DateBox();
-		dateBox.setFormat(new DateBox.DefaultFormat(dateFormat));
-
-		
-		final TextBox QuantityTextBox = new TextBox();
+		ModeDetailslistBox.setStyleName("form-control");
+		//Disabled by Default and enabled by other selections made.
+		ModeDetailslistBox.setEnabled(false);
+		QuantityTextBox.clear();
 		QuantityTextBox.setWidth("18em");
 		QuantityTextBox.getElement().setId("Qantity_TextBox");
-
-		final ListBoxMVP UnitslistBox = new ListBoxMVP();
+		QuantityTextBox.setEnabled(false);
+		UnitslistBox.clear();
 		UnitslistBox.setWidth("18em");
 		UnitslistBox.setVisibleItemCount(10);
 		UnitslistBox.getElement().setId("Units_listBox");
-		UnitslistBox.addItem("Select");
+		UnitslistBox.setEnabled(false);
+		for(String unit : allUnits) {
+			UnitslistBox.addItem(unit);
+		}
 		//setting itemcount value to 1 turns listbox into a drop-down list.
 		UnitslistBox.setVisibleItemCount(1);
+		UnitslistBox.setStyleName("form-control");
 
 		//All the Labels
 		FormLabel AttrDataTypeLabel = new FormLabel();
@@ -414,7 +430,7 @@ public class InsertIntoAceEditorDialogBox {
 		ModeDetailsLabel.setTitle("Select Mode Details");
 		ModeDetailsLabel.setStyleName("attr-Label");
 		FormLabel DateTimeLabel = new FormLabel();
-		DateTimeLabel.setText("DateTime");
+		DateTimeLabel.setText("Date/Time");
 		DateTimeLabel.setTitle("Select DateTime");
 		DateTimeLabel.setStyleName("attr-Label");
 		FormLabel QuantityLabel = new FormLabel();
@@ -446,18 +462,19 @@ public class InsertIntoAceEditorDialogBox {
 		queryGrid.setWidget(3, 0, ModelistBox);
 		queryGrid.setWidget(2, 1, ModeDetailsLabel);
 		queryGrid.setWidget(3, 1, ModeDetailslistBox);
-		/*queryGrid.setWidget(4, 0, DateTimeLabel);*/
-		queryGrid.setWidget(4, 0, datePanel);
-		queryGrid.setWidget(4, 1, timePanel);
-		queryGrid.setWidget(5, 0, QuantityLabel);
-		queryGrid.setWidget(6, 0, QuantityTextBox);
-		queryGrid.setWidget(5, 1, UnitsLabel);
-		queryGrid.setWidget(6, 1, UnitslistBox);
+		queryGrid.setWidget(4, 0, DateTimeLabel);
+		queryGrid.setWidget(5, 0, datePanel);
+		queryGrid.setWidget(5, 1, timePanel);
+		queryGrid.setWidget(6, 0, QuantityLabel);
+		queryGrid.setWidget(7, 0, QuantityTextBox);
+		queryGrid.setWidget(6, 1, UnitsLabel);
+		queryGrid.setWidget(7, 1, UnitslistBox);
 		
 		queryGrid.setStyleName("attr-grid");
 		
-		modalBody.add(queryGrid);
 		modalBody.add(messageFormgroup);
+		modalBody.add(queryGrid);
+		
 
 		ModalFooter modalFooter = new ModalFooter();
 		ButtonToolBar buttonToolBar = new ButtonToolBar();
@@ -480,6 +497,8 @@ public class InsertIntoAceEditorDialogBox {
 		dialogModal.add(modalBody);
 		dialogModal.add(modalFooter);
 		
+		Collections.sort(allAttributes);
+		Collections.sort(allAttributes);
 		addAvailableItems(DtAttriblistBox, allDataTypes);
 		addAvailableItems(AttriblistBox, allAttributes);
 		
@@ -488,6 +507,10 @@ public class InsertIntoAceEditorDialogBox {
 			@Override
 			public void onChange(ChangeEvent event) {
 				helpBlock.setText("");
+				ModelistBox.clear();
+				ModeDetailslistBox.clear();
+				ModeDetailslistBox.setEnabled(false);
+				ModelistBox.setEnabled(false);
 				messageFormgroup.setValidationState(ValidationState.NONE);
 				int selectedIndex = DtAttriblistBox.getSelectedIndex();
 				if (selectedIndex != 0) {
@@ -495,8 +518,10 @@ public class InsertIntoAceEditorDialogBox {
 					getAllAttibutesByDataType(AttriblistBox, dataTypeSelected);
 				} else {
 					AttriblistBox.clear();
+					UnitslistBox.setSelectedIndex(0);
 					addAvailableItems(AttriblistBox, allAttributes);
 				}
+				setEnabled(false);
 			}
 		});
 		
@@ -506,7 +531,64 @@ public class InsertIntoAceEditorDialogBox {
 			@Override
 			public void onChange(ChangeEvent event) {
 				helpBlock.setText("");
+				ModelistBox.clear();
+				ModeDetailslistBox.clear();
+				ModelistBox.setEnabled(false);
+				ModeDetailslistBox.setEnabled(false);
 				messageFormgroup.setValidationState(ValidationState.NONE);
+				int selectedIndex = AttriblistBox.getSelectedIndex();
+				if (selectedIndex != 0) {
+					String attribSelected = AttriblistBox.getItemText(selectedIndex);
+					if(attribSelected.equalsIgnoreCase(MatContext.get().PLEASE_SELECT)){
+						ModelistBox.setEnabled(false);
+						ModeDetailslistBox.setEnabled(false);
+					}
+					else{
+						ModelistBox.setEnabled(true);
+						addModelist(ModelistBox,JSONAttributeModeUtility.getAttrModeList(attribSelected));
+						ModelistBox.setSelectedIndex(0);
+					}
+					
+				}
+				else {
+					ModelistBox.setEnabled(false);
+					ModeDetailslistBox.setEnabled(false);
+					ModelistBox.addItem(MatContext.get().PLEASE_SELECT);
+				}
+				setEnabled(false);
+			}
+
+		});
+		
+		ModelistBox.addChangeHandler(new ChangeHandler() {
+			
+			@Override
+			public void onChange(ChangeEvent event) {
+				helpBlock.setText("");
+				ModeDetailslistBox.clear();
+				messageFormgroup.setValidationState(ValidationState.NONE);
+				int selectedIndex = ModelistBox.getSelectedIndex();
+				if (selectedIndex != 0) {
+					String modeSelected = ModelistBox.getItemText(selectedIndex);
+					if(modeSelected.equalsIgnoreCase(MatContext.get().PLEASE_SELECT)){
+						ModeDetailslistBox.setEnabled(false);
+						setEnabled(false);
+					} else{
+						ModeDetailslistBox.setEnabled(true);
+						addModeDetailslist(ModeDetailslistBox,JSONAttributeModeUtility.getModeDetailsList(modeSelected));
+						if(modeSelected.equalsIgnoreCase("nullable") || modeSelected.equalsIgnoreCase("value sets")){
+							setEnabled(false);
+						} else {
+							setWidgetEnabled(AttriblistBox, ModelistBox);
+						}
+						
+					}
+				} else {
+					ModeDetailslistBox.setEnabled(false);
+					ModeDetailslistBox.addItem(MatContext.get().PLEASE_SELECT);
+					setEnabled(false);
+				}
+				
 			}
 		});
 		
@@ -515,21 +597,67 @@ public class InsertIntoAceEditorDialogBox {
 			@Override
 			public void onClick(ClickEvent event) {
 				//TODO:This is not a working code but a sample one which needs to be replaced once we implement insert button functionality.
-				int selectedIndex = DtAttriblistBox.getSelectedIndex();
-				if(selectedIndex !=-1){
-					String selectedItem = DtAttriblistBox.getItemText(selectedIndex);
+				int selectedIndex = AttriblistBox.getSelectedIndex();
+				if(selectedIndex !=0){
+					String selectedItem = AttriblistBox.getItemText(selectedIndex);
 					helpBlock.setText("");
 					messageFormgroup.setValidationState(ValidationState.NONE);
 					
-					//check if datetime is valid
+					//Quantity TextBox Validation
+					/*if(validateQuantity(QuantityTextBox.getText())){
+						
+					}*/
 					
-					int columnIndex = editor.getCursorPosition().getColumn();
-					System.out.println(columnIndex);
-					//convertToCamelCase(attributeNameToBeInserted);
-					editor.insertAtCursor(buildDateTimeString());
-					editor.focus();
-					dialogModal.hide();
+					if(QuantityTextBox.isEnabled() && !yyyyTxtBox.isEnabled()) {
+						
+						if(validateQuantity(QuantityTextBox.getText())){
+							
+							
+						} else {
+							helpBlock.setIconType(IconType.EXCLAMATION_CIRCLE);
+							helpBlock.setText("Please Enter valid Quantity.");
+							messageFormgroup.setValidationState(ValidationState.ERROR);
+							
+						}
+						
+					} else if(yyyyTxtBox.isEnabled() && !QuantityTextBox.isEnabled()){
+						
+						validateDateTimeWidget(editor, helpBlock, messageFormgroup, dialogModal);
+						
+					} else {
+						//this scenario both time widget and Quantity are available for result
+							
+						if((!QuantityTextBox.getText().isEmpty() || UnitslistBox.getSelectedIndex()!=0) && (yyyyTxtBox.getText().isEmpty() && mmTxtBox.getText().isEmpty() && ddTxtBox.getText().isEmpty()
+								&& hhTextBox.getText().isEmpty() && minTxtBox.getText().isEmpty() && ssTxtBox.getText().isEmpty()
+								&& msTxtBox.getText().isEmpty())){
+							
+							if(validateQuantity(QuantityTextBox.getText())){
+								//still have to work on Insert
+								
+							} else {
+								helpBlock.setIconType(IconType.EXCLAMATION_CIRCLE);
+								helpBlock.setText("Please Enter valid Quantity.");
+								messageFormgroup.setValidationState(ValidationState.ERROR);
+								
+							}
+						} else if((QuantityTextBox.getText().isEmpty() && UnitslistBox.getSelectedIndex()==0) && (!yyyyTxtBox.getText().isEmpty() || !mmTxtBox.getText().isEmpty() || !ddTxtBox.getText().isEmpty()
+								|| !hhTextBox.getText().isEmpty() || !minTxtBox.getText().isEmpty() || !ssTxtBox.getText().isEmpty()
+								|| !msTxtBox.getText().isEmpty())){
+							
+							validateDateTimeWidget(editor, helpBlock, messageFormgroup, dialogModal);
+							
+						} else {
+							
+							helpBlock.setIconType(IconType.EXCLAMATION_CIRCLE);
+							helpBlock.setText("You can not enter both DateTime and Quantity.");
+							messageFormgroup.setValidationState(ValidationState.ERROR);
+						}
+						
+					}
 					
+					//check if all fields are null
+					
+										
 				} else {
 					helpBlock.setIconType(IconType.EXCLAMATION_CIRCLE);
 					helpBlock.setText("Please Select Item name to insert into Editor");
@@ -539,8 +667,60 @@ public class InsertIntoAceEditorDialogBox {
 			}
 
 		});
-		dialogModal.show();}
+		dialogModal.show();
+		}
+	
+	
+	private static boolean validateQuantity(String text) {
+		
+		if(text.isEmpty()){
+			return false;
+		}
+		
+		char ch = text.charAt(text.length()-1); 
+		if(ch=='.' || ch=='-'){
+			return false;
+		}
+		
+		return true;
+	}
 
+
+	private static boolean validateDate() {
+		
+			
+		if(!mmTxtBox.getText().isEmpty() && yyyyTxtBox.getText().isEmpty()){
+			return false;
+		} else if(!ddTxtBox.getText().isEmpty() && (mmTxtBox.getText().isEmpty()|| yyyyTxtBox.getText().isEmpty())){
+			return false;
+		} else if(!yyyyTxtBox.getText().isEmpty() && !mmTxtBox.getText().isEmpty() && !ddTxtBox.getText().isEmpty()){
+			StringBuilder sb = new StringBuilder();
+			sb.append(yyyyTxtBox.getText()).append("/").append(mmTxtBox.getText()).append("/").append(ddTxtBox.getText());
+			if(!isValidate(sb.toString())){
+				return false;
+			}	
+		} else if(!inRange(yyyyTxtBox.getText(), "0000", "9999") || !inRange(mmTxtBox.getText(), "01", "12") || !inRange(ddTxtBox.getText(), "01", "31")){
+			return false;
+		}
+		return true;
+	}
+	
+	
+	private static boolean validateTime() {
+		
+		if(!minTxtBox.getText().isEmpty() && hhTextBox.getText().isEmpty()){
+			return false;
+		} else if(!ssTxtBox.getText().isEmpty() && (hhTextBox.getText().isEmpty()|| minTxtBox.getText().isEmpty())){
+			return false;
+		} else if(!msTxtBox.getText().isEmpty() && (hhTextBox.getText().isEmpty()|| ssTxtBox.getText().isEmpty() || minTxtBox.getText().isEmpty())){
+			return false;
+		} else if(!inRange(hhTextBox.getText(), "00", "24") || !inRange(minTxtBox.getText(), "00", "59") || !inRange(ssTxtBox.getText(), "00", "59")
+				|| !inRange(msTxtBox.getText(), "000", "999")){
+			return false;
+		}
+		return true;
+	}
+	
 	
 	/**
 	 * Creates the date widget.
@@ -551,17 +731,17 @@ public class InsertIntoAceEditorDialogBox {
 		
 		yyyyTxtBox.clear();
 		yyyyTxtBox.setWidth("50px");
-		final FormGroup yearFormGroup = new FormGroup();
+		yyyyTxtBox.setEnabled(false);
 		yearFormGroup.add(yyyyTxtBox);
 		
 		mmTxtBox.clear();
 		mmTxtBox.setWidth("50px");
-		final FormGroup mmFormGroup = new FormGroup();
+		mmTxtBox.setEnabled(false);
 		mmFormGroup.add(mmTxtBox);
 		
 		ddTxtBox.clear();
 		ddTxtBox.setWidth("50px");
-		final FormGroup ddFormGroup = new FormGroup();
+		ddTxtBox.setEnabled(false);
 		ddFormGroup.add(ddTxtBox);
 		
 		final FormLabel yearFormLabel = new FormLabel();
@@ -571,12 +751,12 @@ public class InsertIntoAceEditorDialogBox {
 		
 		final FormLabel monthFormLabel = new FormLabel();
 		monthFormLabel.setText("MM");
-		monthFormLabel.setTitle("Month(s)");
+		monthFormLabel.setTitle("Month");
 		monthFormLabel.setStyleName("month-Label");
 		
 		final FormLabel dayFormLabel = new FormLabel();
 		dayFormLabel.setText("DD");
-		dayFormLabel.setTitle("Day(s)");
+		dayFormLabel.setTitle("Day");
 		dayFormLabel.setStyleName("day-Label");
 		
 		/*datePanel.add(yearFormGroup);
@@ -604,12 +784,10 @@ public class InsertIntoAceEditorDialogBox {
 			public void onBlur(BlurEvent event) {
 				String year = yyyyTxtBox.getText();
 				if(!year.isEmpty()){
-					if(!inRange(year, "0001", "9999")){
-						System.out.println("not in Range");
+					if(!inRange(year, "0000", "9999")){
 						yearFormGroup.setValidationState(ValidationState.ERROR);
 					} else {
 						yearFormGroup.setValidationState(ValidationState.NONE);
-						System.out.println("In Range");
 					}
 				}
 			}
@@ -622,12 +800,10 @@ public class InsertIntoAceEditorDialogBox {
 			public void onBlur(BlurEvent event) {
 				String month = mmTxtBox.getText();
 				if(!month.isEmpty()){
-					if(!inRange(month, "00", "12")){
-						System.out.println("not in Range");
+					if(!inRange(month, "01", "12")){
 						mmFormGroup.setValidationState(ValidationState.ERROR);
 					} else {
 						mmFormGroup.setValidationState(ValidationState.NONE);
-						System.out.println("In Range");
 					}
 				}
 			}
@@ -640,12 +816,10 @@ public class InsertIntoAceEditorDialogBox {
 			public void onBlur(BlurEvent event) {
 				String day = ddTxtBox.getText();
 				if(!day.isEmpty()){
-					if(!inRange(day, "00", "31")){
-						System.out.println("not in Range");
+					if(!inRange(day, "01", "31")){
 						ddFormGroup.setValidationState(ValidationState.ERROR);
 					} else {
 						ddFormGroup.setValidationState(ValidationState.NONE);
-						System.out.println("In Range");
 					}
 				}
 			}
@@ -653,52 +827,139 @@ public class InsertIntoAceEditorDialogBox {
 		
 	}
 	
-	
+	private static void validateDateTimeWidget(AceEditor editor, HelpBlock helpBlock, FormGroup messageFormgroup,
+			Modal dialogModal)
+
+	{
+		if (yyyyTxtBox.getText().isEmpty() && mmTxtBox.getText().isEmpty() && ddTxtBox.getText().isEmpty()
+				&& hhTextBox.getText().isEmpty() && minTxtBox.getText().isEmpty() && ssTxtBox.getText().isEmpty()
+				&& msTxtBox.getText().isEmpty()) {
+			helpBlock.setIconType(IconType.EXCLAMATION_CIRCLE);
+			helpBlock.setText("Please Enter a valid Date/Time.");
+			messageFormgroup.setValidationState(ValidationState.ERROR);
+
+			// check if either date and time fields are not null
+		} else if ((!yyyyTxtBox.getText().isEmpty() || !mmTxtBox.getText().isEmpty() || !ddTxtBox.getText().isEmpty())
+				&& (!hhTextBox.getText().isEmpty() || !minTxtBox.getText().isEmpty() || !ssTxtBox.getText().isEmpty()
+						|| !msTxtBox.getText().isEmpty())) {
+
+			StringBuilder sb = new StringBuilder();
+			sb.append(yyyyTxtBox.getText()).append("/").append(mmTxtBox.getText()).append("/")
+					.append(ddTxtBox.getText());
+
+			if (!yyyyTxtBox.getText().isEmpty() && !mmTxtBox.getText().isEmpty() && !ddTxtBox.getText().isEmpty()
+					&& isValidate(sb.toString())) {
+				// validate
+				if (validateTime()) {
+					int columnIndex = editor.getCursorPosition().getColumn();
+					System.out.println(columnIndex);
+					editor.insertAtCursor(buildDateTimeString());
+					editor.focus();
+					dialogModal.hide();
+				} else {
+					hourFormGroup.setValidationState(ValidationState.ERROR);
+					minFormGroup.setValidationState(ValidationState.ERROR);
+					secondsFormGroup.setValidationState(ValidationState.ERROR);
+					millisecFormGroup.setValidationState(ValidationState.ERROR);
+					helpBlock.setIconType(IconType.EXCLAMATION_CIRCLE);
+					helpBlock.setText("Please Enter a valid Date/Time.");
+					messageFormgroup.setValidationState(ValidationState.ERROR);
+				}
+
+			} else {
+				yearFormGroup.setValidationState(ValidationState.ERROR);
+				mmFormGroup.setValidationState(ValidationState.ERROR);
+				ddFormGroup.setValidationState(ValidationState.ERROR);
+				helpBlock.setIconType(IconType.EXCLAMATION_CIRCLE);
+				helpBlock.setText("Please Enter a valid Date/Time.");
+				messageFormgroup.setValidationState(ValidationState.ERROR);
+			}
+
+		} else if ((!yyyyTxtBox.getText().isEmpty() || !mmTxtBox.getText().isEmpty() || !ddTxtBox.getText().isEmpty())
+				&& (hhTextBox.getText().isEmpty() && minTxtBox.getText().isEmpty() && ssTxtBox.getText().isEmpty()
+						&& msTxtBox.getText().isEmpty())) {
+
+			if (validateDate()) {
+				int columnIndex = editor.getCursorPosition().getColumn();
+				System.out.println(columnIndex);
+				editor.insertAtCursor(buildDateTimeString());
+				editor.focus();
+				dialogModal.hide();
+			} else {
+				yearFormGroup.setValidationState(ValidationState.ERROR);
+				mmFormGroup.setValidationState(ValidationState.ERROR);
+				ddFormGroup.setValidationState(ValidationState.ERROR);
+				helpBlock.setIconType(IconType.EXCLAMATION_CIRCLE);
+				helpBlock.setText("Please Enter a valid Date/Time.");
+				messageFormgroup.setValidationState(ValidationState.ERROR);
+			}
+		} else if ((yyyyTxtBox.getText().isEmpty() && mmTxtBox.getText().isEmpty() && ddTxtBox.getText().isEmpty())
+				&& (!hhTextBox.getText().isEmpty() || !minTxtBox.getText().isEmpty() || !ssTxtBox.getText().isEmpty()
+						|| !msTxtBox.getText().isEmpty())) {
+			if (validateTime()) {
+				int columnIndex = editor.getCursorPosition().getColumn();
+				System.out.println(columnIndex);
+				editor.insertAtCursor(buildDateTimeString());
+				editor.focus();
+				dialogModal.hide();
+			} else {
+				hourFormGroup.setValidationState(ValidationState.ERROR);
+				minFormGroup.setValidationState(ValidationState.ERROR);
+				secondsFormGroup.setValidationState(ValidationState.ERROR);
+				millisecFormGroup.setValidationState(ValidationState.ERROR);
+				helpBlock.setIconType(IconType.EXCLAMATION_CIRCLE);
+				helpBlock.setText("Please Enter a valid Date/Time.");
+				messageFormgroup.setValidationState(ValidationState.ERROR);
+			}
+		}
+	}
+
 	/**
 	 * Creates the time widget.
 	 *
-	 * @param timePanel the time panel
+	 * @param timePanel
+	 *            the time panel
 	 */
 	private static void createTimeWidget(HorizontalPanel timePanel) {
 		
 		hhTextBox.clear();
 		hhTextBox.setWidth("50px");
-		final FormGroup hourFormGroup = new FormGroup();
+		hhTextBox.setEnabled(false);
 		hourFormGroup.add(hhTextBox);
 		
 		minTxtBox.clear();
 		minTxtBox.setWidth("50px");
-		final FormGroup mmFormGroup = new FormGroup();
-		mmFormGroup.add(minTxtBox);
+		minTxtBox.setEnabled(false);
+		minFormGroup.add(minTxtBox);
 		
 		ssTxtBox.clear();
 		ssTxtBox.setWidth("50px");
-		final FormGroup secondsFormGroup = new FormGroup();
+		ssTxtBox.setEnabled(false);
 		secondsFormGroup.add(ssTxtBox);
 		
 		msTxtBox.clear();
 		msTxtBox.setWidth("50px");
-		final FormGroup millisecFormGroup = new FormGroup();
+		msTxtBox.setEnabled(false);
 		millisecFormGroup.add(msTxtBox);
 		
 		final FormLabel hourFormLabel = new FormLabel();
-		hourFormLabel.setText("HH");
-		hourFormLabel.setTitle("Hour");
+		hourFormLabel.setText("hh");
+		hourFormLabel.setTitle("Hour(s)");
 		hourFormLabel.setStyleName("hour-Label");
 		
 		final FormLabel minutesFormLabel = new FormLabel();
 		minutesFormLabel.setText("mm");
-		minutesFormLabel.setTitle("minute(s)");
+		minutesFormLabel.setTitle("Minute(s)");
 		minutesFormLabel.setStyleName("minute-Label");
 		
 		final FormLabel secondsFormLabel = new FormLabel();
 		secondsFormLabel.setText("ss");
-		secondsFormLabel.setTitle("second(s)");
+		secondsFormLabel.setTitle("Second(s)");
 		secondsFormLabel.setStyleName("seconds-Label");
 		
 		final FormLabel millisecFormLabel = new FormLabel();
 		millisecFormLabel.setText("fff");
-		millisecFormLabel.setTitle("millisecond(s)");
+		millisecFormLabel.setTitle("Millisecond(s)");
 		millisecFormLabel.setStyleName("millisec-Label");
 		
 		/*datePanel.add(yearFormGroup);
@@ -710,7 +971,7 @@ public class InsertIntoAceEditorDialogBox {
 		queryGrid.setWidget(1, 0, hourFormGroup);
 		queryGrid.setWidget(1, 1, new HTML("<h2 style=\"margin:0px 5px 15px 5px\">:</h2>"));
 		queryGrid.setWidget(0, 2, minutesFormLabel);
-		queryGrid.setWidget(1, 2, mmFormGroup);
+		queryGrid.setWidget(1, 2, minFormGroup);
 		queryGrid.setWidget(1, 3, new HTML("<h2 style=\"margin:0px 5px 15px 5px\">:</h2>"));
 		queryGrid.setWidget(0, 4, secondsFormLabel);
 		queryGrid.setWidget(1, 4, secondsFormGroup);
@@ -729,12 +990,10 @@ public class InsertIntoAceEditorDialogBox {
 			public void onBlur(BlurEvent event) {
 				String hour = hhTextBox.getText();
 				if(!hour.isEmpty()){
-					if(!inRange(hour, "00", "24")){
-						System.out.println("not in Range");
+					if(!inRange(hour, "01", "24")){
 						hourFormGroup.setValidationState(ValidationState.ERROR);
 					} else {
 						hourFormGroup.setValidationState(ValidationState.NONE);
-						System.out.println("In Range");
 					}
 				}
 			}
@@ -745,14 +1004,12 @@ public class InsertIntoAceEditorDialogBox {
 			
 			@Override
 			public void onBlur(BlurEvent event) {
-				String minute = mmTxtBox.getText();
+				String minute = minTxtBox.getText();
 				if(!minute.isEmpty()){
 					if(!inRange(minute, "00", "59")){
-						System.out.println("not in Range");
-						mmFormGroup.setValidationState(ValidationState.ERROR);
+						minFormGroup.setValidationState(ValidationState.ERROR);
 					} else {
-						mmFormGroup.setValidationState(ValidationState.NONE);
-						System.out.println("In Range");
+						minFormGroup.setValidationState(ValidationState.NONE);
 					}
 				}
 			}
@@ -766,11 +1023,9 @@ public class InsertIntoAceEditorDialogBox {
 				String seconds = ssTxtBox.getText();
 				if(!seconds.isEmpty()){
 					if(!inRange(seconds, "00", "59")){
-						System.out.println("not in Range");
 						secondsFormGroup.setValidationState(ValidationState.ERROR);
 					} else {
 						secondsFormGroup.setValidationState(ValidationState.NONE);
-						System.out.println("In Range");
 					}
 				}
 			}
@@ -784,11 +1039,9 @@ public class InsertIntoAceEditorDialogBox {
 				String millisec = msTxtBox.getText();
 				if(!millisec.isEmpty()){
 					if(!inRange(millisec, "000", "999")){
-						System.out.println("not in Range");
 						millisecFormGroup.setValidationState(ValidationState.ERROR);
 					} else {
 						millisecFormGroup.setValidationState(ValidationState.NONE);
-						System.out.println("In Range");
 					}
 				}
 			}
@@ -915,7 +1168,14 @@ public class InsertIntoAceEditorDialogBox {
 						addAvailableItems(availableDatatypes, allDataTypes);
 						addAvailableItems(availableAttributesToInsert, allAttributes);
 						
-					} else {
+					} else if (itemTypeSelected.equalsIgnoreCase("Timing")) {
+						//open new popup/dialogBox
+						dialogModal.clear();
+						dialogModal.hide();
+						searchDisplay.resetMessageDisplay();
+						InsertTimingExpressionIntoAceEditor.showTimingExpressionDialogBox(searchDisplay, currention_Section);
+						searchDisplay.setIsPageDirty(true);
+					}else {
 						listAllItemNames.clear();
 						availableDatatypes.clear();
 						availableAttributesToInsert.clear();
@@ -998,6 +1258,7 @@ public class InsertIntoAceEditorDialogBox {
 				for (QDSAttributes qdsAttributes : result) {
 					filterAttrByDataTypeList.add(qdsAttributes.getName());
 				}
+				Collections.sort(filterAttrByDataTypeList);
 				availableAttributesToInsert.clear();
 				addAvailableItems(availableAttributesToInsert, filterAttrByDataTypeList);
 			}
@@ -1045,6 +1306,24 @@ public class InsertIntoAceEditorDialogBox {
 			}
 		}
 		
+	}
+	
+	private static void addModelist(ListBoxMVP availableItemToInsert, List<String> attrModeList) {
+		availableItemToInsert.addItem(MatContext.get().PLEASE_SELECT);
+		for (int i = 0; i < attrModeList.size(); i++) {
+			if(!attrModeList.get(i).equalsIgnoreCase(MatContext.get().PLEASE_SELECT)){
+				availableItemToInsert.addItem(attrModeList.get(i));
+			}
+		}
+	}
+	
+	private static void addModeDetailslist(ListBoxMVP availableItemToInsert, List<String> modeDetailsList) {
+		availableItemToInsert.addItem(MatContext.get().PLEASE_SELECT);
+		for (int i = 0; i < modeDetailsList.size(); i++) {
+			if(!modeDetailsList.get(i).equalsIgnoreCase(MatContext.get().PLEASE_SELECT)){
+				availableItemToInsert.addItem(modeDetailsList.get(i));
+			}
+		}
 	}
 	
 	/**
@@ -1133,7 +1412,17 @@ public class InsertIntoAceEditorDialogBox {
 	 * @return true, if successful
 	 */
 	private static boolean inRange(String s, String lowerBound, String upperBound) {
-		return  s.compareToIgnoreCase(lowerBound) >= 0 && s.compareToIgnoreCase(upperBound) <= 0;
+		if(s.isEmpty()){
+			return true;
+		}
+		int lower = Integer.parseInt(lowerBound);
+		int upper = Integer.parseInt(upperBound);
+		int value = Integer.parseInt(s);
+		if(lower<=value && upper>=value){
+			return true;
+		}
+		return false;
+		//return  s.compareToIgnoreCase(lowerBound) >= 0 && s.compareToIgnoreCase(upperBound) <= 0;
 	}
 	
 	
@@ -1146,27 +1435,144 @@ public class InsertIntoAceEditorDialogBox {
 		StringBuilder sb = new StringBuilder();
 		
 		if(!yyyyTxtBox.getText().isEmpty()){
-			sb.append("@"+yyyyTxtBox.getText());
+			
+			if(yyyyTxtBox.getText().length()<4){
+				sb.append("@").append(appendZeroString(4-yyyyTxtBox.getText().length()))
+				.append(yyyyTxtBox.getText());
+				
+			} else {
+				sb.append("@"+yyyyTxtBox.getText());
+			}
 		} 
 		if(!mmTxtBox.getText().isEmpty()){
-			sb.append("//"+mmTxtBox.getText());
+			if(mmTxtBox.getText().length()<2){
+				sb.append("-").append(appendZeroString(2-mmTxtBox.getText().length()))
+				.append(mmTxtBox.getText());
+				
+			} else {
+				sb.append("-"+mmTxtBox.getText());
+			}
 		}
 		if(!ddTxtBox.getText().isEmpty()){
-		   sb.append("//"+ddTxtBox.getText());
+			if(ddTxtBox.getText().length()<2){
+				sb.append("-").append(appendZeroString(2-ddTxtBox.getText().length()))
+				.append(ddTxtBox.getText());
+				
+			} else {
+				sb.append("-"+ddTxtBox.getText());
+			}
 		}
 		if(!hhTextBox.getText().isEmpty()){
-			sb.append("T"+hhTextBox.getText());
+			
+			if(hhTextBox.getText().length()<2){
+				sb.append("T").append(appendZeroString(2-hhTextBox.getText().length()))
+				.append(hhTextBox.getText());
+			} else {
+				sb.append("T"+hhTextBox.getText());
+			}
 		} 
 		if(!minTxtBox.getText().isEmpty()){
-			sb.append(":"+minTxtBox.getText());
+			if(minTxtBox.getText().length()<2){
+				sb.append(":").append(appendZeroString(2-minTxtBox.getText().length()))
+				.append(minTxtBox.getText());
+				
+			} else {
+				sb.append(":"+minTxtBox.getText());
+			}
 		} 
 		if(!ssTxtBox.getText().isEmpty()){
-			sb.append(":"+ssTxtBox.getText());
+			if(ssTxtBox.getText().length()<2){
+				sb.append(":").append(appendZeroString(2-ssTxtBox.getText().length()))
+				.append(ssTxtBox.getText());
+				
+			} else {
+				sb.append(":"+ssTxtBox.getText());
+			}
 		} 
 		if(!msTxtBox.getText().isEmpty()){
 			sb.append("."+msTxtBox.getText());
 		}
 		
 		return sb.toString();
+	}
+	
+	private static String appendZeroString(int count){
+		
+		StringBuilder sb = new StringBuilder();
+		for(int i=0;i<count;i++){
+			sb.append("0");
+		}
+		return sb.toString();
+	}
+	
+	public static boolean isValidate(String inDate){
+		DateTimeFormat format = DateTimeFormat.getFormat("yyyy/MM/dd");
+		try {
+			format.parseStrict(inDate);
+		} catch (IllegalArgumentException pe) {
+		      return false; 
+		    }
+		return true;
+	}
+	
+	
+	private static void setWidgetEnabled(ListBox attributeListBox, ListBoxMVP ModelistBox){
+		String attributeName = attributeListBox.getItemText(attributeListBox.getSelectedIndex());
+		String modeName = ModelistBox.getItemText(ModelistBox.getSelectedIndex());
+		attributeName = attributeName.toLowerCase();
+		modeName = modeName.toLowerCase(); 
+		clearAllBoxes();
+		if(attributeName.contains("datetime")){
+			
+			if(modeName.equalsIgnoreCase("comparison")){
+				setDateTimeEnabled(true);
+				QuantityTextBox.setEnabled(false);
+				UnitslistBox.setEnabled(false);
+			} else if(modeName.equalsIgnoreCase("computative")) {
+				setDateTimeEnabled(false);
+				QuantityTextBox.setEnabled(true);
+				UnitslistBox.setEnabled(true);
+			}
+		
+		} else if (attributeName.equalsIgnoreCase("result")) {
+			setDateTimeEnabled(true);
+			QuantityTextBox.setEnabled(true);
+			UnitslistBox.setEnabled(true);
+		} else {
+			setDateTimeEnabled(false);
+			QuantityTextBox.setEnabled(true);
+			UnitslistBox.setEnabled(true);
+		}
+	}
+	
+	
+	private static void clearAllBoxes(){
+		QuantityTextBox.clear();
+		UnitslistBox.setSelectedIndex(0);
+		yyyyTxtBox.clear();
+		mmTxtBox.clear();
+		ddTxtBox.clear();
+		hhTextBox.clear();
+		minTxtBox.clear();
+		ssTxtBox.clear();
+		msTxtBox.clear();
+	}
+	
+	private static void setDateTimeEnabled(boolean enabled){
+		yyyyTxtBox.setEnabled(enabled);
+		mmTxtBox.setEnabled(enabled);
+		ddTxtBox.setEnabled(enabled);
+		hhTextBox.setEnabled(enabled);
+		minTxtBox.setEnabled(enabled);
+		ssTxtBox.setEnabled(enabled);
+		msTxtBox.setEnabled(enabled);
+		
+	}
+	
+	private static void setEnabled(boolean enabled){
+		
+		QuantityTextBox.setEnabled(enabled);
+		UnitslistBox.setEnabled(enabled);
+		setDateTimeEnabled(enabled);
 	}
 }

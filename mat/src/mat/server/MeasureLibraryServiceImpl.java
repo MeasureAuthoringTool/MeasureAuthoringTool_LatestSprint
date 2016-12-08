@@ -91,7 +91,6 @@ import mat.server.service.MeasureNotesService;
 import mat.server.service.MeasurePackageService;
 import mat.server.service.UserService;
 import mat.server.service.impl.MatContextServiceUtil;
-import mat.server.util.CQLUtil;
 import mat.server.util.ExportSimpleXML;
 import mat.server.util.MeasureUtility;
 import mat.server.util.ResourceLoader;
@@ -112,7 +111,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cqframework.cql.cql2elm.CQLtoELM;
-import org.cqframework.cql.cql2elm.CqlTranslator;
 import org.exolab.castor.mapping.Mapping;
 import org.exolab.castor.mapping.MappingException;
 import org.exolab.castor.xml.MarshalException;
@@ -2021,7 +2019,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		mDetail.setDraft(false);
 		setValueFromModel(mDetail, meas);
 		getService().save(meas);
-		saveMeasureXml(createMeasureXmlModel(mDetail, meas, MEASURE_DETAILS, MEASURE));
+				
 		SaveMeasureResult result = new SaveMeasureResult();
 		result.setSuccess(true);
 		result.setId(meas.getId());
@@ -2261,6 +2259,13 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		logger.info("In MeasureLibraryServiceImpl.saveFinalizedVersion() method..");
 		Measure m = getService().getById(measureId);
 		logger.info("Measure Loaded for: " + measureId);
+				
+		boolean isMeasureVersionable = MatContextServiceUtil.get().isCurrentMeasureEditable(getMeasureDAO(),measureId);
+		if(!isMeasureVersionable){
+			SaveMeasureResult saveMeasureResult = new SaveMeasureResult();
+			return returnFailureReason(saveMeasureResult, SaveMeasureResult.INVALID_DATA);
+		}
+		
 		String versionNumber = null;
 		if (isMajor) {
 			versionNumber = findOutMaximumVersionNumber(m.getMeasureSet().getId());
@@ -2480,7 +2485,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					supplementalDataElementNode.appendChild(cqlDefinitionRefNode);
 				}
 
-				processor.checkForStratificationAndAdd();
+				//processor.checkForStratificationAndAdd();
 				measureXmlModel.setXml(processor.transform(processor.getOriginalDoc()));
 				getService().saveMeasureXml(measureXmlModel);
 			} catch (XPathExpressionException e) {

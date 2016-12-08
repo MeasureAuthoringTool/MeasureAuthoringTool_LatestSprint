@@ -17,6 +17,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import mat.client.clause.cqlworkspace.CQLWorkSpaceConstants;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.service.CQLService;
@@ -32,8 +33,10 @@ import mat.model.User;
 import mat.model.clause.Measure;
 import mat.model.clause.MeasureSet;
 import mat.model.clause.MeasureXML;
+import mat.model.cql.CQLParameter;
 import mat.server.LoggedInUserUtil;
 import mat.server.SpringRemoteServiceServlet;
+import mat.server.service.MeasureLibraryService;
 import mat.server.service.MeasureNotesService;
 import mat.server.util.MeasureUtility;
 import mat.server.util.XmlProcessor;
@@ -77,6 +80,8 @@ implements MeasureCloningService {
 	private UserDAO userDAO;
 	
 	private CQLService cqlService;
+	
+	private MeasureLibraryService measureLibraryService;
 	
 	/** The Constant logger. */
 	private static final Log logger = LogFactory
@@ -133,6 +138,12 @@ implements MeasureCloningService {
 	/** The Constant XPATH_MEASURE_ELEMENT_LOOKUP_QDM. */
 	private static final String XPATH_MEASURE_ELEMENT_LOOKUP_QDM = "/measure/elementLookUp/qdm [@suppDataElement='true']";
 	
+	/** The Constant PATIENT_CHARACTERISTIC_BIRTH_DATE_OID. */
+	private static final String PATIENT_CHARACTERISTIC_BIRTH_DATE_OID = "21112-8";
+	
+	/** The Constant PATIENT_CHARACTERISTIC_EXPIRED_OID. */
+	private static final String PATIENT_CHARACTERISTIC_EXPIRED_OID = "419099009";
+	
 	/** The cloned doc. */
 	private Document clonedDoc;
 	
@@ -153,6 +164,7 @@ implements MeasureCloningService {
 		measureSetDAO = (MeasureSetDAO) context.getBean("measureSetDAO");
 		userDAO = (UserDAO) context.getBean("userDAO");
 		cqlService = (CQLService) context.getBean("cqlService");
+		measureLibraryService = (MeasureLibraryService) context.getBean("measureLibraryService");
 		
 		try {
 			ManageMeasureSearchModel.Result result = new ManageMeasureSearchModel.Result();
@@ -169,9 +181,9 @@ implements MeasureCloningService {
 			clonedDoc = originalDoc;
 			clonedMeasure.setaBBRName(currentDetails.getShortName());
 			clonedMeasure.setDescription(currentDetails.getName());
-			if(measure.getReleaseVersion() != null){
-				clonedMeasure.setReleaseVersion("v5.0");
-			}
+//			if(measure.getReleaseVersion() != null){
+//				clonedMeasure.setReleaseVersion("v5.0");
+//			}
 			/*clonedMeasure.setMeasureStatus("In Progress");*/
 			clonedMeasure.setDraft(TRUE);
 			if (currentDetails.getMeasScoring() != null) {
@@ -256,7 +268,7 @@ implements MeasureCloningService {
 						.transform(xmlProcessor.getOriginalDoc()));
 			}
 			
-			updateForCQLMeasure(measure, clonedXml, xmlProcessor);
+			updateForCQLMeasure(measure, clonedXml, xmlProcessor, clonedMeasure);
 			
 			logger.info("Final XML after cloning/draft"
 					+ clonedXml.getMeasureXMLAsString());
@@ -277,8 +289,8 @@ implements MeasureCloningService {
 		}
 	}
 
-	public void updateForCQLMeasure(Measure measure, MeasureXML clonedXml,
-			XmlProcessor xmlProcessor) throws XPathExpressionException {
+	private void updateForCQLMeasure(Measure measure, MeasureXML clonedXml,
+			XmlProcessor xmlProcessor, Measure clonedMsr) throws XPathExpressionException {
 		
 		Node cqlLookUpNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/cqlLookUp");
 		
@@ -286,38 +298,76 @@ implements MeasureCloningService {
 			return;
 		}
 		
+		clonedMsr.setReleaseVersion(measureLibraryService.getCurrentReleaseVersion());
+				
 		Node populationsNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/populations");
 		if(populationsNode != null){
-			Node parentNode = populationsNode.getParentNode();
-			parentNode.removeChild(populationsNode);
+			Node populationsParentNode = populationsNode.getParentNode();
+			populationsParentNode.removeChild(populationsNode);
+		}
+		
+		Node measureObservationsNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/measureObservations");
+		if(measureObservationsNode != null){
+			Node measureObservationsParentNode = measureObservationsNode.getParentNode();
+			measureObservationsParentNode.removeChild(measureObservationsNode);
 		}
 		
 		Node stratificationNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/strata");
 		if(stratificationNode != null){
-			Node parentNode = stratificationNode.getParentNode();
-			parentNode.removeChild(stratificationNode);
+			Node strataParentNode = stratificationNode.getParentNode();
+			strataParentNode.removeChild(stratificationNode);
 		}
 		
 		String scoringTypeId = MeasureDetailsUtil
 				.getScoringAbbr(clonedMeasure.getMeasureScoring());
 		
 		xmlProcessor.createNewNodesBasedOnScoring(scoringTypeId,"v5.0");
-		xmlProcessor.checkForStratificationAndAdd();
+		//xmlProcessor.checkForStratificationAndAdd();
 		
 		//copy qdm to cqlLookup/valuesets
-		NodeList qdmNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), "/measure/elementLookUp/qdm");
+		NodeList qdmNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), "/measure/elementLookUp/qdm");		
 		Node cqlValuesetsNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/cqlLookUp/valuesets");
+		
+		/**
+		 * We need to capture old "Patient Characteristic Expired"(oid=419099009) and "Patient Characteristic Birthdate"(oid=21112-8)
+		 * and remove them.
+		 * Further below, when checkForTimingElementsAndAppend() is called, it will add back the above 2 elements with new properties.
+		 * For ex: "Patient Characteristic Expired" had an old name of "Expired", but the new name is "Dead".
+		 */
+		Node expiredtimingQDMNode = null; 
+		Node birthDataQDMNode = null;
 		
 		if(cqlValuesetsNode != null){
 			for(int i=0;i<qdmNodes.getLength();i++){
 				Node qdmNode = qdmNodes.item(i);
+				String oid = qdmNode.getAttributes().getNamedItem("oid").getNodeValue();
+				if(oid.equals(PATIENT_CHARACTERISTIC_EXPIRED_OID)){
+					expiredtimingQDMNode = qdmNode;
+					continue;
+				}else if(oid.equals(PATIENT_CHARACTERISTIC_BIRTH_DATE_OID)){
+					birthDataQDMNode = qdmNode;
+					continue;
+				}
 				Node clonedqdmNode = qdmNode.cloneNode(true);
 				xmlProcessor.getOriginalDoc().renameNode(clonedqdmNode, null, "valueset");
 				cqlValuesetsNode.appendChild(clonedqdmNode);
 			}
 		}
 		
+		if(expiredtimingQDMNode != null){
+			Node parentNode = expiredtimingQDMNode.getParentNode();
+			parentNode.removeChild(expiredtimingQDMNode);
+		}
+		if(birthDataQDMNode != null){
+			Node parentNode = birthDataQDMNode.getParentNode();
+			parentNode.removeChild(birthDataQDMNode);
+		}
+		
+		checkForTimingElementsAndAppend(xmlProcessor);
+		checkForDefaultCQLParametersAndAppend(xmlProcessor);
 		checkForDefaultCQLDefinitionsAndAppend(xmlProcessor);
+		checkForDefaultCQLCodeSystemsAndAppend(xmlProcessor);
+		checkForDefaultCQLCodesAndAppend(xmlProcessor);
 		
 		clonedXml.setMeasureXMLAsByteArray(xmlProcessor
 				.transform(xmlProcessor.getOriginalDoc()));
@@ -329,12 +379,12 @@ implements MeasureCloningService {
 	 *
 	 * @param xmlProcessor the xml processor
 	 */
-	public void checkForDefaultCQLDefinitionsAndAppend(XmlProcessor xmlProcessor) {
+	private void checkForDefaultCQLDefinitionsAndAppend(XmlProcessor xmlProcessor) {
 		
 		NodeList defaultCQLDefNodeList = findDefaultDefinitions(xmlProcessor);
 		
 		if (defaultCQLDefNodeList != null && defaultCQLDefNodeList.getLength() == 4) {
-			logger.info("All Default definition elements present in the measure.");
+			logger.info("All Default definition elements present in the measure while cloning.");
 			return;
 		}
 		
@@ -344,6 +394,12 @@ implements MeasureCloningService {
 			xmlProcessor.appendNode(defStr, "definition", "/measure/cqlLookUp/definitions");
 			
 			Node supplementalDataNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/supplementalDataElements");
+			
+			/*if(supplementalDataNode == null){
+				supplementalDataNode = xmlProcessor.getOriginalDoc().createElement("supplementalDataElements");
+				xmlProcessor.getOriginalDoc().getDocumentElement().appendChild(supplementalDataNode);
+			}*/
+			
 			while(supplementalDataNode.hasChildNodes()){
 				supplementalDataNode.removeChild(supplementalDataNode.getFirstChild());
 			}
@@ -382,7 +438,7 @@ implements MeasureCloningService {
 	 * @param xmlProcessor
 	 * @return
 	 */
-	public NodeList findDefaultDefinitions(XmlProcessor xmlProcessor) {
+	private NodeList findDefaultDefinitions(XmlProcessor xmlProcessor) {
 		NodeList returnNodeList = null;
 		Document originalDoc = xmlProcessor.getOriginalDoc();
 		
@@ -390,6 +446,195 @@ implements MeasureCloningService {
 			try {				
 				String defaultDefinitionsXPath = "/measure/cqlLookUp/definitions/definition[@name ='SDE Ethnicity' or @name='SDE Payer' or @name='SDE Race' or @name='SDE Sex']";
 				returnNodeList = xmlProcessor.findNodeList(originalDoc, defaultDefinitionsXPath);
+			} catch (XPathExpressionException e) {
+				e.printStackTrace();
+			}
+		}
+		return returnNodeList;
+	}
+	
+	private void checkForTimingElementsAndAppend(XmlProcessor xmlProcessor) {
+		
+		List<String> missingMeasurementPeriod = xmlProcessor.checkForTimingElements();
+		
+		if (missingMeasurementPeriod.isEmpty()) {
+			logger.info("All timing elements present in the measure while cloning.");
+			return;
+		}
+		logger.info("While cloning, found the following timing elements missing:" + missingMeasurementPeriod);
+		
+		//		List<String> missingOIDList = new ArrayList<String>();
+		//		missingOIDList.add(missingMeasurementPeriod);
+		
+		QualityDataModelWrapper wrapper = measureXmlDAO.createTimingElementQDMs(missingMeasurementPeriod);
+		
+		// Object to XML for elementLookUp
+		ByteArrayOutputStream streamQDM = XmlProcessor.convertQualityDataDTOToXML(wrapper);
+		
+		String filteredString = removePatternFromXMLString(streamQDM.toString().substring(streamQDM.toString().indexOf("<measure>", 0)),
+				"<measure>", "");
+		filteredString = removePatternFromXMLString(filteredString, "</measure>", "");
+		
+		try {
+			System.out.println("timing qdm String:"+filteredString);
+			xmlProcessor.appendNode(filteredString, "qdm", "/measure/elementLookUp");
+			String cqlValueSetString = filteredString.replaceAll("<qdm", "<valueset");
+			System.out.println("timing cql valueset string:"+cqlValueSetString);
+			xmlProcessor.appendNode(cqlValueSetString, "valueset", "/measure/cqlLookUp/valuesets");
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	/**
+	 * Check for default cql parameters and append.
+	 *
+	 * @param xmlProcessor the xml processor
+	 */
+	private void checkForDefaultCQLParametersAndAppend(XmlProcessor xmlProcessor) {
+		
+		List<String> missingDefaultCQLParameters = xmlProcessor.checkForDefaultParameters();
+		
+		if (missingDefaultCQLParameters.isEmpty()) {
+			logger.info("All Default parameter elements present in the measure while cloning.");
+			return;
+		}
+		logger.info("While cloning, found the following Default parameter elements missing:" + missingDefaultCQLParameters);
+		CQLParameter parameter = new  CQLParameter();
+	
+		parameter.setId(UUID.randomUUID().toString());
+		parameter.setParameterName(CQLWorkSpaceConstants.CQL_DEFAULT_MEASUREMENTPERIOD_PARAMETER_NAME);
+		parameter.setParameterLogic(CQLWorkSpaceConstants.CQL_DEFAULT_MEASUREMENTPERIOD_PARAMETER_LOGIC);
+		parameter.setReadOnly(true);	
+		String parStr = cqlService.createParametersXML(parameter);
+	
+		try {
+			xmlProcessor.appendNode(parStr, "parameter", "/measure/cqlLookUp/parameters");
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	/**
+	 * Check for default CQL code systems and append.
+	 *
+	 * @param processor the processor
+	 */
+	private void checkForDefaultCQLCodeSystemsAndAppend(XmlProcessor processor) {
+		
+		String codeSystemStr = cqlService.getDefaultCodeSystems();
+		
+		NodeList defaultCQLCodeSystemsList = findDefaultCodeSystems(processor);
+		
+		if (defaultCQLCodeSystemsList.getLength() > 0) {
+			logger.info("All Default codesystems elements present in the measure.");
+			return;
+		}
+		
+		try {
+			processor.appendNode(codeSystemStr, "codeSystem", "/measure/cqlLookUp/codeSystems");
+			
+			NodeList defaultCodeSystemNodes = processor.findNodeList(processor.getOriginalDoc(), 
+					"/measure/cqlLookUp/codeSystems/codeSystem[@codeSystemName='LOINC' or @codeSystemName='SNOMEDCT']");
+			
+			if(defaultCodeSystemNodes != null){
+				System.out.println("suppl data elems..setting ids");
+				for(int i=0;i<defaultCodeSystemNodes.getLength();i++){
+					Node codeSystemNode = defaultCodeSystemNodes.item(i);
+				    System.out.println("name:"+codeSystemNode.getAttributes().getNamedItem("codeSystemName").getNodeValue());
+				    System.out.println("id:"+codeSystemNode.getAttributes().getNamedItem("id").getNodeValue());
+				    codeSystemNode.getAttributes().getNamedItem("id").setNodeValue(UUIDUtilClient.uuid());
+				}
+			}
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Check for default CQL codes and append.
+	 *
+	 * @param processor the processor
+	 */
+	private void checkForDefaultCQLCodesAndAppend(XmlProcessor processor) {
+		
+		String codeStr = cqlService.getDefaultCodes();
+		
+		NodeList defaultCQLCodesList = findDefaultCodes(processor);
+		
+		if (defaultCQLCodesList.getLength() > 0) {
+			logger.info("All Default code elements present in the measure.");
+			return;
+		}
+		
+		try {
+			processor.appendNode(codeStr, "code", "/measure/cqlLookUp/codes");
+			
+			NodeList defaultCodeNodes = processor.findNodeList(processor.getOriginalDoc(), 
+					"/measure/cqlLookUp/codes/code[@codeName='Birthdate' or @codeName='Dead']");
+			
+			if(defaultCodeNodes != null){
+				System.out.println("suppl data elems..setting ids");
+				for(int i=0;i<defaultCodeNodes.getLength();i++){
+					Node codeNode = defaultCodeNodes.item(i);
+					System.out.println("codename:"+codeNode.getAttributes().getNamedItem("codeName").getNodeValue());
+				    System.out.println("codesystemname:"+codeNode.getAttributes().getNamedItem("codeSystemName").getNodeValue());
+				    System.out.println("id:"+codeNode.getAttributes().getNamedItem("id").getNodeValue());
+				    codeNode.getAttributes().getNamedItem("id").setNodeValue(UUIDUtilClient.uuid());
+				}
+			}
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * This method will look into XPath "/measure/cqlLookUp/codeSystems/" and try and NodeList for Definitions with the following names;
+	 * @param xmlProcessor
+	 * @return
+	 */
+	private NodeList findDefaultCodeSystems(XmlProcessor xmlProcessor) {
+		NodeList returnNodeList = null;
+		Document originalDoc = xmlProcessor.getOriginalDoc();
+		
+		if (originalDoc != null) {
+			try {				
+				String defaultCodeSystemsXPath = "/measure/cqlLookUp/codeSystems/codeSystem[@codeSystemName='LOINC' or @codeSystemName='SNOMEDCT']";
+				returnNodeList = xmlProcessor.findNodeList(originalDoc, defaultCodeSystemsXPath);
+			} catch (XPathExpressionException e) {
+				e.printStackTrace();
+			}
+		}
+		return returnNodeList;
+	}
+	
+	/**
+	 * This method will look into XPath "/measure/cqlLookUp/codes/" and try and NodeList for Definitions with the following names;
+	 * @param xmlProcessor
+	 * @return
+	 */
+	private NodeList findDefaultCodes(XmlProcessor xmlProcessor) {
+		NodeList returnNodeList = null;
+		Document originalDoc = xmlProcessor.getOriginalDoc();
+		
+		if (originalDoc != null) {
+			try {				
+				String defaultCodesXPath = "/measure/cqlLookUp/codes/code[@codeName='Birthdate' or @codeName='Dead']";
+				returnNodeList = xmlProcessor.findNodeList(originalDoc, defaultCodesXPath);
 			} catch (XPathExpressionException e) {
 				e.printStackTrace();
 			}
