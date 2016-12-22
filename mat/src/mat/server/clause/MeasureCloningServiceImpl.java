@@ -3,6 +3,7 @@ package mat.server.clause;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -38,8 +39,10 @@ import mat.server.LoggedInUserUtil;
 import mat.server.SpringRemoteServiceServlet;
 import mat.server.service.MeasureLibraryService;
 import mat.server.service.MeasureNotesService;
+import mat.server.service.impl.MatContextServiceUtil;
 import mat.server.util.MeasureUtility;
 import mat.server.util.XmlProcessor;
+import mat.shared.MATPropertiesUtil;
 import mat.shared.UUIDUtilClient;
 import mat.shared.model.util.MeasureDetailsUtil;
 
@@ -62,7 +65,11 @@ import org.xml.sax.SAXException;
 @SuppressWarnings("serial")
 public class MeasureCloningServiceImpl extends SpringRemoteServiceServlet
 implements MeasureCloningService {
-	
+	/** Constant for QDM Expired Name String**/
+	private static final String QDM_EXPIRED_NON_DEFAULT = "expired";
+	/** Constant for QDM Birth date Name String**/
+	private static final String QDM_BIRTHDATE_NON_DEFAULT = "birthdate";
+
 	/** The measure dao. */
 	@Autowired
 	private MeasureDAO measureDAO;
@@ -166,9 +173,23 @@ implements MeasureCloningService {
 		cqlService = (CQLService) context.getBean("cqlService");
 		measureLibraryService = (MeasureLibraryService) context.getBean("measureLibraryService");
 		
+		boolean isMeasureClonable = MatContextServiceUtil.get().isCurrentMeasureClonable(measureDAO, currentDetails.getId());
+		if(!isMeasureClonable){
+			Exception e = new Exception("Cannot access this measure.");
+			log(e.getMessage(), e);
+			throw new MatException(e.getMessage());
+		}
+		
 		try {
 			ManageMeasureSearchModel.Result result = new ManageMeasureSearchModel.Result();
 			Measure measure = measureDAO.find(currentDetails.getId());
+			
+			if(checkNonCQLCloningValidation(measure, creatingDraft)){
+				Exception e = new Exception("Cannot clone this measure.");
+				log(e.getMessage(), e);
+				throw new MatException(e.getMessage());
+			}
+			
 			MeasureXML xml = measureXmlDAO.findForMeasure(currentDetails
 					.getId());
 			clonedMeasure = new Measure();
@@ -181,10 +202,9 @@ implements MeasureCloningService {
 			clonedDoc = originalDoc;
 			clonedMeasure.setaBBRName(currentDetails.getShortName());
 			clonedMeasure.setDescription(currentDetails.getName());
-//			if(measure.getReleaseVersion() != null){
-//				clonedMeasure.setReleaseVersion("v5.0");
-//			}
-			/*clonedMeasure.setMeasureStatus("In Progress");*/
+			
+			clonedMeasure.setReleaseVersion(measure.getReleaseVersion());			
+			
 			clonedMeasure.setDraft(TRUE);
 			if (currentDetails.getMeasScoring() != null) {
 				clonedMeasure
@@ -229,31 +249,12 @@ implements MeasureCloningService {
 			clearChildNodes(MEASURE_GROUPING);
 			clearChildNodes(SUPPLEMENTAL_DATA_ELEMENTS);
 			clearChildNodes(Risk_ADJUSTMENT_VARIABLES);
-			// create the default 4 CMS supplemental QDM
-			QualityDataModelWrapper wrapper = measureXmlDAO
-					.createSupplimentalQDM(clonedMeasure.getId(), TRUE,
-							getSupplementalUUIds());
-			ByteArrayOutputStream streamSuppDataEle = XmlProcessor
-					.convertQDMOToSuppleDataXML(wrapper);
-			// Remove <?xml> and then replace.
-			String filteredStringSupp = removePatternFromXMLString(
-					streamSuppDataEle.toString().substring(
-							streamSuppDataEle.toString()
-							.indexOf("<measure>", 0)), "<measure>", "");
-			filteredStringSupp = removePatternFromXMLString(filteredStringSupp,
-					"</measure>", "");
 			
 			String clonedXMLString = convertDocumenttoString(clonedDoc);
 			MeasureXML clonedXml = new MeasureXML();
 			clonedXml.setMeasureXMLAsByteArray(clonedXMLString);
 			clonedXml.setMeasure_id(clonedMeasure.getId());
 			XmlProcessor xmlProcessor = new XmlProcessor(
-					clonedXml.getMeasureXMLAsString());
-			String clonedXMLString2 = xmlProcessor.appendNode(
-					filteredStringSupp, "elementRef",
-					"/measure/supplementalDataElements");
-			clonedXml.setMeasureXMLAsByteArray(clonedXMLString2);
-			xmlProcessor = new XmlProcessor(
 					clonedXml.getMeasureXMLAsString());
 			
 			if ((currentDetails.getMeasScoring() != null)
@@ -263,12 +264,22 @@ implements MeasureCloningService {
 				String scoringTypeId = MeasureDetailsUtil
 						.getScoringAbbr(clonedMeasure.getMeasureScoring());
 				xmlProcessor.removeNodesBasedOnScoring(scoringTypeId);
-				xmlProcessor.createNewNodesBasedOnScoring(scoringTypeId,measure.getReleaseVersion());
+				xmlProcessor.createNewNodesBasedOnScoring(scoringTypeId,MATPropertiesUtil.QDM_VERSION);  
 				clonedXml.setMeasureXMLAsByteArray(xmlProcessor
 						.transform(xmlProcessor.getOriginalDoc()));
 			}
 			
-			updateForCQLMeasure(measure, clonedXml, xmlProcessor, clonedMeasure);
+			boolean isUpdatedForCQL = updateForCQLMeasure(measure, clonedXml, xmlProcessor, clonedMeasure);
+			
+			if(!isUpdatedForCQL){
+				//this means this is a CQL Measure to CQL Measure draft/clone.
+				
+				//create the default 4 CMS supplemental definitions
+				appendSupplementalDefinitions(xmlProcessor, false);
+			}
+			
+			clonedXml.setMeasureXMLAsByteArray(xmlProcessor
+					.transform(xmlProcessor.getOriginalDoc()));
 			
 			logger.info("Final XML after cloning/draft"
 					+ clonedXml.getMeasureXMLAsString());
@@ -289,13 +300,21 @@ implements MeasureCloningService {
 		}
 	}
 
-	private void updateForCQLMeasure(Measure measure, MeasureXML clonedXml,
+	private boolean updateForCQLMeasure(Measure measure, MeasureXML clonedXml,
 			XmlProcessor xmlProcessor, Measure clonedMsr) throws XPathExpressionException {
 		
 		Node cqlLookUpNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/cqlLookUp");
 		
 		if(cqlLookUpNode != null){
-			return;
+					
+			//Update QDM Version in Measure XMl for Draft and CQL Measures
+			Node qdmVersionNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/cqlLookUp/usingModelVersion");
+			if(qdmVersionNode!=null){
+				qdmVersionNode.setTextContent(MATPropertiesUtil.QDM_VERSION);
+			}
+			clonedXml.setMeasureXMLAsByteArray(xmlProcessor
+					.transform(xmlProcessor.getOriginalDoc()));
+			return false;
 		}
 		
 		clonedMsr.setReleaseVersion(measureLibraryService.getCurrentReleaseVersion());
@@ -321,47 +340,67 @@ implements MeasureCloningService {
 		String scoringTypeId = MeasureDetailsUtil
 				.getScoringAbbr(clonedMeasure.getMeasureScoring());
 		
-		xmlProcessor.createNewNodesBasedOnScoring(scoringTypeId,"v5.0");
+		xmlProcessor.createNewNodesBasedOnScoring(scoringTypeId,MATPropertiesUtil.QDM_VERSION);
 		//xmlProcessor.checkForStratificationAndAdd();
 		
 		//copy qdm to cqlLookup/valuesets
 		NodeList qdmNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), "/measure/elementLookUp/qdm");		
 		Node cqlValuesetsNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/cqlLookUp/valuesets");
-		
+		List<Node> qdmNodeList = new ArrayList<Node>();
 		/**
 		 * We need to capture old "Patient Characteristic Expired"(oid=419099009) and "Patient Characteristic Birthdate"(oid=21112-8)
-		 * and remove them.
+		 * and remove them. Also we need to remove qdm with name="Birthdate' and 'Expired' which are non default qdms along with Occurrence
+		 * qdm elements.
 		 * Further below, when checkForTimingElementsAndAppend() is called, it will add back the above 2 elements with new properties.
 		 * For ex: "Patient Characteristic Expired" had an old name of "Expired", but the new name is "Dead".
 		 */
-		Node expiredtimingQDMNode = null; 
-		Node birthDataQDMNode = null;
+		
 		
 		if(cqlValuesetsNode != null){
 			for(int i=0;i<qdmNodes.getLength();i++){
 				Node qdmNode = qdmNodes.item(i);
+				boolean isClonable = true;
 				String oid = qdmNode.getAttributes().getNamedItem("oid").getNodeValue();
+				String qdmName = qdmNode.getAttributes().getNamedItem("name").getNodeValue();
 				if(oid.equals(PATIENT_CHARACTERISTIC_EXPIRED_OID)){
-					expiredtimingQDMNode = qdmNode;
-					continue;
+					//expiredtimingQDMNode = qdmNode;
+					qdmNodeList.add(qdmNode);
+					isClonable = false;
 				}else if(oid.equals(PATIENT_CHARACTERISTIC_BIRTH_DATE_OID)){
-					birthDataQDMNode = qdmNode;
-					continue;
+					//birthDataQDMNode = qdmNode;
+					isClonable = false;
+				} else if(qdmName.equalsIgnoreCase(QDM_BIRTHDATE_NON_DEFAULT) && !oid.equals(PATIENT_CHARACTERISTIC_BIRTH_DATE_OID)){
+					qdmNodeList.add(qdmNode);
+					isClonable = false;
+				} else if(qdmName.equalsIgnoreCase(QDM_EXPIRED_NON_DEFAULT)&& !oid.equals(PATIENT_CHARACTERISTIC_EXPIRED_OID)){
+					qdmNodeList.add(qdmNode);
+					isClonable = false;
 				}
-				Node clonedqdmNode = qdmNode.cloneNode(true);
-				xmlProcessor.getOriginalDoc().renameNode(clonedqdmNode, null, "valueset");
-				cqlValuesetsNode.appendChild(clonedqdmNode);
+				//Remove Specific Occurrence of QDM
+				if(qdmNode.getAttributes().getNamedItem("instance") != null){
+					qdmNodeList.add(qdmNode);
+					isClonable = false;
+				}
+				if(isClonable){
+					Node clonedqdmNode = qdmNode.cloneNode(true);
+					xmlProcessor.getOriginalDoc().renameNode(clonedqdmNode, null, "valueset");
+					cqlValuesetsNode.appendChild(clonedqdmNode);
+				}
 			}
 		}
-		
-		if(expiredtimingQDMNode != null){
-			Node parentNode = expiredtimingQDMNode.getParentNode();
-			parentNode.removeChild(expiredtimingQDMNode);
+		//Remove all unclonable QDM's collected above in For Loop from elementLookUp tag.
+		if(qdmNodeList != null && qdmNodeList.size() >0){
+			for(int i=0;i<qdmNodeList.size();i++){
+				Node qNode = qdmNodeList.get(i);
+				Node parentNode = qNode.getParentNode();
+				parentNode.removeChild(qNode);
+			}
 		}
-		if(birthDataQDMNode != null){
+		//Re-factored MAT-8295 : birthdate is not removed from QDM. This is to keep uuid same for ClauseWorkspace references to birthdate qdm.
+		/*if(birthDataQDMNode != null){
 			Node parentNode = birthDataQDMNode.getParentNode();
 			parentNode.removeChild(birthDataQDMNode);
-		}
+		}*/
 		
 		checkForTimingElementsAndAppend(xmlProcessor);
 		checkForDefaultCQLParametersAndAppend(xmlProcessor);
@@ -369,11 +408,10 @@ implements MeasureCloningService {
 		checkForDefaultCQLCodeSystemsAndAppend(xmlProcessor);
 		checkForDefaultCQLCodesAndAppend(xmlProcessor);
 		
-		clonedXml.setMeasureXMLAsByteArray(xmlProcessor
-				.transform(xmlProcessor.getOriginalDoc()));
-		
+		return true;
 	}
 	
+
 	/**
 	 * Append cql definitions.
 	 *
@@ -393,35 +431,7 @@ implements MeasureCloningService {
 		try {
 			xmlProcessor.appendNode(defStr, "definition", "/measure/cqlLookUp/definitions");
 			
-			Node supplementalDataNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/supplementalDataElements");
-			
-			/*if(supplementalDataNode == null){
-				supplementalDataNode = xmlProcessor.getOriginalDoc().createElement("supplementalDataElements");
-				xmlProcessor.getOriginalDoc().getDocumentElement().appendChild(supplementalDataNode);
-			}*/
-			
-			while(supplementalDataNode.hasChildNodes()){
-				supplementalDataNode.removeChild(supplementalDataNode.getFirstChild());
-			}
-			
-			NodeList supplementalDefnNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), 
-					"/measure/cqlLookUp/definitions/definition[@supplDataElement='true']");
-			
-			if(supplementalDefnNodes != null){
-				System.out.println("suppl data elems..setting ids");
-				for(int i=0;i<supplementalDefnNodes.getLength();i++){
-					Node supplNode = supplementalDefnNodes.item(i);
-				    System.out.println("name:"+supplNode.getAttributes().getNamedItem("name").getNodeValue());
-				    System.out.println("id:"+supplNode.getAttributes().getNamedItem("id").getNodeValue());
-					supplNode.getAttributes().getNamedItem("id").setNodeValue(UUIDUtilClient.uuid());
-					
-					Element cqlDefinitionRefNode = xmlProcessor.getOriginalDoc().createElement("cqldefinition");
-					cqlDefinitionRefNode.setAttribute("displayName", supplNode.getAttributes().getNamedItem("name").getNodeValue());
-					cqlDefinitionRefNode.setAttribute("uuid", supplNode.getAttributes().getNamedItem("id").getNodeValue());
-					supplementalDataNode.appendChild(cqlDefinitionRefNode);
-					
-				}
-			}
+			appendSupplementalDefinitions(xmlProcessor, true);
 		} catch (SAXException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -429,6 +439,35 @@ implements MeasureCloningService {
 		} catch (XPathExpressionException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+	}
+
+	private void appendSupplementalDefinitions(XmlProcessor xmlProcessor, boolean createNewIds)
+			throws XPathExpressionException {
+		Node supplementalDataNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/supplementalDataElements");
+					
+		while(supplementalDataNode.hasChildNodes()){
+			supplementalDataNode.removeChild(supplementalDataNode.getFirstChild());
+		}
+		
+		NodeList supplementalDefnNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), 
+				"/measure/cqlLookUp/definitions/definition[@supplDataElement='true']");
+		
+		if(supplementalDefnNodes != null){
+			System.out.println("suppl data elems..setting ids");
+			for(int i=0;i<supplementalDefnNodes.getLength();i++){
+				Node supplNode = supplementalDefnNodes.item(i);
+			    			    
+				if(createNewIds){
+					supplNode.getAttributes().getNamedItem("id").setNodeValue(UUIDUtilClient.uuid());
+				}
+				
+				Element cqlDefinitionRefNode = xmlProcessor.getOriginalDoc().createElement("cqldefinition");
+				cqlDefinitionRefNode.setAttribute("displayName", supplNode.getAttributes().getNamedItem("name").getNodeValue());
+				cqlDefinitionRefNode.setAttribute("uuid", supplNode.getAttributes().getNamedItem("id").getNodeValue());
+				supplementalDataNode.appendChild(cqlDefinitionRefNode);
+				
+			}
 		}
 	}
 	
@@ -798,6 +837,33 @@ implements MeasureCloningService {
 		/*clonedDoc.getElementsByTagName(MEASURE_STATUS).item(0)
 		.setTextContent(clonedMeasure.getMeasureStatus());*/
 		
+	}
+	
+	/**
+	 * Method to check If a user is trying to Clone a measure whose release version is not 
+	 * v5.xx. 
+	 * If the version is v4.xxx or v3.xxx or is NULL, then the method returns true, indicating cloning is not 
+	 * allowed for this measure.
+	 * 
+	 * @param measure
+	 * @param creatingDraft
+	 * @return
+	 */
+	private boolean checkNonCQLCloningValidation(Measure measure,
+			boolean creatingDraft) {
+		
+		if(creatingDraft){
+			return false;
+		}
+		
+		boolean returnValue = false;
+		
+		String measureReleaseVersion = (measure.getReleaseVersion() == null) ? "" : measure.getReleaseVersion();
+		if(measureReleaseVersion.length() == 0 || measureReleaseVersion.startsWith("v4") || measureReleaseVersion.startsWith("v3")){
+			returnValue = true;
+		}
+		
+		return returnValue;
 	}
 	
 	/**

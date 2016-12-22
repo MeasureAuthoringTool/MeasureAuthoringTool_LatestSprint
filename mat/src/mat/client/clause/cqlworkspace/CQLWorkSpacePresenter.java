@@ -38,6 +38,7 @@ import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.Icon;
 import org.gwtbootstrap3.client.ui.InlineRadio;
 import org.gwtbootstrap3.client.ui.PanelCollapse;
+import org.gwtbootstrap3.client.ui.TextArea;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 
 import com.google.gwt.core.client.GWT;
@@ -917,7 +918,7 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 		Button getDeleteConfirmationNoButton();
 
 		void setUsedCQLArtifacts(GetUsedCQLArtifactsResult results);
-		
+
 	}
 	
 	
@@ -2153,6 +2154,7 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 			@Override
 			public void onSuccess(SaveUpdateCQLResult result) {
 				if (result.getCqlModel() != null) {
+					
 					if ((result.getCqlModel().getDefinitionList() != null) &&
 							(result.getCqlModel().getDefinitionList().size() > 0)) {
 						searchDisplay.setViewDefinitions(result.getCqlModel().getDefinitionList());

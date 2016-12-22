@@ -28,6 +28,7 @@ import mat.model.MatValueSet;
 import mat.model.QualityDataSetDTO;
 import mat.model.RiskAdjustmentDTO;
 import mat.model.cql.CQLDefinition;
+import mat.shared.MATPropertiesUtil;
 import mat.shared.MeasurePackageClauseValidator;
 import org.gwtbootstrap3.client.ui.CheckBox;
 import com.google.gwt.core.client.GWT;
@@ -1022,7 +1023,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.setClausesInPackage(packageClauses);
 		view.setClauses(remainingClauses);
 		if(packageOverview.getReleaseVersion() != null 
-				&& packageOverview.getReleaseVersion().equalsIgnoreCase("v5.0")){
+				&& packageOverview.getReleaseVersion().equalsIgnoreCase(MATPropertiesUtil.MAT_RELEASE_VERSION)){
 			view.setCQLMeasure(true);
 			view.setRiskAdjustLabel(true);
 			//Set supple data to empty if CQL measure
@@ -1034,11 +1035,14 @@ public class MeasurePackagePresenter implements MatPresenter {
 		else{
 			view.setCQLMeasure(false);
 			view.setRiskAdjustLabel(false);
-			view.setQDMElementsInSuppElements(packageOverview.getSuppDataElements());
-			view.setQDMElements(packageOverview.getQdmElements());
 			//Set CQL Suppl data to empty
 			view.setCQLElementsInSuppElements(Collections.<CQLDefinition>emptyList());
 			view.setCQLQDMElements(Collections.<CQLDefinition>emptyList());
+			//Set QDM and Supplemental Data Elements.
+			view.setQDMElementsInSuppElements(packageOverview.getSuppDataElements());
+			view.setQDMElements(packageOverview.getQdmElements());
+			
+			
 		}
 		//view.setQDMElements(packageOverview.getQdmElements());
 		view.setSubTreeInRiskAdjVarList(packageOverview.getRiskAdjList());

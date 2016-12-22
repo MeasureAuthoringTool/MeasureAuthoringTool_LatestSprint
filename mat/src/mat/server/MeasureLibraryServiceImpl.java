@@ -101,6 +101,7 @@ import mat.shared.ConstantMessages;
 import mat.shared.DateStringValidator;
 import mat.shared.DateUtility;
 import mat.shared.GetUsedCQLArtifactsResult;
+import mat.shared.MATPropertiesUtil;
 import mat.shared.SaveUpdateCQLResult;
 import mat.shared.UUIDUtilClient;
 import mat.shared.model.util.MeasureDetailsUtil;
@@ -1234,7 +1235,14 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		detail.setId(dto.getMeasureId());
 		detail.setStatus(dto.getStatus());
 		detail.seteMeasureId(dto.geteMeasureId());
-		detail.setClonable(isOwner || isSuperUser);
+		
+		String measureReleaseVersion = (measure.getReleaseVersion() == null)?"":measure.getReleaseVersion();
+		if(measureReleaseVersion.length() == 0 || measureReleaseVersion.startsWith("v4") || measureReleaseVersion.startsWith("v3")){
+			detail.setClonable(false);
+		}else{
+			detail.setClonable(isOwner || isSuperUser);
+		}
+		
 		detail.setEditable((isOwner || isSuperUser || ShareLevel.MODIFY_ID.equals(dto.getShareLevel())) && dto.isDraft());
 		detail.setExportable(dto.isPackaged());
 		detail.setHqmfReleaseVersion(measure.getReleaseVersion());
@@ -2196,7 +2204,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				setMeasureCreated(false);
 				pkg = new Measure();
 				/*model.setMeasureStatus("In Progress");*/
-				pkg.setReleaseVersion("v5.0");
+				pkg.setReleaseVersion(MATPropertiesUtil.MAT_RELEASE_VERSION);
 				model.setRevisionNumber("000");
 				measureSet = new MeasureSet();
 				measureSet.setId(UUID.randomUUID().toString());				
@@ -2409,7 +2417,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					String scoringTypeAfterNewXml = (String) xPath.evaluate(
 							"/measure/measureDetails/scoring/@id",
 							xmlProcessor.getOriginalDoc().getDocumentElement(), XPathConstants.STRING);
-					xmlProcessor.checkForScoringType(getCurrentReleaseVersion());
+					xmlProcessor.checkForScoringType(MATPropertiesUtil.QDM_VERSION);
 					checkForTimingElementsAndAppend(xmlProcessor);
 					checkForDefaultCQLParametersAndAppend(xmlProcessor);
 					checkForDefaultCQLDefinitionsAndAppend(xmlProcessor);
@@ -2429,7 +2437,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		} else {
 			XmlProcessor processor = new XmlProcessor(measureXmlModel.getXml());
 			processor.addParentNode(MEASURE);
-			processor.checkForScoringType(getCurrentReleaseVersion());
+			processor.checkForScoringType(MATPropertiesUtil.QDM_VERSION);
 			checkForTimingElementsAndAppend(processor);
 			checkForDefaultCQLParametersAndAppend(processor);
 			checkForDefaultCQLDefinitionsAndAppend(processor);

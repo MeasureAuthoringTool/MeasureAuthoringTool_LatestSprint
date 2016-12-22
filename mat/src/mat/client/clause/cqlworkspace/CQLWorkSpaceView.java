@@ -30,6 +30,7 @@ import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLParameter;
 import mat.shared.ClickableSafeHtmlCell;
 import mat.shared.GetUsedCQLArtifactsResult;
+import mat.shared.MATPropertiesUtil;
 
 import org.gwtbootstrap3.client.ui.Anchor;
 import org.gwtbootstrap3.client.ui.AnchorListItem;
@@ -356,6 +357,8 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 	DeleteConfirmationMessageAlert deleteConfirmationMessgeAlert = new DeleteConfirmationMessageAlert(); 
 	
 	private GetUsedCQLArtifactsResult usedCqlArtifacts; 
+	
+	
 	
 	//private AnchorListItem includeLibrary;
 	
@@ -854,20 +857,25 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		VerticalPanel generalInfoTopPanel = new VerticalPanel();
 		
 		Label libraryNameLabel = new Label(LabelType.INFO, "CQL Library Name");
-		TextArea libraryNameValue = new TextArea();
+		
 		libraryNameLabel.getElement().setAttribute("style", "font-size:90%;margin-left:15px;background-color:#0964A2;");
 		libraryNameLabel.setWidth("150px");
+		
+		TextArea libraryNameValue = new TextArea();
 		libraryNameValue.getElement().setAttribute("style", "margin-left:15px;width:250px;height:25px;");
 		libraryNameValue.setText(MatContext.get().getCurrentMeasureName().replaceAll(" ", ""));
 		libraryNameValue.setReadOnly(true);
 		
 		Label libraryVersionLabel = new Label(LabelType.INFO, "Version");
-		TextArea libraryVersionValue = new TextArea();
+		
 		libraryVersionLabel.getElement().setAttribute("style", "font-size:90%;margin-left:15px;background-color:#0964A2;");
 		libraryVersionLabel.setWidth("150px");
+		
+		TextArea libraryVersionValue = new TextArea();
 		libraryVersionValue.getElement().setAttribute("style", "margin-left:15px;width:250px;height:25px;");
 		
 		String measureVersion = MatContext.get().getCurrentMeasureVersion();
+		
 		measureVersion = measureVersion.replaceAll("Draft ", "").trim();
 		if(measureVersion.startsWith("v")){
 			measureVersion = measureVersion.substring(1);
@@ -885,12 +893,14 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		usingModelValue.setReadOnly(true);
 		
 		Label modelVersionLabel = new Label(LabelType.INFO, "Version");
-		TextArea modelVersionValue = new TextArea();
+		
 		modelVersionLabel.getElement().setAttribute("style", "font-size:90%;margin-left:15px;background-color:#0964A2;");
 		modelVersionLabel.setWidth("150px");
+		TextBox modelVersionValue = new TextBox();
 		modelVersionValue.getElement().setAttribute("style", "margin-left:15px;width:250px;height:25px;");
-		modelVersionValue.setText("5.0");
+		//modelVersionValue.setText("5.0");
 		modelVersionValue.setReadOnly(true);
+		modelVersionValue.setText(MATPropertiesUtil.QDM_VERSION);
 		
 		generalInfoTopPanel.add(new SpacerWidget());
 		// messagePanel.add(successMessageAlert);
