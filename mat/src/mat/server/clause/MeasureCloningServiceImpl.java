@@ -40,9 +40,9 @@ import mat.server.SpringRemoteServiceServlet;
 import mat.server.service.MeasureLibraryService;
 import mat.server.service.MeasureNotesService;
 import mat.server.service.impl.MatContextServiceUtil;
+import mat.server.util.MATPropertiesService;
 import mat.server.util.MeasureUtility;
 import mat.server.util.XmlProcessor;
-import mat.shared.MATPropertiesUtil;
 import mat.shared.UUIDUtilClient;
 import mat.shared.model.util.MeasureDetailsUtil;
 
@@ -150,6 +150,16 @@ implements MeasureCloningService {
 	
 	/** The Constant PATIENT_CHARACTERISTIC_EXPIRED_OID. */
 	private static final String PATIENT_CHARACTERISTIC_EXPIRED_OID = "419099009";
+	
+	/** The Constant PATIENT_CHARACTERISTIC_BIRTH_DATE. */
+	private static final String PATIENT_CHARACTERISTIC_BIRTH_DATE = "Patient Characteristic Birthdate";
+	
+	/** The Constant PATIENT_CHARACTERISTIC_EXPIRED. */
+	private static final String PATIENT_CHARACTERISTIC_EXPIRED = "Patient Characteristic Expired";
+	
+	/** The Constant TIMING_ELEMENT. */
+	private static final String TIMING_ELEMENT ="Timing ELement";
+
 	
 	/** The cloned doc. */
 	private Document clonedDoc;
@@ -264,7 +274,7 @@ implements MeasureCloningService {
 				String scoringTypeId = MeasureDetailsUtil
 						.getScoringAbbr(clonedMeasure.getMeasureScoring());
 				xmlProcessor.removeNodesBasedOnScoring(scoringTypeId);
-				xmlProcessor.createNewNodesBasedOnScoring(scoringTypeId,MATPropertiesUtil.QDM_VERSION);  
+				xmlProcessor.createNewNodesBasedOnScoring(scoringTypeId,MATPropertiesService.get().getQmdVersion());  
 				clonedXml.setMeasureXMLAsByteArray(xmlProcessor
 						.transform(xmlProcessor.getOriginalDoc()));
 			}
@@ -276,6 +286,7 @@ implements MeasureCloningService {
 				
 				//create the default 4 CMS supplemental definitions
 				appendSupplementalDefinitions(xmlProcessor, false);
+				xmlProcessor.updateCQLLibraryName();
 			}
 			
 			clonedXml.setMeasureXMLAsByteArray(xmlProcessor
@@ -310,14 +321,13 @@ implements MeasureCloningService {
 			//Update QDM Version in Measure XMl for Draft and CQL Measures
 			Node qdmVersionNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/cqlLookUp/usingModelVersion");
 			if(qdmVersionNode!=null){
-				qdmVersionNode.setTextContent(MATPropertiesUtil.QDM_VERSION);
+				qdmVersionNode.setTextContent(MATPropertiesService.get().getQmdVersion());
 			}
-			clonedXml.setMeasureXMLAsByteArray(xmlProcessor
-					.transform(xmlProcessor.getOriginalDoc()));
+			
 			return false;
 		}
 		
-		clonedMsr.setReleaseVersion(measureLibraryService.getCurrentReleaseVersion());
+		clonedMsr.setReleaseVersion(MATPropertiesService.get().getCurrentReleaseVersion());
 				
 		Node populationsNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/populations");
 		if(populationsNode != null){
@@ -340,7 +350,7 @@ implements MeasureCloningService {
 		String scoringTypeId = MeasureDetailsUtil
 				.getScoringAbbr(clonedMeasure.getMeasureScoring());
 		
-		xmlProcessor.createNewNodesBasedOnScoring(scoringTypeId,MATPropertiesUtil.QDM_VERSION);
+		xmlProcessor.createNewNodesBasedOnScoring(scoringTypeId,MATPropertiesService.get().getQmdVersion());
 		//xmlProcessor.checkForStratificationAndAdd();
 		
 		//copy qdm to cqlLookup/valuesets
@@ -362,6 +372,7 @@ implements MeasureCloningService {
 				boolean isClonable = true;
 				String oid = qdmNode.getAttributes().getNamedItem("oid").getNodeValue();
 				String qdmName = qdmNode.getAttributes().getNamedItem("name").getNodeValue();
+				String dataType = qdmNode.getAttributes().getNamedItem("datatype").getNodeValue();
 				if(oid.equals(PATIENT_CHARACTERISTIC_EXPIRED_OID)){
 					//expiredtimingQDMNode = qdmNode;
 					qdmNodeList.add(qdmNode);
@@ -369,10 +380,17 @@ implements MeasureCloningService {
 				}else if(oid.equals(PATIENT_CHARACTERISTIC_BIRTH_DATE_OID)){
 					//birthDataQDMNode = qdmNode;
 					isClonable = false;
-				} else if(qdmName.equalsIgnoreCase(QDM_BIRTHDATE_NON_DEFAULT) && !oid.equals(PATIENT_CHARACTERISTIC_BIRTH_DATE_OID)){
+				} else if((qdmName.equalsIgnoreCase(QDM_BIRTHDATE_NON_DEFAULT) 
+						|| dataType.equalsIgnoreCase(PATIENT_CHARACTERISTIC_BIRTH_DATE)) 
+						&& !oid.equals(PATIENT_CHARACTERISTIC_BIRTH_DATE_OID)){
 					qdmNodeList.add(qdmNode);
 					isClonable = false;
-				} else if(qdmName.equalsIgnoreCase(QDM_EXPIRED_NON_DEFAULT)&& !oid.equals(PATIENT_CHARACTERISTIC_EXPIRED_OID)){
+				} else if((qdmName.equalsIgnoreCase(QDM_EXPIRED_NON_DEFAULT) 
+						|| dataType.equalsIgnoreCase(PATIENT_CHARACTERISTIC_EXPIRED)) 
+						&& !oid.equals(PATIENT_CHARACTERISTIC_EXPIRED_OID)){
+					qdmNodeList.add(qdmNode);
+					isClonable = false;
+				} else if(dataType.equalsIgnoreCase(TIMING_ELEMENT)){
 					qdmNodeList.add(qdmNode);
 					isClonable = false;
 				}

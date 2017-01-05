@@ -1,17 +1,12 @@
 package mat.server;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.apache.commons.lang.StringUtils;
 import org.cqframework.cql.cql2elm.CQLtoELM;
-import org.cqframework.cql.cql2elm.CqlTranslator;
 import org.cqframework.cql.cql2elm.CqlTranslatorException;
 
 import mat.DTO.MeasureNoteDTO;
@@ -35,16 +30,13 @@ import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
 import mat.model.cql.CQLDefinition;
-import mat.model.cql.CQLDefinitionsWrapper;
 import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLKeywords;
 import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
-import mat.server.cqlparser.CQLErrorListener;
-import mat.server.cqlparser.cqlLexer;
-import mat.server.cqlparser.cqlParser;
+import mat.model.cql.CQLQualityDataModelWrapper;
+import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.service.MeasureLibraryService;
-import mat.server.util.CQLUtil;
 import mat.shared.CQLErrors;
 import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
@@ -135,6 +127,10 @@ MeasureService {
 		return this.getMeasureLibraryService().getAppliedQDMFromMeasureXml(measureId, checkForSupplementData);
 	}
 	
+	@Override
+	public CQLQualityDataModelWrapper getCQLAppliedQDMFromMeasureXml(String measureId, boolean checkForSupplementData) {
+		return this.getMeasureLibraryService().getCQLAppliedQDMFromMeasureXml(measureId, checkForSupplementData);
+	}
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#getMaxEMeasureId()
 	 */
@@ -606,33 +602,19 @@ MeasureService {
 
 	@Override
 	public SaveUpdateCQLResult parseCQLForErrors(String measureId) {
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		List<String> Errors = new ArrayList<String>();
-		MeasureXmlModel measureXML = getMeasureXmlForMeasure(measureId);
-		//MATCQLParser matcqlParser = new MATCQLParser();
-		String cqlFileString = CQLUtilityClass.getCqlString(CQLUtilityClass.getCQLStringFromMeasureXML(measureXML.getXml(),measureId),"").toString();
-		/*cqlLexer lexer = new cqlLexer(new ANTLRInputStream(cqlFileString));
-		System.out.println(cqlFileString);
-		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		cqlParser parser = new cqlParser(tokens);
-		CQLErrorListener cqlErrorListener = new CQLErrorListener();
-		parser.addErrorListener(cqlErrorListener);
-		parser.setBuildParseTree(true);
-
-		ParserRuleContext tree = parser.logic();
-		parser.notifyErrorListeners("");
-
-		System.out.println(parser.getNumberOfSyntaxErrors());
-		System.out.println(cqlErrorListener.getErrors());
-
-		if(cqlErrorListener.getErrors().size()!=0){
-			//result.setValid(false);
-			result.setCqlErrors(cqlErrorListener.getErrors());
-		} else {
-			//result.setValid(true);
-		}*/
-
 		
+		MeasureXmlModel measureXML = getMeasureXmlForMeasure(measureId);
+		String cqlFileString = CQLUtilityClass.getCqlString(CQLUtilityClass.getCQLStringFromMeasureXML(measureXML.getXml(),measureId),"").toString();
+		
+		return parseCQLStringForError(cqlFileString);
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#parseCQLStringForError(java.lang.String)
+	 */
+	@Override
+	public SaveUpdateCQLResult parseCQLStringForError( String cqlFileString) {
+		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		List<CqlTranslatorException> cqlErrorsList = new ArrayList<CqlTranslatorException>();
 		List<CQLErrors> errors = new ArrayList<CQLErrors>();
 		if(!StringUtils.isBlank(cqlFileString)){
@@ -640,16 +622,13 @@ MeasureService {
 			CQLtoELM cqlToElm = new CQLtoELM(cqlFileString); 
 			cqlToElm.doTranslation(true, false, false);
 			
-			String elmString = cqlToElm.getElmString(); 
-			
 			if(cqlToElm.getErrors() != null) {
 				cqlErrorsList.addAll(cqlToElm.getErrors());
 			}
 		}
 		
 		for(CqlTranslatorException cte : cqlErrorsList){
-			//Errors.add(cte.getMessage());
-			//result.getCqlErrors().add(cte);
+			
 			CQLErrors cqlErrors = new CQLErrors();
 			cqlErrors.setErrorInLine(cte.getLocator().getStartLine());
 			cqlErrors.setErrorAtOffeset(cte.getLocator().getStartChar());
@@ -686,6 +665,11 @@ MeasureService {
 		
 	}
 	
-	
-	
+	@Override
+	public SaveUpdateCQLResult createAndSaveCQLElementLookUp(String Uuid, List<CQLQualityDataSetDTO> list, String measureID,
+			String expProfileToAllQDM) {
+		return this.getMeasureLibraryService().createAndSaveCQLElementLookUp(Uuid, list, measureID, expProfileToAllQDM);
+		
+	}
+
 }
