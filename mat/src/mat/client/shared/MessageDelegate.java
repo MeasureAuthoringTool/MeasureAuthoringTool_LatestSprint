@@ -193,13 +193,14 @@ public class MessageDelegate {
 	public final String SUCCESSFULLY_MODIFIED_ALL_OIDS = "All QDM elements and/or attributes using the same value set OID have been modified " +
 			"to the selected Version and/or Expansion Identifier.";
 	
-	public final String VIEW_CQL_ERROR_MESSAGE = "You are viewing CQL with few validations errors. Errors are marked with triangle sign on line number.";
+	public final String VIEW_CQL_ERROR_MESSAGE = "You are viewing CQL with few validation errors. Errors are marked with triangle sign on line number.";
 	public final String VIEW_CQL_NO_ERRORS_MESSAGE ="You are viewing CQL with no validation errors.";
 	
 	public final String SUCCESSFUL_SAVED_CQL_GEN_INFO  = "Successfully saved CQL general information.";
 	public final String SUCCESSFUL_SAVED_CQL_DEFINITION  = "Successfully saved definition into CQL.";
 	public final String SUCCESSFUL_SAVED_CQL_FUNCTIONS  = "Successfully saved function into CQL.";
 	public final String SUCCESSFUL_SAVED_CQL_PARAMETER  = "Successfully saved parameter into CQL.";
+	public final String SUCCESSFUL_SAVED_CQL_INCLUDE_LIBRARY  = "Library Insert Alias Name Here successfully Included.";
 	public final String ERROR_SAVE_CQL_DEFINITION  = "Please enter definition name.";
 	
 	public final String SUCCESSFUL_SAVED_CQL_DEFINITION_WITH_ERRORS  = "Successfully saved definition into CQL with errors.";
@@ -223,6 +224,7 @@ public class MessageDelegate {
 			"Duplicate name or use of restricted character(s).";
 	public final String ERROR_FUNCTION_NAME_NO_SPECIAL_CHAR  = "Invalid Function and/or Argument name. " +
 			"Duplicate name or use of restricted character(s).";
+	public final String ERROR_INCLUDE_ALIAS_NAME_NO_SPECIAL_CHAR  = "Invalid Library Alias. Must be unique, alpha-numeric only, and not contain spaces.";
 	
 	public final String DELETE_WARNING_MESSAGE = "You have selected to delete this expression. Do you want to permanently delete";
 	
@@ -372,7 +374,7 @@ public class MessageDelegate {
 	private final String DOESNT_FOLLOW_RULES = "The new password you entered does not match the following rules:";
 	
 	/** The duplicate applied qdm. */
-	private final String DUPLICATE_APPLIED_QDM = "OID is already applied in combination with Datatype, Version, or Expansion Identifier.";
+	private final String DUPLICATE_APPLIED_QDM = "Valueset with name already exists.";
 	
 	/** The duplicate codes msg. */
 	private final String DUPLICATE_CODES_MSG = "All code(s) were identified as duplicates to code(s) already in the value set and were ignored upon import.";
@@ -626,7 +628,7 @@ public class MessageDelegate {
 	private final String STEWARD_REQUIRED = "Steward is required.";
 	
 	/** The successful modify applied qdm. */
-	private final String SUCCESSFUL_MODIFY_APPLIED_QDM = "Selected QDM element has been modified successfully.";
+	private final String SUCCESSFUL_MODIFY_APPLIED_VALUESET = "Selected Valueset has been modified successfully.";
 	
 	/** The system error. */
 	private final String SYSTEM_ERROR = "Import failed due to system error. Please try again.";
@@ -671,7 +673,7 @@ public class MessageDelegate {
 	private final String VALIDATION_MSG_DATA_TYPE_VSAC = "Please select datatype from drop down list.";
 	
 	/** The validation msg element without vsac. */
-	private final String VALIDATION_MSG_ELEMENT_WITHOUT_VSAC = "Please enter name and select a datatype associated with it.";
+	private final String VALIDATION_MSG_ELEMENT_WITHOUT_VSAC = "Please enter valueset name.";
 	
 	/** The value set date invalid. */
 	private final String VALUE_SET_DATE_INVALID = "Value Set Package Date is not a valid date.";
@@ -1880,8 +1882,8 @@ public class MessageDelegate {
 	 * 
 	 * @return String
 	 */
-	public String getSuccessfulModifyQDMMsg() {
-		return SUCCESSFUL_MODIFY_APPLIED_QDM;
+	public String getSUCCESSFUL_MODIFY_APPLIED_VALUESET() {
+		return SUCCESSFUL_MODIFY_APPLIED_VALUESET;
 		
 	}
 	
@@ -2660,5 +2662,20 @@ public class MessageDelegate {
 		return DELETE_CONFIRMATION_FUNCTION;
 	}
 
+	public String getValuesetSuccessMessage(String codeListName) {
+		return "The Valueset " + codeListName + " has been added successfully.";
+	}
 
+	public String getERROR_INCLUDE_ALIAS_NAME_NO_SPECIAL_CHAR() {
+		return ERROR_INCLUDE_ALIAS_NAME_NO_SPECIAL_CHAR;
+	}
+
+	public String getSUCCESSFUL_SAVED_CQL_INCLUDE_LIBRARY() {
+		return SUCCESSFUL_SAVED_CQL_INCLUDE_LIBRARY;
+	}
+
+	public String getIncludeLibrarySuccessMessage(String aliasName) {
+		return " Library " + aliasName + " successfully included.";
+	}
+	
 }

@@ -349,19 +349,19 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 				validateClauseWorkspaceTab(clauseWorkspacePresenter, selectedIndex);
 			}*/ 
 			
-			else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 2) {
-				int CQLWorkspaceTab = 2;
+			else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 1) {
+				int CQLWorkspaceTab = 1;
 				CQLWorkSpacePresenter cqlWorkspacePresenter = (CQLWorkSpacePresenter)
 						composerPresenter.getMeasureComposerTabLayout().presenterMap.get(CQLWorkspaceTab);
 				validateCQLWorkspaceTab(cqlWorkspacePresenter, selectedIndex);
-			} else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 3) {
-				int populationWorkspaceTab = 3;
+			} else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 2) {
+				int populationWorkspaceTab = 2;
 				PopulationWorkspacePresenter clauseWorkspacePresenter = (PopulationWorkspacePresenter)
 						composerPresenter.getMeasureComposerTabLayout().presenterMap.get(populationWorkspaceTab);
 				validateClauseWorkspaceTab(clauseWorkspacePresenter.getSelectedTreePresenter(), selectedIndex);
 			}
-			else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 4) {
-				int measurePackagerTab = 4;
+			else if (composerPresenter.getMeasureComposerTabLayout().getSelectedIndex() == 3) {
+				int measurePackagerTab = 3;
 				MeasurePackagePresenter measurePackagerPresenter = (MeasurePackagePresenter)
 						composerPresenter.getMeasureComposerTabLayout().presenterMap.get(measurePackagerTab);
 				validateNewMeasurePackageTab(selectedIndex, measurePackagerPresenter);
@@ -371,10 +371,10 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 		} else if ((selectedIndex == 0) && (previousPresenter instanceof MetaDataPresenter)) {
 			MetaDataPresenter metaDataPresenter = (MetaDataPresenter) previousPresenter;
 			validateMeasureDetailsTab(selectedIndex, metaDataPresenter);
-		} else if ((selectedIndex == 2) && (previousPresenter instanceof CQLWorkSpacePresenter)) {
+		} else if ((selectedIndex == 1) && (previousPresenter instanceof CQLWorkSpacePresenter)) {
 			CQLWorkSpacePresenter cqlPresenter = (CQLWorkSpacePresenter) previousPresenter;
 			validateCQLWorkspaceTab(cqlPresenter, selectedIndex);
-		} else if ((selectedIndex == 3) && (previousPresenter instanceof PopulationWorkspacePresenter)) {
+		} else if ((selectedIndex == 2) && (previousPresenter instanceof PopulationWorkspacePresenter)) {
 			PopulationWorkspacePresenter clauseWorkspacePresenter = (PopulationWorkspacePresenter) previousPresenter;
 			validateClauseWorkspaceTab(clauseWorkspacePresenter.getSelectedTreePresenter(), selectedIndex);
 		} 

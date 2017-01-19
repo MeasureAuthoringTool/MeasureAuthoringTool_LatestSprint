@@ -8,11 +8,13 @@ import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
+import mat.client.codelist.service.SaveUpdateCodeListResult;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.MeasureNotesModel;
 import mat.client.measure.TransferMeasureOwnerShipModel;
+import mat.model.CQLValueSetTransferObject;
 import mat.model.MatValueSet;
 import mat.model.MeasureType;
 import mat.model.Organization;
@@ -21,6 +23,7 @@ import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
+import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLKeywords;
 import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
@@ -36,8 +39,7 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
  */
 public interface MeasureServiceAsync {
 	
-	void appendAndSaveNode(MeasureXmlModel measureXmlModel, String nodeName, MeasureXmlModel newMeasureXmlModel,
-			String newNodeName, AsyncCallback<Void> callback);
+	void appendAndSaveNode(MeasureXmlModel measureXmlModel, String nodeName, AsyncCallback<Void> callback);
 	
 	/**
 	 * Clone measure xml.
@@ -738,5 +740,17 @@ public interface MeasureServiceAsync {
 
 	void parseCQLStringForError(String cqlFileString, AsyncCallback<SaveUpdateCQLResult> callback);
 
+	void getCQLValusets(String measureID, AsyncCallback<CQLQualityDataModelWrapper> callback);
 	
+	void saveCQLValuesettoMeasure(CQLValueSetTransferObject valueSetTransferObject, 
+			AsyncCallback<SaveUpdateCQLResult> callback);
+
+	void saveCQLUserDefinedValuesettoMeasure(CQLValueSetTransferObject valueSetTransferObject,
+			AsyncCallback<SaveUpdateCQLResult> callback);
+
+	void updateCQLValuesetsToMeasure(CQLValueSetTransferObject matValueSetTransferObject,
+			AsyncCallback<SaveUpdateCQLResult> callback);
+
+	void saveIncludeLibrayInCQLLookUp(String measureId, CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj,
+			List<CQLIncludeLibrary> incLibraryList, AsyncCallback<SaveUpdateCQLResult> callback);
 }

@@ -13,6 +13,7 @@ import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
+import mat.client.codelist.service.SaveUpdateCodeListResult;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
@@ -23,6 +24,7 @@ import mat.client.measure.service.SaveMeasureNotesResult;
 import mat.client.measure.service.SaveMeasureResult;
 import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.shared.MatException;
+import mat.model.CQLValueSetTransferObject;
 import mat.model.MatValueSet;
 import mat.model.MeasureType;
 import mat.model.Organization;
@@ -31,6 +33,7 @@ import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
+import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLKeywords;
 import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
@@ -55,8 +58,8 @@ MeasureService {
 	 * @see mat.client.measure.service.MeasureService#appendAndSaveNode(mat.client.clause.clauseworkspace.model.MeasureXmlModel, java.lang.String)
 	 */
 	@Override
-	public void appendAndSaveNode(MeasureXmlModel measureXmlModel, String nodeName, MeasureXmlModel newMeasureXmlModel, String newNodeName) {
-		this.getMeasureLibraryService().appendAndSaveNode(measureXmlModel, nodeName, newMeasureXmlModel, newNodeName);
+	public void appendAndSaveNode(MeasureXmlModel measureXmlModel, String nodeName) {
+		this.getMeasureLibraryService().appendAndSaveNode(measureXmlModel, nodeName);
 		
 	}
 	
@@ -614,31 +617,7 @@ MeasureService {
 	 */
 	@Override
 	public SaveUpdateCQLResult parseCQLStringForError( String cqlFileString) {
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		List<CqlTranslatorException> cqlErrorsList = new ArrayList<CqlTranslatorException>();
-		List<CQLErrors> errors = new ArrayList<CQLErrors>();
-		if(!StringUtils.isBlank(cqlFileString)){
-			
-			CQLtoELM cqlToElm = new CQLtoELM(cqlFileString); 
-			cqlToElm.doTranslation(true, false, false);
-			
-			if(cqlToElm.getErrors() != null) {
-				cqlErrorsList.addAll(cqlToElm.getErrors());
-			}
-		}
-		
-		for(CqlTranslatorException cte : cqlErrorsList){
-			
-			CQLErrors cqlErrors = new CQLErrors();
-			cqlErrors.setErrorInLine(cte.getLocator().getStartLine());
-			cqlErrors.setErrorAtOffeset(cte.getLocator().getStartChar());
-			cqlErrors.setErrorMessage(cte.getMessage());
-			errors.add(cqlErrors);
-		}
-		
-		result.setCqlErrors(errors);
-		
-	return result;
+		return this.getMeasureLibraryService().parseCQLStringForError(cqlFileString);
 	}
 
 	@Override
@@ -670,6 +649,34 @@ MeasureService {
 			String expProfileToAllQDM) {
 		return this.getMeasureLibraryService().createAndSaveCQLElementLookUp(Uuid, list, measureID, expProfileToAllQDM);
 		
+	}
+
+	@Override
+	public CQLQualityDataModelWrapper getCQLValusets(String measureID) {
+		return this.getMeasureLibraryService().getCQLValusets(measureID);
+	}
+
+	@Override
+	public SaveUpdateCQLResult saveCQLValuesettoMeasure(CQLValueSetTransferObject valueSetTransferObject) {
+		return this.getMeasureLibraryService().saveCQLValuesettoMeasure(valueSetTransferObject);
+	}
+	
+	@Override
+	public SaveUpdateCQLResult saveCQLUserDefinedValuesettoMeasure(CQLValueSetTransferObject valueSetTransferObject) {
+		return this.getMeasureLibraryService().saveCQLUserDefinedValuesettoMeasure(valueSetTransferObject);
+	}
+	
+	@Override
+	public SaveUpdateCQLResult updateCQLValuesetsToMeasure(
+			CQLValueSetTransferObject matValueSetTransferObject) {
+		return this.getMeasureLibraryService().updateCQLValueSetstoMeasure(matValueSetTransferObject);
+	}
+	
+	@Override
+	public SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String measureId,
+			CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj,
+			List<CQLIncludeLibrary> incLibraryList){
+		return this.getMeasureLibraryService().saveIncludeLibrayInCQLLookUp(measureId, toBeModifiedObj, currentObj, incLibraryList);
 	}
 
 }

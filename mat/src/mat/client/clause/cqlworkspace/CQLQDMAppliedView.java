@@ -7,18 +7,15 @@ import java.util.List;
 import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.ButtonToolBar;
 import org.gwtbootstrap3.client.ui.CheckBox;
-import org.gwtbootstrap3.client.ui.FieldSet;
-import org.gwtbootstrap3.client.ui.Form;
-import org.gwtbootstrap3.client.ui.FormGroup;
 import org.gwtbootstrap3.client.ui.FormLabel;
 import org.gwtbootstrap3.client.ui.Label;
 import org.gwtbootstrap3.client.ui.ListBox;
 import org.gwtbootstrap3.client.ui.Panel;
 import org.gwtbootstrap3.client.ui.PanelBody;
 import org.gwtbootstrap3.client.ui.PanelHeader;
-import org.gwtbootstrap3.client.ui.TextArea;
-import org.gwtbootstrap3.client.ui.TextBox;
 import org.gwtbootstrap3.client.ui.constants.ButtonType;
+import org.gwtbootstrap3.client.ui.constants.IconSize;
+import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.constants.LabelType;
 import org.gwtbootstrap3.client.ui.constants.Pull;
 
@@ -32,6 +29,7 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.OptionElement;
 import com.google.gwt.dom.client.SelectElement;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.dom.client.TableCaptionElement;
 import com.google.gwt.event.logical.shared.HasSelectionHandlers;
 import com.google.gwt.event.logical.shared.HasValueChangeHandlers;
 import com.google.gwt.event.logical.shared.SelectionEvent;
@@ -52,23 +50,22 @@ import com.google.gwt.user.client.ui.HasVerticalAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.gwt.user.client.ui.SimplePanel;
+import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 import com.google.gwt.view.client.ListDataProvider;
 
 import mat.client.CustomPager;
 import mat.client.codelist.HasListBox;
-import mat.client.shared.ErrorMessageDisplay;
-import mat.client.shared.InProgressMessageDisplay;
 import mat.client.shared.LabelBuilder;
 import mat.client.shared.ListBoxMVP;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatSimplePager;
 import mat.client.shared.SearchWidgetBootStrap;
 import mat.client.shared.SpacerWidget;
-import mat.client.shared.SuccessMessageDisplay;
 import mat.client.umls.service.VSACAPIServiceAsync;
 import mat.client.util.CellTableUtility;
+import mat.client.util.MatTextBox;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.shared.ClickableSafeHtmlCell;
 import mat.shared.ConstantMessages;
@@ -78,9 +75,12 @@ import mat.shared.ConstantMessages;
 /**
  * The Class QDMAppliedSelectionView.
  */
-public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
+public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean>{
 	
+	/** The Constant GROUPING_QDM. */
 	static final String GROUPING_QDM = " (G)";
+	
+	/** The Constant EXTENSIONAL_QDM. */
 	static final String EXTENSIONAL_QDM = " (E)";
 	
 	/**
@@ -109,6 +109,7 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	/** The observer. */
 	private Observer observer;
 	
+	/** The default exp identifier sel. */
 	private CheckBox defaultExpIdentifierSel = new CheckBox();
 	/** The vsac profile list box. */
 	private ListBox defaultExpIdentifierListBox = new ListBox();
@@ -120,8 +121,6 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	VSACAPIServiceAsync vsacapiServiceAsync = MatContext.get()
 			.getVsacapiServiceAsync();
 	
-	/** The update vsac error message panel. */
-	private ErrorMessageDisplay updateVSACErrorMessagePanel = new ErrorMessageDisplay();
 	
 	/** The handler manager. */
 	private HandlerManager handlerManager = new HandlerManager(this);
@@ -129,9 +128,10 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	/** The cell table panel. */
 	private Panel cellTablePanel = new Panel();
 	
+	/** The cell table panel body. */
 	private PanelBody cellTablePanelBody = new PanelBody();
 	/** Cell Table Row Count. */
-	private static final int TABLE_ROW_COUNT = 15;
+	private static final int TABLE_ROW_COUNT = 10;
 	
 	/** The table. */
 	private CellTable<CQLQualityDataSetDTO> table;
@@ -151,8 +151,6 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	/** The profile list. */
 	private List<String> expIdentifierList = new ArrayList<String>();
 	
-	/** The update vsac success message panel. */
-	private SuccessMessageDisplay updateVSACSuccessMessagePanel = new SuccessMessageDisplay();
 	
 	/** The last selected object. */
 	private CQLQualityDataSetDTO lastSelectedObject;
@@ -165,7 +163,7 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	
 	
 	/** The name input. */
-	private TextArea nameInput = new TextArea();
+	private MatTextBox nameInput = new MatTextBox();
 	
 	/** The is editable. */
 	private boolean isEditable;
@@ -173,11 +171,6 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	/** The specific occurrence check box. */
 	private CheckBox specificOcurChkBox;
 	
-	/** The in progress message display. */
-	private InProgressMessageDisplay inProgressMessageDisplay = new InProgressMessageDisplay();
-	
-	/** The search header. */
-	private  Label searchHeader = new Label("Search");
 	
 	/** The vsac profile header. */
 	private Label defaultExpIdentifierHeader = new Label(LabelType.INFO,"Apply Expansion Identifier");
@@ -188,12 +181,17 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	/** The save cancel button bar. */
 	private Button saveValueSet = new Button("Apply");
 	
+	/** The cancel button. */
 	private Button cancelButton = new Button("Cancel");
 	
+	/** The s widget. */
 	private SearchWidgetBootStrap sWidget = new SearchWidgetBootStrap("Retrieve OID","Enter OID");
 	
 	/** The main panel. */
 	private VerticalPanel mainPanel;
+	
+	/** The search header. */
+	private PanelHeader searchHeader = new PanelHeader();
 	
 	
 	/**
@@ -222,8 +220,16 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 		bottomButtonLayOut.setStyleName("continueButton");
 		HorizontalPanel hPanel = new HorizontalPanel();
 		hPanel.getElement().setId("hPanel_HorizontalPanel");
-		hPanel.setWidth("600px");
+		hPanel.setWidth("690px");
 		updateVSACButton.setType(ButtonType.PRIMARY);
+		
+		updateVSACButton.setMarginTop(10);
+		updateVSACButton.setTitle("Update From VSAC");
+		updateVSACButton.setText("Update From VSAC");
+		updateVSACButton.setIcon(IconType.REFRESH);
+		updateVSACButton.setIconSize(IconSize.LARGE);
+		updateVSACButton.setPull(Pull.RIGHT);
+		
 		hPanel.add(updateVSACButton);
 		hPanel.add(bottomButtonLayOut);
 		
@@ -234,12 +240,11 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 		updateVSACButton.setTitle("Retrieve the most recent versions of value sets from VSAC");
 		updateVSACButton.getElement().setId("updateVsacButton_Button");
 
+		verticalPanel.add(hPanel);
+		verticalPanel.add(new SpacerWidget());
 		verticalPanel.add(cellTablePanel);
 		verticalPanel.add(new SpacerWidget());
-		verticalPanel.add(hPanel);
-		verticalPanel.add(inProgressMessageDisplay);
-		verticalPanel.add(updateVSACSuccessMessagePanel);
-		verticalPanel.add(updateVSACErrorMessagePanel);
+		
 		
 		mainPanel.add(verticalPanel);
 		containerPanel.getElement().setAttribute("id",
@@ -283,16 +288,16 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 		searchPanel.setStyleName("cqlvalueSetSearchPanel");
 		
 		
-		PanelHeader searchHeader = new PanelHeader();//new Label("QDM Elements");
-		searchHeader.getElement().setId("searchHeader_Label");
-		searchHeader.setStyleName("measureGroupingTableHeader");
-		searchHeader.getElement().setAttribute("tabIndex", "0");
+		PanelHeader expIdentifierHeader = new PanelHeader();//new Label("QDM Elements");
+		expIdentifierHeader.getElement().setId("searchHeader_Label");
+		expIdentifierHeader.setStyleName("measureGroupingTableHeader");
+		expIdentifierHeader.getElement().setAttribute("tabIndex", "0");
 		
 		HTML searchHeaderText = new HTML("<strong>Apply Expansion Identifier</strong>");
-		searchHeader.setTitle("Apply VSAC Expansion Identifier to Measure.");
-		searchHeader.add(searchHeaderText);
+		expIdentifierHeader.setTitle("Apply VSAC Expansion Identifier to Measure.");
+		expIdentifierHeader.add(searchHeaderText);
 		
-		searchPanel.add(searchHeader);
+		searchPanel.add(expIdentifierHeader);
 		
 		PanelBody applyExpansionIdPanelBody = new PanelBody();
 		applyExpansionIdPanelBody.setPull(Pull.LEFT);
@@ -321,7 +326,7 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 		queryGrid.setStyleName("secondLabel");
 		applyExpansionIdPanelBody.add(queryGrid);
 		
-		searchPanel.add(searchHeader);
+		searchPanel.add(expIdentifierHeader);
 		searchPanel.add(applyExpansionIdPanelBody);
 		return searchPanel;
 	}
@@ -358,19 +363,17 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 		searchPanel.getElement().setId("searchPanel_VerticalPanel");
 		searchPanel.setStyleName("cqlvalueSetSearchPanel");
 		
-		PanelHeader header = new PanelHeader();
+		searchHeader.setStyleName("measureGroupingTableHeader");
 		
-		header.setStyleName("measureGroupingTableHeader");
-		HTML searchHeaderText = new HTML("<strong>Search</strong>");
-		header.add(searchHeaderText);
 		
-		searchPanel.add(header);
+		searchPanel.add(searchHeader);
 		searchPanel.setWidth("350px");
 		searchPanel.setHeight("355px");
 		searchPanelBody.add(new SpacerWidget());
 		
 		nameInput.getElement().setId("nameInput_TextBox");
 		nameInput.getElement().setAttribute("tabIndex", "0");
+		
 		nameInput.setTitle("Enter Name");
 		nameInput.setWidth("250px");
 		nameInput.setHeight("30px");
@@ -400,54 +403,51 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 		buttonPanel.add(buttonToolBar);
 		buttonPanel.add(new SpacerWidget());
 		
-		queryGrid.setWidget(6, 0, buttonPanel);
-		queryGrid.setStyleName("secondLabel");
 		
 		
-		Form searchForm = new Form();
-		
-		 FormGroup searchWidgetFormGroup = new FormGroup();
+		VerticalPanel searchWidgetFormGroup = new VerticalPanel();
 		 searchWidgetFormGroup.add(sWidget.getSearchWidget());
-		 searchForm.add(searchWidgetFormGroup);
-		
+		 searchWidgetFormGroup.add(new SpacerWidget());
 
-		 FormGroup nameFormGroup = new FormGroup();
+		 VerticalPanel namePanel = new VerticalPanel();
 		 FormLabel nameLabel = new FormLabel();
 		 nameLabel.setText("Name");
 		 nameLabel.setTitle("Name");
-		 nameFormGroup.add(nameLabel);
-		 nameFormGroup.add(nameInput);
+		 namePanel.add(nameLabel);
+		 namePanel.add(nameInput);
+		 namePanel.add(new SpacerWidget());
 		 
-		 
-		 FormGroup expansionIdFormGroup = new FormGroup();
+		 VerticalPanel expansionIdFormGroup = new VerticalPanel();
 		 FormLabel expLabelPanel = new FormLabel();
 		 expLabelPanel.setText("Expansion Identifier");
 		 expLabelPanel.setTitle("Expansion Identifier");
 		 expansionIdFormGroup.add(expLabelPanel);
 		 expansionIdFormGroup.add(qdmExpIdentifierListBox);
+		 expansionIdFormGroup.add(new SpacerWidget());
 		 
-		 
-		 FormGroup versionFormGroup = new FormGroup();
+		 VerticalPanel versionFormGroup = new VerticalPanel();
 		 FormLabel verLabel = new FormLabel();
 		 verLabel.setText("Version");
 		 verLabel.setTitle("Version");
 		 versionFormGroup.add(verLabel);
 		 versionFormGroup.add(versionListBox);
+		 versionFormGroup.add(new SpacerWidget());
 		 
-		FormGroup buttonFormGroup = new FormGroup();
-		buttonFormGroup.add(buttonToolBar);
+		 VerticalPanel buttonFormGroup = new VerticalPanel();
+		 buttonFormGroup.add(buttonToolBar);
+		 buttonFormGroup.add(new SpacerWidget());
 		 
-		 
-		FieldSet formFieldSet = new FieldSet();
-		formFieldSet.add(nameFormGroup);
-		formFieldSet.add(expansionIdFormGroup);
-		formFieldSet.add(versionFormGroup);
-		formFieldSet.add(buttonFormGroup);
-		searchForm.add(formFieldSet);
-		 
-		 searchPanelBody.add(searchForm);
 		
+		queryGrid.setWidget(0, 0, searchWidgetFormGroup);
+		queryGrid.setWidget(1, 0, namePanel);
+		queryGrid.setWidget(2, 0, expansionIdFormGroup);
+		queryGrid.setWidget(3, 0, versionFormGroup);
+		queryGrid.setWidget(4, 0, buttonFormGroup);
+		queryGrid.setStyleName("secondLabel");
 		
+		 
+		searchPanelBody.add(queryGrid);
+			
 		searchPanel.add(searchPanelBody);
 		return searchPanel;
 	}
@@ -455,21 +455,21 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	/**
 	 * Builds the cell table.
 	 *
-	 * @param List     the appliedValueSetList
+	 * @param appliedValueSetList the applied value set list
 	 * @param isEditable the is editable
 	 */
 	public void buildAppliedQDMCellTable(List<CQLQualityDataSetDTO> appliedValueSetList, boolean isEditable) {
 		cellTablePanel.clear();
 		cellTablePanelBody.clear();
 		cellTablePanel.setStyleName("cellTablePanel");
-		PanelHeader searchHeader = new PanelHeader();//new Label("QDM Elements");
-		searchHeader.getElement().setId("searchHeader_Label");
-		searchHeader.setStyleName("measureGroupingTableHeader");
-		searchHeader.getElement().setAttribute("tabIndex", "0");
+		PanelHeader qdmElementsHeader = new PanelHeader();//new Label("QDM Elements");
+		qdmElementsHeader.getElement().setId("searchHeader_Label");
+		qdmElementsHeader.setStyleName("measureGroupingTableHeader");
+		qdmElementsHeader.getElement().setAttribute("tabIndex", "0");
 		
 		HTML searchHeaderText = new HTML("<strong>QDM Elements</strong>");
-		searchHeader.add(searchHeaderText);
-		cellTablePanel.add(searchHeader);
+		qdmElementsHeader.add(searchHeaderText);
+		cellTablePanel.add(qdmElementsHeader);
 		if ((appliedValueSetList != null)
 				&& (appliedValueSetList.size() > 0)) {
 			table = new CellTable<CQLQualityDataSetDTO>();
@@ -539,13 +539,13 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 			final CellTable<CQLQualityDataSetDTO> table,
 			ListHandler<CQLQualityDataSetDTO> sortHandler, boolean isEditable) {
 		if (table.getColumnCount() != TABLE_ROW_COUNT ) {
-			/*Label searchHeader = new Label("QDM Elements");
+			Label searchHeader = new Label("QDM Elements");
 			searchHeader.getElement().setId("searchHeader_Label");
-			searchHeader.setStyleName("measureGroupingTableHeader");
 			searchHeader.getElement().setAttribute("tabIndex", "0");
 			com.google.gwt.dom.client.TableElement elem = table.getElement().cast();
 			TableCaptionElement caption = elem.createCaption();
-			caption.appendChild(searchHeader.getElement());*/
+			searchHeader.setVisible(false);
+			caption.appendChild(searchHeader.getElement());
 			
 			//table.setSelectionModel(selectionModel);
 			
@@ -703,6 +703,12 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	public HasValueChangeHandlers<Boolean> getDefaultExpIDInput() {
 		return defaultExpIdentifierSel;
 	}
+	
+	/**
+	 * Gets the default exp identifier sel.
+	 *
+	 * @return the default exp identifier sel
+	 */
 	//@Override
 	public CheckBox getDefaultExpIdentifierSel(){
 		return defaultExpIdentifierSel;
@@ -885,7 +891,9 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 			nameInput.setTitle("Enter Name");
 			
 		}
-		searchHeader.setText("Search");
+		HTML searchHeaderText = new HTML("<strong>Search</strong>");
+		searchHeader.clear();
+		searchHeader.add(searchHeaderText);
 	}
 	/**
 	 * Fire event.
@@ -1004,7 +1012,7 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 					public void update(int index, CQLQualityDataSetDTO object,
 							SafeHtml value) {
 						if ((object != null)) {
-							//observer.onModifyClicked(object);
+							observer.onModifyClicked(object);
 						}
 					}
 				};
@@ -1207,88 +1215,57 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	public List<String> getExpIdentifierList() {
 		return expIdentifierList;
 	}
-	
-	/* (non-Javadoc)
-	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#setProfileList(java.util.List)
-	 */
 	/**
 	 * Sets the profile list.
 	 *
 	 * @param expIdentifierList the new profile list
 	 */
-	//@Override
 	public void setExpIdentifierList(List<String> expIdentifierList) {
 		this.expIdentifierList = expIdentifierList;
 	}
 	
 	
-	/* (non-Javadoc)
-	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getSelectedElementToRemove()
-	 */
 	/**
 	 * Gets the selected element to remove.
 	 *
 	 * @return the selected element to remove
 	 */
-	//@Override
 	public CQLQualityDataSetDTO getSelectedElementToRemove() {
 		return lastSelectedObject;
 	}
-	
-	/* (non-Javadoc)
-	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getDataTypesListBox()
-	 */
-	
-	
-	/* (non-Javadoc)
-	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getVersionListBox()
-	 */
 	/**
 	 * Gets the version list box.
 	 *
 	 * @return the version list box
 	 */
-	//@Override
 	public ListBox getVersionListBox() {
 		return versionListBox;
 	}
 	
-	/* (non-Javadoc)
-	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getExpansionProfileListBox()
-	 */
 	/**
 	 * Gets the VSAC profile list box.
 	 *
 	 * @return the VSAC profile list box
 	 */
-	//@Override
 	public ListBox getQDMExpIdentifierListBox() {
 		return qdmExpIdentifierListBox;
 	}
 	
-	/* (non-Javadoc)
-	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getOIDInput()
-	 */
 	/**
 	 * Gets the OID input.
 	 *
 	 * @return the OID input
 	 */
-	//@Override
 	public TextBox getOIDInput() {
 		return sWidget.getSearchBox();
 	}
 	
-	/* (non-Javadoc)
-	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getUserDefinedInput()
-	 */
 	/**
 	 * Gets the user defined input.
 	 *
 	 * @return the user defined input
 	 */
-	//@Override
-	public TextArea getUserDefinedInput() {
+	public TextBox getUserDefinedInput() {
 		return nameInput;
 	}
 	
@@ -1311,18 +1288,12 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 		this.isEditable = isEditable;
 	}
 	
-	
-	
-	/* (non-Javadoc)
-	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getSearchHeader()
-	 */
 	/**
 	 * Gets the search header.
 	 *
 	 * @return the search header
 	 */
-	//@Override
-	public Label getSearchHeader() {
+	public PanelHeader getSearchHeader() {
 		return searchHeader;
 	}
 	
@@ -1332,7 +1303,6 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	 *
 	 * @return the list data provider
 	 */
-	//@Override
 	public ListDataProvider<CQLQualityDataSetDTO> getListDataProvider(){
 		return listDataProvider;
 	}
@@ -1342,7 +1312,6 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	 *
 	 * @return the simple pager
 	 */
-	//@Override
 	public MatSimplePager getSimplePager(){
 		return spager;
 	}
@@ -1352,7 +1321,6 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	 *
 	 * @return the celltable
 	 */
-	//@Override
 	public CellTable<CQLQualityDataSetDTO> getCelltable(){
 		return table;
 	}
@@ -1362,16 +1330,15 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	 *
 	 * @return the pager
 	 */
-	//@Override
 	public MatSimplePager getPager(){
 		return spager;
 	}
 	
-	
-	/* (non-Javadoc)
-	 * @see mat.client.clause.QDMAppliedSelectionPresenter.SearchDisplay#getMainPanel()
+	/**
+	 * Gets the main panel.
+	 *
+	 * @return the main panel
 	 */
-	//@Override
 	public VerticalPanel getMainPanel(){
 		return mainPanel;
 	}
@@ -1384,8 +1351,7 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 	 * @param editable the new widgets read only
 	 */
 	public void setWidgetsReadOnly(boolean editable){
-		//getQDMExpIdentifierListBox().setEnabled(editable);
-		//getVersionListBox().setEnabled(editable);
+		
 		getOIDInput().setEnabled(editable);
 		getUserDefinedInput().setEnabled(editable);
 		getApplyDefaultExpansionIdButton().setEnabled(editable);
@@ -1398,7 +1364,10 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean> {
 		
 	}
 	
-	void setWidgetToDefault() {
+	/**
+	 * Sets the widget to default.
+	 */
+	public void setWidgetToDefault() {
 		getVersionListBox().clear();
 		getQDMExpIdentifierListBox().clear();
 		getOIDInput().setValue("");

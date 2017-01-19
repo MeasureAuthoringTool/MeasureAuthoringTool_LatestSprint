@@ -35,6 +35,8 @@ import mat.client.login.service.SessionManagementService;
 import mat.client.login.service.SessionManagementServiceAsync;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureSearchView;
+import mat.client.measure.service.CQLLibraryService;
+import mat.client.measure.service.CQLLibraryServiceAsync;
 import mat.client.measure.service.MeasureService;
 import mat.client.measure.service.MeasureServiceAsync;
 import mat.client.measurepackage.service.PackageService;
@@ -100,6 +102,9 @@ public class MatContext implements IsSerializable {
 	
 	/** The measure service. */
 	private MeasureServiceAsync measureService;
+	
+	/** The cql library service. */
+	private CQLLibraryServiceAsync cqlLibraryService;
 	
 	/** The measure package service. */
 	private PackageServiceAsync measurePackageService;
@@ -220,6 +225,9 @@ public class MatContext implements IsSerializable {
 	
 	/** The data type list. */
 	private List<String> dataTypeList = new ArrayList<String>();
+	
+	/** The qdm data type list. */
+	private List<String> qdmDataTypeList = new ArrayList<String>();
 		
 	/** The profile list. */
 	private List<String> expIdentifierList = new ArrayList<String>();
@@ -240,11 +248,16 @@ public class MatContext implements IsSerializable {
 	/** The funcs. */
 	public List<String> funcs = new ArrayList<String>();
 	
+	/** The includes. */
+	public List<String> includes = new ArrayList<String>();
+	
 	/** The all attribute list. */
 	public List<String> allAttributeList = new ArrayList<String>();
 	
+	/** The all units list. */
 	public List<String> allUnitsList = new ArrayList<String>();
 	
+	/** The all CQL units list. */
 	private List<String> allCQLUnitsList = new ArrayList<String>();
 	
 	
@@ -559,6 +572,20 @@ public class MatContext implements IsSerializable {
 			measureService = (MeasureServiceAsync) GWT.create(MeasureService.class);
 		}
 		return measureService;
+	}
+	
+	/**
+	 * Gets the CQL library service.
+	 *
+	 * @return the CQL library service
+	 */
+	public CQLLibraryServiceAsync getCQLLibraryService(){
+		if(cqlLibraryService == null){
+			cqlLibraryService = (CQLLibraryServiceAsync)GWT.create(CQLLibraryService.class);
+			
+		}
+		return cqlLibraryService;
+		
 	}
 	
 	/**
@@ -1520,6 +1547,27 @@ public class MatContext implements IsSerializable {
 					}
 				});
 	}
+	
+	/**
+	 * Gets the qdm data type list.
+	 *
+	 * @return the qdm data type list
+	 */
+	public List<String> getQdmDataTypeList() {
+		return qdmDataTypeList;
+	}
+
+
+	/**
+	 * Sets the qdm data type list.
+	 *
+	 * @param qdmDataTypeList the new qdm data type list
+	 */
+	public void setQdmDataTypeList(List<String> qdmDataTypeList) {
+		this.qdmDataTypeList = qdmDataTypeList;
+	}
+
+
 	// Get all CQL Data types/Timings/Functions from cqlTemplate.xml
 	// And All QDM Data types except Attributes.
 	/**
@@ -1543,8 +1591,12 @@ public class MatContext implements IsSerializable {
 				
 			}
 		});
+		getAllDataType();
 		
-		
+	}
+
+
+/*	private void getAllDataTypes() {
 		listBoxCodeProvider.getAllDataType(
 				new AsyncCallback<List<? extends HasListBox>>() {
 					
@@ -1570,12 +1622,13 @@ public class MatContext implements IsSerializable {
 						}
 					}
 				});
-		
-	}
+	}*/
 	
 	/**
-	 * Gets of all of the units and updates the all units list. 
-	 */
+ * Gets of all of the units and updates the all units list.
+ *
+ * @return the all units
+ */
 	public void getAllUnits() {
 		
 		listBoxCodeProvider.getUnitList(new AsyncCallback<List<? extends HasListBox>>() {
@@ -1645,10 +1698,11 @@ public class MatContext implements IsSerializable {
 		if (itemList != null) {
 			for (HasListBox listBoxContent : itemList) {
 				//MAT-4366
-				if(! listBoxContent.getItem().equalsIgnoreCase("Patient Characteristic Birthdate") &&
-						! listBoxContent.getItem().equalsIgnoreCase("Patient Characteristic Expired")){
-					dataTypeList.add(listBoxContent.getItem());
+				if(! listBoxContent.getItem().equalsIgnoreCase("attribute")){
+						dataTypeList.add(listBoxContent.getItem());
 				}
+				qdmDataTypeList.add(listBoxContent.getItem());
+			
 				
 			}
 			
@@ -1908,6 +1962,12 @@ public class MatContext implements IsSerializable {
 		this.globalCopyPaste = globalCopyPaste;
 	}
 	
+	/**
+	 * Gets the current release version.
+	 *
+	 * @param currentReleaseVersionCallback the current release version callback
+	 * @return the current release version
+	 */
 	public void getCurrentReleaseVersion(AsyncCallback<String> currentReleaseVersionCallback){
 		getSessionService().getCurrentReleaseVersion(currentReleaseVersionCallback);
 	}
@@ -2028,7 +2088,8 @@ public class MatContext implements IsSerializable {
 	}	
 	
 	/**
-	 * Gets the list of all of the units
+	 * Gets the list of all of the units.
+	 *
 	 * @return the list of all of the units
 	 */
 	public List<String> getAllUnitsList() {
@@ -2036,7 +2097,8 @@ public class MatContext implements IsSerializable {
 	}
 	
 	/**
-	 * Sets the list of all of the units
+	 * Sets the list of all of the units.
+	 *
 	 * @param allUnitsList the list of all of the units
 	 */
 	public void setAllUnitsList(List<String> allUnitsList) {
@@ -2044,7 +2106,8 @@ public class MatContext implements IsSerializable {
 	}
 	
 	/**
-	 * Gets the list of all of the cql units
+	 * Gets the list of all of the cql units.
+	 *
 	 * @return the list of all of the cql units
 	 */
 	public List<String> getAllCQLUnitsList() {
@@ -2052,11 +2115,32 @@ public class MatContext implements IsSerializable {
 	}
 	
 	/**
-	 * Sets the list of all of the cql units
-	 * @param allUnitsList the list of all of the cql units
+	 * Sets the list of all of the cql units.
+	 *
+	 * @param allCQLUnitsList the new all CQL units list
 	 */
 	public void setAllCQLUnitsList(List<String> allCQLUnitsList) {
 		this.allCQLUnitsList = allCQLUnitsList;
+	}
+
+
+	/**
+	 * Gets the includes.
+	 *
+	 * @return the includes
+	 */
+	public List<String> getIncludes() {
+		return includes;
+	}
+
+
+	/**
+	 * Sets the includes.
+	 *
+	 * @param includes the new includes
+	 */
+	public void setIncludes(List<String> includes) {
+		this.includes = includes;
 	}
 	
 	/*public GlobalCopyPaste getCopyPaste() {
