@@ -50,7 +50,11 @@ import mat.client.util.ClientConstants;
 import mat.model.GlobalCopyPasteObject;
 import mat.model.VSACExpansionIdentifier;
 import mat.model.cql.CQLKeywords;
+import mat.model.cql.CQLQualityDataModelWrapper;
+import mat.model.cql.CQLQualityDataSetDTO;
 import mat.shared.ConstantMessages;
+import mat.shared.GetUsedCQLArtifactsResult;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.shared.HandlerManager;
 import com.google.gwt.http.client.UrlBuilder;
@@ -224,7 +228,7 @@ public class MatContext implements IsSerializable {
 	public Map<String, String> removedRelationshipTypes = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER);
 	
 	/** The data type list. */
-	private List<String> dataTypeList = new ArrayList<String>();
+	public List<String> dataTypeList = new ArrayList<String>();
 	
 	/** The qdm data type list. */
 	private List<String> qdmDataTypeList = new ArrayList<String>();
@@ -239,12 +243,14 @@ public class MatContext implements IsSerializable {
 	private GlobalCopyPasteObject globalCopyPaste;
 	
 	
+	public List<String> valuesets = new ArrayList<String>(); 
+	
 	/** The definitions. */
 	public List<String> definitions = new ArrayList<String>(); 
 	
 	/** The parameters. */
 	public List<String> parameters = new ArrayList<String>();
-	
+		
 	/** The funcs. */
 	public List<String> funcs = new ArrayList<String>();
 	
@@ -1984,6 +1990,31 @@ public class MatContext implements IsSerializable {
 
 
 	/**
+	 * Gets the valuesets
+	 * @return the valuests
+	 */
+	public List<String> getValuesets() {
+		return this.valuesets;
+	}
+	
+	/**
+	 * Sets the valuesets
+	 * @param valuesets the valuesets
+	 */
+	public void setValuesets(List<CQLQualityDataSetDTO> valuesets) {
+		
+		List<String> valuesetNames = new ArrayList<>(); 
+		
+		for(int i = 0; i < valuesets.size(); i++) {
+			valuesetNames.add(valuesets.get(i).getCodeListName());
+		}
+		
+		
+		this.valuesets = valuesetNames;
+	}
+	
+	
+	/**
 	 * Gets the definitions.
 	 *
 	 * @return the definitions
@@ -2142,6 +2173,8 @@ public class MatContext implements IsSerializable {
 	public void setIncludes(List<String> includes) {
 		this.includes = includes;
 	}
+
+
 	
 	/*public GlobalCopyPaste getCopyPaste() {
 		return copyPaste;

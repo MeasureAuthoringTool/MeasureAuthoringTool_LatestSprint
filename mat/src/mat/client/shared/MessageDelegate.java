@@ -11,6 +11,8 @@ import mat.shared.ConstantMessages;
  */
 public class MessageDelegate {
 	
+	
+	
 	/** The Constant WELCOME_MESSAGE. */
 	public static final String WELCOME_MESSAGE = "You have successfully logged into the MAT.";
 	
@@ -74,6 +76,9 @@ public class MessageDelegate {
 	
 	/** The Constant NO_MEASURES. */
 	public static final String NO_MEASURES = "No measures returned. Please search again.";
+	
+	public  final String NO_INCLUDES = "No libraries returned.Please search again.";
+	
 	
 	/** The Constant OID_REQUIRED. */
 	public static final String OID_REQUIRED = "OID is required.";
@@ -228,6 +233,8 @@ public class MessageDelegate {
 	
 	public final String DELETE_WARNING_MESSAGE = "You have selected to delete this expression. Do you want to permanently delete";
 	
+	public final String SAVE_INCLUDE_LIBRARY_VALIATION_ERROR = "Alias name and cql library selection is required.";
+	
 	/**
 	 * Gets the measure save server error message.
 	 * 
@@ -374,7 +381,7 @@ public class MessageDelegate {
 	private final String DOESNT_FOLLOW_RULES = "The new password you entered does not match the following rules:";
 	
 	/** The duplicate applied qdm. */
-	private final String DUPLICATE_APPLIED_QDM = "Valueset with name already exists.";
+	private final String DUPLICATE_APPLIED_VALUE_SET = "Value set name already exists.";
 	
 	/** The duplicate codes msg. */
 	private final String DUPLICATE_CODES_MSG = "All code(s) were identified as duplicates to code(s) already in the value set and were ignored upon import.";
@@ -465,7 +472,7 @@ public class MessageDelegate {
 	private final String MODIFY_QDM_NON_ATTRIBUTE_VALIDATION = "A value set with a non-Attribute category must be used for this data element.";
 	
 	/** The modify qdm select atleast one. */
-	private final String MODIFY_QDM_SELECT_ATLEAST_ONE = "Please select atleast one applied QDM to modify.";
+	private final String MODIFY_VALUE_SET_SELECT_ATLEAST_ONE = "Please select atleast one applied value set to modify.";
 	
 	/** The must contain lower. */
 	private final String MUST_CONTAIN_LOWER = "Must contain a lowercase letter.";
@@ -628,7 +635,7 @@ public class MessageDelegate {
 	private final String STEWARD_REQUIRED = "Steward is required.";
 	
 	/** The successful modify applied qdm. */
-	private final String SUCCESSFUL_MODIFY_APPLIED_VALUESET = "Selected Valueset has been modified successfully.";
+	private final String SUCCESSFUL_MODIFY_APPLIED_VALUESET = "Selected value set has been modified successfully.";
 	
 	/** The system error. */
 	private final String SYSTEM_ERROR = "Import failed due to system error. Please try again.";
@@ -673,7 +680,7 @@ public class MessageDelegate {
 	private final String VALIDATION_MSG_DATA_TYPE_VSAC = "Please select datatype from drop down list.";
 	
 	/** The validation msg element without vsac. */
-	private final String VALIDATION_MSG_ELEMENT_WITHOUT_VSAC = "Please enter valueset name.";
+	private final String VALIDATION_MSG_ELEMENT_WITHOUT_VSAC = "Please enter value set name.";
 	
 	/** The value set date invalid. */
 	private final String VALUE_SET_DATE_INVALID = "Value Set Package Date is not a valid date.";
@@ -990,8 +997,8 @@ public class MessageDelegate {
 	 * 
 	 * @return String
 	 */
-	public String getDuplicateAppliedQDMMsg() {
-		return DUPLICATE_APPLIED_QDM;
+	public String getDuplicateAppliedValueSetMsg() {
+		return DUPLICATE_APPLIED_VALUE_SET;
 	}
 	
 	/**
@@ -1393,8 +1400,8 @@ public class MessageDelegate {
 	 * 
 	 * @return String the mODIFY_QDM_SELECT_ATLEAST_ONE
 	 */
-	public String getMODIFY_QDM_SELECT_ATLEAST_ONE() {
-		return MODIFY_QDM_SELECT_ATLEAST_ONE;
+	public String getMODIFY_VALUE_SET_SELECT_ATLEAST_ONE() {
+		return MODIFY_VALUE_SET_SELECT_ATLEAST_ONE;
 	}
 	
 	/**
@@ -2663,7 +2670,7 @@ public class MessageDelegate {
 	}
 
 	public String getValuesetSuccessMessage(String codeListName) {
-		return "The Valueset " + codeListName + " has been added successfully.";
+		return "The value set " + codeListName + " has been added successfully.";
 	}
 
 	public String getERROR_INCLUDE_ALIAS_NAME_NO_SPECIAL_CHAR() {
@@ -2676,6 +2683,14 @@ public class MessageDelegate {
 
 	public String getIncludeLibrarySuccessMessage(String aliasName) {
 		return " Library " + aliasName + " successfully included.";
+	}
+
+	public String getSAVE_INCLUDE_LIBRARY_VALIATION_ERROR() {
+		return SAVE_INCLUDE_LIBRARY_VALIATION_ERROR;
+	}
+
+	public  String getNoIncludes() {
+		return NO_INCLUDES;
 	}
 	
 }

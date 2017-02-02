@@ -56,6 +56,7 @@ import com.google.gwt.user.client.ui.Widget;
 import com.google.gwt.view.client.ListDataProvider;
 
 import mat.client.CustomPager;
+import mat.client.Mat;
 import mat.client.codelist.HasListBox;
 import mat.client.shared.LabelBuilder;
 import mat.client.shared.ListBoxMVP;
@@ -467,7 +468,7 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean>{
 		qdmElementsHeader.setStyleName("measureGroupingTableHeader");
 		qdmElementsHeader.getElement().setAttribute("tabIndex", "0");
 		
-		HTML searchHeaderText = new HTML("<strong>QDM Elements</strong>");
+		HTML searchHeaderText = new HTML("<strong>Applied Value Sets/Codes</strong>");
 		qdmElementsHeader.add(searchHeaderText);
 		cellTablePanel.add(qdmElementsHeader);
 		if ((appliedValueSetList != null)
@@ -497,19 +498,19 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean>{
 				invisibleLabel = (com.google.gwt.user.client.ui.Label) LabelBuilder
 						.buildInvisibleLabel(
 								"appliedQDMTableSummary",
-								"In the Following Applied QDM Elements table Name in First Column"
+								"In the Following Applied Value Sets/Codes table Name in First Column"
 										+ "OID in Second Column, TableCaptionElement in Third Column, Version in Fourth Column,"
 										+ "And Modify in Fifth Column where the user can Edit and Delete "
-										+ "the existing QDM. The Applied QDM elements are listed alphabetically in a table.");
+										+ "the existing QDM. The Applied Value Sets/Codes are listed alphabetically in a table.");
 				
 				
 			} else {
 				invisibleLabel = (com.google.gwt.user.client.ui.Label) LabelBuilder
 						.buildInvisibleLabel(
 								"appliedQDMTableSummary",
-								"In the Following Applied QDM Elements table Name in First Column"
+								"In the Following Applied Value Sets/Codes table Name in First Column"
 										+ "OID in Second Column, Expansion Identifier in Third Column, Version in Fourth Column,"
-										+ "and Select in Fifth Column. The Applied QDM elements are listed alphabetically in a table.");
+										+ "and Select in Fifth Column. The Applied Value Sets/Codes are listed alphabetically in a table.");
 			}
 			table.getElement().setAttribute("id", "AppliedQDMTable");
 			table.getElement().setAttribute("aria-describedby",
@@ -521,7 +522,7 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean>{
 			cellTablePanel.add(cellTablePanelBody);
 			
 		} else {
-			HTML desc = new HTML("<p> No QDM Elements.</p>");
+			HTML desc = new HTML("<p> No Value Sets/Codes.</p>");
 			cellTablePanelBody.add(desc);
 			cellTablePanel.add(cellTablePanelBody);
 		}
@@ -539,7 +540,7 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean>{
 			final CellTable<CQLQualityDataSetDTO> table,
 			ListHandler<CQLQualityDataSetDTO> sortHandler, boolean isEditable) {
 		if (table.getColumnCount() != TABLE_ROW_COUNT ) {
-			Label searchHeader = new Label("QDM Elements");
+			Label searchHeader = new Label("Value Sets/Codes");
 			searchHeader.getElement().setId("searchHeader_Label");
 			searchHeader.getElement().setAttribute("tabIndex", "0");
 			com.google.gwt.dom.client.TableElement elem = table.getElement().cast();
@@ -1373,5 +1374,20 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean>{
 		getOIDInput().setValue("");
 		getUserDefinedInput().setValue("");
 		getSaveButton().setEnabled(false);
+	}
+	
+	/**
+	 * This method enable/disable's reterive and updateFromVsac button
+	 * and hide/show loading please wait message.
+	 * @param busy
+	 */
+	public void showSearchingBusyOnQDM(final boolean busy) {
+		if (busy) {
+			Mat.showLoadingMessage();
+		} else {
+			Mat.hideLoadingMessage();
+		}
+		getUpdateFromVSACButton().setEnabled(!busy);
+		getRetrieveFromVSACButton().setEnabled(!busy);
 	}
 }

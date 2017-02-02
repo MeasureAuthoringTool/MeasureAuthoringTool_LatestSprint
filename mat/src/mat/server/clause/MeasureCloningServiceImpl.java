@@ -29,7 +29,6 @@ import mat.dao.clause.MeasureDAO;
 import mat.dao.clause.MeasureSetDAO;
 import mat.dao.clause.MeasureXMLDAO;
 import mat.model.MeasureNotes;
-import mat.model.QualityDataModelWrapper;
 import mat.model.User;
 import mat.model.clause.Measure;
 import mat.model.clause.MeasureSet;
@@ -43,10 +42,10 @@ import mat.server.service.impl.MatContextServiceUtil;
 import mat.server.util.MATPropertiesService;
 import mat.server.util.MeasureUtility;
 import mat.server.util.XmlProcessor;
+import mat.shared.ConstantMessages;
 import mat.shared.UUIDUtilClient;
 import mat.shared.model.util.MeasureDetailsUtil;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.xerces.dom.ElementImpl;
@@ -357,6 +356,8 @@ implements MeasureCloningService {
 		NodeList qdmNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), "/measure/elementLookUp/qdm");		
 		Node cqlValuesetsNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/measure/cqlLookUp/valuesets");
 		List<Node> qdmNodeList = new ArrayList<Node>();
+		List<Node> cqlValuesetsNodeList = new ArrayList<Node>();
+		
 		/**
 		 * We need to capture old "Patient Characteristic Expired"(oid=419099009) and "Patient Characteristic Birthdate"(oid=21112-8)
 		 * and remove them. Also we need to remove qdm with name="Birthdate' and 'Expired' which are non default qdms along with Occurrence
@@ -406,6 +407,54 @@ implements MeasureCloningService {
 				}
 			}
 		}
+		
+		for(int i=0;i<cqlValuesetsNode.getChildNodes().getLength();i++){
+			cqlValuesetsNodeList.add(cqlValuesetsNode.getChildNodes().item(i));
+		}
+		
+		//Remove all duplicate value sets for new Value Sets workspace.
+		if(cqlValuesetsNodeList != null && cqlValuesetsNodeList.size() >0){
+			List<String> cqlVSACValueSets = new ArrayList<String>();
+			List<String> cqlUserDefValueSets = new ArrayList<String>();
+			for(int i=0;i<cqlValuesetsNodeList.size();i++){
+				Node cqlNode = cqlValuesetsNodeList.get(i);
+				Node parentNode = cqlNode.getParentNode();
+				String valuesetName = cqlNode.getAttributes().getNamedItem("name").getTextContent();
+				String valuesetOID = cqlNode.getAttributes().getNamedItem("oid").getTextContent();
+				if(!valuesetOID.equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)){
+					if(!cqlVSACValueSets.contains(valuesetName)){
+					cqlVSACValueSets.add(valuesetName);
+					}else{
+						parentNode.removeChild(cqlNode);
+					}
+				}
+				else{
+					if(!cqlUserDefValueSets.contains(valuesetName)){
+						cqlUserDefValueSets.add(valuesetName);
+					}else{
+						parentNode.removeChild(cqlNode);
+					}
+				}
+			}
+			
+			//Loop through user Defined and remove if it exists already in VSAC list
+			for(int i=0;i<cqlValuesetsNodeList.size();i++){
+				Node cqlNode = cqlValuesetsNodeList.get(i);
+				Node parentNode = cqlNode.getParentNode();
+				String valuesetOID = cqlNode.getAttributes().getNamedItem("oid").getTextContent();
+				if(valuesetOID.equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID)){
+					for (String userDefName : cqlUserDefValueSets) {
+						if(cqlVSACValueSets.contains(userDefName)){
+							parentNode.removeChild(cqlNode);
+						}
+					}
+				}
+			}
+			
+			cqlVSACValueSets.clear();
+			cqlUserDefValueSets.clear();
+		}
+		
 		//Remove all unclonable QDM's collected above in For Loop from elementLookUp tag.
 		if(qdmNodeList != null && qdmNodeList.size() >0){
 			for(int i=0;i<qdmNodeList.size();i++){
