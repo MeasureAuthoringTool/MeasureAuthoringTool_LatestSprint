@@ -20,7 +20,6 @@ import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
-import com.google.gwt.event.dom.client.DoubleClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
@@ -49,10 +48,11 @@ import mat.client.MatPresenter;
 import mat.client.clause.QDSAttributesService;
 import mat.client.clause.QDSAttributesServiceAsync;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
-import mat.client.clause.cqlworkspace.CQLWorkSpaceView.Observer;
+import mat.client.clause.cqlworkspace.CQLFunctionsView.Observer;
 import mat.client.clause.event.QDSElementCreatedEvent;
 import mat.client.codelist.HasListBox;
 import mat.client.codelist.service.SaveUpdateCodeListResult;
+import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.shared.CQLButtonToolBar;
 import mat.client.shared.DeleteConfirmationMessageAlert;
 import mat.client.shared.ErrorMessageAlert;
@@ -234,13 +234,7 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 		 */
 		Button getAddParameterButton();
 
-		/**
-		 * Gets the removes the parameter button.
-		 *
-		 * @return the removes the parameter button
-		 */
-		Button getRemoveParameterButton();
-
+		
 		/**
 		 * Gets the parameter name txt area.
 		 *
@@ -714,7 +708,7 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 		 *
 		 * @return the observer
 		 */
-		Observer getObserver();
+		//mat.client.clause.cqlworkspace.CQLFunctionsView.Observer getObserver();
 
 		/**
 		 * Sets the observer.
@@ -722,7 +716,7 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 		 * @param observer
 		 *            the new observer
 		 */
-		void setObserver(Observer observer);
+		//void setObserver(mat.client.clause.cqlworkspace.CQLFunctionsView.Observer observer);
 
 		/**
 		 * Gets the parameter button bar.
@@ -1245,6 +1239,8 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 		 */
 		TextBox getOwnerNameTextBox();
 
+		CQLFunctionsView getCqlFunctionsView();
+
 	}
 
 	/**
@@ -1406,8 +1402,11 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 				}
 				
 				searchDisplay.buildIncludesView();
+				SaveCQLLibraryResult cqlLibrarySearchModel = new SaveCQLLibraryResult();
+				cqlLibrarySearchModel.setCqlLibraryDataSetObjects(searchDisplay.getIncludeLibraryList());
 				searchDisplay.getIncludeView().buildIncludeLibraryCellTable(
-						searchDisplay.getIncludeLibraryList(),true);
+						cqlLibrarySearchModel,MatContext.get().getMeasureLockService().checkForEditPermission());
+				setIncludesWidgetReadOnly(MatContext.get().getMeasureLockService().checkForEditPermission());
 			}
 		});
 
@@ -1650,15 +1649,34 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 
 			@Override
 			public void onClick(ClickEvent event) {
-				if (MatContext.get().getMeasureLockService().checkForEditPermission()) {
+				
 					searchDisplay.resetMessageDisplay();
 					searchDisplay.setIsDoubleClick(false);
 					searchDisplay.setIsNavBarClick(false);				
 					clearAlias();	
-				}
+			
 			}
 		});
 		
+		
+		searchDisplay.getIncludeView().setObserver(new CQLIncludeLibraryView.Observer() {
+			
+			@Override
+			public void onCheckBoxClicked(CQLLibraryDataSetObject result) {
+				MatContext.get().getCQLLibraryService().findCQLLibraryByID(result.getId(), new AsyncCallback<CQLLibraryDataSetObject>() {
+
+					@Override
+					public void onFailure(Throwable caught) {
+						Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+					}
+
+					@Override
+					public void onSuccess(CQLLibraryDataSetObject result) {
+						searchDisplay.getIncludeView().getViewCQLEditor().setText(result.getCqlText());
+					}
+				});
+			}
+		});
 		
 		/*searchDisplay.getIncludeView().getEraseButton().addClickHandler(new ClickHandler() {
 
@@ -1732,7 +1750,7 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 										
 									}  else if (result.getFailureReason() == 1) {
 										searchDisplay.getErrorMessageAlert().createAlert(MatContext.get()
-												.getMessageDelegate().getERROR_DUPLICATE_IDENTIFIER_NAME());
+												.getMessageDelegate().getERROR_INCLUDE_ALIAS_NAME_NO_SPECIAL_CHAR());
 										searchDisplay.getAliasNameTxtArea().setText(aliasName.trim());
 									} else if (result.getFailureReason() == 2) {
 										searchDisplay.getErrorMessageAlert().createAlert("Missing includes library tag.");
@@ -1987,9 +2005,11 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 	 * Adds the observer handler.
 	 */
 	private void addObserverHandler() {
-		searchDisplay.setObserver(new CQLWorkSpaceView.Observer() {
+		searchDisplay.getCqlFunctionsView().setObserver( new Observer() {
+			
 			@Override
 			public void onModifyClicked(CQLFunctionArgument result) {
+				// TODO Auto-generated method stub
 				searchDisplay.setIsPageDirty(true);
 				searchDisplay.resetMessageDisplay();
 				if (result.getArgumentType().equalsIgnoreCase(CQLWorkSpaceConstants.CQL_MODEL_DATA_TYPE)) {
@@ -1997,9 +2017,9 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 				} else {
 					AddFunctionArgumentDialogBox.showArgumentDialogBox(result, true, searchDisplay);
 				}
-
+				
 			}
-
+			
 			@Override
 			public void onDeleteClicked(CQLFunctionArgument result, int index) {
 				searchDisplay.setIsPageDirty(true);
@@ -2014,10 +2034,10 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 						break;
 					}
 				}
+				
 			}
-
 		});
-
+		
 		searchDisplay.getQdmView().setObserver(new CQLQDMAppliedView.Observer() {
 			@Override
 			public void onModifyClicked(CQLQualityDataSetDTO result) {
@@ -2207,7 +2227,12 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 		for (int i = 0; i < availableLibraries.size(); i++) {
 			availableLibraries.get(i).setSelected(false);
 		}
-		searchDisplay.getIncludeView().buildIncludeLibraryCellTable(availableLibraries,true);
+		/*searchDisplay.getIncludeView().buildIncludeLibraryCellTable(availableLibraries, 
+				MatContext.get().getMeasureLockService().checkForEditPermission());*/
+		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
+		result.setCqlLibraryDataSetObjects(searchDisplay.getIncludeLibraryList());
+		searchDisplay.getIncludeView().buildIncludeLibraryCellTable(
+				result,MatContext.get().getMeasureLockService().checkForEditPermission());
 	}
 
 	/**
@@ -2857,9 +2882,8 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 		if (searchDisplay.getFunctionArgumentList().size() > 0) {
 			searchDisplay.getFunctionArgumentList().clear();
 		}
-		//To Do : Uncomment it when Lori will add bug for Modify Value Set in Jira.
-		//isModified = false;
-		//modifyValueSetDTO = null;
+		isModified = false;
+		modifyValueSetDTO = null;
 		currentSection = CQLWorkSpaceConstants.CQL_GENERAL_MENU;
 		searchDisplay.getMessagePanel().clear();
 		panel.clear();
@@ -2904,7 +2928,10 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 		searchDisplay.getSuccessMessageAlert().clearAlert();
 		searchDisplay.getWarningMessageAlert().clearAlert();
 		searchDisplay.getIncludeView().showSearchingBusy(true);
-		MatContext.get().getCQLLibraryService().search(searchText,"measureLib", new AsyncCallback<List<CQLLibraryDataSetObject>>() {
+		int startIndex = 1;
+		int pageSize = Integer.MAX_VALUE;
+		MatContext.get().getCQLLibraryService().search(searchText, "measureLib", 
+				startIndex, pageSize, new AsyncCallback<SaveCQLLibraryResult>() {
 
 			@Override
 			public void onFailure(Throwable caught) {
@@ -2913,10 +2940,10 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 			}
 
 			@Override
-			public void onSuccess(List<CQLLibraryDataSetObject> result) {
+			public void onSuccess(SaveCQLLibraryResult result) {
 				
-				if(result != null && result.size() > 0){
-					searchDisplay.setIncludeLibraryList(result);
+				if(result != null && result.getCqlLibraryDataSetObjects().size() > 0){
+					searchDisplay.setIncludeLibraryList(result.getCqlLibraryDataSetObjects());
 					searchDisplay.buildIncludesView();
 					searchDisplay.getIncludeView().buildIncludeLibraryCellTable(result,MatContext.get().getMeasureLockService().checkForEditPermission());
 					
@@ -2941,9 +2968,9 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 	 */
 	private void setIncludesWidgetReadOnly(boolean isEditable) {
 
-		searchDisplay.getAliasNameTxtArea().setEnabled(isEditable);
+		searchDisplay.getIncludeView().getAliasNameTxtArea().setEnabled(isEditable);
 		searchDisplay.getIncludeView().getIncludesButtonBar().getSaveButton().setEnabled(isEditable);
-		searchDisplay.getIncludeView().getIncludesButtonBar().getEraseButton().setEnabled(isEditable);
+		//searchDisplay.getIncludeView().getIncludesButtonBar().getEraseButton().setEnabled(!isEditable);
 	}
 	
 	/**
@@ -4548,11 +4575,16 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 				object.setUserDefinedText(searchDisplay.getQdmView().getUserDefinedInput().getText());
 				object.scrubForMarkUp();
 				QDMInputValidator qdmInputValidator = new QDMInputValidator();
-				qdmInputValidator.validate(object);
-				CodeListSearchDTO modifyWithDTO = new CodeListSearchDTO();
-				modifyWithDTO.setName(searchDisplay.getQdmView().getUserDefinedInput().getText());
-				updateAppliedQDMList(null, modifyWithDTO, modifyValueSetDTO, true);
+				/*qdmInputValidator.validate(object);*/
+				String message = qdmInputValidator.validate(object);
+				if (message.isEmpty()) {
 				
+					CodeListSearchDTO modifyWithDTO = new CodeListSearchDTO();
+					modifyWithDTO.setName(searchDisplay.getQdmView().getUserDefinedInput().getText());
+					updateAppliedQDMList(null, modifyWithDTO, modifyValueSetDTO, true);
+				} else {
+					searchDisplay.getErrorMessageAlert().createAlert(message);
+				}
 			}
 		} else {
 			searchDisplay.getErrorMessageAlert().createAlert(

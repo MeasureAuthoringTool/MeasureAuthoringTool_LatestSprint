@@ -44,6 +44,7 @@ import edu.ycp.cs.dh.acegwt.client.ace.AceEditorMode;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditorTheme;
 import mat.client.CustomPager;
 import mat.client.Mat;
+import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.shared.CQLButtonToolBar;
 import mat.client.shared.LabelBuilder;
 import mat.client.shared.MatCheckBoxCell;
@@ -120,6 +121,19 @@ public class CQLIncludeLibraryView {
 	
 	/** The owner textbox panel. */
 	private VerticalPanel ownerTextboxPanel = new VerticalPanel();
+	
+	private Observer observer;
+	
+	public static interface Observer {
+		/**
+		 * On edit clicked.
+		 * @param result
+		 *            the result
+		 */
+		void onCheckBoxClicked(CQLLibraryDataSetObject result);
+		
+	}
+	
 	
 	/**
 	 * Instantiates a new CQL include library view.
@@ -228,8 +242,9 @@ public class CQLIncludeLibraryView {
 	/**
 	 * Builds the owner text box widget.
 	 */
-	public void buildOwnerTextBoxWidget(){
+	public void buildIncludesReadOnlyView(){
 		ownerTextboxPanel.clear();
+		searchCellTablePanel.clear();
 		aliasNameTxtBox.setEnabled(false);
 		
 		Label ownerLabel = new Label(LabelType.INFO, "Owner Name");
@@ -256,20 +271,22 @@ public class CQLIncludeLibraryView {
 		ownerTextboxPanel.add(new SpacerWidget());
 		ownerTextboxPanel.add(ownerNameTextBox);
 		ownerTextboxPanel.add(new SpacerWidget());
+		ownerTextboxPanel.add(new SpacerWidget());
 		ownerTextboxPanel.add(cqlLibNameLabel);
 		ownerTextboxPanel.add(new SpacerWidget());
 		ownerTextboxPanel.add(cqlLibraryNameTextBox);
+		createReadOnlyViewIncludesButtonBar();
 	}
 	
 	
 	/**
 	 * Buildsearch cell table widget.
 	 */
-	public void buildsearchCellTableWidget() {
+	public void buildAddNewAliasView() {
 		
 		searchCellTablePanel.clear();
 		searchWidgetFocusPanel.clear();
-		aliasNameTxtBox.setEnabled(true);
+		ownerTextboxPanel.clear();
 		
 		VerticalPanel searchLibraryVP = new VerticalPanel();
 		Label librariesLabel = new Label(LabelType.INFO, "Library");
@@ -289,7 +306,7 @@ public class CQLIncludeLibraryView {
 		searchCellTablePanel.add(new SpacerWidget());
 		
 		searchCellTablePanel.add(cellTablePanel);
-		
+		createIncludesButtonBar();
 		//return searchCellTablePanel;
 	}
 
@@ -335,7 +352,7 @@ public class CQLIncludeLibraryView {
 	 *
 	 * @return the CQL button tool bar
 	 */
-	public CQLButtonToolBar createIncludesButtonBar() {
+	private CQLButtonToolBar createIncludesButtonBar() {
 		includesButtonBar.getSaveButton().setVisible(true);
 		includesButtonBar.getEraseButton().setVisible(true);
 		includesButtonBar.getCloseButton().setVisible(false);
@@ -346,7 +363,7 @@ public class CQLIncludeLibraryView {
 		return includesButtonBar;
 	}
 	
-	public CQLButtonToolBar createReadOnlyViewIncludesButtonBar() {
+	private CQLButtonToolBar createReadOnlyViewIncludesButtonBar() {
 		includesButtonBar.getDeleteButton().setVisible(true);
 		includesButtonBar.getDeleteButton().setEnabled(false);
 		includesButtonBar.getCloseButton().setVisible(true);;
@@ -363,10 +380,10 @@ public class CQLIncludeLibraryView {
 	/**
 	 * Builds the include library cell table.
 	 *
-	 * @param cqlLibraryList the cql library list
+	 * @param result the cql library list
 	 * @param isEditable the is editable
 	 */
-	public void buildIncludeLibraryCellTable(List<CQLLibraryDataSetObject> cqlLibraryList, boolean isEditable) {
+	public void buildIncludeLibraryCellTable(SaveCQLLibraryResult result, boolean isEditable) {
 		cellTablePanel.clear();
 		cellTablePanelBody.clear();
 		cellTablePanel.setStyleName("cellTablePanel");
@@ -384,8 +401,8 @@ public class CQLIncludeLibraryView {
 		selectedObject = null;
 		//includedList = new ArrayList<String>();
 		
-		if ((cqlLibraryList != null)
-				&& (cqlLibraryList.size() > 0)) {
+		if ((result != null)
+				&& (result.getCqlLibraryDataSetObjects().size() > 0)) {
 			table = new CellTable<CQLLibraryDataSetObject>();
 			//setEditable(isEditable);
 			table.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
@@ -394,7 +411,7 @@ public class CQLIncludeLibraryView {
 			table.setPageSize(TABLE_ROW_COUNT);
 			table.redraw();
 			listDataProvider.refresh();
-			listDataProvider.getList().addAll(cqlLibraryList);
+			listDataProvider.getList().addAll(result.getCqlLibraryDataSetObjects());
 			ListHandler<CQLLibraryDataSetObject> sortHandler = new ListHandler<CQLLibraryDataSetObject>(
 					listDataProvider.getList());
 			table.addColumnSortHandler(sortHandler);
@@ -496,14 +513,7 @@ public class CQLIncludeLibraryView {
 					new SafeHtmlCell()) {
 				@Override
 				public SafeHtml getValue(CQLLibraryDataSetObject object) {
-					StringBuilder title = new StringBuilder();
-					StringBuilder value = new StringBuilder();
-					value = value.append(object.getCqlName());
-					title = title.append("Name : ").append(value);
-
-					title.append("");
-					return CellTableUtility.getColumnToolTip(value.toString(),
-							title.toString());
+					return CellTableUtility.getNameColumnToolTip(object.getCqlName(), object.getCqlName());
 				}
 			};
 			table.addColumn(nameColumn, SafeHtmlUtils
@@ -548,10 +558,10 @@ public class CQLIncludeLibraryView {
 			}, "Select");
 			
 			
-			table.setColumnWidth(0, 35.0, Unit.PCT);
-			table.setColumnWidth(1, 35.0, Unit.PCT);
-			table.setColumnWidth(2, 14.0, Unit.PCT);
-			table.setColumnWidth(3, 14.0, Unit.PCT);
+			table.setColumnWidth(0, 70.0, Unit.PCT);
+			table.setColumnWidth(1, 10.0, Unit.PCT);
+			table.setColumnWidth(2, 15.0, Unit.PCT);
+			table.setColumnWidth(3,  5.0, Unit.PCT);
 			
 		}
 		table.setWidth("100%");
@@ -693,7 +703,9 @@ public class CQLIncludeLibraryView {
 								cqlAceEditor.redisplay();
 							} else {
 								successMessageAlert.createAlert(MatContext.get().getMessageDelegate().getVIEW_CQL_NO_ERRORS_MESSAGE());*/
-								cqlAceEditor.setText(object.getCqlText());
+								/*cqlAceEditor.setText(object.getCqlText());*/
+							observer.onCheckBoxClicked(object);
+							
 							//}
 						}
 						else{
@@ -905,6 +917,14 @@ public class CQLIncludeLibraryView {
 
 	public MatTextBox getCqlLibraryNameTextBox() {
 		return cqlLibraryNameTextBox;
+	}
+
+	public Observer getObserver() {
+		return observer;
+	}
+
+	public void setObserver(Observer observer) {
+		this.observer = observer;
 	}
 	
 	

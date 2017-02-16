@@ -571,8 +571,8 @@ public class CQLQDMAppliedView implements HasSelectionHandlers<Boolean>{
 						title = title.append("Name : ").append(value);
 					
 					title.append("");
-					return CellTableUtility.getColumnToolTip(value.toString(),
-							title.toString());
+					
+					return CellTableUtility.getNameColumnToolTip(value.toString(), title.toString());
 				}
 			};
 			table.addColumn(nameColumn, SafeHtmlUtils

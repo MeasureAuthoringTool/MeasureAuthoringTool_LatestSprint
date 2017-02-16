@@ -1458,10 +1458,12 @@ padding: 2px;
 .contentWithHeadingHeader {
      position: relative;
      width: 840px;
+    
 }
 .contentWithHeadingHeader h1 {
 	font-size:1.2em;
     font-weight:bold;
+    word-wrap: break-word;
 }
 .contentWithHeadingPanel {
     -moz-box-sizing:border-box;
@@ -1951,6 +1953,23 @@ padding: 2px;
     vertical-align: middle;
     text-align: left;
     padding-right: 10px;
+    padding-top: 8px;
+    font-size:.8em;
+    margin-left:85px; 
+    margin-right:auto;
+    margin-top:8px;
+}
+
+.createNewItemWidget{
+    border:1px solid lightgray;
+    -moz-box-sizing: border-box;
+    background-image: url("images/bg_box-blue.png");
+    background-repeat:repeat-x;
+    vertical-align: middle;
+    text-align: left;
+    padding-right: 15px;
+    padding-left: 15px;
+    padding-bottom: 8px;
     padding-top: 8px;
     font-size:.8em;
     margin-left:85px; 

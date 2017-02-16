@@ -68,26 +68,33 @@ class CQlLibraryComparator implements Comparator<CQLLibrary> {
 	
 
 	@Override
-	public List<CQLLibrary> search(String searchText, String searchFrom) {
-		
+	public List<CQLLibrary> search(String searchText, String searchFrom, int pageSize ) {
 		
 		String searchString = searchText.toLowerCase().trim();
 		Criteria cCriteria = getSessionFactory().getCurrentSession()
 				.createCriteria(CQLLibrary.class);
 		cCriteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		//cCriteria.setFirstResult(startIndex);
 		if(!searchFrom.equalsIgnoreCase("StandAlone")){
 			cCriteria.add(Restrictions.eq("draft", false));
-			cCriteria.addOrder(Order.desc("measureSetId.id"))
+			cCriteria.addOrder(Order.desc("measureSet.id"))
 			.addOrder(Order.desc("version"));
 		} else{
-			cCriteria.addOrder(Order.desc("measureSetId.id"))
-			.addOrder(Order.desc("draft")).addOrder(Order.desc("version"));
+			
+			cCriteria.add(Restrictions.isNotNull("cqlSet.id"))
+			.addOrder(Order.desc("cqlSet.id"))
+			.addOrder(Order.desc("draft"))
+			.addOrder(Order.desc("version"));
 		}
-		
+		cCriteria.setFirstResult(0);
 		
 		List<CQLLibrary> libraryResultList = cCriteria.list();
-		List<CQLLibrary> orderedCQlLibList = sortLibraryList(libraryResultList);
-		
+		List<CQLLibrary> orderedCQlLibList = null;
+		if(libraryResultList != null){
+			orderedCQlLibList = sortLibraryList(libraryResultList, searchFrom);
+		} else {
+			orderedCQlLibList = new ArrayList<CQLLibrary>();
+		}
 		
 		StringUtility su = new StringUtility();
 		List<CQLLibrary> orderedList = new ArrayList<CQLLibrary>();
@@ -99,7 +106,12 @@ class CQlLibraryComparator implements Comparator<CQLLibrary> {
 				orderedList.add(cqlLibrary);
 			}
 		}
-		return orderedList;
+		
+		if (pageSize < orderedList.size()) {
+			return orderedList.subList(0, pageSize);
+		} else {
+			return orderedList;
+		}
 		
 	}
 	/**
@@ -107,14 +119,23 @@ class CQlLibraryComparator implements Comparator<CQLLibrary> {
 	 * @param librariesResultList
 	 * @return
 	 */
-	private List<CQLLibrary> sortLibraryList(List<CQLLibrary> librariesResultList) {
+	private List<CQLLibrary> sortLibraryList(List<CQLLibrary> librariesResultList, String searchFrom) {
 		// generate sortable lists
 		List<List<CQLLibrary>> cqlLibList = new ArrayList<List<CQLLibrary>>();
 		for (CQLLibrary cql : librariesResultList) {
 			boolean hasList = false;
 			for (List<CQLLibrary> cqlSubSetList : cqlLibList) {
-				String msetId = cqlSubSetList.get(0).getMeasureSetId().getId();
-				if (cql.getMeasureSetId().getId().equalsIgnoreCase(msetId)) {
+				String setId = "";
+				String listSetId = "";
+				if(searchFrom.equalsIgnoreCase("StandAlone")){
+					setId = cqlSubSetList.get(0).getCqlSet().getId();
+					listSetId = cql.getCqlSet().getId();
+				} else {
+					setId = cqlSubSetList.get(0).getMeasureSet().getId();
+					listSetId = cql.getMeasureSet().getId();
+				}
+				
+				if (listSetId.equalsIgnoreCase(setId)) {
 					cqlSubSetList.add(cql);
 					hasList = true;
 					break;

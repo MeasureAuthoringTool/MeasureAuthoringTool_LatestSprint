@@ -6,13 +6,14 @@ import java.util.List;
 
 import com.google.gwt.user.client.rpc.IsSerializable;
 
+import mat.model.BaseModel;
 import mat.model.LockedUserInfo;
 import mat.shared.CQLErrors;
 
-public class CQLLibraryDataSetObject implements IsSerializable{
+public class CQLLibraryDataSetObject implements IsSerializable,BaseModel{
 	private String id;
 	private String cqlName;
-	private String version;
+	private String version="0.0";
 	private boolean isDraft;
 	private Timestamp finalizedDate;
 	private String measureSetId;
@@ -27,6 +28,10 @@ public class CQLLibraryDataSetObject implements IsSerializable{
 	private String measureId;
 	private boolean isSelected;
 	private CQLModel cqlModel;
+	private boolean isSharable;
+	private String revisionNumber ="000";
+	private String ownerId;
+	private String cqlSetId;
 	/** The cql errors. */
 	private List<CQLErrors> cqlErrors = new ArrayList<CQLErrors>();
 	
@@ -138,5 +143,41 @@ public class CQLLibraryDataSetObject implements IsSerializable{
 	}
 	public void setCqlErrors(List<CQLErrors> cqlErrors) {
 		this.cqlErrors = cqlErrors;
+	}
+	public boolean isSharable() {
+		return isSharable;
+	}
+	public void setSharable(boolean isSharable) {
+		this.isSharable = isSharable;
+	}
+	public String getRevisionNumber() {
+		return revisionNumber;
+	}
+	public void setRevisionNumber(String revisionNumber) {
+		this.revisionNumber = revisionNumber;
+	}
+	public String getOwnerId() {
+		return ownerId;
+	}
+	public void setOwnerId(String ownerId) {
+		this.ownerId = ownerId;
+	}
+	public String getCqlSetId() {
+		return cqlSetId;
+	}
+	public void setCqlSetId(String cqlSetId) {
+		this.cqlSetId = cqlSetId;
+	}	
+	
+	@Override
+	public void scrubForMarkUp() {
+		String markupRegExp = "<[^>]+>";
+		if(this.getCqlName() != null) {
+			String noMarkupText = this.getCqlName().trim().replaceAll(markupRegExp, "");
+			System.out.println("CQL Library name:"+noMarkupText);
+			if(this.getCqlName().trim().length() > noMarkupText.length()){
+				this.setCqlName(noMarkupText);
+			}
+		}
 	}
 }
