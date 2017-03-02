@@ -1,6 +1,7 @@
 package mat.dao.service;
 
 import mat.dao.AuditLogDAO;
+import mat.dao.CQLLibraryAuditLogDAO;
 import mat.dao.CategoryDAO;
 import mat.dao.CodeDAO;
 import mat.dao.CodeListAuditLogDAO;
@@ -17,6 +18,7 @@ import mat.dao.MeasureValidationLogDAO;
 import mat.dao.ObjectStatusDAO;
 import mat.dao.OrganizationDAO;
 import mat.dao.QualityDataSetDAO;
+import mat.dao.RecentCQLActivityLogDAO;
 import mat.dao.RecentMSRActivityLogDAO;
 import mat.dao.SecurityRoleDAO;
 import mat.dao.StatusDAO;
@@ -45,6 +47,7 @@ import mat.dao.clause.ModesDAO;
 import mat.dao.clause.OperatorDAO;
 import mat.dao.clause.QDSAttributeDetailsDAO;
 import mat.dao.clause.QDSAttributesDAO;
+import mat.server.service.CQLLibraryAuditService;
 
 
 /**
@@ -91,6 +94,8 @@ public class DAOService {
 	//US 170 & 383
 	/** The measure audit log dao. */
 	private MeasureAuditLogDAO measureAuditLogDAO;
+	
+	private CQLLibraryAuditLogDAO cqlLibraryAuditLogDAO;
 	
 	/** The measure dao. */
 	private MeasureDAO measureDAO;
@@ -142,6 +147,7 @@ public class DAOService {
 	
 	/** The recent msr activity log dao. */
 	private RecentMSRActivityLogDAO recentMSRActivityLogDAO;
+	private RecentCQLActivityLogDAO recentCQLActivityLogDAO;
 	
 	/** The security role dao. */
 	private SecurityRoleDAO securityRoleDAO;
@@ -978,6 +984,23 @@ public class DAOService {
 
 	public void setCqlLibrarySetDAO(CQLLibrarySetDAO cqlLibrarySetDAO) {
 		this.cqlLibrarySetDAO = cqlLibrarySetDAO;
+	}
+	
+
+	public RecentCQLActivityLogDAO getRecentCQLActivityLogDAO() {
+		return recentCQLActivityLogDAO;
+	}
+
+	public void setRecentCQLActivityLogDAO(RecentCQLActivityLogDAO recentCQLActivityLogDAO) {
+		this.recentCQLActivityLogDAO = recentCQLActivityLogDAO;
+	}
+
+	public CQLLibraryAuditLogDAO getCqlLibraryAuditLogDAO() {
+		return cqlLibraryAuditLogDAO;
+	}
+
+	public void setCqlLibraryAuditLogDAO(CQLLibraryAuditLogDAO cqlLibraryAuditLogDAO) {
+		this.cqlLibraryAuditLogDAO = cqlLibraryAuditLogDAO;
 	}
 	
 }

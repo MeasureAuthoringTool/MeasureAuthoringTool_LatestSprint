@@ -2,7 +2,6 @@ package mat.client.measure.service;
 
 import java.util.List;
 
-import mat.client.codelist.service.SaveUpdateCodeListResult;
 import mat.model.CQLValueSetTransferObject;
 import mat.model.clause.CQLData;
 import mat.model.cql.CQLDefinition;
@@ -12,7 +11,6 @@ import mat.model.cql.CQLKeywords;
 import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLQualityDataModelWrapper;
-import mat.model.cql.CQLQualityDataSetDTO;
 import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
 
@@ -52,7 +50,7 @@ public interface CQLService {
 	 * @param measureId the measure id
 	 * @return the CQL data
 	 */
-	SaveUpdateCQLResult getCQLData(String measureId);
+	SaveUpdateCQLResult getCQLData(String xmlString);
 
 	/**
 	 * Save and modify cql general info.
@@ -149,7 +147,7 @@ public interface CQLService {
 	 * @param measureId the measure id
 	 * @return the CQL file data
 	 */
-	SaveUpdateCQLResult getCQLFileData(String measureId);
+	SaveUpdateCQLResult getCQLFileData(String xmlString);
 
 	String createParametersXML(CQLParameter parameter);
 
@@ -171,14 +169,21 @@ public interface CQLService {
 
 	CQLQualityDataModelWrapper getCQLValusets(String measureID, CQLQualityDataModelWrapper cqlQualityDataModelWrapper);
 
-	SaveUpdateCQLResult saveCQLValuesettoMeasure(CQLValueSetTransferObject valueSetTransferObject);
+	SaveUpdateCQLResult saveCQLValueset(CQLValueSetTransferObject valueSetTransferObject);
 
-	SaveUpdateCQLResult saveCQLUserDefinedValuesettoMeasure(CQLValueSetTransferObject matValueSetTransferObject);
+	SaveUpdateCQLResult saveCQLUserDefinedValueset(CQLValueSetTransferObject matValueSetTransferObject);
 
-	SaveUpdateCQLResult updateCQLValueSetstoMeasure(CQLValueSetTransferObject matValueSetTransferObject);
+	SaveUpdateCQLResult updateCQLValueSets(CQLValueSetTransferObject matValueSetTransferObject);
 
 	SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String measureId, CQLIncludeLibrary toBeModifiedObj,
 			CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList);
+
+	SaveUpdateCQLResult deleteInclude(String currentMeasureId,
+			CQLIncludeLibrary toBeModifiedIncludeObj,
+			CQLIncludeLibrary cqlLibObject,
+			List<CQLIncludeLibrary> viewIncludeLibrarys);
+
+	void saveCQLAssociation(CQLIncludeLibrary currentObj, String measureId);
 
 
 

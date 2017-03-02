@@ -66,7 +66,7 @@ public class MessageDelegate {
 	
 	public static final String LIBRARY_NAME_REQUIRED = "Library Name is required.";
 	
-	public static final String CQL_STAND_ALONE_LIBRARY_NAME_ERROR = "Invalid Library Name.Can only contain alpha-numeric and/or underscores.Cannot contain spaces.";
+	public static final String CQL_STAND_ALONE_LIBRARY_NAME_ERROR = "Invalid Library Name. Must start with an alpha-character or underscore followed by an alpha-numeric character(s) or underscore(s), and must not contain spaces.";
 	/** The Constant EMAIL_ID_INCORRECT_FORMAT. */
 	public static final String EMAIL_ID_INCORRECT_FORMAT = "Email Address has an incorrect format.";
 	/** The Constant EMAIL_ID_REQUIRED. */
@@ -79,6 +79,9 @@ public class MessageDelegate {
 	
 	/** The Constant NO_MEASURES. */
 	public static final String NO_MEASURES = "No measures returned. Please search again.";
+	
+	/** The Constant NO_MEASURES. */
+	public static final String NO_LIBRARUES = "No libraries returned. Please search again.";
 	
 	public  final String NO_INCLUDES = "No libraries returned.Please search again.";
 	
@@ -162,13 +165,13 @@ public class MessageDelegate {
 	private static final String ERROR_IN_SAVING_QDM_ELEMENTS = "Valuesets with different OIDs can not have the same valueset name.";
 	
 	/** The vsac expansion profile selection. */
-	public final String VSAC_EXPANSION_PROFILE_SELECTION = "Please Select VSAC Expansion Identifier to Apply to QDM Elements";
+	public final String VSAC_EXPANSION_PROFILE_SELECTION = "Please Select VSAC Expansion Profile to Apply to value sets.";
 	
 	/** The vsac expansion profile selection. */
-	public final String DEFAULT_EXPANSION_PROFILE_REMOVED = "Successfully removed the default VSAC Expansion Identifier from the Applied QDM Elements list.";
+	public final String DEFAULT_EXPANSION_PROFILE_REMOVED = "Successfully removed VSAC Expansion Profile from value sets.";
 	
 	/** The vsac profile applied to qdm elements. */
-	public final String VSAC_PROFILE_APPLIED_TO_QDM_ELEMENTS = "Successfully Applied VSAC Expansion Identifier to QDM Elements.";
+	public final String VSAC_PROFILE_APPLIED_TO_QDM_ELEMENTS = "Successfully applied VSAC Expansion Profile to value sets.";
 	
 	/** The successful oid retreival from vsac. */
 	public final String  SUCCESSFUL_OID_RETREIVAL_FROM_VSAC = "Value set successfully retrieved from VSAC.";
@@ -232,7 +235,7 @@ public class MessageDelegate {
 			"Duplicate name or use of restricted character(s).";
 	public final String ERROR_FUNCTION_NAME_NO_SPECIAL_CHAR  = "Invalid Function and/or Argument name. " +
 			"Duplicate name or use of restricted character(s).";
-	public final String ERROR_INCLUDE_ALIAS_NAME_NO_SPECIAL_CHAR  = "Invalid Library Alias. Must be unique, start with an alpha-character or underscore followed by an alpha-numeric character(s) or underscore(s).";
+	public final String ERROR_INCLUDE_ALIAS_NAME_NO_SPECIAL_CHAR  = "Invalid Library Alias. Must be unique, start with an alpha-character or underscore followed by an alpha-numeric character(s) or underscore(s), and must not contain spaces.";
 	
 	public final String DELETE_WARNING_MESSAGE = "You have selected to delete this expression. Do you want to permanently delete";
 	
@@ -738,6 +741,8 @@ public class MessageDelegate {
 	private final String DELETE_CONFIRMATION_DEFINITION = "You have selected to delete this expression. Do you want to permanently delete this Definition?";
 	
 	private final String DELETE_CONFIRMATION_FUNCTION = "You have selected to delete this expression. Do you want to permanently delete this Function?";
+	
+	private final String DELETE_CONFIRMATION_INCLUDE = "You have selected to delete this expression. Do you want to permanently delete this Library Alias?";
 	
 	
 	public String getONLY_ONE_CHILD_REQUIRED() {
@@ -2414,7 +2419,7 @@ public class MessageDelegate {
 	 *
 	 * @return the vsac expansion profile selection
 	 */
-	public String getVsacExpansionIdentifierSelection() {
+	public String getVsacExpansionProfileSelection() {
 		return VSAC_EXPANSION_PROFILE_SELECTION;
 	}
 	
@@ -2671,6 +2676,10 @@ public class MessageDelegate {
 	public String getDELETE_CONFIRMATION_FUNCTION() {
 		return DELETE_CONFIRMATION_FUNCTION;
 	}
+	
+	public String getDELETE_CONFIRMATION_INCLUDE() {
+		return DELETE_CONFIRMATION_INCLUDE;
+	}
 
 	public String getValuesetSuccessMessage(String codeListName) {
 		return "Value set " + codeListName + " has been applied successfully.";
@@ -2702,6 +2711,10 @@ public class MessageDelegate {
 
 	public String getCqlStandAloneLibraryNameError() {
 		return CQL_STAND_ALONE_LIBRARY_NAME_ERROR;
+	}
+
+	public static String getNoLibrarues() {
+		return NO_LIBRARUES;
 	}
 	
 }

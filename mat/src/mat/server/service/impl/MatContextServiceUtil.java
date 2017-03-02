@@ -1,11 +1,16 @@
 package mat.server.service.impl;
 
+import java.util.List;
+
+import mat.dao.UserDAO;
 import mat.dao.clause.MeasureDAO;
 import mat.model.SecurityRole;
+import mat.model.User;
 import mat.model.clause.Measure;
 import mat.model.clause.MeasureShareDTO;
 import mat.model.clause.ShareLevel;
 import mat.server.LoggedInUserUtil;
+import mat.server.service.UserService;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -54,7 +59,58 @@ public class MatContextServiceUtil {
 	}
 	
 	/**
-	 * Checks if is current measure is clonable/draftable.
+	 * 
+	 * @param measureDAO
+	 * @param measureId
+	 * @return
+	 */
+	public boolean isCurrentMeasureVersionable(MeasureDAO measureDAO,
+			UserService userService, String measureId) {
+
+		boolean isVersionable = false;
+		String currentUserId = LoggedInUserUtil.getLoggedInUser();
+		User user = userService.getById(currentUserId);
+		List<MeasureShareDTO> measureDTO = measureDAO.getMeasuresForVersion("", user);
+		
+		for(MeasureShareDTO measureShareDTO: measureDTO){
+			if(measureShareDTO.getMeasureId().equals(measureId)){
+				isVersionable = true;
+				break;
+			}
+		}
+		
+		return isVersionable;
+	}
+	
+		
+	/**
+	 * Checks if is current measure is draftable.
+	 *
+	 * @param measureDAO the measure dao
+	 * @param userDAO 
+	 * @param measureId the measure id
+	 * @return true, if is current measure editable
+	 */
+	public boolean isCurrentMeasureDraftable(MeasureDAO measureDAO,
+			UserDAO userDAO, String measureId) {
+		
+		boolean isClonable = false;
+		String currentUserId = LoggedInUserUtil.getLoggedInUser();
+		User user = userDAO.find(currentUserId);
+		List<MeasureShareDTO> measureDTO = measureDAO.getMeasuresForDraft("", user);
+		
+		for(MeasureShareDTO measureShareDTO: measureDTO){
+			if(measureShareDTO.getMeasureId().equals(measureId)){
+				isClonable = true;
+				break;
+			}
+		}
+		
+		return isClonable;
+	}
+	
+	/**
+	 * Checks if is current measure is clonable.
 	 *
 	 * @param measureDAO the measure dao
 	 * @param measureId the measure id
@@ -69,13 +125,8 @@ public class MatContextServiceUtil {
 		boolean isSuperUser = SecurityRole.SUPER_USER_ROLE.equals(userRole);
 		MeasureShareDTO dto = measureDAO.extractDTOFromMeasure(measure);
 		boolean isOwner = currentUserId.equals(dto.getOwnerUserId());
-		ShareLevel shareLevel = measureDAO.findShareLevelForUser(measureId,
-				currentUserId);
-		boolean isSharedToEdit = false;
-		if (shareLevel != null) {
-			isSharedToEdit = ShareLevel.MODIFY_ID.equals(shareLevel.getId());
-		}
-		boolean isClonable = (isOwner || isSuperUser || isSharedToEdit);
+		
+		boolean isClonable = (isOwner || isSuperUser);
 		return isClonable;
 	}
 

@@ -1,19 +1,13 @@
 package mat.server;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
-import org.cqframework.cql.cql2elm.CQLtoELM;
-import org.cqframework.cql.cql2elm.CqlTranslatorException;
 
 import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
-import mat.client.codelist.service.SaveUpdateCodeListResult;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
@@ -40,7 +34,6 @@ import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.service.MeasureLibraryService;
-import mat.shared.CQLErrors;
 import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
 
@@ -515,12 +508,28 @@ MeasureService {
 	}
 	
 	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#updateMeasureXMLForExpansionIdentifier(java.util.List, java.lang.String, java.lang.String)
+	 */
+	@Override
+	public void updateCQLMeasureXMLForExpansionProfile(List<CQLQualityDataSetDTO> modifyWithDTOList,
+			String measureId, String expansionProfile) {
+		this.getMeasureLibraryService().updateCQLMeasureXMLForExpansionIdentifier(modifyWithDTOList, measureId, expansionProfile);
+	}
+	
+	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#getDefaultSDEFromMeasureXml(java.lang.String)
 	 */
 	@Override
 	public QualityDataModelWrapper getDefaultSDEFromMeasureXml(String measureId) {
-		// TODO Auto-generated method stub
 		return this.getMeasureLibraryService().getDefaultSDEFromMeasureXml(measureId);
+	}
+	
+	/* (non-Javadoc)
+	 * @see mat.client.measure.service.MeasureService#getDefaultCQLSDEFromMeasureXml(java.lang.String)
+	 */
+	@Override
+	public CQLQualityDataModelWrapper getDefaultCQLSDEFromMeasureXml(String measureId) {
+		return this.getMeasureLibraryService().getDefaultCQLSDEFromMeasureXml(measureId);
 	}
 	
 	/* (non-Javadoc)
@@ -534,18 +543,18 @@ MeasureService {
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#getCQLData(java.lang.String)
 	 */
-	@Override
-	public SaveUpdateCQLResult getCQLData(String measureId) {
-		return this.getMeasureLibraryService().getCQLData(measureId);
-	}
+	/*@Override
+	public SaveUpdateCQLResult getCQLData(String measureId,String fromTable) {
+		return this.getMeasureLibraryService().getCQLData(measureId,fromTable);
+	}*/
 	
 	/* (non-Javadoc)
 	 * @see mat.client.measure.service.MeasureService#getCQLData(java.lang.String)
 	 */
-	@Override
+	/*@Override
 	public SaveUpdateCQLResult getCQLFileData(String measureId) {
 		return this.getMeasureLibraryService().getCQLFileData(measureId);
-	}
+	}*/
 	
 	
 	/* (non-Javadoc)
@@ -607,7 +616,7 @@ MeasureService {
 	public SaveUpdateCQLResult parseCQLForErrors(String measureId) {
 		
 		MeasureXmlModel measureXML = getMeasureXmlForMeasure(measureId);
-		String cqlFileString = CQLUtilityClass.getCqlString(CQLUtilityClass.getCQLStringFromMeasureXML(measureXML.getXml(),measureId),"").toString();
+		String cqlFileString = CQLUtilityClass.getCqlString(CQLUtilityClass.getCQLStringFromXML(measureXML.getXml()),"").toString();
 		
 		return parseCQLStringForError(cqlFileString);
 	}
@@ -679,4 +688,22 @@ MeasureService {
 		return this.getMeasureLibraryService().saveIncludeLibrayInCQLLookUp(measureId, toBeModifiedObj, currentObj, incLibraryList);
 	}
 
+	@Override
+	public SaveUpdateCQLResult getMeasureCQLData(String measureId) {
+		// TODO Auto-generated method stub
+		return this.getMeasureLibraryService().getMeasureCQLData(measureId);
+	}
+@Override
+public
+	SaveUpdateCQLResult getMeasureCQLFileData(String measureId) {
+		return this.getMeasureLibraryService().getMeasureCQLFileData(measureId);
+	}
+
+@Override
+public SaveUpdateCQLResult deleteInclude(String currentMeasureId,
+		CQLIncludeLibrary toBeModifiedIncludeObj,
+		CQLIncludeLibrary cqlLibObject,
+		List<CQLIncludeLibrary> viewIncludeLibrarys) {
+	return this.getMeasureLibraryService().deleteInclude(currentMeasureId, toBeModifiedIncludeObj, cqlLibObject, viewIncludeLibrarys);
+}
 }

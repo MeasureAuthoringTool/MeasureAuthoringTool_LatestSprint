@@ -8,6 +8,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.event.shared.HandlerManager;
+import com.google.gwt.http.client.UrlBuilder;
+import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.Timer;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.rpc.IsSerializable;
+import com.google.gwt.user.client.ui.TabPanel;
+import com.google.gwt.user.client.ui.Widget;
+// TODO: Auto-generated Javadoc
+//import mat.client.measure.AdminManageMeasureSearchView;
+
 import mat.DTO.OperatorDTO;
 import mat.client.Enableable;
 import mat.client.admin.service.AdminService;
@@ -49,25 +62,10 @@ import mat.client.umls.service.VSACAPIServiceAsync;
 import mat.client.umls.service.VsacApiResult;
 import mat.client.util.ClientConstants;
 import mat.model.GlobalCopyPasteObject;
-import mat.model.VSACExpansionIdentifier;
+import mat.model.VSACExpansionProfile;
 import mat.model.cql.CQLKeywords;
-import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.shared.ConstantMessages;
-import mat.shared.GetUsedCQLArtifactsResult;
-
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.event.shared.HandlerManager;
-import com.google.gwt.http.client.UrlBuilder;
-import com.google.gwt.user.client.DOM;
-import com.google.gwt.user.client.Timer;
-import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.rpc.AsyncCallback;
-import com.google.gwt.user.client.rpc.IsSerializable;
-import com.google.gwt.user.client.ui.TabPanel;
-import com.google.gwt.user.client.ui.Widget;
-// TODO: Auto-generated Javadoc
-//import mat.client.measure.AdminManageMeasureSearchView;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -78,6 +76,9 @@ public class MatContext implements IsSerializable {
 	/** The is umls logged in. */
 	private boolean isUMLSLoggedIn = false;
 	
+	/** The do library lock updates. */
+	private boolean doLibraryLockUpdates = false;
+
 	/** The do measure lock updates. */
 	private boolean doMeasureLockUpdates = false;
 	
@@ -237,10 +238,10 @@ public class MatContext implements IsSerializable {
 	private List<String> qdmDataTypeList = new ArrayList<String>();
 		
 	/** The profile list. */
-	private List<String> expIdentifierList = new ArrayList<String>();
+	private List<String> expProfileList = new ArrayList<String>();
 	
-	/** The vsac exp identifier list. */
-	private List<VSACExpansionIdentifier> vsacExpIdentifierList = new ArrayList<VSACExpansionIdentifier>();
+	/** The vsac exp Profile list. */
+	private List<VSACExpansionProfile> vsacExpProfileList = new ArrayList<VSACExpansionProfile>();
 	
 	/** The global copy paste. */
 	private GlobalCopyPasteObject globalCopyPaste;
@@ -889,6 +890,20 @@ public class MatContext implements IsSerializable {
 			return false;
 		}
 	}
+
+	/**
+	 * Checks if is current library editable.
+	 * 
+	 * @return true, if is current library editable
+	 */
+	public boolean isCurrentLibraryEditable() {
+		if(currentLibraryInfo != null) {
+			return currentLibraryInfo.isEditable();
+		}
+		else {
+			return false;
+		}
+	}
 	
 	/**
 	 * Checks if is current measure locked.
@@ -898,6 +913,20 @@ public class MatContext implements IsSerializable {
 	public boolean isCurrentMeasureLocked(){
 		if(currentMeasureInfo != null) {
 			return currentMeasureInfo.isLocked();
+		}
+		else {
+			return false;
+		}
+	}
+	
+	/**
+	 * Checks if is current library locked.
+	 * 
+	 * @return true, if is current library locked
+	 */
+	public boolean isCurrentLibraryLocked(){
+		if(currentLibraryInfo != null) {
+			return currentLibraryInfo.isLocked();
 		}
 		else {
 			return false;
@@ -1069,6 +1098,18 @@ public class MatContext implements IsSerializable {
 		return measureLockService;
 	}
 	
+	/** The library lock service. */
+	private LibraryLockService libraryLockService = new LibraryLockService();
+	
+	/**
+	 * Gets the library lock service.
+	 * 
+	 * @return the library lock service
+	 */
+	public LibraryLockService getLibraryLockService(){
+		return libraryLockService;
+	}
+	
 	/*
 	 * Loading queue
 	 * used to track loading behavior in the MAT
@@ -1160,6 +1201,34 @@ public class MatContext implements IsSerializable {
 	 */
 	public void stopMeasureLockUpdate(){
 		doMeasureLockUpdates = false;
+	}
+	
+	/**
+	 * run a repeating process that updates the current library lock while flag doLibraryLockUpdates returns true.
+	 */
+	public void startLibraryLockUpdate(){
+		if (!doLibraryLockUpdates) {
+			doLibraryLockUpdates = true;
+			Timer t = new Timer() {
+				@Override
+				public void run() {
+					if (doLibraryLockUpdates) {
+						getLibraryLockService().setLibraryLock();
+					} else {
+						//terminate job
+						this.cancel();
+					}
+					
+				}
+			};
+			t.scheduleRepeating(lockUpdateTime);
+		}
+	}
+	/**
+	 * set flag doLibraryLockUpdates to false the repeating process will verify based on its value.
+	 */
+	public void stopLibraryLockUpdate(){
+		doLibraryLockUpdates = false;
 	}
 	
 	/**
@@ -1750,7 +1819,7 @@ public class MatContext implements IsSerializable {
 			
 			@Override
 			public void onSuccess(VsacApiResult result) {
-				if (result.getVsacExpIdentifierResp() != null) {
+				if (result.getVsacExpProfileResp() != null) {
 					
 				}
 				
@@ -1806,16 +1875,16 @@ public class MatContext implements IsSerializable {
 	 *
 	 * @return the all profile list
 	 */
-	public void getAllExpIdentifierList(){
+	public void getAllExpProfileList(){
 		vsacapiServiceAsync
-		.getAllExpIdentifierList(new AsyncCallback<VsacApiResult>() {
+		.getAllExpProfileList(new AsyncCallback<VsacApiResult>() {
 			
 			@Override
 			public void onSuccess(
 					VsacApiResult result) {
-				if (result.getVsacExpIdentifierResp() != null) {
-					vsacExpIdentifierList = result.getVsacExpIdentifierResp();
-					expIdentifierList = getExpIdentifierList(result.getVsacExpIdentifierResp());
+				if (result.getVsacExpProfileResp() != null) {
+					vsacExpProfileList = result.getVsacExpProfileResp();
+					expProfileList = getExpProfileList(result.getVsacExpProfileResp());
 				}
 			}
 			
@@ -1827,12 +1896,12 @@ public class MatContext implements IsSerializable {
 	}
 	
 	/**
-	 * Gets the vsac exp identifier list.
+	 * Gets the vsac exp Profile list.
 	 *
-	 * @return the vsac exp identifier list
+	 * @return the vsac exp Profile list
 	 */
-	public List<VSACExpansionIdentifier> getVsacExpIdentifierList() {
-		return vsacExpIdentifierList;
+	public List<VSACExpansionProfile> getVsacExpProfileList() {
+		return vsacExpProfileList;
 	}
 	
 	
@@ -1944,12 +2013,12 @@ public class MatContext implements IsSerializable {
 	 * public void setCopiedNode(CellTreeNode copiedNode) {
 		this.copiedNode = copiedNode;
 	}*/
-	private List<String> getExpIdentifierList(List<VSACExpansionIdentifier> list) {
-		List<String> expIdentifier = new ArrayList<String>();
+	private List<String> getExpProfileList(List<VSACExpansionProfile> list) {
+		List<String> expProfile = new ArrayList<String>();
 		for (int i = 0; i < list.size(); i++) {
-			expIdentifier.add(list.get(i).getName());
+			expProfile.add(list.get(i).getName());
 		}
-		return expIdentifier;
+		return expProfile;
 	}
 	
 	
@@ -1958,8 +2027,8 @@ public class MatContext implements IsSerializable {
 	 *
 	 * @return the profile list
 	 */
-	public List<String> getExpIdentifierList() {
-		return expIdentifierList;
+	public List<String> getExpProfileList() {
+		return expProfileList;
 	}
 	
 	
@@ -1968,8 +2037,8 @@ public class MatContext implements IsSerializable {
 	 *
 	 * @param profileList the new profile list
 	 */
-	public void setExpIdentifierList(List<String> profileList) {
-		expIdentifierList = profileList;
+	public void setExpProfileList(List<String> profileList) {
+		expProfileList = profileList;
 	}
 	
 	/**
@@ -2249,7 +2318,14 @@ public class MatContext implements IsSerializable {
 			currentLibraryInfo.setCqlLibraryVersion(s);;
 		}
 	}
-	
+
+	public CQLLibraryServiceAsync getLibraryService() {
+		if(cqlLibraryService == null){
+			cqlLibraryService = (CQLLibraryServiceAsync) GWT.create(CQLLibraryService.class);
+		}
+		return cqlLibraryService;
+	}
+
 	/*public GlobalCopyPaste getCopyPaste() {
 		return copyPaste;
 	}

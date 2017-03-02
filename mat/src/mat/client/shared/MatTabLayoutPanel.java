@@ -454,13 +454,13 @@ public class MatTabLayoutPanel extends MATTabPanel implements BeforeSelectionHan
 	private void validateCQLWorkspaceTab(CQLWorkSpacePresenter cqlWorkSpacePresenter, int selectedIndex) {
 		
 		cqlWorkSpacePresenter.getSearchDisplay().resetMessageDisplay();
-		if (cqlWorkSpacePresenter.getSearchDisplay().getIsPageDirty()) {
+		if (cqlWorkSpacePresenter.getSearchDisplay().getCqlLeftNavBarPanelView().getIsPageDirty()) {
 			isUnsavedData = true;
-			cqlWorkSpacePresenter.getSearchDisplay().getGlobalWarningConfirmationMessageAlert().createAlert();
-			cqlWorkSpacePresenter.getSearchDisplay().getGlobalWarningConfirmationMessageAlert().getWarningConfirmationYesButton().setFocus(true);
+			cqlWorkSpacePresenter.getSearchDisplay().getCqlLeftNavBarPanelView().getGlobalWarningConfirmationMessageAlert().createAlert();
+			cqlWorkSpacePresenter.getSearchDisplay().getCqlLeftNavBarPanelView().getGlobalWarningConfirmationMessageAlert().getWarningConfirmationYesButton().setFocus(true);
 			String auditMessage = cqlWorkSpacePresenter.getSearchDisplay().getClickedMenu().toUpperCase() + "_TAB_YES_CLICKED";
 			handleClickEventsOnUnsavedChangesMsg(selectedIndex, 
-					cqlWorkSpacePresenter.getSearchDisplay().getGlobalWarningConfirmationMessageAlert(), auditMessage);
+					cqlWorkSpacePresenter.getSearchDisplay().getCqlLeftNavBarPanelView().getGlobalWarningConfirmationMessageAlert(), auditMessage);
 		} else {
 			isUnsavedData = false;
 		}

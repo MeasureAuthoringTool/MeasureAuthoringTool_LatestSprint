@@ -1,6 +1,7 @@
 package mat.server;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.SQLException;
@@ -12,23 +13,33 @@ import java.util.UUID;
 
 import javax.xml.xpath.XPathExpressionException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import mat.client.measure.service.CQLService;
 import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.shared.MatContext;
+import mat.dao.RecentCQLActivityLogDAO;
 import mat.dao.UserDAO;
 import mat.dao.clause.CQLLibraryDAO;
 import mat.dao.clause.CQLLibrarySetDAO;
 import mat.model.LockedUserInfo;
+import mat.model.RecentCQLActivityLog;
+import mat.model.SecurityRole;
 import mat.model.User;
 import mat.model.clause.CQLLibrary;
 import mat.model.clause.CQLLibrarySet;
-import mat.model.clause.MeasureSet;
+import mat.model.cql.CQLDefinition;
+import mat.model.cql.CQLFunctions;
+import mat.model.cql.CQLIncludeLibrary;
+import mat.model.cql.CQLKeywords;
 import mat.model.cql.CQLLibraryDataSetObject;
 import mat.model.cql.CQLModel;
+import mat.model.cql.CQLParameter;
 import mat.server.service.CQLLibraryServiceInterface;
 import mat.server.service.UserService;
 import mat.server.util.MATPropertiesService;
@@ -36,29 +47,39 @@ import mat.server.util.MeasureUtility;
 import mat.server.util.ResourceLoader;
 import mat.server.util.XmlProcessor;
 import mat.shared.CQLModelValidator;
+import mat.shared.ConstantMessages;
+import mat.shared.GetUsedCQLArtifactsResult;
+import mat.shared.SaveUpdateCQLResult;
 import mat.shared.UUIDUtilClient;
 
 public class CQLLibraryService implements CQLLibraryServiceInterface {
+	/** The Constant logger. */
+	private static final Log logger = LogFactory.getLog(CQLLibraryService.class);
 	@Autowired
 	private CQLLibraryDAO cqlLibraryDAO;
-	@Autowired
-	private CQLServiceImpl cqlService;
 	@Autowired
 	private CQLLibrarySetDAO cqlLibrarySetDAO;
 	@Autowired
 	private UserDAO userDAO;
 
 	@Autowired
+	private CQLService cqlService;
+	@Autowired
 	private ApplicationContext context;
 
+	@Autowired
+	private RecentCQLActivityLogDAO recentCQLActivityLogDAO;
+
+	
 	private final long lockThreshold = 3 * 60 * 1000; // 3 minutes
 
 	@Override
-	public SaveCQLLibraryResult search(String searchText, String searchFrom, int startIndex, int pageSize) {
+	public SaveCQLLibraryResult search(String searchText, String searchFrom, int filter,int startIndex, int pageSize) {
 	//	List<CQLLibraryModel> cqlLibraries = new ArrayList<CQLLibraryModel>();
 		SaveCQLLibraryResult searchModel = new SaveCQLLibraryResult();
 		List<CQLLibraryDataSetObject> allLibraries = new ArrayList<CQLLibraryDataSetObject>();
-		List<CQLLibrary> list = cqlLibraryDAO.search(searchText,searchFrom, Integer.MAX_VALUE);
+		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
+		List<CQLLibrary> list = cqlLibraryDAO.search(searchText,searchFrom, Integer.MAX_VALUE,user,filter);
 		
 		searchModel.setResultsTotal(list.size());
 		
@@ -80,26 +101,47 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	}
 	
 	@Override
-	public void save(String libraryName, String measureId, User owner, MeasureSet measureSet, String version, String releaseVersion, 
-			Timestamp finalizedDate, byte[] cqlByteArray) {
+	public SaveCQLLibraryResult searchForVersion(String searchText){
+		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
 		
-		CQLLibrary cqlLibrary = new CQLLibrary(); 
-		if(libraryName.length() >200){
-			libraryName = libraryName.substring(0, 199);
+		ArrayList<CQLLibraryDataSetObject> cqList = new ArrayList<CQLLibraryDataSetObject>();
+		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
+		List<CQLLibrary> list = cqlLibraryDAO.search(searchText,"StandAlone", Integer.MAX_VALUE,user,-1);
+		for(CQLLibrary library : list){
+			CQLLibraryDataSetObject cqlLibraryDataSetObject = extractCQLLibraryDataObject(library);
+			
+			if(cqlLibraryDataSetObject != null) {
+				boolean canVersion = false;
+				if(!cqlLibraryDataSetObject.isDraft()){
+					canVersion = false;
+				} else {
+					if(cqlLibraryDataSetObject.isLocked()){
+						canVersion = false;
+					} else {
+						if(user.getSecurityRole().getDescription().equalsIgnoreCase(SecurityRole.SUPER_USER_ROLE)){
+							canVersion = true;
+						} else {
+							canVersion = false;
+						}
+					}
+				}
+				if(canVersion){
+					cqList.add(cqlLibraryDataSetObject);
+				}
+			}
 		}
-		cqlLibrary.setName(libraryName);
-		cqlLibrary.setMeasureId(measureId);
-		cqlLibrary.setOwnerId(owner);
-		cqlLibrary.setMeasureSet(measureSet);
-		cqlLibrary.setVersion(version);
-		cqlLibrary.setReleaseVersion(releaseVersion);
-		// TODO CQL SET
-		// cqlLibrary.setCqlSetId(cqlSetId);
-		cqlLibrary.setDraft(false);
-		cqlLibrary.setFinalizedDate(finalizedDate);
-		cqlLibrary.setCQLByteArray(cqlByteArray);
+		result.setResultsTotal(cqList.size());
+		result.setCqlLibraryDataSetObjects(cqList);
+		return result;
 		
-		this.cqlLibraryDAO.save(cqlLibrary);
+	}
+	
+	
+	
+	
+	@Override
+	public void save(CQLLibrary library) {
+		this.cqlLibraryDAO.save(library);
 	}
 	
 	/**
@@ -114,6 +156,11 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 		dataSetObject.setCqlName(cqlLibrary.getName());
 		dataSetObject.setDraft(cqlLibrary.isDraft());
 		dataSetObject.setReleaseVersion(cqlLibrary.getReleaseVersion());
+		if(cqlLibrary.getRevisionNumber() == null){
+			dataSetObject.setRevisionNumber("000");
+		} else {
+			dataSetObject.setRevisionNumber(cqlLibrary.getRevisionNumber());
+		}
 		dataSetObject.setFinalizedDate(cqlLibrary.getFinalizedDate());
 		dataSetObject.setMeasureId(cqlLibrary.getMeasureId());
 		boolean isLocked =isLocked(cqlLibrary.getLockedOutDate());
@@ -172,7 +219,102 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 		return cqlLibraryDataSetObject; 
 	}
 
+	@Override
+	public SaveCQLLibraryResult saveFinalizedVersion (String libraryId,  boolean isMajor,
+			 String version){
+		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
+		
+		CQLLibrary library = cqlLibraryDAO.find(libraryId);
+		if(library != null){
+			String versionNumber = null;
+			if (isMajor) {
+				versionNumber = cqlLibraryDAO.findMaxVersion(library.getCqlSet().getId());
+				if (versionNumber == null) {
+					versionNumber = "0.000";
+				}
+				logger.info("Max Version Number loaded from DB: " + versionNumber);
+			} else {
+				int versionIndex = version.indexOf('v');
+				logger.info("Min Version number passed from Page Model: " + versionIndex);
+				String selectedVersion = version.substring(versionIndex + 1);
+				logger.info("Min Version number after trim: " + selectedVersion);
+				versionNumber = cqlLibraryDAO.findMaxOfMinVersion(library.getCqlSet().getId(), selectedVersion);
 
+			}
+			
+			int endIndex = versionNumber.indexOf('.');
+			String majorVersionNumber = versionNumber.substring(0, endIndex);
+			if (!versionNumber.equalsIgnoreCase(ConstantMessages.MAXIMUM_ALLOWED_VERSION)) {
+				String[] versionArr = versionNumber.split("\\.");
+				if (isMajor) {
+					if (!versionArr[0].equalsIgnoreCase(ConstantMessages.MAXIMUM_ALLOWED_MAJOR_VERSION)) {
+						return incrementVersionNumberAndSave(majorVersionNumber, "1", library);
+					} else {
+						return returnFailureReason(result, SaveCQLLibraryResult.REACHED_MAXIMUM_MAJOR_VERSION);
+					}
+
+				} else {
+					if (!versionArr[1].equalsIgnoreCase(ConstantMessages.MAXIMUM_ALLOWED_MINOR_VERSION)) {
+						versionNumber = versionArr[0] + "." + versionArr[1];
+						return incrementVersionNumberAndSave(versionNumber, "0.001", library);
+					} else {
+						return returnFailureReason(result, SaveCQLLibraryResult.REACHED_MAXIMUM_MINOR_VERSION);
+					}
+				}
+
+			} else {
+				return returnFailureReason(result, SaveCQLLibraryResult.REACHED_MAXIMUM_VERSION);
+			}
+			
+			
+		} else {
+			return returnFailureReason(result, SaveCQLLibraryResult.INVALID_DATA);
+		}
+		
+		
+	}
+	
+	
+	private SaveCQLLibraryResult returnFailureReason(SaveCQLLibraryResult result, int failureReason) {
+
+		result.setFailureReason(failureReason);
+		result.setSuccess(false);
+		return result;
+	}
+
+	private SaveCQLLibraryResult incrementVersionNumberAndSave(final String maximumVersionNumber, final String incrementBy,
+			final CQLLibrary library) {
+		BigDecimal mVersion = new BigDecimal(maximumVersionNumber);
+		mVersion = mVersion.add(new BigDecimal(incrementBy));
+		library.setVersion(mVersion.toString());
+		Date currentDate = new Date();
+		long time = currentDate.getTime();
+		Timestamp timestamp = new Timestamp(time);
+		library.setFinalizedDate(timestamp);
+		library.setDraft(false);
+		
+		cqlLibraryDAO.save(library);
+		String versionStr = mVersion.toString();
+		// Divide the number by 1 and check for a remainder.
+		// Any whole number should always have a remainder of 0 when divided by
+		// 1.
+		// For major versions, there may be case the minor version value is
+		// zero.
+		// THis makes the BigDecimal as Integer value causing issue while
+		// formatVersionText method.
+		// To fix that we are explicitly appending .0 in versionString.
+		if (mVersion.remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) == 0) {
+			versionStr = versionStr.concat(".0");
+		}
+		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
+		result.setSuccess(true);
+		result.setId(library.getId());
+
+		result.setVersionStr(versionStr);
+		logger.info("Result passed for Version Number " + versionStr);
+		return result;
+	}
+	
 	@Override
 	public SaveCQLLibraryResult save(CQLLibraryDataSetObject cqlLibraryDataSetObject) {
 
@@ -193,6 +335,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 
 			library.setCqlSet(cqlLibrarySet);
 			library.setReleaseVersion(MATPropertiesService.get().getCurrentReleaseVersion());
+			library.setQdmVersion(MATPropertiesService.get().getQmdVersion());
 			library.setRevisionNumber("000");
 			library.setVersion("0.0");
 			if (LoggedInUserUtil.getLoggedInUser() != null) {
@@ -246,22 +389,24 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	@Override
 	public String createCQLLookUpTag(String libraryName, String version){
 		XmlProcessor xmlProcessor = loadCQLXmlTemplateFile();
-		String cqlLookUpString = getCQLLookUpXml(libraryName, version,xmlProcessor);
+		String cqlLookUpString = getCQLLookUpXml(libraryName, version,xmlProcessor,"//standAlone");
 		return cqlLookUpString;
 	}
+	
+	
 	
 	
 	/**
 	 * @param cqlLibraryDataSetObject
 	 */
 	@Override
-	public String getCQLLookUpXml(String libraryName, String versionText, XmlProcessor xmlProcessor) {
+	public String getCQLLookUpXml(String libraryName, String versionText, XmlProcessor xmlProcessor,String mainXPath) {
 		String cqlLookUp = null;
 		try {
 			Node cqlTemplateNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "/cqlTemplate");
-			Node cqlLookUpNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), "//cqlLookUp");
-			String xPath_ID = "//cqlLookUp/child::node()/*[@id]";
-			String xPath_UUID = "//cqlLookUp/child::node()/*[@uuid]";
+			Node cqlLookUpNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), mainXPath+"/cqlLookUp");
+			String xPath_ID = mainXPath+"/cqlLookUp/child::node()/*[@id]";
+			String xPath_UUID = mainXPath+"/cqlLookUp/child::node()/*[@uuid]";
 			if (cqlTemplateNode != null) {
 
 				if (cqlTemplateNode.getAttributes().getNamedItem("changeAttribute") != null) {
@@ -293,19 +438,19 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 					for (String nodeTextToChange : nodeTextToBeModified) {
 						if (nodeTextToChange.equalsIgnoreCase("library")) {
 							Node libraryNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(),
-									"//" + nodeTextToChange);
+									mainXPath+"//" + nodeTextToChange);
 							if (libraryNode != null) {
 								libraryNode.setTextContent(libraryName);
 							}
 						} else if (nodeTextToChange.equalsIgnoreCase("version")) {
 							Node versionNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(),
-									"//" + nodeTextToChange);
+									mainXPath+"//" + nodeTextToChange);
 							if (versionNode != null) {
 								versionNode.setTextContent(versionText);
 							}
 						} else if (nodeTextToChange.equalsIgnoreCase("usingModelVersion")) {
 							Node usingModelVersionNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(),
-									"//" + nodeTextToChange);
+									mainXPath+"//" + nodeTextToChange);
 							if (usingModelVersionNode != null) {
 								usingModelVersionNode.setTextContent(MATPropertiesService.get().getQmdVersion());
 							}
@@ -346,7 +491,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 		try {
 			bdata = cqlLibrary.getCqlXML().getBytes(1, (int) cqlLibrary.getCqlXML().length());
 			String data = new String(bdata);
-			cqlModel = CQLUtilityClass.getCQLStringFromMeasureXML(data,"");
+			cqlModel = CQLUtilityClass.getCQLStringFromXML(data);
 			cqlFileString = CQLUtilityClass.getCqlString(cqlModel,"").toString();
 			//SaveUpdateCQLResult result = cqlService.parseCQLStringForError(cqlFileString);
 			//dataSetObject.setCqlModel(cqlModel);
@@ -358,4 +503,310 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 		return cqlFileString;
 	}
 
+	@Override
+	public SaveUpdateCQLResult getCQLData(String id) {
+		SaveUpdateCQLResult cqlResult = new SaveUpdateCQLResult();
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(id);
+		String str = getCQLLibraryXml(cqlLibrary);
+		
+		if(str != null) {
+			cqlResult = cqlService.getCQLData(str);
+			cqlResult.setSuccess(true);
+		}
+		
+		return cqlResult;
+		
+	}
+	
+	
+	private String getCQLLibraryXml(CQLLibrary library){
+		String xmlString = null;
+		//CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		if(library != null ){
+			try {
+				xmlString = new String(library.getCqlXML().getBytes(1l, (int) library.getCqlXML().length()));
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return xmlString;
+	}
+	
+	
+	@Override
+	public boolean isLibraryLocked(String id) {
+		boolean isLocked = cqlLibraryDAO.isLibraryLocked(id);
+		return isLocked;
+	}
+
+	@Override
+	public SaveCQLLibraryResult resetLockedDate(String currentLibraryId, String userId) {
+		CQLLibrary existingLibrary = null;
+		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
+		if ((currentLibraryId != null) && (userId != null) && !currentLibraryId.isEmpty()) {
+			existingLibrary = cqlLibraryDAO.find(currentLibraryId);
+			if (existingLibrary != null) {
+				if ((existingLibrary.getLockedUserId() != null) && existingLibrary.getLockedUserId().toString().equalsIgnoreCase(userId)) {
+					// Only if the lockedUser and loggedIn User are same we can
+					// allow the user to unlock the measure.
+					if (existingLibrary.getLockedOutDate() != null) {
+						// if it is not null then set it to null and save it.
+						existingLibrary.setLockedOutDate(null);
+						existingLibrary.setLockedUserId(null);
+						cqlLibraryDAO.updateLockedOutDate(existingLibrary);
+						result.setSuccess(true);
+					}
+				}
+			}
+			result.setId(existingLibrary.getId());
+		}
+		
+		return result;
+	}
+
+	@Override
+	public SaveCQLLibraryResult updateLockedDate(String currentLibraryId, String userId) {
+		CQLLibrary existingmeasure = null;
+		LockedUserInfo lockedUserInfo = new LockedUserInfo();
+		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
+		if ((currentLibraryId != null) && (userId != null)) {
+			existingmeasure = cqlLibraryDAO.find(currentLibraryId);
+			if (existingmeasure != null) {
+				if (!cqlLibraryDAO.isLibraryLocked(existingmeasure.getId())) {
+					lockedUserInfo.setUserId(userId);
+					existingmeasure.setLockedUserId(lockedUserInfo);
+					existingmeasure.setLockedOutDate(new Timestamp(new Date().getTime()));
+					cqlLibraryDAO.save(existingmeasure);
+					result.setSuccess(true);
+				}
+			}
+		}
+		
+		result.setId(existingmeasure.getId());
+		return result;
+	}
+	
+	
+	@Override
+	public SaveCQLLibraryResult getAllRecentCQLLibrariesForUser(String userId) {
+		
+		ArrayList<RecentCQLActivityLog> recentLibActivityList = (ArrayList<RecentCQLActivityLog>) recentCQLActivityLogDAO.getRecentCQLLibraryActivityLog(userId);
+		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
+		List<CQLLibraryDataSetObject> cqlLibraryDataSetObjects = new ArrayList<CQLLibraryDataSetObject> ();
+		for (RecentCQLActivityLog activityLog : recentLibActivityList) {
+			CQLLibrary library = cqlLibraryDAO.find(activityLog.getCqlId());
+			CQLLibraryDataSetObject object = extractCQLLibraryDataObject(library);
+			cqlLibraryDataSetObjects.add(object);
+		}
+		result.setCqlLibraryDataSetObjects(cqlLibraryDataSetObjects);
+		result.setResultsTotal(cqlLibraryDataSetObjects.size());
+		
+		return result;
+	}
+	@Override
+	public void isLibraryAvailableAndLogRecentActivity(String libraryid, String userId){
+		CQLLibrary library = cqlLibraryDAO.find(libraryid);
+		if(library != null){
+			recentCQLActivityLogDAO.recordRecentCQLLibraryActivity(libraryid, userId);
+		}
+	}
+	
+	
+	
+	public SaveUpdateCQLResult saveAndModifyParameters(String libraryId, CQLParameter toBeModifiedObj,
+			CQLParameter currentObj, List<CQLParameter> parameterList) {
+
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			return null;
+		}
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(cqlLibrary);
+		SaveUpdateCQLResult result = null;
+		if (cqlXml != null) {
+			result = cqlService.saveAndModifyParameters(cqlXml, toBeModifiedObj, currentObj, parameterList);
+			if (result != null && result.isSuccess()) {
+				cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+				cqlLibraryDAO.save(cqlLibrary);
+			}
+		}
+		
+		return result;
+	}
+	
+	public SaveUpdateCQLResult saveAndModifyDefinitions(String libraryId, CQLDefinition toBeModifiedObj,
+			CQLDefinition currentObj, List<CQLDefinition> definitionList) {
+
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			return null;
+		}
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(cqlLibrary);
+		SaveUpdateCQLResult result = null;
+		if (cqlXml != null) {
+
+			result = cqlService.saveAndModifyDefinitions(cqlXml, toBeModifiedObj,
+					currentObj, definitionList);
+			if (result != null && result.isSuccess()) {
+				cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+				cqlLibraryDAO.save(cqlLibrary);
+			}
+		}
+		return result;
+	}
+	
+	
+	public SaveUpdateCQLResult saveAndModifyFunctions(String libraryId, CQLFunctions toBeModifiedObj,
+			CQLFunctions currentObj, List<CQLFunctions> functionsList) {
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			return null;
+		}
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(cqlLibrary);
+		SaveUpdateCQLResult result = null;
+		if (cqlXml != null) {
+			result = cqlService.saveAndModifyFunctions(cqlXml, toBeModifiedObj,
+					currentObj, functionsList);
+			if (result != null && result.isSuccess()) {
+				cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+				cqlLibraryDAO.save(cqlLibrary);
+			}
+		}
+		return result;
+		
+	}
+	
+	public SaveUpdateCQLResult saveAndModifyCQLGeneralInfo(String libraryId, String context) {
+		 
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			return null;
+		}
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(cqlLibrary);
+		SaveUpdateCQLResult result = null;
+		if (cqlXml != null) {
+			result = cqlService.saveAndModifyCQLGeneralInfo(cqlXml, context);
+			if (result != null && result.isSuccess()) {
+				cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+				cqlLibraryDAO.save(cqlLibrary);
+			}
+		}
+		return result;
+	}
+	
+	
+	public SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String libraryId, CQLIncludeLibrary toBeModifiedObj,
+			CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList) {
+
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			return null;
+		}
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(cqlLibrary);
+		SaveUpdateCQLResult result = null;
+		if (cqlXml != null) {
+			result = cqlService.saveIncludeLibrayInCQLLookUp(cqlXml,
+					toBeModifiedObj, currentObj, incLibraryList);
+			if (result != null && result.isSuccess()) {
+				cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+				cqlLibraryDAO.save(cqlLibrary);
+				cqlService.saveCQLAssociation(currentObj, libraryId);
+			}
+		}
+		return result;
+	}
+	
+	
+	public SaveUpdateCQLResult deleteDefinition(String libraryId, CQLDefinition toBeDeletedObj,
+			CQLDefinition currentObj, List<CQLDefinition> definitionList) {
+		
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			return null;
+		}
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(cqlLibrary);
+		SaveUpdateCQLResult result = null;
+		if (cqlXml != null) {
+			result = cqlService.deleteDefinition(cqlXml, toBeDeletedObj, currentObj, definitionList);
+			if (result != null && result.isSuccess()) {
+				cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+				cqlLibraryDAO.save(cqlLibrary);
+			}
+		}
+		return result;
+	
+	}
+	
+	
+	public SaveUpdateCQLResult deleteFunctions(String libraryId, CQLFunctions toBeDeletedObj, CQLFunctions currentObj,
+			List<CQLFunctions> functionsList) {
+		
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			return null;
+		}
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(cqlLibrary);
+		SaveUpdateCQLResult result = null;
+		if (cqlXml != null) {
+			result = cqlService.deleteFunctions(cqlXml, toBeDeletedObj, currentObj, functionsList);
+			if (result != null && result.isSuccess()) {
+				cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+				cqlLibraryDAO.save(cqlLibrary);
+			}
+		}
+		return result;
+	}
+	
+	
+	public SaveUpdateCQLResult deleteParameter(String libraryId, CQLParameter toBeDeletedObj, CQLParameter currentObj,
+			List<CQLParameter> parameterList) {
+		
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			return null;
+		}
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(cqlLibrary);
+		SaveUpdateCQLResult result = null;
+		if (cqlXml != null) {
+			result = cqlService.deleteParameter(cqlXml, toBeDeletedObj, currentObj, parameterList);
+			if (result != null && result.isSuccess()) {
+				cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+				cqlLibraryDAO.save(cqlLibrary);
+			}
+		}
+		return result;
+	}
+	
+	
+	public SaveUpdateCQLResult deleteInclude(String libraryId, CQLIncludeLibrary toBeModifiedIncludeObj,
+			CQLIncludeLibrary cqlLibObject, List<CQLIncludeLibrary> viewIncludeLibrarys) {
+
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			return null;
+		}
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(cqlLibrary);
+		SaveUpdateCQLResult result = null;
+		if (cqlXml != null) {
+			result = cqlService.deleteInclude(cqlXml, toBeModifiedIncludeObj, cqlLibObject,
+					viewIncludeLibrarys);
+			if (result != null && result.isSuccess()) {
+				cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+				cqlLibraryDAO.save(cqlLibrary);
+				//deleteFromAssociationTable.
+			}
+		}
+		return result;
+	}
+	
+	public CQLKeywords getCQLKeywordsLists() {
+		return cqlService.getCQLKeyWords();
+	}
+	
+	public GetUsedCQLArtifactsResult getUsedCqlArtifacts(String libraryId) {
+		CQLLibrary library = cqlLibraryDAO.find(libraryId);
+		String cqlXml = getCQLLibraryXml(library);
+		return cqlService.getUsedCQlArtifacts(cqlXml);
+	}
+	
 }

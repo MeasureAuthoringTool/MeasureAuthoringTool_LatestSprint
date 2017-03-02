@@ -1501,10 +1501,10 @@ HasSelectionHandlers<Boolean> {
 	 *
 	 * @return the cancel qdm button
 	 */
-	@Override
+	/*@Override
 	public Button getCancelQDMButton() {
 		return saveCancelButtonBar.getCancelButton();
-	}
+	}*/
 	
 	/* (non-Javadoc)
 	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getApplyButton()
@@ -1527,10 +1527,10 @@ HasSelectionHandlers<Boolean> {
 	 *
 	 * @return the retrieve from vsac button
 	 */
-	@Override
-	public PrimaryButton getRetrieveFromVSACButton(){
+	//@Override
+	/*public Button getRetrieveFromVSACButton(){
 		return searchWidget.getSearchButton();
-	}
+	}*/
 	
 	/* (non-Javadoc)
 	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getSaveButton()
@@ -1540,10 +1540,10 @@ HasSelectionHandlers<Boolean> {
 	 *
 	 * @return the save button
 	 */
-	@Override
+	/*@Override
 	public Button getSaveButton(){
 		return saveCancelButtonBar.getSaveButton();
-	}
+	}*/
 	
 	/* (non-Javadoc)
 	 * @see mat.client.clause.VSACProfileSelectionPresenter.SearchDisplay#getUpdateFromVSACButton()
@@ -1924,6 +1924,9 @@ HasSelectionHandlers<Boolean> {
 	public void setQdmSelectedList(List<QualityDataSetDTO> qdmSelectedList) {
 		this.qdmSelectedList = qdmSelectedList;
 	}
+
+
+	
 	
 	
 }

@@ -8,7 +8,6 @@ import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
-import mat.client.codelist.service.SaveUpdateCodeListResult;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
@@ -537,12 +536,29 @@ public interface MeasureService extends RemoteService {
 	void updateMeasureXMLForExpansionIdentifier(List<QualityDataSetDTO> modifyWithDTO, String measureId, String expansionProfile);
 	
 	/**
+	 * Update measure xml for expansion identifier.
+	 *
+	 * @param modifyWithDTO the modify with dto
+	 * @param measureId the measure id
+	 * @param expansionProfile the expansion profile
+	 */
+	void updateCQLMeasureXMLForExpansionProfile(List<CQLQualityDataSetDTO> modifyWithDTO, String measureId, String expansionProfile);
+	
+	/**
 	 * Method to Get Default 4 Supplemental Data Elements for give Measure.
 	 *
 	 * @param measureId the measure id
 	 * @return QualityDataModelWrapper
 	 */
 	QualityDataModelWrapper getDefaultSDEFromMeasureXml(String measureId);
+	
+	/**
+	 * Method to Get Default 4 Supplemental Data Elements for give Measure.
+	 *
+	 * @param measureId the measure id
+	 * @return CQLQualityDataModelWrapper
+	 */
+	CQLQualityDataModelWrapper getDefaultCQLSDEFromMeasureXml(String measureId);
 	
 	/**
 	 * Parses the cql.
@@ -560,7 +576,9 @@ public interface MeasureService extends RemoteService {
 	 * @param measureId the measure id
 	 * @return the CQL data
 	 */
-	SaveUpdateCQLResult getCQLData(String measureId);
+//	SaveUpdateCQLResult getCQLData(String measureId, String fromTable);
+	
+	SaveUpdateCQLResult getMeasureCQLData(String measureId);
 	
 	/**
 	 * Gets the CQL file data.
@@ -568,7 +586,7 @@ public interface MeasureService extends RemoteService {
 	 * @param measureId the measure id
 	 * @return the CQL file data
 	 */
-	SaveUpdateCQLResult getCQLFileData(String measureId);
+//	SaveUpdateCQLResult getCQLFileData(String measureId);
 	
 	/**
 	 * Save and modify definitions.
@@ -682,4 +700,11 @@ public interface MeasureService extends RemoteService {
 
 	SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String measureId, CQLIncludeLibrary toBeModifiedObj,
 			CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList);
+
+	SaveUpdateCQLResult getMeasureCQLFileData(String measureId);
+
+	SaveUpdateCQLResult deleteInclude(String currentMeasureId,
+			CQLIncludeLibrary toBeModifiedIncludeObj,
+			CQLIncludeLibrary cqlLibObject,
+			List<CQLIncludeLibrary> viewIncludeLibrarys);
 }

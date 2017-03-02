@@ -20,6 +20,8 @@ public class SaveUpdateCQLResult extends GenericResult{
 	/** The cql model. */
 	private CQLModel cqlModel;
 	
+	private String xml;
+	
 	/** The cql string. */
 	private String cqlString;
 	
@@ -36,6 +38,8 @@ public class SaveUpdateCQLResult extends GenericResult{
 	private CQLFunctions function;
 	
 	private CQLIncludeLibrary includeLibrary;
+	
+	private GetUsedCQLArtifactsResult usedCQLArtifacts = new GetUsedCQLArtifactsResult();
 	
 	/**  The start line of the result. */
 	private int startLine; 
@@ -254,6 +258,22 @@ public class SaveUpdateCQLResult extends GenericResult{
 
 	public void setIncludeLibrary(CQLIncludeLibrary includeLibrary) {
 		this.includeLibrary = includeLibrary;
+	}
+
+	public GetUsedCQLArtifactsResult getUsedCQLArtifacts() {
+		return usedCQLArtifacts;
+	}
+
+	public void setUsedCQLArtifacts(GetUsedCQLArtifactsResult usedCQLArtifacts) {
+		this.usedCQLArtifacts = usedCQLArtifacts;
+	}
+
+	public String getXml() {
+		return xml;
+	}
+
+	public void setXml(String xml) {
+		this.xml = xml;
 	}
 	
 }

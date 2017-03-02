@@ -4,12 +4,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+
 import javax.xml.xpath.XPathExpressionException;
+
 import mat.DTO.MeasureNoteDTO;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
-import mat.client.codelist.service.SaveUpdateCodeListResult;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
@@ -615,7 +616,9 @@ public interface MeasureLibraryService {
 	 * @param measureId the measure id
 	 * @return the CQL data
 	 */
-	SaveUpdateCQLResult getCQLData(String measureId);
+	//SaveUpdateCQLResult getCQLData(String measureId,String fromTable);
+	
+	SaveUpdateCQLResult getMeasureCQLData(String measureId);
 	
 	/**
 	 * Gets the CQL file data.
@@ -623,7 +626,7 @@ public interface MeasureLibraryService {
 	 * @param measureId the measure id
 	 * @return the CQL file data
 	 */
-	SaveUpdateCQLResult getCQLFileData(String measureId);
+	//SaveUpdateCQLResult getCQLFileData(String xmlString);
 	
 	/**
 	 * Validate cql.
@@ -755,5 +758,15 @@ public interface MeasureLibraryService {
 	SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String measureId,
 			CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj,
 			List<CQLIncludeLibrary> incLibraryList);
+
+	SaveUpdateCQLResult getMeasureCQLFileData(String measureId);
+
+	void updateCQLMeasureXMLForExpansionIdentifier(List<CQLQualityDataSetDTO> modifyWithDTOList, String measureId,
+			String expansionProfile);
+
+	SaveUpdateCQLResult deleteInclude(String currentMeasureId,
+			CQLIncludeLibrary toBeModifiedIncludeObj,
+			CQLIncludeLibrary cqlLibObject,
+			List<CQLIncludeLibrary> viewIncludeLibrarys);
 
 }

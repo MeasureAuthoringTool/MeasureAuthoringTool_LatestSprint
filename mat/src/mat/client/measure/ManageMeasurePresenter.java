@@ -30,7 +30,7 @@ import mat.client.shared.FocusableWidget;
 import mat.client.shared.ListBoxMVP;
 import mat.client.shared.ManageMeasureModelValidator;
 import mat.client.shared.MatContext;
-import mat.client.shared.MeasureSearchFilterWidget;
+import mat.client.shared.SearchWidgetWithFilter;
 import mat.client.shared.MessageDelegate;
 import mat.client.shared.MostRecentMeasureWidget;
 import mat.client.shared.PrimaryButton;
@@ -559,7 +559,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		 * 
 		 * @return the measure search filter widget
 		 */
-		MeasureSearchFilterWidget getMeasureSearchFilterWidget();
+		SearchWidgetWithFilter getMeasureSearchFilterWidget();
 		
 		/** Gets the most recent measure widget.
 		 * 
@@ -1244,7 +1244,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			@Override
 			public void onFailure(Throwable caught) {
 				// O&M 17
-				((Button) draftDisplay.getSaveButton())
+				((org.gwtbootstrap3.client.ui.Button) draftDisplay.getSaveButton())
 				.setEnabled(true);
 				
 				Mat.hideLoadingMessage();
@@ -1288,7 +1288,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 								public void onFailure(
 										Throwable caught) {
 									// O&M 17
-									((Button) draftDisplay
+									((org.gwtbootstrap3.client.ui.Button) draftDisplay
 											.getSaveButton())
 											.setEnabled(true);
 								}
@@ -1297,7 +1297,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 								public void onSuccess(
 										Boolean result) {
 									// O&M 17
-									((Button) draftDisplay
+									((org.gwtbootstrap3.client.ui.Button) draftDisplay
 											.getSaveButton())
 											.setEnabled(true);
 								}
@@ -1592,7 +1592,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			@Override
 			public void onKeyUp(KeyUpEvent event) {
 				if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
-					((Button) draftDisplay.getSearchButton()).click();
+					((org.gwtbootstrap3.client.ui.Button) draftDisplay.getSearchButton()).click();
 				}
 			}
 		});
@@ -1621,7 +1621,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			@Override
 			public void onClick(ClickEvent event) {
 				// O&M 17
-				((Button) draftDisplay.getSaveButton()).setEnabled(false);
+				((org.gwtbootstrap3.client.ui.Button) draftDisplay.getSaveButton()).setEnabled(false);
 				
 				ManageMeasureSearchModel.Result selectedMeasure = draftDisplay.getSelectedMeasure();
 				if ((selectedMeasure != null) && (selectedMeasure.getId() != null)) {
@@ -1630,7 +1630,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 						@Override
 						public void onFailure(Throwable caught) {
 							// O&M 17
-							((Button) draftDisplay.getSaveButton()).setEnabled(true);
+							((org.gwtbootstrap3.client.ui.Button) draftDisplay.getSaveButton()).setEnabled(true);
 							draftDisplay.getErrorMessageDisplay().setMessage(MatContext.get()
 									.getMessageDelegate().getGenericErrorMessage());
 							MatContext.get().recordTransactionEvent(null, null,	null,
@@ -1646,7 +1646,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 					});
 				} else {
 					// O&M 17
-					((Button) draftDisplay.getSaveButton()).setEnabled(true);
+					((org.gwtbootstrap3.client.ui.Button) draftDisplay.getSaveButton()).setEnabled(true);
 					draftDisplay.getErrorMessageDisplay()
 					.setMessage("Please select a Measure Version to create a Draft.");
 				}
@@ -2670,7 +2670,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			}
 		});
 		
-		TextBox searchWidget = (TextBox) (searchDisplay.getSearchString());
+	/*	TextBox searchWidget = (TextBox) (searchDisplay.getSearchString());
 		searchWidget.addKeyUpHandler(new KeyUpHandler() {
 			
 			@Override
@@ -2679,7 +2679,18 @@ public class ManageMeasurePresenter implements MatPresenter {
 					((Button) searchDisplay.getSearchButton()).click();
 				}
 			}
+		});*/
+		
+		searchDisplay.getMeasureSearchFilterWidget().getMainFocusPanel().addKeyUpHandler(new KeyUpHandler() {
+			
+			@Override
+			public void onKeyUp(KeyUpEvent event) {
+				if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
+					searchDisplay.getMeasureSearchFilterWidget().getSearchButton().click();
+				}
+			}
 		});
+		
 		//added by hari
 		searchDisplay.getAdminSearchButton().addClickHandler(
 				new ClickHandler() {
@@ -3005,7 +3016,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		} else {
 			Mat.hideLoadingMessage();
 		}
-		((Button) searchDisplay.getSearchButton()).setEnabled(!busy);
+		((org.gwtbootstrap3.client.ui.Button) searchDisplay.getSearchButton()).setEnabled(!busy);
 		((Button) searchDisplay.getBulkExportButton()).setEnabled(!busy);
 		((TextBox) (searchDisplay.getSearchString())).setEnabled(!busy);
 		
@@ -3273,7 +3284,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			@Override
 			public void onKeyUp(KeyUpEvent event) {
 				if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
-					((Button) versionDisplay.getSearchButton()).click();
+					((org.gwtbootstrap3.client.ui.Button) versionDisplay.getSearchButton()).click();
 				}
 			}
 		});

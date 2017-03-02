@@ -455,7 +455,7 @@ public class CQLIncludeLibraryView {
 			cellTablePanel.add(cellTablePanelBody);
 			
 		} else {
-			HTML desc = new HTML("<p> No libraries available for include.</p>");
+			HTML desc = new HTML("<p> No available libraries.</p>");
 			cellTablePanelBody.add(desc);
 			cellTablePanel.add(cellTablePanelBody);
 		}
@@ -927,6 +927,16 @@ public class CQLIncludeLibraryView {
 		this.observer = observer;
 	}
 	
+	/**
+	 * Sets the widget read only.
+	 *
+	 * @param isEditable the new widget read only
+	 */
+	public void setWidgetReadOnly(boolean isEditable) {
+
+		getAliasNameTxtArea().setEnabled(isEditable);
+		getIncludesButtonBar().getSaveButton().setEnabled(isEditable);
+	}
 	
 	
 }

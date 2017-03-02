@@ -1,9 +1,11 @@
 package mat.client;
 
+import com.google.gwt.event.dom.client.HasClickHandlers;
 import com.google.gwt.event.logical.shared.HasSelectionHandlers;
 import com.google.gwt.resources.client.ImageResource;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.HasValue;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.VerticalPanel;
@@ -14,7 +16,9 @@ import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.shared.CreateNewItemWidget;
 import mat.client.shared.CustomButton;
 import mat.client.shared.ErrorMessageAlert;
+import mat.client.shared.SearchWidgetWithFilter;
 import mat.client.shared.MessageAlert;
+import mat.client.shared.MostRecentCQLLibraryWidget;
 import mat.client.shared.SpacerWidget;
 import mat.model.cql.CQLLibraryDataSetObject;
 
@@ -28,6 +32,12 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 
 	/** The create measure widget. */
 	private CreateNewItemWidget createNewItemWidget = new CreateNewItemWidget("forCqlLibrary");
+	
+	
+	/** The measure search filter widget. */
+	private SearchWidgetWithFilter searchFilterWidget = new SearchWidgetWithFilter("searchFilter",
+			"measureLibraryFilterDisclosurePanel","forCqlLibrary");
+	
 
 	CustomButton addNewFolderButton = (CustomButton) getImage("Create New Item",
 			ImageResources.INSTANCE.createMeasure(), "Create New Item", "createNewItemPlusButton");
@@ -38,7 +48,7 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	/** The most recent vertical panel. */
 	VerticalPanel mostRecentVerticalPanel = new VerticalPanel();
 	/** VerticalPanel Instance which hold's View for Most Recent Measure. */
-	private VerticalPanel mostRecentVPanel = new VerticalPanel();
+	//private VerticalPanel mostRecentVPanel = new VerticalPanel();
 	
 	private CQLLibrarySearchView cqlLibrarySearchView = new CQLLibrarySearchView();
 	
@@ -46,6 +56,9 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	private MessageAlert errorMessageAlert = new ErrorMessageAlert();
 	
 	VerticalPanel widgetVP = new VerticalPanel();
+	
+	
+	private MostRecentCQLLibraryWidget mostRecentLibraryWidget = new MostRecentCQLLibraryWidget();
 
 	@Override
 	public VerticalPanel getWidgetVP() {
@@ -64,43 +77,15 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 
 	}
 
-	/*
-	 * public void buildMostRecentWidget() { mostRecentVerticalPanel.clear();
-	 * mostRecentVerticalPanel.add(mostRecentMeasureWidget.buildMostRecentWidget
-	 * ()); }
-	 */
 
-	/**
-	 * Builds the most recent widget.
-	 * 
-	 * @return VerticalPanel.
-	 */
-	public VerticalPanel buildMostRecentWidget() {
-		mostRecentVPanel.clear();
-		mostRecentVPanel.getElement().setId("mostRecentVPanel_VerticalPanel_CQL");
-		mostRecentVPanel.setStyleName("recentSearchPanel");
-
-		Label recentActivityHeader = new Label("Recent Activity");
-		recentActivityHeader.getElement().setId("mostRecentVPanelHeader_Label_CQL");
-		recentActivityHeader.setStyleName("recentSearchHeader");
-		recentActivityHeader.getElement().setAttribute("tabIndex", "0");
-		HTML desc = new HTML("<p> No Recent Activity</p>");
-		mostRecentVPanel.add(recentActivityHeader);
-		mostRecentVPanel.add(new SpacerWidget());
-		mostRecentVPanel.add(desc);
-		return mostRecentVPanel;
+	
+	
+	@Override
+	public void buildMostRecentWidget() {
+		mostRecentVerticalPanel.clear();
+		mostRecentVerticalPanel.add(mostRecentLibraryWidget.buildMostRecentWidget());
 	}
 	
-	/*public FlowPanel buildCQLLibraryCellTable(){
-		
-		cellTablePanel.getElement().setId("cqlLibrarySearchView_mainPanel");
-		cellTablePanel.setStylePrimaryName("measureSearchResultsContainer");
-		cellTablePanel.add(new SpacerWidget());
-		cellTablePanel.getElement().setId("cqlCellTablePanel_VerticalPanel");
-		cellTablePanel.add(getCellTablePanel());
-		cellTablePanel.setStyleName("serachView_mainPanel");
-		return cellTablePanel;
-	}*/
 	
 
 	@Override
@@ -116,19 +101,10 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 		
 		widgetVP.setWidth("100px");
 		widgetVP.getElement().setId("panel_VP_CQL");
-		//widgetVP.add(createNewItemWidget);
-		// measureFilterVP.add(measureSearchFilterWidget);
-		// buildMostRecentWidget();
-		// mostRecentVerticalPanel.setWidth("80%");
 		mostRecentVerticalPanel.clear();
-		mostRecentVerticalPanel.add(buildMostRecentWidget());
-		
-	//	mainHorizontalPanel.add(new SpacerWidget());
+		buildMostRecentWidget();
 		mainHorizontalPanel.add(mostRecentVerticalPanel);
 		mainHorizontalPanel.add(widgetVP);
-		/*mainHorizontalPanel.add(new SpacerWidget());
-		mainHorizontalPanel.add(new SpacerWidget());
-		mainHorizontalPanel.add(new SpacerWidget());*/
 		mainPanel.add(mainHorizontalPanel);
 		mainPanel.add(new SpacerWidget());
 		mainPanel.add(errorMessageAlert);
@@ -145,8 +121,8 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	}
 	
 	@Override
-	public void buildCellTable(SaveCQLLibraryResult result, String searchText) {
-		cqlLibrarySearchView.buildCellTable(result, searchText);
+	public void buildCellTable(SaveCQLLibraryResult result, String searchText,int filter) {
+		cqlLibrarySearchView.buildCellTable(result, searchText,filter);
 	}
 
 	@Override
@@ -199,6 +175,9 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 
 	@Override
 	public Widget asWidget() {
+		widgetVP.clear();
+		widgetVP.add(searchFilterWidget);
+		getSearchFilterWidget().getSearchFilterDisclosurePanel().setOpen(false);
 		return mainPanel;
 	}
 	
@@ -229,5 +208,34 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	public HasSelectionHandlers<CQLLibraryDataSetObject> getSelectIdForEditTool() {
 		return cqlLibrarySearchView;
 	}
+	@Override
+	public SearchWidgetWithFilter getSearchFilterWidget() {
+		return searchFilterWidget;
+	}
 	
+	@Override
+	public int getSelectedFilter() {
+		return searchFilterWidget.getSelectedFilter();
+		
+	}
+	
+	@Override
+	public HasValue<String> getSearchString() {
+		return searchFilterWidget.getSearchInput();
+		
+	}
+	
+	@Override
+	public HasClickHandlers getSearchButton() {
+		return searchFilterWidget.getSearchButton();
+		
+	}
+	@Override
+	public MostRecentCQLLibraryWidget getMostRecentLibraryWidget() {
+		return mostRecentLibraryWidget;
+	}
+
+	public void setMostRecentLibraryWidget(MostRecentCQLLibraryWidget mostRecentLibraryWidget) {
+		this.mostRecentLibraryWidget = mostRecentLibraryWidget;
+	}
 }

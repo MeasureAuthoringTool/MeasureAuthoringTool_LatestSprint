@@ -1,22 +1,27 @@
 package mat.client;
 
-import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.TextArea;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
+import com.google.gwt.event.dom.client.KeyCodes;
+import com.google.gwt.event.dom.client.KeyUpEvent;
+import com.google.gwt.event.dom.client.KeyUpHandler;
 import com.google.gwt.event.logical.shared.HasSelectionHandlers;
 import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HasValue;
+import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
-import mat.client.clause.cqlworkspace.CQLLibraryDetailView;
+import mat.client.cql.CQLLibraryDetailView;
 import mat.client.cql.CQLLibrarySearchView;
+import mat.client.cql.CQLLibraryVersionView;
 import mat.client.event.CQLLibraryEditEvent;
 import mat.client.event.CQLLibrarySelectedEvent;
 import mat.client.measure.service.SaveCQLLibraryResult;
@@ -27,16 +32,14 @@ import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.FocusableWidget;
 import mat.client.shared.MatContext;
 import mat.client.shared.MessageAlert;
+import mat.client.shared.MostRecentCQLLibraryWidget;
+import mat.client.shared.SearchWidget;
+import mat.client.shared.SearchWidgetWithFilter;
 import mat.client.shared.SkipListBuilder;
 import mat.model.cql.CQLLibraryDataSetObject;
 import mat.model.cql.CQLModel;
 import mat.shared.CQLModelValidator;
 import mat.shared.ConstantMessages;
-
-/**
- * @author jnarang
- *
- */
 /**
  * @author jnarang
  *
@@ -54,9 +57,15 @@ public class CqlLibraryPresenter implements MatPresenter {
 
 	ViewDisplay cqlLibraryView;
 	DetailDisplay detailDisplay;
+	VersionDisplay versionDisplay;
 
 	/** The is create measure widget visible. */
 	boolean isCreateNewItemWidgetVisible = false;
+	
+	/** The is measure search filter visible. */
+	boolean isSearchFilterVisible = true;
+	/** The is search visible on version. */
+	boolean isSearchVisibleOnVersion = true;
 
 	private CQLModel cqlModel;
 
@@ -87,7 +96,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 
 		Widget asWidget();
 
-		void buildCellTable(SaveCQLLibraryResult searchModel, String searchText);
+		void buildCellTable(SaveCQLLibraryResult searchModel, String searchText,int filter);
 
 		CQLLibrarySearchView getCQLLibrarySearchView();
 
@@ -103,8 +112,45 @@ public class CqlLibraryPresenter implements MatPresenter {
 
 		VerticalPanel getWidgetVP();
 
+		SearchWidgetWithFilter getSearchFilterWidget();
+
+		int getSelectedFilter();
+
+		HasValue<String> getSearchString();
+
+		HasClickHandlers getSearchButton();
+
+		MostRecentCQLLibraryWidget getMostRecentLibraryWidget();
+
+		void buildMostRecentWidget();
+
 	}
 
+	public static interface VersionDisplay{
+
+		void buildDataTable(SaveCQLLibraryResult result);
+
+		Widget asWidget();
+
+		RadioButton getMajorRadioButton();
+
+		RadioButton getMinorRadio();
+
+		SearchWidget getSearchWidget();
+
+		CustomButton getZoomButton();
+
+		ErrorMessageAlert getErrorMessages();
+
+		org.gwtbootstrap3.client.ui.Button getSaveButton();
+
+		org.gwtbootstrap3.client.ui.Button getCancelButton();
+
+		CQLLibraryDataSetObject getSelectedLibrary();
+		
+	}
+	
+	
 	public static interface DetailDisplay {
 		/**
 		 * Gets the name.
@@ -136,12 +182,15 @@ public class CqlLibraryPresenter implements MatPresenter {
 		ErrorMessageAlert getErrorMessage();
 	}
 
-	public CqlLibraryPresenter(CqlLibraryView cqlLibraryView, CQLLibraryDetailView detailDisplay) {
+	public CqlLibraryPresenter(CqlLibraryView cqlLibraryView, CQLLibraryDetailView detailDisplay, CQLLibraryVersionView versionDisplay) {
 		this.cqlLibraryView = cqlLibraryView;
 		this.detailDisplay = detailDisplay;
+		this.versionDisplay = versionDisplay;
 		addCQLLibraryViewHandlers();
 		addDetailDisplayViewHandlers();
 		addCQLLibrarySelectionHandlers();
+		addMostRecentWidgetSelectionHandler();
+		addVersionDisplayViewHandlers();
 	}
 
 	private void addCQLLibrarySelectionHandlers() {
@@ -150,16 +199,140 @@ public class CqlLibraryPresenter implements MatPresenter {
 			
 			@Override
 			public void onSelection(SelectionEvent<CQLLibraryDataSetObject> event) {
-				
 				final String mid = event.getSelectedItem().getId();
-				CQLLibraryDataSetObject result = event.getSelectedItem();
-				
-				fireCQLLibrarySelectedEvent(result.getId(), result.getVersion(), result.getCqlName(), true, false,
-						null);
-				fireCqlLibraryEditEvent();
+				isLibrarySelected(event.getSelectedItem());
+			}
+
+			
+		});
+	}
+	
+	private void addMostRecentWidgetSelectionHandler(){
+		
+		cqlLibraryView.getMostRecentLibraryWidget().addSelectionHandler(new SelectionHandler<CQLLibraryDataSetObject>() {
+
+			@Override
+			public void onSelection(SelectionEvent<CQLLibraryDataSetObject> event) {
+				String cqlId = event.getSelectedItem().getId();
+				isLibrarySelected(event.getSelectedItem());
 				
 			}
 		});
+		
+	}
+	
+	/**
+	 * @param event
+	 */
+	private void isLibrarySelected(CQLLibraryDataSetObject selectedItem) {
+		
+		
+		fireCQLLibrarySelectedEvent(selectedItem.getId(), selectedItem.getVersion(), selectedItem.getCqlName(), true, false,
+				null);
+		fireCqlLibraryEditEvent();
+	}
+
+	
+	private void addVersionDisplayViewHandlers(){
+		versionDisplay.getCancelButton().addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				cqlLibraryView.clearSelections();
+				displaySearch();
+				
+			}
+		});
+		
+		
+		versionDisplay.getZoomButton().addClickHandler(new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				cqlLibraryView.getErrorMessageAlert().clearAlert();
+				versionDisplay.getErrorMessages().clearAlert();
+				isSearchVisibleOnVersion = !isSearchVisibleOnVersion;
+				versionDisplay.getSearchWidget().setVisible(isSearchVisibleOnVersion);
+			}
+		});
+		
+		versionDisplay.getSearchWidget().getSearchButton().addClickHandler(new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				searchLibrariesForVersion(versionDisplay.getSearchWidget().getSearchInput().getText());
+			}
+		});
+		
+		versionDisplay.getSaveButton().addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				CQLLibraryDataSetObject selectedLibrary = versionDisplay.getSelectedLibrary();
+				if (((selectedLibrary !=null) && (selectedLibrary.getId() != null))
+						&& (versionDisplay.getMajorRadioButton().getValue() || versionDisplay
+								.getMinorRadio().getValue())) {
+					saveFinalizedVersion(selectedLibrary.getId(),
+							versionDisplay.getMajorRadioButton().getValue(),
+							selectedLibrary.getVersion());
+				} else {
+					versionDisplay
+					.getErrorMessages().createAlert(
+							"Please select a Library Name to version and select a version type of Major or Minor.");
+				}
+				
+			}
+		});
+		
+		
+	}
+	
+	protected void saveFinalizedVersion(final String libraryId, Boolean isMajor, String version) {
+		Mat.showLoadingMessage();
+		MatContext.get().getCQLLibraryService().saveFinalizedVersion(libraryId, isMajor, version, new AsyncCallback<SaveCQLLibraryResult>() {
+
+					@Override
+					public void onFailure(Throwable caught) {
+						// TODO Auto-generated method stub
+						Mat.hideLoadingMessage();
+						versionDisplay.getErrorMessages().createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+					}
+
+					@Override
+					public void onSuccess(SaveCQLLibraryResult result) {
+						Mat.hideLoadingMessage();
+						if(result.isSuccess()){
+							cqlLibraryView.clearSelections();
+							displaySearch();
+							String versionStr = result.getVersionStr();
+							MatContext
+							.get()
+							.getAuditService()
+							.recordCQLLibraryEvent(
+									libraryId,
+									"CQL Library Versioned",
+									"CQL Library Version "
+											+ versionStr
+											+ " created",
+											false,
+											new AsyncCallback<Boolean>() {
+										
+										@Override
+										public void onFailure(
+												Throwable caught) {
+											
+										}
+										
+										@Override
+										public void onSuccess(
+												Boolean result) {
+											
+										}
+									});
+						}
+						}
+	
+	
+		});
+		
 	}
 
 	private void addDetailDisplayViewHandlers() {
@@ -242,15 +415,41 @@ public class CqlLibraryPresenter implements MatPresenter {
 			@Override
 			public void onClick(ClickEvent event) {
 				cqlLibraryView.getErrorMessageAlert().clearAlert();
+				cqlLibraryView.getSearchFilterWidget().getSearchFilterDisclosurePanel().setOpen(false);
 				isCreateNewItemWidgetVisible = !isCreateNewItemWidgetVisible;
-			
-				//cqlLibraryView.getCreateNewItemWidget().setVisible(isCreateNewItemWidgetVisible);
+				
+				if(isSearchFilterVisible){
+					isSearchFilterVisible = !isSearchFilterVisible;
+					cqlLibraryView.getWidgetVP().clear();
+				}
+				
 				if(isCreateNewItemWidgetVisible){
 					cqlLibraryView.getWidgetVP().add(cqlLibraryView.getCreateNewItemWidget());
 				} else {
 					cqlLibraryView.getWidgetVP().clear();
 				}
 
+			}
+		});
+		
+		cqlLibraryView.getZoomButton().addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				cqlLibraryView.getErrorMessageAlert().clearAlert();
+				cqlLibraryView.getSearchFilterWidget().getSearchFilterDisclosurePanel().setOpen(false);
+				if (isCreateNewItemWidgetVisible) {
+					isCreateNewItemWidgetVisible = !isCreateNewItemWidgetVisible;
+					cqlLibraryView.getWidgetVP().clear();
+				}
+				isSearchFilterVisible = !isSearchFilterVisible;
+				
+				if(isSearchFilterVisible){
+					cqlLibraryView.getWidgetVP().add(cqlLibraryView.getSearchFilterWidget());
+				} else {
+					cqlLibraryView.getWidgetVP().clear();
+				}
+				
 			}
 		});
 
@@ -277,14 +476,74 @@ public class CqlLibraryPresenter implements MatPresenter {
 			}
 
 		});
+		
+		
+		//TextBox searchWidget = (TextBox) (cqlLibraryView.getSearchString());
+		cqlLibraryView.getSearchFilterWidget().getMainFocusPanel().addKeyUpHandler(new KeyUpHandler() {
+			
+			@Override
+			public void onKeyUp(KeyUpEvent event) {
+				if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
+					cqlLibraryView.getSearchFilterWidget().getSearchButton().click();
+				}
+			}
+		});
+		
+		
+		cqlLibraryView.getSearchButton().addClickHandler(new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				int startIndex = 1;
+				cqlLibraryView.getErrorMessageAlert().clearAlert();
+				int filter = cqlLibraryView.getSelectedFilter();
+				search(cqlLibraryView.getSearchString().getValue(),"StandAlone", filter,startIndex,
+						Integer.MAX_VALUE);
+			}
+		});
 
 	}
 
 	private void createVersion() {
-		// TODO Auto-generated method stub
+		searchLibrariesForVersion(versionDisplay.getSearchWidget().getSearchInput().getValue());
+		versionDisplay.getErrorMessages().clearAlert();
+		cqlLibraryView.getErrorMessageAlert().clearAlert();
+		panel.getButtonPanel().clear();
+		panel.setButtonPanel(null, versionDisplay.getZoomButton());
+		versionDisplay.getSearchWidget().setVisible(false);
+		isSearchVisibleOnVersion = false;
+		panel.setHeading("My CQL Library > Create CQL Library Version of Draft", "CQLLibrary");
+		panel.setContent(versionDisplay.asWidget());
+		Mat.focusSkipLists("CQLLibrary");
+		clearRadioButtonSelection();
 
 	}
 
+	private void searchLibrariesForVersion(String searchText) {
+		final String lastSearchText = (searchText != null) ? searchText.trim() : null;
+		showSearchingBusy(true);
+		MatContext.get().getCQLLibraryService().searchForVersion(lastSearchText, new AsyncCallback<SaveCQLLibraryResult>() {
+
+			@Override
+			public void onFailure(Throwable caught) {
+				// TODO Auto-generated method stub
+				showSearchingBusy(false);
+			}
+
+			@Override
+			public void onSuccess(SaveCQLLibraryResult result) {
+				versionDisplay.buildDataTable(result);
+				showSearchingBusy(false);
+				
+			}
+		});
+		
+	}
+
+	private void clearRadioButtonSelection() {
+		versionDisplay.getMajorRadioButton().setValue(false);
+		versionDisplay.getMinorRadio().setValue(false);
+	}
+	
 	private void createNew() {
 
 		cqlModel = new CQLModel();
@@ -308,27 +567,42 @@ public class CqlLibraryPresenter implements MatPresenter {
 		fp.getElement().setId("fp_FlowPanel_CQL");
 		isCreateNewItemWidgetVisible = false;
 		//cqlLibraryView.getCreateNewItemWidget().setVisible(false);
-		search("", "StandAlone", 1, Integer.MAX_VALUE);
+		int filter = cqlLibraryView.getSelectedFilter();
+		search(cqlLibraryView.getSearchString().getValue(), "StandAlone", filter,1, Integer.MAX_VALUE);
+		searchRecentLibraries();
 		panel.getButtonPanel().clear();
 		panel.setButtonPanel(cqlLibraryView.getAddNewFolderButton(), cqlLibraryView.getZoomButton());
+		
 		fp.add(cqlLibraryView.asWidget());
+		isSearchFilterVisible = true;
 		panel.setContent(fp);
 		Mat.focusSkipLists("CQLLibrary");
 	}
 
-	private void search(final String searchText, String searchFrom, int startIndex, int pageSize) {
+	private void search(final String searchText, String searchFrom, final int filter,int startIndex, int pageSize) {
 		final String lastSearchText = (searchText != null) ? searchText
 				.trim() : null;
 				//pageSize = Integer.MAX_VALUE;
 				pageSize = 25;
 				showSearchingBusy(true);
-				MatContext.get().getCQLLibraryService().search(lastSearchText, searchFrom, startIndex, pageSize, new AsyncCallback<SaveCQLLibraryResult>() {
+				cqlLibraryView.getErrorMessageAlert().clearAlert();
+				MatContext.get().getCQLLibraryService().search(lastSearchText, searchFrom, filter,startIndex, pageSize, new AsyncCallback<SaveCQLLibraryResult>() {
 					
 					@Override
 					public void onSuccess(SaveCQLLibraryResult result) {
-						//CQLLibrarySearchView cqlLibrarySearchView = new CQLLibrarySearchView();
-						cqlLibraryView.getCQLLibrarySearchView().setCQLLibraryListLabel("All CQL Libraries");
-						cqlLibraryView.buildCellTable(result, lastSearchText);
+						if(cqlLibraryView.getSearchFilterWidget().
+								getSelectedFilter()!=0){
+							cqlLibraryView.getCQLLibrarySearchView().setCQLLibraryListLabel("All CQL Libraries");
+						}else{
+							cqlLibraryView.getCQLLibrarySearchView().setCQLLibraryListLabel("My CQL Libraries");
+						}
+						
+						if ((result.getResultsTotal() == 0)
+								&& !lastSearchText.isEmpty()) {
+							cqlLibraryView.getErrorMessageAlert().createAlert(MatContext.get().getMessageDelegate().getNoLibrarues());
+						} 
+						
+						cqlLibraryView.buildCellTable(result, lastSearchText,filter);
 						showSearchingBusy(false);
 					}
 					
@@ -339,6 +613,24 @@ public class CqlLibraryPresenter implements MatPresenter {
 					}
 				});
 	}
+	
+	
+	private void searchRecentLibraries() {
+		MatContext.get().getCQLLibraryService().getAllRecentCQLLibrariesForUser(MatContext.get().getLoggedinUserId(),
+				new AsyncCallback<SaveCQLLibraryResult>() {
+			@Override
+			public void onFailure(Throwable caught) {
+				Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+			}
+			@Override
+			public void onSuccess(SaveCQLLibraryResult result) {
+				cqlLibraryView.getMostRecentLibraryWidget().setResult(result);
+				cqlLibraryView.buildMostRecentWidget();;
+			}
+		});
+	}
+	
+	
 	
 	/**
 	 * Sets the sub skip embedded link.
