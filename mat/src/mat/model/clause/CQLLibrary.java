@@ -1,11 +1,13 @@
 package mat.model.clause;
 
 import java.sql.Timestamp;
+import java.util.Set;
 
 import org.hibernate.Hibernate;
 
 import mat.model.LockedUserInfo;
 import mat.model.User;
+import mat.model.cql.CQLLibraryShare;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,12 +40,13 @@ public class CQLLibrary {
 	/**
 	 * The measure set id
 	 */
-	private MeasureSet measureSet;
+	/*private MeasureSet measureSet;
 
-	/**
 	 * The cql set id
-	 */
-	private CQLLibrarySet cqlSet;
+	 *//*
+	private CQLLibrarySet cqlSet;*/
+	
+	private String set_id;
 
 	/**
 	 * The version
@@ -81,6 +84,9 @@ public class CQLLibrary {
 	 * The locked out date
 	 */
 	private Timestamp lockedOutDate;
+	
+	/** The shares. */
+	private Set<CQLLibraryShare> shares;
 
 	/**
 	 * The cql xml
@@ -252,7 +258,7 @@ public class CQLLibrary {
 		this.lockedOutDate = lockedOutDate;
 	}
 
-	public MeasureSet getMeasureSet() {
+	/*public MeasureSet getMeasureSet() {
 		return measureSet;
 	}
 
@@ -266,7 +272,7 @@ public class CQLLibrary {
 
 	public void setCqlSet(CQLLibrarySet cqlSet) {
 		this.cqlSet = cqlSet;
-	}
+	}*/
 
 	public String getRevisionNumber() {
 		return revisionNumber;
@@ -282,6 +288,22 @@ public class CQLLibrary {
 			versionNumber = Double.valueOf(version).doubleValue();
 		}
 		return versionNumber;
+	}
+
+	public Set<CQLLibraryShare> getShares() {
+		return shares;
+	}
+
+	public void setShares(Set<CQLLibraryShare> shares) {
+		this.shares = shares;
+	}
+
+	public String getSet_id() {
+		return set_id;
+	}
+
+	public void setSet_id(String set_id) {
+		this.set_id = set_id;
 	}
 	
 }

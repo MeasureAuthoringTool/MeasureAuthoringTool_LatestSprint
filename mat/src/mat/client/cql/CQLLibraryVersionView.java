@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.gwtbootstrap3.client.ui.Button;
-import org.gwtbootstrap3.client.ui.ButtonToolBar;
-import org.gwtbootstrap3.client.ui.constants.ButtonType;
 
 import com.google.gwt.cell.client.FieldUpdater;
 import com.google.gwt.cell.client.SafeHtmlCell;
@@ -18,6 +16,7 @@ import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.user.cellview.client.CellTable;
 import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.VerticalPanel;
@@ -29,7 +28,6 @@ import com.google.gwt.view.client.SingleSelectionModel;
 import mat.client.CqlLibraryPresenter;
 import mat.client.CustomPager;
 import mat.client.ImageResources;
-import mat.client.measure.ManageMeasureSearchModel.Result;
 import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.shared.CustomButton;
 import mat.client.shared.ErrorMessageAlert;
@@ -78,14 +76,15 @@ public class CQLLibraryVersionView implements CqlLibraryPresenter.VersionDisplay
 	
 	public CQLLibraryVersionView(){
 		zoomButton.getElement().getStyle().setMarginLeft(30, Unit.PX);
-		zoomButton.getElement().setId("zoomButton_CustomButton");
+		zoomButton.getElement().setId("CqlzoomButton_CustomButton");
 		mainPanel.setStylePrimaryName("contentPanel");
 		mainPanel.addStyleName("leftAligned");
-		
+		majorRadio.getElement().setId("CQL_MajorRadioButton");
+		minorRadio.getElement().setId("CQL_MinorRadioButton");
 		mainPanel.add(searchWidget);		
 		mainPanel.add(new SpacerWidget());
 		
-		cellTablePanel.getElement().setId("cellTablePanel_VerticalPanel");
+		cellTablePanel.getElement().setId("cqlcellTablePanel_VerticalPanel");
 		cellTablePanel.setWidth("99%");
 		mainPanel.add(cellTablePanel);
 		mainPanel.add(new SpacerWidget());
@@ -98,20 +97,13 @@ public class CQLLibraryVersionView implements CqlLibraryPresenter.VersionDisplay
 		radioPanel.add(new Label("Select Version Type"));
 		radioPanel.add(new SpacerWidget());
 		radioPanel.add(majorRadio);
-		majorRadio.getElement().setId("majorRadio_RadioButton");
+		majorRadio.getElement().setId("cqlmajorRadio_RadioButton");
 		radioPanel.add(minorRadio);
-		minorRadio.getElement().setId("minorRadio_RadioButton");
+		minorRadio.getElement().setId("cqlminorRadio_RadioButton");
 	
 		mainPanel.add(radioPanel);
 		mainPanel.add(new SpacerWidget());
-		/*
-		ButtonToolBar buttonToolBar = new ButtonToolBar();
-		saveButton.setType(ButtonType.PRIMARY);
-		saveButton.setTitle("Save and Continue");
-		cancelButton.setType(ButtonType.DANGER);
-		cancelButton.setTitle("Cancel");
-		buttonToolBar.add(saveButton);
-		buttonToolBar.add(cancelButton);*/
+		
 		mainPanel.add(buttonBar);
 	}
 	
@@ -124,6 +116,8 @@ public class CQLLibraryVersionView implements CqlLibraryPresenter.VersionDisplay
 			public Boolean getValue(CQLLibraryDataSetObject result) {
 				return cellTable.getSelectionModel().isSelected(result);
 			}
+			
+			
 		};
 		radioButtonColumn.setFieldUpdater(new FieldUpdater<CQLLibraryDataSetObject, Boolean>() {
 			@Override
@@ -131,13 +125,14 @@ public class CQLLibraryVersionView implements CqlLibraryPresenter.VersionDisplay
 				cellTable.getSelectionModel().setSelected(object, true);
 			}
 		});
+		
 		cellTable.addColumn(radioButtonColumn, SafeHtmlUtils.fromSafeConstant("<span title=\"Select\">"
 				+ "Select" + "</span>"));
 		Column<CQLLibraryDataSetObject, SafeHtml> libraryNameColumn = new Column<CQLLibraryDataSetObject, SafeHtml>(new SafeHtmlCell()) {
 			@Override
 			public SafeHtml getValue(CQLLibraryDataSetObject object) {
 				String title = "Library Name " + object.getCqlName();
-				return CellTableUtility.getColumnToolTip(object.getCqlName(), title);
+				return CellTableUtility.getNameColumnToolTip(object.getCqlName(), title);
 			}
 		};
 		cellTable.addColumn(libraryNameColumn, SafeHtmlUtils.fromSafeConstant("<span title=\"Library Name\">"
@@ -159,7 +154,7 @@ public class CQLLibraryVersionView implements CqlLibraryPresenter.VersionDisplay
 		image.setStylePrimaryName("invisibleButtonTextMeasureLibrary");
 		image.setTitle(action);
 		image.setResource(url, action);
-		image.getElement().setAttribute("id", "MeasureSearchButton");
+		image.getElement().setAttribute("id", "CQLLibVersionViewSearchButton");
 		return image;
 	}
 	@Override
@@ -169,44 +164,53 @@ public class CQLLibraryVersionView implements CqlLibraryPresenter.VersionDisplay
 		Label cellTablePanelHeader = new Label("Select a Draft to create a Library Version.");
 		cellTablePanelHeader.getElement().setId("cellTablePanelHeader_Label");
 		cellTablePanelHeader.setStyleName("recentSearchHeader");
-		CellTable<CQLLibraryDataSetObject> cellTable = new CellTable<CQLLibraryDataSetObject>();
-		ListDataProvider<CQLLibraryDataSetObject> sortProvider = new ListDataProvider<CQLLibraryDataSetObject>();
-		List<CQLLibraryDataSetObject> measureList = new ArrayList<CQLLibraryDataSetObject>();
-		measureList.addAll(result.getCqlLibraryDataSetObjects());
-		cellTable.setPageSize(PAGE_SIZE);
-		cellTable.redraw();
-		cellTable.setRowCount(measureList.size(), true);
-		cellTable.setSelectionModel(getSelectionModelWithHandler());
-		sortProvider.refresh();
-		sortProvider.getList().addAll(result.getCqlLibraryDataSetObjects());
-		cellTable = addColumnToTable(cellTable);
-		sortProvider.addDataDisplay(cellTable);
-		CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
-		MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
-		spager.setPageStart(0);
-		spager.setDisplay(cellTable);
-		spager.setPageSize(PAGE_SIZE);
-		/* spager.setToolTipAndTabIndex(spager); */
-		cellTable.setWidth("100%");
-		cellTable.setColumnWidth(0, 15.0, Unit.PCT);
-		cellTable.setColumnWidth(1, 63.0, Unit.PCT);
-		cellTable.setColumnWidth(2, 22.0, Unit.PCT);
-		com.google.gwt.dom.client.TableElement elem = cellTable.getElement().cast();
-		TableCaptionElement caption = elem.createCaption();
-		caption.appendChild(cellTablePanelHeader.getElement());
-		Label invisibleLabel = (Label) LabelBuilder
-				.buildInvisibleLabel(
-						"libraryVersionSummary",
-						"In the following CQL Library version of draft table, a radio button is positioned to the left "
-								+ "of the table with a select column header followed by Library name in "
-								+ "second column and version in the third column. The draft CQL Library "
-								+ "are listed alphabetically in a table.");
-		cellTable.getElement().setAttribute("id", "libraryVersionFromDraftCellTable");
-		cellTable.getElement().setAttribute("aria-describedby", "libraryVersionSummary");
-		cellTablePanel.add(invisibleLabel);
-		cellTablePanel.add(cellTable);
-		cellTablePanel.add(new SpacerWidget());
-		cellTablePanel.add(spager);
+		selectionModel = null;
+		if(result.getCqlLibraryDataSetObjects() != null && result.getCqlLibraryDataSetObjects().size() >0) {
+			CellTable<CQLLibraryDataSetObject> cellTable = new CellTable<CQLLibraryDataSetObject>();
+			ListDataProvider<CQLLibraryDataSetObject> sortProvider = new ListDataProvider<CQLLibraryDataSetObject>();
+			List<CQLLibraryDataSetObject> measureList = new ArrayList<CQLLibraryDataSetObject>();
+			measureList.addAll(result.getCqlLibraryDataSetObjects());
+			cellTable.setPageSize(PAGE_SIZE);
+			cellTable.redraw();
+			cellTable.setRowCount(measureList.size(), true);
+			cellTable.setSelectionModel(getSelectionModelWithHandler());
+			sortProvider.refresh();
+			sortProvider.getList().addAll(result.getCqlLibraryDataSetObjects());
+			cellTable = addColumnToTable(cellTable);
+			sortProvider.addDataDisplay(cellTable);
+			CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
+			MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
+			spager.setPageStart(0);
+			spager.setDisplay(cellTable);
+			spager.setPageSize(PAGE_SIZE);
+			/* spager.setToolTipAndTabIndex(spager); */
+			cellTable.setWidth("100%");
+			cellTable.setColumnWidth(0, 15.0, Unit.PCT);
+			cellTable.setColumnWidth(1, 63.0, Unit.PCT);
+			cellTable.setColumnWidth(2, 22.0, Unit.PCT);
+			com.google.gwt.dom.client.TableElement elem = cellTable.getElement().cast();
+			TableCaptionElement caption = elem.createCaption();
+			caption.appendChild(cellTablePanelHeader.getElement());
+			Label invisibleLabel = (Label) LabelBuilder
+					.buildInvisibleLabel(
+							"libraryVersionSummary",
+							"In the following CQL Library version of draft table, a radio button is positioned to the left "
+									+ "of the table with a select column header followed by Library name in "
+									+ "second column and version in the third column. The draft CQL Library "
+									+ "are listed alphabetically in a table.");
+			cellTable.getElement().setAttribute("id", "libraryVersionFromDraftCellTable");
+			cellTable.getElement().setAttribute("aria-describedby", "libraryVersionSummary");
+			cellTablePanel.add(invisibleLabel);
+			cellTablePanel.add(cellTable);
+			cellTablePanel.add(new SpacerWidget());
+			cellTablePanel.add(spager);
+		} else {
+			HTML desc = new HTML("<p> No available libraries.</p>");
+			cellTablePanel.add(cellTablePanelHeader);
+			cellTablePanel.add(new SpacerWidget());
+			cellTablePanel.add(desc);
+		}
+		
 	}
 	
 	private SingleSelectionModel<CQLLibraryDataSetObject> getSelectionModelWithHandler() {
@@ -275,5 +279,10 @@ public class CQLLibraryVersionView implements CqlLibraryPresenter.VersionDisplay
 	@Override
 	public CQLLibraryDataSetObject getSelectedLibrary() {
 		return selectionModel.getSelectedObject();
+	}
+	@Override
+	public void clearRadioButtonSelection() {
+		getMajorRadioButton().setValue(false);
+		getMinorRadio().setValue(false);
 	}
 }

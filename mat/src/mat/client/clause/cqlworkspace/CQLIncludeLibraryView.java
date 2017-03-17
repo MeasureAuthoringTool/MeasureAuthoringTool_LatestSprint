@@ -94,9 +94,9 @@ public class CQLIncludeLibraryView {
 	/** The s widget. */
 	private SearchWidgetBootStrap sWidget = new SearchWidgetBootStrap("Search", "Enter Search Text here");
 	
-	private MessageAlert warningMessageAlert = new WarningMessageAlert();
+	//private MessageAlert warningMessageAlert = new WarningMessageAlert();
 	
-	private MessageAlert successMessageAlert = new SuccessMessageAlert();
+	//private MessageAlert successMessageAlert = new SuccessMessageAlert();
 	/**
 	 * Textbox aliasNameTxtArea.
 	 */
@@ -170,20 +170,7 @@ public class CQLIncludeLibraryView {
 		aliasLabelHP.add(includesButtonBar);
 		aliasNameVP.add(aliasLabelHP);
 		
-		/*VerticalPanel searchLibraryVP = new VerticalPanel();
-		Label librariesLabel = new Label(LabelType.INFO, "Library");
-		librariesLabel.setMarginTop(5);
-		librariesLabel.setId("search_Lib_Lbl");
-		librariesLabel.setTitle("Library Search");
 		
-		searchLibraryVP.add(new SpacerWidget());
-		//searchLibraryVP.add(librariesLabel);
-		//searchLibraryVP.add(new SpacerWidget());
-		sWidget.getSearchBox().setWidth("590px");
-		searchLibraryVP.add(sWidget.getSearchWidget());
-		searchLibraryVP.add(new SpacerWidget());
-		
-		searchWidgetFocusPanel.add(searchLibraryVP);*/
 		cqlAceEditor.startEditor();
 		cqlAceEditor.setMode(AceEditorMode.CQL);
 		cqlAceEditor.setTheme(AceEditorTheme.ECLIPSE);
@@ -202,10 +189,7 @@ public class CQLIncludeLibraryView {
 		VerticalPanel viewCQLVP = new VerticalPanel();
 		viewCQLVP.add(new SpacerWidget());
 		viewCQLVP.add(new SpacerWidget());
-		viewCQLVP.add(warningMessageAlert);
-		viewCQLVP.add(successMessageAlert);
-		viewCQLVP.add(new SpacerWidget());
-		viewCQLVP.add(new SpacerWidget());
+		
 		viewCQLVP.add(viewCQlFileLabel);
 		viewCQLVP.add(new SpacerWidget());
 		viewCQLVP.add(cqlAceEditor);
@@ -216,11 +200,6 @@ public class CQLIncludeLibraryView {
 		verticalPanel.add(ownerTextboxPanel);
 		verticalPanel.add(searchCellTablePanel);
 		
-		/*verticalPanel.add(searchWidgetFocusPanel);
-		verticalPanel.add(new SpacerWidget());
-		verticalPanel.add(cellTablePanel);
-		verticalPanel.add(new SpacerWidget());
-		*/
 		verticalPanel.add(new SpacerWidget());
 		verticalPanel.add(viewCQLVP);
 		verticalPanel.add(new SpacerWidget());
@@ -234,10 +213,6 @@ public class CQLIncludeLibraryView {
 		
 	}
 	
-	public MessageAlert getWarningMessageAlert() {
-		warningMessageAlert.getElement().setAttribute("bg-color", "#ff3232");
-		return warningMessageAlert; 
-	}
 	
 	/**
 	 * Builds the owner text box widget.
@@ -576,8 +551,16 @@ public class CQLIncludeLibraryView {
 	 * @return the check box cell for table
 	 */
 	private CompositeCell<CQLLibraryDataSetObject> getCheckBoxCellForTable(final boolean isEditable){
+		//checks to determine libraries selection validation limit.
+		boolean isUsed = false;
+		if(isEditable){
+			isUsed = includedList.size() >= CQLWorkSpaceConstants.VALID_INCLUDE_COUNT;
+		} else {
+			isUsed = true;
+		}
+		
 		final List<HasCell<CQLLibraryDataSetObject, ?>> cells = new LinkedList<HasCell<CQLLibraryDataSetObject, ?>>();
-		cells.add(getCheckBoxCell());
+		cells.add(getCheckBoxCell(isUsed));
 		CompositeCell<CQLLibraryDataSetObject> cell = new CompositeCell<CQLLibraryDataSetObject>(cells) {
 			@Override
 			public void render(Context context, CQLLibraryDataSetObject object, SafeHtmlBuilder sb) {
@@ -591,18 +574,7 @@ public class CQLIncludeLibraryView {
 			protected <X> void render(Context context, CQLLibraryDataSetObject object,
 					SafeHtmlBuilder sb, HasCell<CQLLibraryDataSetObject, X> hasCell) {
 				Cell<X> cell = hasCell.getCell();
-
-				if(isEditable){
-					/*if (selectedObject != null && object.getId().equals(selectedObject)){
-						sb.appendHtmlConstant("<td class='emptySpaces'>");
-					}  else if(includedList != null && includedList.contains(object.getId())){
-						sb.appendHtmlConstant("<td class='emptySpaces' disabled=\"disabled\" checked>");
-					}  else {*/
-						sb.appendHtmlConstant("<td class='emptySpaces'>");
-					//}
-				} else {
-					sb.appendHtmlConstant("<td class='emptySpaces' disabled=\"disabled\">");
-				}
+				sb.appendHtmlConstant("<td class='emptySpaces'>");
 				
 				if ((object != null)) {
 					if(includedList != null && includedList.contains(object.getId())){
@@ -634,10 +606,10 @@ public class CQLIncludeLibraryView {
 	 *
 	 * @return the check box cell
 	 */
-	private HasCell<CQLLibraryDataSetObject, Boolean> getCheckBoxCell(){
+	private HasCell<CQLLibraryDataSetObject, Boolean> getCheckBoxCell(final boolean isUsed){
 		HasCell<CQLLibraryDataSetObject, Boolean> hasCell = new HasCell<CQLLibraryDataSetObject, Boolean>() {
 			
-			private MatCheckBoxCell cell = new MatCheckBoxCell(false, true);
+			private MatCheckBoxCell cell = new MatCheckBoxCell(false, true, isUsed);
 			
 			@Override
 			public Cell<Boolean> getCell() {
@@ -675,8 +647,8 @@ public class CQLIncludeLibraryView {
 					@Override
 					public void update(int index, CQLLibraryDataSetObject object,
 							Boolean isCBChecked) {
-						getWarningMessageAlert().clearAlert();
-						successMessageAlert.clearAlert();
+						//getWarningMessageAlert().clearAlert();
+						//successMessageAlert.clearAlert();
 						if(isCBChecked) {
 							for (int i = 0; i < selectedList.size(); i++) {
 								selectionModel.setSelected(selectedList.get(i), false);
@@ -737,10 +709,10 @@ public class CQLIncludeLibraryView {
 	
 	public void resetToDefault(){
 		cellTablePanel.clear();
-		aliasNameTxtBox.setText("");
+		//aliasNameTxtBox.setText("");
 		resetAceEditor();
-		successMessageAlert.clearAlert();
-		warningMessageAlert.clearAlert();
+	//	successMessageAlert.clearAlert();
+		//warningMessageAlert.clearAlert();
 	}
 
 	private void resetAceEditor() {
@@ -936,6 +908,7 @@ public class CQLIncludeLibraryView {
 
 		getAliasNameTxtArea().setEnabled(isEditable);
 		getIncludesButtonBar().getSaveButton().setEnabled(isEditable);
+		getIncludesButtonBar().getEraseButton().setEnabled(isEditable);
 	}
 	
 	

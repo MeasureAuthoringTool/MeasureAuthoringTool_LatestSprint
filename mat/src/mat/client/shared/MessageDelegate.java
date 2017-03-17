@@ -163,6 +163,8 @@ public class MessageDelegate {
 	public static final String RATIO_MEASURE_OBS_ASSOCIATION_REQUIRED = "For Ratio Measures, each Measure Observation requires an association be made to the Numerator or the Denominator.";
 
 	private static final String ERROR_IN_SAVING_QDM_ELEMENTS = "Valuesets with different OIDs can not have the same valueset name.";
+
+	private static final String CQL_LIBRARY_LIMIT_WARNING = "You have reached the maximum number of selected CQL Libraries (10).";
 	
 	/** The vsac expansion profile selection. */
 	public final String VSAC_EXPANSION_PROFILE_SELECTION = "Please Select VSAC Expansion Profile to Apply to value sets.";
@@ -187,7 +189,7 @@ public class MessageDelegate {
 	public final String COPY_QDM_SELECT_ATLEAST_ONE  = "Please select at least one applied QDM element to copy.";
 	
 	/** The successful qdm remove msg. */
-	public final String SUCCESSFUL_QDM_REMOVE_MSG  = "Selected QDM element has been removed successfully.";
+	public final String SUCCESSFUL_QDM_REMOVE_MSG  = "Selected value set has been removed successfully.";
 	
 	/** The warning measure package creation generic. */
 	public final String WARNING_MEASURE_PACKAGE_CREATION_GENERIC = "Unable to create measure package. " +
@@ -240,6 +242,11 @@ public class MessageDelegate {
 	public final String DELETE_WARNING_MESSAGE = "You have selected to delete this expression. Do you want to permanently delete";
 	
 	public final String SAVE_INCLUDE_LIBRARY_VALIATION_ERROR = "Alias name and CQL Library selection are required.";
+	
+	public final String MODIFY_CQL_LIBRARY_NAME = "Successfully modified CQL Library Name.";
+	
+	
+	public static final String NO_USERS_RETURNED = "No Users returned. Please search again.";
 	
 	/**
 	 * Gets the measure save server error message.
@@ -743,6 +750,10 @@ public class MessageDelegate {
 	private final String DELETE_CONFIRMATION_FUNCTION = "You have selected to delete this expression. Do you want to permanently delete this Function?";
 	
 	private final String DELETE_CONFIRMATION_INCLUDE = "You have selected to delete this expression. Do you want to permanently delete this Library Alias?";
+	
+	private final String ERROR_LIBRARY_VERSION ="Please select a Library Name to version and select a version type of Major or Minor.";
+	
+	private final String ERROR_LIBRARY_DRAFT = "Please select a Library Version to create a draft.";
 	
 	
 	public String getONLY_ONE_CHILD_REQUIRED() {
@@ -2715,6 +2726,26 @@ public class MessageDelegate {
 
 	public static String getNoLibrarues() {
 		return NO_LIBRARUES;
+	}
+
+	public String getERROR_LIBRARY_VERSION() {
+		return ERROR_LIBRARY_VERSION;
+	}
+
+	public String getMODIFY_CQL_LIBRARY_NAME() {
+		return MODIFY_CQL_LIBRARY_NAME;
+	}
+
+	public String getERROR_LIBRARY_DRAFT() {
+		return ERROR_LIBRARY_DRAFT;
+	}
+
+	public String getCqlLimitWarningMessage() {
+		return CQL_LIBRARY_LIMIT_WARNING;
+	}
+
+	public static String getNoUsersReturned() {
+		return NO_USERS_RETURNED;
 	}
 	
 }

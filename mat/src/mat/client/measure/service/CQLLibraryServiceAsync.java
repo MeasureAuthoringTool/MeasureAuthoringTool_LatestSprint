@@ -1,15 +1,18 @@
 package mat.client.measure.service;
 
+import java.util.List;
+
 import com.google.gwt.user.client.rpc.AsyncCallback;
 
-import mat.model.User;
+
+import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLLibraryDataSetObject;
+import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
 
 public interface CQLLibraryServiceAsync {
 
-	void search(String searchText, String searchFrom, int filter,int startIndex, int pageSize,
-			AsyncCallback<SaveCQLLibraryResult> callback);
+	void search(String searchText, int filter, int startIndex,int pageSize, AsyncCallback<SaveCQLLibraryResult> callback);
 
 	void findCQLLibraryByID(String cqlLibraryID, AsyncCallback<CQLLibraryDataSetObject> callback);
 
@@ -33,7 +36,30 @@ public interface CQLLibraryServiceAsync {
 
 	void saveFinalizedVersion(String libraryId, boolean isMajor, String version,
 			AsyncCallback<SaveCQLLibraryResult> callback);
-	
-	
 
+	void searchForDraft(String searchText, AsyncCallback<SaveCQLLibraryResult> callback);
+
+	void saveDraftFromVersion(String libraryId, AsyncCallback<SaveCQLLibraryResult> callback);
+	
+	void getLibraryCQLFileData(String libraryId, AsyncCallback<SaveUpdateCQLResult> callback);
+
+	void saveAndModifyCQLGeneralInfo(String libraryId, String libraryValue,
+			AsyncCallback<SaveUpdateCQLResult> callback);
+
+	void getUserShareInfo(String cqlId, String searchText,
+			AsyncCallback<SaveCQLLibraryResult> callback);
+
+	void searchForIncludes(String searchText, AsyncCallback<SaveCQLLibraryResult> callback);
+
+	void updateUsersShare(SaveCQLLibraryResult result, AsyncCallback<Void> callback);
+
+	void saveIncludeLibrayInCQLLookUp(String libraryId, CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj,
+			List<CQLIncludeLibrary> incLibraryList, AsyncCallback<SaveUpdateCQLResult> callback);
+
+	void deleteInclude(String libraryId, CQLIncludeLibrary toBeModifiedIncludeObj, CQLIncludeLibrary cqlLibObject,
+			List<CQLIncludeLibrary> viewIncludeLibrarys, AsyncCallback<SaveUpdateCQLResult> callback);
+
+	void getUsedCqlArtifacts(String libraryId, AsyncCallback<GetUsedCQLArtifactsResult> callback);
+
+	void countNumberOfAssociation(String Id, AsyncCallback<Integer> callback);
 }

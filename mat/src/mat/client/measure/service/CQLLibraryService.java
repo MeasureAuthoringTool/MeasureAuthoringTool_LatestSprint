@@ -1,14 +1,18 @@
 package mat.client.measure.service;
 
+import java.util.List;
+
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 
+import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLLibraryDataSetObject;
+import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
 
 @RemoteServiceRelativePath("cqlLibrary")
 public interface CQLLibraryService extends RemoteService {
-	SaveCQLLibraryResult search(String searchText, String searchFrom, int filter, int startIndex, int pageSize);
+	SaveCQLLibraryResult search(String searchText, int filter, int startIndex, int pageSize);
 
 	CQLLibraryDataSetObject findCQLLibraryByID(String cqlLibraryID);
 	SaveCQLLibraryResult save(CQLLibraryDataSetObject cqlModel);
@@ -25,4 +29,26 @@ public interface CQLLibraryService extends RemoteService {
 
 	SaveCQLLibraryResult saveFinalizedVersion(String libraryId, boolean isMajor, String version);
 
+	SaveCQLLibraryResult searchForDraft(String searchText);
+	public SaveCQLLibraryResult saveDraftFromVersion(String libraryId);
+	
+	SaveUpdateCQLResult getLibraryCQLFileData(String libraryId);
+
+	SaveUpdateCQLResult saveAndModifyCQLGeneralInfo(String libraryId, String libraryValue);
+
+	SaveCQLLibraryResult getUserShareInfo(String cqlId, String searchText);
+
+	SaveCQLLibraryResult searchForIncludes(String searchText);
+	
+	void updateUsersShare(SaveCQLLibraryResult result);
+
+	SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String libraryId, CQLIncludeLibrary toBeModifiedObj,
+			CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList);
+
+	SaveUpdateCQLResult deleteInclude(String libraryId, CQLIncludeLibrary toBeModifiedIncludeObj,
+			CQLIncludeLibrary cqlLibObject, List<CQLIncludeLibrary> viewIncludeLibrarys);
+
+	GetUsedCQLArtifactsResult getUsedCqlArtifacts(String libraryId);
+
+	int countNumberOfAssociation(String Id);
 }

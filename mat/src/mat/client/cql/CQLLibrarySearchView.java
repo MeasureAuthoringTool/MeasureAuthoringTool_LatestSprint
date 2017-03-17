@@ -94,12 +94,7 @@ public class CQLLibrarySearchView implements HasSelectionHandlers<CQLLibraryData
 	 * The Interface Observer.
 	 */
 	public static interface Observer {
-		/**
-		 * On edit clicked.
-		 * @param result
-		 *            the result
-		 */
-		void onEditClicked(CQLLibraryDataSetObject result);
+		
 		/**
 		 * On share clicked.
 		 * @param result
@@ -174,8 +169,8 @@ public class CQLLibrarySearchView implements HasSelectionHandlers<CQLLibraryData
 		          }
 		        };
 		        
-		        MatContext.get().getCQLLibraryService().search(searchText, "StandAlone",filter, 
-		        		index+1, index + PAGE_SIZE,callback);
+		        MatContext.get().getCQLLibraryService().search(searchText, filter,index+1, 
+		        		index + PAGE_SIZE, callback);
 		      }
 		    };
 		   
@@ -311,8 +306,8 @@ public class CQLLibrarySearchView implements HasSelectionHandlers<CQLLibraryData
 				shareColumn.setFieldUpdater(new FieldUpdater<CQLLibraryDataSetObject, SafeHtml>() {
 					@Override
 					public void update(int index, CQLLibraryDataSetObject object, SafeHtml value) {
-						/*if(object.isSharable())
-							observer.onShareClicked(object);*/
+						if(object.isSharable())
+							observer.onShareClicked(object);
 					}
 				});
 				table.addColumn(shareColumn, SafeHtmlUtils.fromSafeConstant("<span title='Share'>" + "Share" + "</span>"));
@@ -332,7 +327,7 @@ public class CQLLibrarySearchView implements HasSelectionHandlers<CQLLibraryData
 		SafeHtmlBuilder sb = new SafeHtmlBuilder();
 		String title;
 		String cssClass;
-		if (object.isSelected()) {
+		if (object.isSharable()) {
 			title = "Shareable";
 			cssClass = "customShareButton";
 			sb.appendHtmlConstant("<button type=\"button\" title='"
@@ -508,5 +503,13 @@ public class CQLLibrarySearchView implements HasSelectionHandlers<CQLLibraryData
 	 */
 	public VerticalPanel getCellTablePanel(){
 		return cellTablePanel;
+	}
+
+	public Observer getObserver() {
+		return observer;
+	}
+
+	public void setObserver(Observer observer) {
+		this.observer = observer;
 	}
 }

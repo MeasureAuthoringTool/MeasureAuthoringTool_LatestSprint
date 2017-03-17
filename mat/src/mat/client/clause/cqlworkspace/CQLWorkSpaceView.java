@@ -54,7 +54,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 	VerticalPanel vp = new VerticalPanel();
 
 	/** The qdm view. */
-	private CQLQDMAppliedView qdmView;
+	private CQLAppliedValueSetView qdmView;
 
 	/** The incl view. */
 	private CQLIncludeLibraryView inclView;
@@ -85,7 +85,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		cqlParametersView = new CQLParametersView();
 		cqlDefinitionsView = new CQlDefinitionsView();
 		cqlFunctionsView = new CQLFunctionsView();
-		qdmView = new CQLQDMAppliedView();
+		qdmView = new CQLAppliedValueSetView();
 		inclView = new CQLIncludeLibraryView();
 		cqlViewCQLView = new CQLViewCQLView();
 		cqlLeftNavBarPanelView = new CQLLeftNavBarPanelView();
@@ -279,7 +279,8 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 	/**
 	 * Reset All components to default state.
 	 */
-	private void resetAll() {
+	@Override
+	public void resetAll() {
 		mainFlowPanel.clear();
 		cqlLeftNavBarPanelView.getRightHandNavPanel().clear();
 		inclView.setAliasNameTxtArea("");
@@ -303,6 +304,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		if (cqlLeftNavBarPanelView.getFunctionCollapse() != null) {
 			cqlLeftNavBarPanelView.getFunctionCollapse().clear();
 		}
+		generalInformationView.resetAll();
 		cqlParametersView.resetAll();
 		cqlDefinitionsView.resetAll();
 		cqlFunctionsView.resetAll();
@@ -842,7 +844,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 
 		HTML html1 = new HTML("Ctrl-Alt-v  : Value Sets");
 		HTML html2 = new HTML("Ctrl-Alt-y  : Datatypes");
-		HTML html3 = new HTML("CTRL-Alt-t  : Timings");
+		HTML html3 = new HTML("Ctrl-Alt-t  : Timings");
 		HTML html4 = new HTML("Ctrl-Alt-f  : Functions");
 		HTML html5 = new HTML("Ctrl-Alt-d  : Definitions");
 		HTML html6 = new HTML("Ctrl-Alt-p  : Parameters");
@@ -896,7 +898,8 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		cqlLeftNavBarPanelView.getSuccessMessageAlert().clearAlert();
 		cqlLeftNavBarPanelView.getErrorMessageAlert().clearAlert();
 		cqlLeftNavBarPanelView.getWarningConfirmationMessageAlert().clearAlert();
-		cqlLeftNavBarPanelView.getGlobalWarningConfirmationMessageAlert().clearAlert();
+		if(cqlLeftNavBarPanelView.getGlobalWarningConfirmationMessageAlert() != null)
+			cqlLeftNavBarPanelView.getGlobalWarningConfirmationMessageAlert().clearAlert();
 		cqlLeftNavBarPanelView.getDeleteConfirmationMessgeAlert().clearAlert();
 		hideAceEditorAutoCompletePopUp();
 
@@ -959,7 +962,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#getQdmView()
 	 */
 	@Override
-	public CQLQDMAppliedView getQdmView() {
+	public CQLAppliedValueSetView getQdmView() {
 		return qdmView;
 	}
 	
@@ -988,6 +991,11 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 	@Override
 	public CQlDefinitionsView getCQlDefinitionsView(){
 		return cqlDefinitionsView;
+	}
+	
+	@Override
+	public CQLGeneralInformationView getCqlGeneralInformationView(){
+		return generalInformationView;
 	}
 
 }

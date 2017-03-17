@@ -107,6 +107,7 @@ public class AuditEventListener implements  PreDeleteEventListener, PreInsertEve
 		Object returnObject = null;
 		String user = LoggedInUserUtil.getLoggedInUser();
 		String emailAddress = LoggedInUserUtil.getLoggedInUserEmailAddress();
+		String userName = LoggedInUserUtil.getLoggedUserName();
 
 		//JUNIT tests doesn't use any user
 		if(user == null){
@@ -127,35 +128,16 @@ public class AuditEventListener implements  PreDeleteEventListener, PreInsertEve
 				measureAuditLog.setMeasure(((MeasureExport)obj).getMeasure());
 			}
 			returnObject = measureAuditLog;
-		} if(obj instanceof CQLLibrary) {
+		} else if(obj instanceof CQLLibrary) {
 			CQLAuditLog cqlAuditLog = new CQLAuditLog();
 			cqlAuditLog.setTime(new Date());				
-			cqlAuditLog.setUserId(emailAddress);
+			cqlAuditLog.setUserId(userName);
 			if(obj instanceof CQLLibrary){
 				cqlAuditLog.setActivityType("CQL Library Created");
 				cqlAuditLog.setCqlLibrary((CQLLibrary)obj);
 			}
 			returnObject = cqlAuditLog;
-		}/*else if(obj instanceof ListObject) {
-			CodeSystem codeSystem = ((ListObject) obj).getCodeSystem();
-			Boolean draft = ((ListObject) obj).isDraft();
-			String descCodeSystem = null;
-			if(codeSystem != null){
-				descCodeSystem = codeSystem.getDescription();
-			}
-			CodeListAuditLog codeListAuditLog = new CodeListAuditLog();
-			if(descCodeSystem != null && descCodeSystem.equalsIgnoreCase(ConstantMessages.GROUPED_CODE_LIST_CS)){
-				if(draft != null && draft.booleanValue())
-					codeListAuditLog.setActivityType("Draft Grouped Value Set Created");
-			}else{
-				if(draft != null && draft.booleanValue())
-					codeListAuditLog.setActivityType("Draft Value Set Created");
-			}
-			codeListAuditLog.setTime(new Date());
-			codeListAuditLog.setCodeList(((ListObject)obj));
-			codeListAuditLog.setUserId(emailAddress);
-			returnObject = codeListAuditLog;
-		}*/else{
+		}else{
 			AuditLog auditLog = new AuditLog();
 			auditLog.setActivityType(activity);
 			auditLog.setUpdateDate(new Date());

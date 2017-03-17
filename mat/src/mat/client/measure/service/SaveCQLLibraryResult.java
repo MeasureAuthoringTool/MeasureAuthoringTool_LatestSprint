@@ -4,6 +4,7 @@ import java.util.List;
 
 import mat.client.shared.GenericResult;
 import mat.model.cql.CQLLibraryDataSetObject;
+import mat.model.cql.CQLLibraryShareDTO;
 import mat.shared.ConstantMessages;
 
 public class SaveCQLLibraryResult extends GenericResult {
@@ -14,6 +15,10 @@ public class SaveCQLLibraryResult extends GenericResult {
 	
 	/** The version str. */
 	private String versionStr;
+	
+	private boolean isEditable;
+	
+	private boolean isLocked;
 	
 	public static final int INVALID_DATA = ConstantMessages.INVALID_DATA;
 	public static final int INVALID_USER = 1;
@@ -29,6 +34,8 @@ public class SaveCQLLibraryResult extends GenericResult {
 	public static final int REACHED_MAXIMUM_MINOR_VERSION = ConstantMessages.REACHED_MAXIMUM_MINOR_VERSION;
 	
 	private List<CQLLibraryDataSetObject> cqlLibraryDataSetObjects;
+	
+	private List<CQLLibraryShareDTO> cqlLibraryShareDTOs;
 	
 	/** The results total. */
 	private int resultsTotal;
@@ -71,6 +78,30 @@ public class SaveCQLLibraryResult extends GenericResult {
 
 	public void setResultsTotal(int resultsTotal) {
 		this.resultsTotal = resultsTotal;
+	}
+
+	public boolean isEditable() {
+		return isEditable;
+	}
+
+	public void setEditable(boolean isEditable) {
+		this.isEditable = isEditable;
+	}
+
+	public List<CQLLibraryShareDTO> getCqlLibraryShareDTOs() {
+		return cqlLibraryShareDTOs;
+	}
+
+	public void setCqlLibraryShareDTOs(List<CQLLibraryShareDTO> cqlLibraryShareDTOs) {
+		this.cqlLibraryShareDTOs = cqlLibraryShareDTOs;
+	}
+
+	public boolean isLocked() {
+		return isLocked;
+	}
+
+	public void setLocked(boolean isLocked) {
+		this.isLocked = isLocked;
 	}
 	
 	

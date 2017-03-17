@@ -5,4 +5,8 @@ import mat.model.cql.CQLLibraryAssociation;
 
 public interface CQLLibraryAssociationDAO extends IDAO<CQLLibraryAssociation, String> {
 
+	void deleteAssociation(CQLLibraryAssociation cqlLibraryAssociation);
+	
+	int findAssociationCount(String associatedWithId);
+
 }

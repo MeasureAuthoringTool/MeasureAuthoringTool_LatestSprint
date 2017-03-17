@@ -3,9 +3,11 @@ package mat.client.clause.cqlworkspace;
 import org.gwtbootstrap3.client.ui.gwt.FlowPanel;
 
 import com.google.gwt.user.client.ui.HorizontalPanel;
+import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
+import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
 import mat.client.shared.SpacerWidget;
 
 // TODO: Auto-generated Javadoc
@@ -26,15 +28,8 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 	/** The main flow panel. */
 	private FlowPanel mainFlowPanel = new FlowPanel();
 	
-	/** The right hand nav panel. */
-	private VerticalPanel rightHandNavPanel = new VerticalPanel();
-
-	/** The message panel. */
-	private HorizontalPanel messagePanel = new HorizontalPanel();
-	
-	
 	/** The qdm view. */
-	private CQLQDMAppliedView qdmView;
+	private CQLAppliedValueSetView qdmView;
 
 	/** The incl view. */
 	private CQLIncludeLibraryView inclView;
@@ -72,7 +67,7 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		cqlParametersView = new CQLParametersView();
 		cqlDefinitionsView = new CQlDefinitionsView();
 		cqlFunctionsView = new CQLFunctionsView();
-		qdmView = new CQLQDMAppliedView();
+		qdmView = new CQLAppliedValueSetView();
 		inclView = new CQLIncludeLibraryView();
 		cqlViewCQLView = new CQLViewCQLView();
 		cqlLeftNavBarPanelView = new CQLLeftNavBarPanelView();
@@ -89,6 +84,7 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		resetAll();
 		unsetEachSectionSelectedObject();
 		
+		buildGeneralInformation();
 		mainFlowPanel.setWidth("700px");
 		mainPanel.getElement().setId("CQLStandaloneWorkSpaceView.containerPanel");
 		mainPanel.add(new SpacerWidget());
@@ -104,6 +100,48 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		mainVPanel.add(mainHPPanel);
         mainVPanel.add(qdmView.getCellTableMainPanel());
 		
+	}
+	
+	
+	@Override
+	public void buildGeneralInformation() {
+		unsetEachSectionSelectedObject();
+		mainFlowPanel.clear();
+		mainFlowPanel.add(generalInformationView.getCQLView());
+
+	}
+	
+	@Override
+	public void buildIncludesView() {
+		unsetEachSectionSelectedObject();
+		mainFlowPanel.clear();
+		resetMessageDisplay();
+		VerticalPanel includesTopPanel = new VerticalPanel();
+		inclView.resetToDefault();
+		// building searchWidget for adding new aliasName
+		inclView.buildAddNewAliasView();
+
+		includesTopPanel.add(inclView.asWidget());
+
+		VerticalPanel vp = new VerticalPanel();
+		vp.setStyleName("cqlRightContainer");
+		vp.setWidth("700px");
+		includesTopPanel.setWidth("700px");
+		includesTopPanel.setStyleName("marginLeft15px");
+		vp.add(includesTopPanel);
+		mainFlowPanel.add(vp);
+	}
+	
+	
+	/* (non-Javadoc)
+	 * @see mat.client.clause.cqlworkspace.CQLStandaloneWorkSpacePresenter.ViewDisplay#buildCQLFileView()
+	 */
+	@Override
+	public void buildCQLFileView() {
+		unsetEachSectionSelectedObject();
+		mainFlowPanel.clear();
+		mainFlowPanel.add(cqlViewCQLView.buildView());
+
 	}
 	
 	
@@ -132,7 +170,8 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		cqlLeftNavBarPanelView.getSuccessMessageAlert().clearAlert();
 		cqlLeftNavBarPanelView.getErrorMessageAlert().clearAlert();
 		cqlLeftNavBarPanelView.getWarningConfirmationMessageAlert().clearAlert();
-		cqlLeftNavBarPanelView.getGlobalWarningConfirmationMessageAlert().clearAlert();
+		if(cqlLeftNavBarPanelView.getGlobalWarningConfirmationMessageAlert() != null)
+			cqlLeftNavBarPanelView.getGlobalWarningConfirmationMessageAlert().clearAlert();
 		cqlLeftNavBarPanelView.getDeleteConfirmationMessgeAlert().clearAlert();
 		hideAceEditorAutoCompletePopUp();
 
@@ -184,7 +223,8 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 	/**
 	 * Reset all.
 	 */
-	private void resetAll() {
+	@Override
+	public void resetAll() {
 		mainFlowPanel.clear();
 		cqlLeftNavBarPanelView.getRightHandNavPanel().clear();
 		inclView.setAliasNameTxtArea("");
@@ -208,6 +248,7 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		if (cqlLeftNavBarPanelView.getFunctionCollapse() != null) {
 			cqlLeftNavBarPanelView.getFunctionCollapse().clear();
 		}
+		generalInformationView.resetAll();
 		cqlParametersView.resetAll();
 		cqlDefinitionsView.resetAll();
 		cqlFunctionsView.resetAll();
@@ -257,24 +298,76 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		return cqlLeftNavBarPanelView;
 	}
     
+    /* (non-Javadoc)
+     * @see mat.client.clause.cqlworkspace.CQLStandaloneWorkSpacePresenter.ViewDisplay#getCQLParametersView()
+     */
     @Override
     public CQLParametersView getCQLParametersView(){
     	return cqlParametersView; 
     }
     
+    /* (non-Javadoc)
+     * @see mat.client.clause.cqlworkspace.CQLStandaloneWorkSpacePresenter.ViewDisplay#getCQLDefinitionsView()
+     */
     @Override
     public CQlDefinitionsView getCQLDefinitionsView(){
     	return cqlDefinitionsView;
     }
     
+    /* (non-Javadoc)
+     * @see mat.client.clause.cqlworkspace.CQLStandaloneWorkSpacePresenter.ViewDisplay#getCQLFunctionsView()
+     */
     @Override
     public CQLFunctionsView getCQLFunctionsView(){
     	return cqlFunctionsView;
     }
     
+    /* (non-Javadoc)
+     * @see mat.client.clause.cqlworkspace.CQLStandaloneWorkSpacePresenter.ViewDisplay#getCqlIncludeLibraryView()
+     */
     @Override
     public CQLIncludeLibraryView getCqlIncludeLibraryView(){
     	return inclView;
     }
+    
+    @Override
+	public AceEditor getCqlAceEditor() {
+		return cqlViewCQLView.getCqlAceEditor();
+	}
+    
+    @Override
+    public CQLGeneralInformationView getCqlGeneralInformationView(){
+    	return generalInformationView;
+    }
+    @Override
+    public CQLIncludeLibraryView getIncludeView() {
+		return inclView;
+	}
+    
+    /**
+	 * Gets the alias name txt area.
+	 *
+	 * @return the alias name txt area
+	 */
+	@Override
+	public TextBox getAliasNameTxtArea() {
+		return getIncludeView().getAliasNameTxtArea();
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#getViewCQLEditor()
+	 */
+	@Override
+	public AceEditor getViewCQLEditor() {
+		return getIncludeView().getViewCQLEditor();
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#getOwnerNameTextBox()
+	 */
+	@Override
+	public TextBox getOwnerNameTextBox() {
+		return getIncludeView().getOwnerNameTextBox();
+	}
 
 }
