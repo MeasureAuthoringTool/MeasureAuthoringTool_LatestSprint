@@ -48,7 +48,7 @@ public class ManageMeasureShareView implements ShareDisplay {
 	
 	private static final int PAGE_SIZE = 25;
 	/** The button bar. */
-	private SaveCancelButtonBar buttonBar = new SaveCancelButtonBar();
+	private SaveCancelButtonBar buttonBar = new SaveCancelButtonBar("measureVersion");
 	/** The cell table panel. */
 	private VerticalPanel cellTablePanel = new VerticalPanel();
 	/** The content. */
@@ -204,7 +204,7 @@ public class ManageMeasureShareView implements ShareDisplay {
 			cellTable = addColumnToTable(cellTable);
 			sortProvider.addDataDisplay(cellTable);
 			CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
-			MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
+			MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true,"measureShare");
 			spager.setPageStart(0);
 			spager.setDisplay(cellTable);
 			spager.setPageSize(PAGE_SIZE);

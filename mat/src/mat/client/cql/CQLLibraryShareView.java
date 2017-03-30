@@ -44,7 +44,7 @@ public class CQLLibraryShareView implements CqlLibraryPresenter.ShareDisplay{
 
 	private static final int PAGE_SIZE = 25;
 	/** The button bar. */
-	private SaveCancelButtonBar buttonBar = new SaveCancelButtonBar();
+	private SaveCancelButtonBar buttonBar = new SaveCancelButtonBar("cqlShare");
 	/** The cell table panel. */
 	private VerticalPanel cellTablePanel = new VerticalPanel();
 	/** The content. */
@@ -199,7 +199,7 @@ public class CQLLibraryShareView implements CqlLibraryPresenter.ShareDisplay{
 			TableCaptionElement caption = elem.createCaption();
 			caption.appendChild(cellTableHeader.getElement());
 			CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
-			MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
+			MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true,"cqlShare");
 			spager.setPageStart(0);
 			spager.setDisplay(cellTable);
 			spager.setPageSize(PAGE_SIZE);

@@ -1,7 +1,10 @@
 package mat.server;
 
+import java.util.List;
+
 import mat.client.umls.service.VSACAPIService;
 import mat.client.umls.service.VsacApiResult;
+import mat.model.cql.CQLQualityDataSetDTO;
 
 // TODO: Auto-generated Javadoc
 /** VSACAPIServiceImpl class. **/
@@ -131,9 +134,16 @@ public class VSACAPIServiceImpl extends SpringRemoteServiceServlet implements VS
 
 
 	@Override
-	public VsacApiResult updateCQLVSACValueSets(String measureId, String defaultExpId) {
+	public VsacApiResult updateCQLVSACValueSets(List<CQLQualityDataSetDTO> appliedQDMList, String defaultExpId) {
 		String sessionId = getThreadLocalRequest().getSession().getId();
-		return this.getVsacApiService().updateCQLVSACValueSets(measureId, defaultExpId, sessionId);
+		return this.getVsacApiService().updateCQLVSACValueSets(appliedQDMList, defaultExpId, sessionId);
+	}
+
+
+	@Override
+	public VsacApiResult updateStandaloneCQLVSACValueSets(String libraryId, String defaultExpId) {
+		String sessionId = getThreadLocalRequest().getSession().getId();
+		return this.getVsacApiService().updateStandaloneCQLVSACValueSets(libraryId, defaultExpId, sessionId);
 	}
 	
 	

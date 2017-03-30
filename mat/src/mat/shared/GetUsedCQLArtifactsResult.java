@@ -2,8 +2,10 @@ package mat.shared;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import mat.client.shared.GenericResult;
+import mat.model.cql.CQLIncludeLibrary;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -24,6 +26,13 @@ public class GetUsedCQLArtifactsResult extends GenericResult{
 	private List<String> usedCQLcodes = new ArrayList<String>();
 	
 	private List<String> usedCQLLibraries = new ArrayList<String>();
+	
+	private Map<String, List<String>> valueSetDataTypeMap;
+	
+	private Map<String, CQLIncludeLibrary> includeLibMap;
+	
+	private List<CQLErrors> cqlErrors = new ArrayList<CQLErrors>(); 
+
 
 	public List<String> getUsedCQLDefinitions() {
 		return usedCQLDefinitions;
@@ -79,7 +88,30 @@ public class GetUsedCQLArtifactsResult extends GenericResult{
 
 	public void setUsedCQLLibraries(List<String> usedCQLLibraries) {
 		this.usedCQLLibraries = usedCQLLibraries;
-	} 
-	
-	
+	}
+
+	public Map<String, List<String>> getValueSetDataTypeMap() {
+		return valueSetDataTypeMap;
+	}
+
+	public void setValueSetDataTypeMap(Map<String, List<String>> valueSetDataTypeMap) {
+		this.valueSetDataTypeMap = valueSetDataTypeMap;
+	}
+
+	public List<CQLErrors> getCqlErrors() {
+		return cqlErrors;
+	}
+
+	public void setCqlErrors(List<CQLErrors> cqlErrors) {
+		this.cqlErrors = cqlErrors;
+	}
+
+	public Map<String, CQLIncludeLibrary> getIncludeLibMap() {
+		return includeLibMap;
+	}
+
+	public void setIncludeLibMap(Map<String, CQLIncludeLibrary> includeLibMap) {
+		this.includeLibMap = includeLibMap;
+	}
+
 }

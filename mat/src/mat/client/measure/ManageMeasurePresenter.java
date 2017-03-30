@@ -884,6 +884,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	private ClickHandler cancelClickHandler = new ClickHandler() {
 		@Override
 		public void onClick(ClickEvent event) {
+			isClone = false;
 			draftDisplay.getSearchWidget().getSearchInput().setValue("");
 			versionDisplay.getSearchWidget().getSearchInput().setValue("");
 			detailDisplay.getName().setValue("");
@@ -1125,6 +1126,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	public void beforeClosingDisplay() {
 		isMeasureDeleted = false;
 		measureDeletion = false;
+		isClone = false;
 	}
 	
 	/* (non-Javadoc)
@@ -1318,7 +1320,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		draftDisplay.getErrorMessageDisplay().clear();
 		searchDisplay.getErrorMessageDisplayForBulkExport().clear();
 		panel.getButtonPanel().clear();
-		panel.setButtonPanel(null, draftDisplay.getZoomButton());
+		panel.setButtonPanel(null,null, draftDisplay.getZoomButton(),"searchButton_measureDraft");
 		draftDisplay.getSearchWidget().setVisible(false);
 		isSearchVisibleOnDraft = false;
 		panel.setHeading("My Measures > Create Draft of Existing Measure", "MeasureLibrary");
@@ -1357,7 +1359,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		searchDisplay.getSuccessMeasureDeletion().clear();
 		searchDisplay.getErrorMeasureDeletion().clear();
 		panel.getButtonPanel().clear();
-		panel.setButtonPanel(null, versionDisplay.getZoomButton());
+		panel.setButtonPanel(null, null,versionDisplay.getZoomButton(),"searchButton_measureVersion");
 		versionDisplay.getSearchWidget().setVisible(false);
 		isSearchVisibleOnVersion = false;
 		panel.setHeading("My Measures > Create Measure Version of Draft", "MeasureLibrary");
@@ -1497,7 +1499,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 					Integer.MAX_VALUE, filter);
 			searchRecentMeasures();
 			panel.getButtonPanel().clear();
-			panel.setButtonPanel(searchDisplay.getCreateMeasureButton(), searchDisplay.getZoomButton());
+			panel.setButtonPanel(searchDisplay.getCreateMeasureButton(),"createElement_measureLib", searchDisplay.getZoomButton(),"searchButton_measureLib");
 			fp.add(searchDisplay.asWidget());
 		}
 		// MAT-1929: Retain filters at measure library screen. commented
@@ -2077,6 +2079,10 @@ public class ManageMeasurePresenter implements MatPresenter {
 									
 								}
 							});
+				} else {
+					if(result.getFailureReason() == ConstantMessages.INVALID_CQL_DATA){
+						versionDisplay.getErrorMessageDisplay().setMessage(MatContext.get().getMessageDelegate().getNoVersionCreated());
+					}
 				}
 			}
 		});
@@ -3342,6 +3348,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			@Override
 			public void onClick(ClickEvent event) {
 				ManageMeasureSearchModel.Result selectedMeasure = versionDisplay.getSelectedMeasure();
+				versionDisplay.getErrorMessageDisplay().clear();
 				if (((selectedMeasure !=null) && (selectedMeasure.getId() != null))
 						&& (versionDisplay.getMajorRadioButton().getValue() || versionDisplay
 								.getMinorRadioButton().getValue())) {

@@ -15,6 +15,7 @@ import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.HasKeyboardSelectionPolicy.KeyboardSelectionPolicy;
 import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
@@ -129,13 +130,6 @@ public class CQLLibraryHistoryView implements CqlLibraryPresenter.HistoryDisplay
 	 * @return the cell table
 	 */
 	private CellTable<AuditLogDTO> addColumnToTable(CellTable<AuditLogDTO> cellTable) {
-		Label searchHeader = new Label("Log Entry");
-		searchHeader.getElement().setId("historyCellTableCaption_Label");
-		searchHeader.setStyleName("recentSearchHeader");
-		searchHeader.getElement().setAttribute("tabIndex", "0");
-		com.google.gwt.dom.client.TableElement elem = cellTable.getElement().cast();
-		TableCaptionElement caption = elem.createCaption();
-		caption.appendChild(searchHeader.getElement());
 		
 		Column<AuditLogDTO, SafeHtml> userAction = new Column<AuditLogDTO, SafeHtml>(
 				new MatSafeHTMLCell()) {
@@ -197,7 +191,12 @@ public class CQLLibraryHistoryView implements CqlLibraryPresenter.HistoryDisplay
 	public void buildCellTable(List<AuditLogDTO> results){
 		cellTablePanel.clear();
 		cellTablePanel.setStyleName("cellTablePanel");
-		if((results!=null) && (results.size() > 0)){
+		
+		Label searchHeader = new Label("Log Entry");
+		searchHeader.getElement().setId("historyCellTableCaption_Label");
+		searchHeader.setStyleName("recentSearchHeader");
+		searchHeader.getElement().setAttribute("tabIndex", "0");
+				if((results!=null) && (results.size() > 0)){
 			cellTable = new CellTable<AuditLogDTO>();
 			ListDataProvider<AuditLogDTO> listDataProvider = new ListDataProvider<AuditLogDTO>();
 			cellTable.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
@@ -210,7 +209,10 @@ public class CQLLibraryHistoryView implements CqlLibraryPresenter.HistoryDisplay
 			cellTable = addColumnToTable(cellTable);
 			listDataProvider.addDataDisplay(cellTable);
 			CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
-			spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
+			spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true,"cqlHistory");
+			com.google.gwt.dom.client.TableElement elem = cellTable.getElement().cast();
+			TableCaptionElement caption = elem.createCaption();
+			caption.appendChild(searchHeader.getElement());
 			spager.setPageStart(0);
 			spager.setDisplay(cellTable);
 			spager.setPageSize(PAGE_SIZE);
@@ -229,6 +231,11 @@ public class CQLLibraryHistoryView implements CqlLibraryPresenter.HistoryDisplay
 			cellTablePanel.add(new SpacerWidget());
 			cellTablePanel.add(spager);
 			
+		} else {
+			HTML desc = new HTML("<p> No Log Entry available for History.</p>");
+			cellTablePanel.add(searchHeader);
+			cellTablePanel.add(new SpacerWidget());
+			cellTablePanel.add(desc);
 		}
 	}
 	

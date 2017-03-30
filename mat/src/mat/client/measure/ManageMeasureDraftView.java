@@ -45,7 +45,7 @@ import com.google.gwt.view.client.SingleSelectionModel;
 public class ManageMeasureDraftView implements ManageMeasurePresenter.DraftDisplay {
 	private static final int PAGE_SIZE = 25;
 	/** The button bar. */
-	private SaveCancelButtonBar buttonBar = new SaveCancelButtonBar();
+	private SaveCancelButtonBar buttonBar = new SaveCancelButtonBar("measureDraft");
 	/** The cell table panel. */
 	private VerticalPanel cellTablePanel = new VerticalPanel();
 	/** The error messages. */
@@ -155,7 +155,7 @@ public class ManageMeasureDraftView implements ManageMeasurePresenter.DraftDispl
 		cellTable = addColumnToTable(cellTable);
 		sortProvider.addDataDisplay(cellTable);
 		CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
-		MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true);
+		MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true,"measureDraft");
 		spager.setPageStart(0);
 		spager.setDisplay(cellTable);
 		spager.setPageSize(PAGE_SIZE);

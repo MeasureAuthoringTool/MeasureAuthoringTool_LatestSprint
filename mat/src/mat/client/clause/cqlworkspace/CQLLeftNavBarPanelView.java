@@ -32,17 +32,21 @@ import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
 import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
+import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.MultiWordSuggestOracle;
+import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.SuggestBox;
 import com.google.gwt.user.client.ui.SuggestOracle;
 import com.google.gwt.user.client.ui.SuggestOracle.Suggestion;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.shared.CQLSuggestOracle;
 import mat.client.shared.DeleteConfirmationMessageAlert;
 import mat.client.shared.ErrorMessageAlert;
+import mat.client.shared.MatContext;
 import mat.client.shared.MessageAlert;
 import mat.client.shared.SuccessMessageAlert;
 import mat.client.shared.WarningConfirmationMessageAlert;
@@ -2304,4 +2308,40 @@ public class CQLLeftNavBarPanelView {
 		return availableQDSAttributeList;
 	}
 	
+	public void clearShotcutKeyList(){
+		MatContext.get().getParameters().clear();
+		MatContext.get().getDefinitions().clear();
+		MatContext.get().getFuncs().clear();
+		MatContext.get().getValuesets().clear();
+		MatContext.get().getIncludes().clear();
+	}
+	
+	public void buildInfoPanel(Widget sourceWidget) {
+
+		PopupPanel panel = new PopupPanel();
+		panel.setAutoHideEnabled(true);
+		panel.setPopupPosition(sourceWidget.getAbsoluteLeft() + 40, sourceWidget.getAbsoluteTop() + 20);
+		VerticalPanel dialogContents = new VerticalPanel();
+		dialogContents.getElement().setId("dialogContents_VerticalPanel");
+		panel.setWidget(dialogContents);
+
+		HTML html1 = new HTML("Ctrl-Alt-v  : Value Sets");
+		HTML html2 = new HTML("Ctrl-Alt-y  : Datatypes");
+		HTML html3 = new HTML("Ctrl-Alt-t  : Timings");
+		HTML html4 = new HTML("Ctrl-Alt-f  : Functions");
+		HTML html5 = new HTML("Ctrl-Alt-d  : Definitions");
+		HTML html6 = new HTML("Ctrl-Alt-p  : Parameters");
+		HTML html7 = new HTML("Ctrl-Alt-a  : Attributes");
+		HTML html8 = new HTML("Ctrl-Space  : All");
+
+		dialogContents.add(html1);
+		dialogContents.add(html2);
+		dialogContents.add(html3);
+		dialogContents.add(html4);
+		dialogContents.add(html5);
+		dialogContents.add(html6);
+		dialogContents.add(html7);
+		dialogContents.add(html8);
+		panel.show();
+	}
 }

@@ -9,9 +9,13 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.Map.Entry;
 
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -22,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -30,6 +35,7 @@ import mat.client.clause.cqlworkspace.CQLWorkSpaceConstants;
 import mat.client.measure.service.CQLService;
 import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.shared.MatContext;
+import mat.client.umls.service.VsacApiResult;
 import mat.dao.CQLLibraryAuditLogDAO;
 import mat.dao.RecentCQLActivityLogDAO;
 import mat.dao.UserDAO;
@@ -54,6 +60,7 @@ import mat.model.cql.CQLLibraryShare;
 import mat.model.cql.CQLLibraryShareDTO;
 import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
+import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.service.CQLLibraryServiceInterface;
 import mat.server.service.UserService;
 import mat.server.service.impl.MatContextServiceUtil;
@@ -70,7 +77,8 @@ import mat.shared.SaveUpdateCQLResult;
 /**
  * The Class CQLLibraryService.
  */
-public class CQLLibraryService implements CQLLibraryServiceInterface {
+@SuppressWarnings("serial")
+public class CQLLibraryService extends SpringRemoteServiceServlet implements CQLLibraryServiceInterface {
 	/** The Constant logger. */
 	private static final Log logger = LogFactory.getLog(CQLLibraryService.class);
 	
@@ -90,12 +98,15 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	@Autowired
 	private CQLService cqlService;
 	
+	/** The share level DAO. */
 	@Autowired
 	private ShareLevelDAO shareLevelDAO;
 	
+	/** The cql library share DAO. */
 	@Autowired
 	private CQLLibraryShareDAO cqlLibraryShareDAO;
 	
+	/** The cql library audit log DAO. */
 	@Autowired
 	private CQLLibraryAuditLogDAO cqlLibraryAuditLogDAO;
 	
@@ -113,7 +124,18 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	/** The lock threshold. */
 	private final long lockThreshold = 3 * 60 * 1000; // 3 minutes
 	
-	
+	/**
+	 * Gets the vsac service.
+	 * 
+	 * @return the service
+	 */
+	private VSACApiServImpl getVsacService() {
+		return (VSACApiServImpl) context.getBean("vsacapi");
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.server.service.CQLLibraryServiceInterface#searchForIncludes(java.lang.String)
+	 */
 	@Override
 	public SaveCQLLibraryResult searchForIncludes(String searchText){
 		SaveCQLLibraryResult saveCQLLibraryResult = new SaveCQLLibraryResult();
@@ -408,8 +430,8 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 			result.setSuccess(true);
 			result.setId(newLibraryObject.getId());
 			result.setCqlLibraryName(newLibraryObject.getName());
-			String formattedVersion = MeasureUtility.getVersionTextWithRevisionNumber(newLibraryObject.getVersion(), 
-					newLibraryObject.getRevisionNumber(), newLibraryObject.isDraft());
+			String formattedVersion = MeasureUtility.getVersionTextWithRevisionNumber(existingLibrary.getVersion(), 
+					newLibraryObject.getRevisionNumber(), existingLibrary.isDraft());
 			result.setVersionStr(formattedVersion);
 			result.setEditable(isDraftable);
 			
@@ -429,6 +451,22 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 			 String version){
 		logger.info("Inside saveFinalizedVersion: Start");
 		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
+		
+		boolean isVersionable = MatContextServiceUtil.get().isCurrentCQLLibraryEditable(cqlLibraryDAO, libraryId);
+		
+		if(!isVersionable){
+			result.setSuccess(false);
+			result.setFailureReason(ConstantMessages.INVALID_DATA);
+			return result;
+		}
+		
+		SaveUpdateCQLResult cqlResult  = getCQLData(libraryId);
+		if(cqlResult.getCqlErrors().size() >0){
+			result.setSuccess(false);
+			result.setFailureReason(ConstantMessages.INVALID_CQL_DATA);
+			return result;
+		}
+		
 		
 		CQLLibrary library = cqlLibraryDAO.find(libraryId);
 		if(library != null){
@@ -536,7 +574,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
 		result.setSuccess(true);
 		result.setId(library.getId());
-
+        versionStr = MeasureUtility.formatVersionText(versionStr);
 		result.setVersionStr(versionStr);
 		logger.info("Result passed for Version Number " + versionStr);
 		return result;
@@ -794,6 +832,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 		
 		if(str != null) {
 			cqlResult = cqlService.getCQLData(str);
+			cqlResult.setExpIdentifier(getDefaultExpansionIdentifier(str));
 			cqlResult.setSuccess(true);
 		}
 		
@@ -822,6 +861,29 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 		return xmlString;
 	}
 	
+	public String getDefaultExpansionIdentifier(String xml) {
+		String defaultExpId = null;
+		if (xml != null) {
+			XmlProcessor processor = new XmlProcessor(xml);
+
+			String XPATH_VSAC_EXPANSION_IDENTIFIER = "//cqlLookUp/valuesets/@vsacExpIdentifier";
+
+			try {
+				Node vsacExpIdAttr = (Node) XPathFactory.newInstance().newXPath().evaluate(XPATH_VSAC_EXPANSION_IDENTIFIER, processor.getOriginalDoc(),
+						XPathConstants.NODE);
+				if (vsacExpIdAttr != null) {
+					defaultExpId = vsacExpIdAttr.getNodeValue();
+				}
+			} catch (XPathExpressionException e) {
+				e.printStackTrace();
+			}
+		}
+		if(defaultExpId != null){
+			return defaultExpId;
+		} else{
+			return "";
+		}
+	}
 	
 	/* (non-Javadoc)
 	 * @see mat.server.service.CQLLibraryServiceInterface#isLibraryLocked(java.lang.String)
@@ -928,11 +990,12 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param parameterList the parameter list
 	 * @return the save update CQL result
 	 */
+	@Override
 	public SaveUpdateCQLResult saveAndModifyParameters(String libraryId, CQLParameter toBeModifiedObj,
 			CQLParameter currentObj, List<CQLParameter> parameterList) {
 
 		SaveUpdateCQLResult result = null;
-		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+		if (MatContextServiceUtil.get().isCurrentCQLLibraryEditable(cqlLibraryDAO, libraryId)) {
 			CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
 			String cqlXml = getCQLLibraryXml(cqlLibrary);
 
@@ -956,11 +1019,12 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param definitionList the definition list
 	 * @return the save update CQL result
 	 */
+	@Override
 	public SaveUpdateCQLResult saveAndModifyDefinitions(String libraryId, CQLDefinition toBeModifiedObj,
 			CQLDefinition currentObj, List<CQLDefinition> definitionList) {
 
 		SaveUpdateCQLResult result = null;
-		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+		if (MatContextServiceUtil.get().isCurrentCQLLibraryEditable(cqlLibraryDAO, libraryId)) {
 			CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
 			String cqlXml = getCQLLibraryXml(cqlLibrary);
 
@@ -986,11 +1050,12 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param functionsList the functions list
 	 * @return the save update CQL result
 	 */
+	@Override
 	public SaveUpdateCQLResult saveAndModifyFunctions(String libraryId, CQLFunctions toBeModifiedObj,
 			CQLFunctions currentObj, List<CQLFunctions> functionsList) {
 		
 		SaveUpdateCQLResult result = null;
-		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+		if (MatContextServiceUtil.get().isCurrentCQLLibraryEditable(cqlLibraryDAO, libraryId)) {
 			CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
 			String cqlXml = getCQLLibraryXml(cqlLibrary);
 
@@ -1067,6 +1132,9 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 		return result;
 	}
 	
+	/* (non-Javadoc)
+	 * @see mat.server.service.CQLLibraryServiceInterface#countNumberOfAssociation(java.lang.String)
+	 */
 	@Override
 	public int countNumberOfAssociation(String Id){
 		return cqlService.countNumberOfAssociation(Id);
@@ -1081,6 +1149,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param definitionList the definition list
 	 * @return the save update CQL result
 	 */
+	@Override
 	public SaveUpdateCQLResult deleteDefinition(String libraryId, CQLDefinition toBeDeletedObj,
 			CQLDefinition currentObj, List<CQLDefinition> definitionList) {
 		SaveUpdateCQLResult result = null;
@@ -1111,6 +1180,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param functionsList the functions list
 	 * @return the save update CQL result
 	 */
+	@Override
 	public SaveUpdateCQLResult deleteFunctions(String libraryId, CQLFunctions toBeDeletedObj, CQLFunctions currentObj,
 			List<CQLFunctions> functionsList) {
 		
@@ -1141,6 +1211,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param parameterList the parameter list
 	 * @return the save update CQL result
 	 */
+	@Override
 	public SaveUpdateCQLResult deleteParameter(String libraryId, CQLParameter toBeDeletedObj, CQLParameter currentObj,
 			List<CQLParameter> parameterList) {
 		SaveUpdateCQLResult result = null;
@@ -1194,6 +1265,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 *
 	 * @return the CQL keywords lists
 	 */
+    @Override
 	public CQLKeywords getCQLKeywordsLists() {
 		return cqlService.getCQLKeyWords();
 	}
@@ -1278,6 +1350,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param valueSetTransferObject the value set transfer object
 	 * @return the save update CQL result
 	 */
+	@Override
 	public SaveUpdateCQLResult saveCQLValueset(CQLValueSetTransferObject valueSetTransferObject) {
 		
 		SaveUpdateCQLResult result = null;
@@ -1301,7 +1374,8 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param matValueSetTransferObject the mat value set transfer object
 	 * @return the save update CQL result
 	 */
-	public SaveUpdateCQLResult saveCQLUserDefinedValuesettoMeasure(CQLValueSetTransferObject matValueSetTransferObject) {
+	@Override
+	public SaveUpdateCQLResult saveCQLUserDefinedValueset(CQLValueSetTransferObject matValueSetTransferObject) {
 		
 		SaveUpdateCQLResult result = null;
 		if (MatContextServiceUtil.get().isCurrentCQLLibraryEditable(cqlLibraryDAO,
@@ -1326,6 +1400,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param matValueSetTransferObject the mat value set transfer object
 	 * @return the save update CQL result
 	 */
+	@Override
 	public SaveUpdateCQLResult modifyCQLValueSets(CQLValueSetTransferObject matValueSetTransferObject) {
 		
 		SaveUpdateCQLResult result = null;
@@ -1354,6 +1429,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	 * @param libraryId the library id
 	 * @return the save update CQL result
 	 */
+	@Override
 	public SaveUpdateCQLResult deleteValueSet(String toBeDelValueSetId, String libraryId) {
 		
 		SaveUpdateCQLResult cqlResult = null;
@@ -1449,6 +1525,9 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 	}
 	
 	
+	/* (non-Javadoc)
+	 * @see mat.server.service.CQLLibraryServiceInterface#updateUsersShare(mat.client.measure.service.SaveCQLLibraryResult)
+	 */
 	@Override
 	public void updateUsersShare(final SaveCQLLibraryResult result) {
 		StringBuffer auditLogAdditionlInfo = new StringBuffer("CQL Library shared with ");
@@ -1487,7 +1566,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 						auditLogAdditionlInfo.append(", ");
 					}
 					first = false;
-					auditLogAdditionlInfo.append(user.getEmailAddress());
+					auditLogAdditionlInfo.append(user.getFirstName() +  " " + user.getLastName());
 					
 					cqlLibraryShare.setShareLevel(sLevel);
 					cqlLibraryShareDAO.save(cqlLibraryShare);
@@ -1503,7 +1582,7 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 						auditLogForModifyRemove.append(", ");
 					}
 					firstRemove = false;
-					auditLogForModifyRemove.append(user.getEmailAddress());
+					auditLogForModifyRemove.append(user.getFirstName() +  " " + user.getLastName());
 				}
 			}
 		}
@@ -1520,4 +1599,116 @@ public class CQLLibraryService implements CQLLibraryServiceInterface {
 		}
 	}
 
+
+	@Override
+	public void updateCQLLibraryXMLForExpansionProfile(List<CQLQualityDataSetDTO> modifyWithDTO, String libraryId,
+			String expansionProfile) {
+		logger.debug(" CQLLibraryService: updateLibraryXMLForExpansionIdentifier Start : Library Id :: "
+				+ libraryId);
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		
+		if (cqlLibrary != null) {
+			String cqlXml = getCQLLibraryXml(cqlLibrary);
+			XmlProcessor processor = new XmlProcessor(cqlXml);
+			String XPATH_EXP_FOR_ELEMENTLOOKUP_ATTR = "/cqlLookUp/valuesets";
+			try {
+				Node nodesElementLookUp = (Node) xPath.evaluate(XPATH_EXP_FOR_ELEMENTLOOKUP_ATTR,
+						processor.getOriginalDoc(), XPathConstants.NODE);
+				if (nodesElementLookUp != null) {
+					if (nodesElementLookUp.getAttributes().getNamedItem("vsacExpIdentifier") != null) {
+						if (!StringUtils.isBlank(expansionProfile)) {
+							nodesElementLookUp.getAttributes().getNamedItem("vsacExpIdentifier")
+									.setNodeValue(expansionProfile);
+						} else {
+							nodesElementLookUp.getAttributes().removeNamedItem("vsacExpIdentifier");
+						}
+					} else {
+						if (!StringUtils.isEmpty(expansionProfile)) {
+							Attr vsacExpIdentifierAttr = processor.getOriginalDoc()
+									.createAttribute("vsacExpIdentifier");
+							vsacExpIdentifierAttr.setNodeValue(expansionProfile);
+							nodesElementLookUp.getAttributes().setNamedItem(vsacExpIdentifierAttr);
+						}
+					}
+				}
+				for (CQLQualityDataSetDTO dto : modifyWithDTO) {
+					updateCQLLibraryXmlForQDM(dto, processor, expansionProfile);
+				}
+			} catch (XPathExpressionException e) {
+				e.printStackTrace();
+			}
+
+			cqlLibrary.setCQLByteArray(processor.transform(processor.getOriginalDoc()).getBytes());
+			cqlLibraryDAO.save(cqlLibrary);
+		}
+	}
+
+
+	private void updateCQLLibraryXmlForQDM(CQLQualityDataSetDTO dto, XmlProcessor processor, String expansionProfile) {
+			String XPATH_EXPRESSION_ELEMENTLOOKUP = "/cqlLookUp/valuesets/valueset[@uuid='"
+					+ dto.getUuid() + "']";
+			NodeList nodesElementLookUp;
+			try {
+				nodesElementLookUp = (NodeList) xPath.evaluate(XPATH_EXPRESSION_ELEMENTLOOKUP,
+						processor.getOriginalDoc(), XPathConstants.NODESET);
+
+				for (int i = 0; i < nodesElementLookUp.getLength(); i++) {
+					Node newNode = nodesElementLookUp.item(i);
+					newNode.getAttributes().getNamedItem("version").setNodeValue("1.0");
+					if (newNode.getAttributes().getNamedItem("expansionIdentifier") != null) {
+						if (!StringUtils.isBlank(dto.getExpansionIdentifier())) {
+							newNode.getAttributes().getNamedItem("expansionIdentifier").setNodeValue(expansionProfile);
+						} else {
+							newNode.getAttributes().removeNamedItem("expansionIdentifier");
+						}
+					} else {
+						if (!StringUtils.isEmpty(expansionProfile)) {
+							Attr expansionIdentifierAttr = processor.getOriginalDoc()
+									.createAttribute("expansionIdentifier");
+							expansionIdentifierAttr.setNodeValue(expansionProfile);
+							newNode.getAttributes().setNamedItem(expansionIdentifierAttr);
+						}
+					}
+				}
+			} catch (XPathExpressionException e) {
+				e.printStackTrace();
+			}
+		}
+
+
+	public void updateCQLLookUpTagWithModifiedValueSet(CQLQualityDataSetDTO modifyWithDTO, CQLQualityDataSetDTO modifyDTO,
+			String libraryId) {
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		if (cqlLibrary != null) {
+			cqlService.updateCQLLookUpTag(getCQLLibraryXml(cqlLibrary), modifyWithDTO, modifyDTO);
+		}
+		
+	}
+		
+	@Override
+	public VsacApiResult updateCQLVSACValueSets(String cqlLibraryId, String expansionId, String sessionId) {
+		List<CQLQualityDataSetDTO> appliedQDMList = getCQLData(cqlLibraryId).getCqlModel().getAllValueSetList();
+		VsacApiResult result = getVsacService().updateCQLVSACValueSets(appliedQDMList, expansionId, sessionId);
+		if(result.isSuccess()){
+			updateAllCQLInLibraryXml(result.getCqlQualityDataSetMap(), cqlLibraryId);
+		}
+		return result;
+	}
+
+	/** Method to Iterate through Map of Quality Data set DTO(modify With) as key and Quality Data Set DTO (modifiable) as Value and update
+	 * @param map - HaspMap
+	 * @param libraryId - String */
+	private void updateAllCQLInLibraryXml(HashMap<CQLQualityDataSetDTO, CQLQualityDataSetDTO> map, String libraryId) {
+		logger.info("Start VSACAPIServiceImpl updateAllInLibraryXml :");
+		Iterator<Entry<CQLQualityDataSetDTO, CQLQualityDataSetDTO>> it = map.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<CQLQualityDataSetDTO, CQLQualityDataSetDTO> entrySet = it.next();
+			logger.info("Calling updateLibraryXML for : " + entrySet.getKey().getOid());
+			updateCQLLookUpTagWithModifiedValueSet(entrySet.getKey(),
+					entrySet.getValue(), libraryId);
+			logger.info("Successfully updated Library XML for  : " + entrySet.getKey().getOid());
+		}
+		logger.info("End VSACAPIServiceImpl updateAllInLibraryXml :");
+	}
+	
 }

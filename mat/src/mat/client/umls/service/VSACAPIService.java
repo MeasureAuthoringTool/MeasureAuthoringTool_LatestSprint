@@ -3,8 +3,12 @@
  */
 package mat.client.umls.service;
 
+import java.util.List;
+
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
+
+import mat.model.cql.CQLQualityDataSetDTO;
 
 /**
  * The Interface VSACAPIService.
@@ -60,15 +64,7 @@ public interface VSACAPIService extends RemoteService {
 	 */
 	VsacApiResult updateVSACValueSets(String measureId, String defaultExpId);
 	
-	/**
-	 * Update vsac CQL value sets.
-	 * 
-	 * @param measureId
-	 *            the measure id
-	 * @param defaultExpId TODO
-	 * @return the vsac api result
-	 */
-	VsacApiResult updateCQLVSACValueSets(String measureId, String defaultExpId);
+	VsacApiResult updateStandaloneCQLVSACValueSets(String libraryId, String defaultExpId);
 	
 	/**
 	 * Validate vsac user.
@@ -86,5 +82,7 @@ public interface VSACAPIService extends RemoteService {
 	VsacApiResult getAllVersionListByOID(String oid);
 
 	VsacApiResult getMostRecentValueSetByOID(String oid, String profile);
+
+	VsacApiResult updateCQLVSACValueSets(List<CQLQualityDataSetDTO> appliedQDMList, String defaultExpId);
 	
 }

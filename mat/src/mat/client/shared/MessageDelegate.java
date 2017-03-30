@@ -248,6 +248,8 @@ public class MessageDelegate {
 	
 	public static final String NO_USERS_RETURNED = "No Users returned. Please search again.";
 	
+	public static final String NO_VERSION_CREATED = "Unable to version. There are validation errors in CQL. Please correct and try again.";
+	
 	/**
 	 * Gets the measure save server error message.
 	 * 
@@ -325,7 +327,7 @@ public class MessageDelegate {
 	private final String POPULATION_WORK_SPACE_MEASURE_OBSERVATION_VALIDATION_ERROR = " Logic must only contain clauses.";
 	
 	/** The invalid character validation error. */
-	private final String INVALID_CHARACTER_VALIDATION_ERROR =" Value set name cannot contain any of the following characters : + * ? : - | ! ; %";
+	private final String INVALID_CHARACTER_VALIDATION_ERROR =" Value set name cannot contain any of the following characters + * ? : - | ! \" %";
 	
 	/** The organization success message. */
 	private final String ORGANIZATION_SUCCESS_MESSAGE = "Organization successfully added.";
@@ -705,7 +707,7 @@ public class MessageDelegate {
 	private final String VSAC_RETRIEVE_FAILED = "Unable to retrieve from VSAC. Please check the data and try again.";
 	
 	/** The vsac update successfull. */
-	private final String VSAC_UPDATE_SUCCESSFULL = "Successfully updated applied QDM list with VSAC data.";
+	private final String VSAC_UPDATE_SUCCESSFULL = "Successfully updated applied Value Set list with VSAC data.";
 	
 	
 	/** The comment added successfully. */
@@ -2746,6 +2748,10 @@ public class MessageDelegate {
 
 	public static String getNoUsersReturned() {
 		return NO_USERS_RETURNED;
+	}
+
+	public String getNoVersionCreated() {
+		return NO_VERSION_CREATED;
 	}
 	
 }

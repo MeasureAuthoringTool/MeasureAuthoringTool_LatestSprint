@@ -399,7 +399,7 @@ public class CQLIncludeLibraryView {
 			CustomPager.Resources pagerResources = GWT
 					.create(CustomPager.Resources.class);
 			spager = new MatSimplePager(CustomPager.TextLocation.CENTER,
-					pagerResources, false, 0, true);
+					pagerResources, false, 0, true,"cqlIncludes");
 			spager.setDisplay(table);
 			spager.setPageStart(0);
 			com.google.gwt.user.client.ui.Label invisibleLabel;
@@ -854,7 +854,7 @@ public class CQLIncludeLibraryView {
 	 *
 	 * @param busy the busy
 	 */
-	public void showSearchingBusy(final boolean busy) {
+	/*public void showSearchingBusy(final boolean busy) {
 		if (busy) {
 			Mat.showLoadingMessage();
 		} else {
@@ -863,7 +863,7 @@ public class CQLIncludeLibraryView {
 		getSearchButton().setEnabled(!busy);
 		
 	}
-
+*/
 
 	/**
 	 * Gets the search cell table panel.

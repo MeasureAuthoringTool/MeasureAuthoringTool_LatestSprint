@@ -3,9 +3,16 @@ package mat.server.service;
 import java.util.List;
 
 import mat.client.measure.service.SaveCQLLibraryResult;
+import mat.client.umls.service.VsacApiResult;
+import mat.model.CQLValueSetTransferObject;
 import mat.model.clause.CQLLibrary;
+import mat.model.cql.CQLDefinition;
+import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLIncludeLibrary;
+import mat.model.cql.CQLKeywords;
 import mat.model.cql.CQLLibraryDataSetObject;
+import mat.model.cql.CQLParameter;
+import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.util.XmlProcessor;
 import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
@@ -64,5 +71,37 @@ public interface CQLLibraryServiceInterface {
 	GetUsedCQLArtifactsResult getUsedCqlArtifacts(String libraryId);
 
 	int countNumberOfAssociation(String id);
+	
+	SaveUpdateCQLResult saveAndModifyDefinitions(String libraryId, CQLDefinition toBeModifiedObj,
+			CQLDefinition currentObj, List<CQLDefinition> definitionList);
 
+	SaveUpdateCQLResult saveAndModifyFunctions(String libraryId, CQLFunctions toBeModifiedObj, CQLFunctions currentObj,
+			List<CQLFunctions> functionsList);
+
+	SaveUpdateCQLResult saveAndModifyParameters(String libraryId, CQLParameter toBeModifiedObj, CQLParameter currentObj,
+			List<CQLParameter> parameterList);
+
+	SaveUpdateCQLResult deleteDefinition(String libraryId, CQLDefinition toBeDeletedObj, CQLDefinition currentObj,
+			List<CQLDefinition> definitionList);
+
+	SaveUpdateCQLResult deleteFunctions(String libraryId, CQLFunctions toBeDeletedObj, CQLFunctions currentObj,
+			List<CQLFunctions> functionsList);
+
+	SaveUpdateCQLResult deleteParameter(String libraryId, CQLParameter toBeDeletedObj, CQLParameter currentObj,
+			List<CQLParameter> parameterList);
+
+
+	SaveUpdateCQLResult saveCQLValueset(CQLValueSetTransferObject valueSetTransferObject);
+
+	SaveUpdateCQLResult deleteValueSet(String toBeDelValueSetId, String libraryId);
+
+	void updateCQLLibraryXMLForExpansionProfile(List<CQLQualityDataSetDTO> modifyWithDTO, String measureId,
+			String expansionProfile);
+
+	SaveUpdateCQLResult saveCQLUserDefinedValueset(CQLValueSetTransferObject matValueSetTransferObject);
+
+	SaveUpdateCQLResult modifyCQLValueSets(CQLValueSetTransferObject matValueSetTransferObject);
+
+	VsacApiResult updateCQLVSACValueSets(String cqlLibraryId, String expansionId, String sessionId);
+	CQLKeywords getCQLKeywordsLists();
 }

@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,30 +25,6 @@ import java.util.UUID;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.cqframework.cql.cql2elm.CQLtoELM;
-import org.exolab.castor.mapping.Mapping;
-import org.exolab.castor.mapping.MappingException;
-import org.exolab.castor.xml.MarshalException;
-import org.exolab.castor.xml.Marshaller;
-import org.exolab.castor.xml.Unmarshaller;
-import org.exolab.castor.xml.ValidationException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import mat.DTO.MeasureNoteDTO;
 import mat.DTO.MeasureTypeDTO;
@@ -71,6 +48,7 @@ import mat.client.shared.ManageMeasureModelValidator;
 import mat.client.shared.ManageMeasureNotesModelValidator;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatException;
+import mat.client.umls.service.VsacApiResult;
 import mat.dao.AuthorDAO;
 import mat.dao.DataTypeDAO;
 import mat.dao.MeasureNotesDAO;
@@ -112,8 +90,6 @@ import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
-import mat.model.cql.parser.CQLFileObject;
-import mat.server.cqlparser.MATCQLParser;
 import mat.server.model.MatUserDetails;
 import mat.server.service.InvalidValueSetDateException;
 import mat.server.service.MeasureLibraryService;
@@ -121,6 +97,7 @@ import mat.server.service.MeasureNotesService;
 import mat.server.service.MeasurePackageService;
 import mat.server.service.UserService;
 import mat.server.service.impl.MatContextServiceUtil;
+import mat.server.util.CQLUtil;
 import mat.server.util.ExportSimpleXML;
 import mat.server.util.MATPropertiesService;
 import mat.server.util.MeasureUtility;
@@ -136,10 +113,34 @@ import mat.shared.SaveUpdateCQLResult;
 import mat.shared.UUIDUtilClient;
 import mat.shared.model.util.MeasureDetailsUtil;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.exolab.castor.mapping.Mapping;
+import org.exolab.castor.mapping.MappingException;
+import org.exolab.castor.xml.MarshalException;
+import org.exolab.castor.xml.Marshaller;
+import org.exolab.castor.xml.Unmarshaller;
+import org.exolab.castor.xml.ValidationException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 // TODO: Auto-generated Javadoc
 /**
  * The Class MeasureLibraryServiceImpl.
  */
+@SuppressWarnings("serial")
 public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 
 	/**
@@ -2149,6 +2150,15 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	private MeasurePackageService getService() {
 		return (MeasurePackageService) context.getBean("measurePackageService");
 	}
+	
+	/**
+	 * Gets the vsac service.
+	 * 
+	 * @return the service
+	 */
+	private VSACApiServImpl getVsacService() {
+		return (VSACApiServImpl) context.getBean("vsacapi");
+	}
 
 	/**
 	 * Gets the user service.
@@ -2524,6 +2534,12 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			return returnFailureReason(saveMeasureResult, SaveMeasureResult.INVALID_DATA);
 		}
 
+		SaveUpdateCQLResult cqlResult =  getMeasureCQLFileData(measureId);
+		if(cqlResult.getCqlErrors().size() >0){
+			SaveMeasureResult saveMeasureResult = new SaveMeasureResult();
+			return returnFailureReason(saveMeasureResult, SaveMeasureResult.INVALID_CQL_DATA);
+		}
+		
 		String versionNumber = null;
 		if (isMajor) {
 			versionNumber = findOutMaximumVersionNumber(m.getMeasureSet().getId());
@@ -4268,29 +4284,16 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	private boolean parseCQLFile(String measureXML, String measureId) {
 		boolean isInvalid = false;
 		MeasureXML newXml = getMeasureXMLDAO().findForMeasure(measureId);
-		String cqlFileString = CQLUtilityClass.getCqlString(CQLUtilityClass.getCQLStringFromXML(measureXML), "")
-				.toString();
-		MATCQLParser matcqlParser = new MATCQLParser();
-		CQLFileObject cqlFileObject = matcqlParser.parseCQL(cqlFileString);
+		CQLModel cqlModel = CQLUtilityClass.getCQLStringFromXML(measureXML);
 		List<String> message = new ArrayList<String>();
-		String exportedXML = ExportSimpleXML.export(newXml, message, measureDAO, organizationDAO, cqlFileObject);
-		CQLModel cqlModel = new CQLModel();
-		cqlModel = CQLUtilityClass.getCQLStringFromXML(exportedXML);
-		StringBuilder cqlString = getCqlService().getCqlString(cqlModel);
-		if (!StringUtils.isBlank(cqlString.toString())) {
-			CQLtoELM cqlToElm = new CQLtoELM(cqlString.toString());
-			try {
-				cqlToElm.doTranslation(true, false, false);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-			if (cqlToElm.getErrors() != null && cqlToElm.getErrors().size() > 0) {
-				isInvalid = true;
-			}
+		String exportedXML = ExportSimpleXML.export(newXml, message, measureDAO, organizationDAO, cqlLibraryDAO, cqlModel);
+		CQLModel cqlModel1 = CQLUtilityClass.getCQLStringFromXML(exportedXML);
+		
+		SaveUpdateCQLResult result = CQLUtil.parseCQLLibraryForErrors(cqlModel1, cqlLibraryDAO, null);
+		
+		if(result.getCqlErrors() != null && result.getCqlErrors().size() > 0){
+			isInvalid = true;
 		}
-
 		return isInvalid;
 	}
 
@@ -5871,6 +5874,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			}
 		}
 
+		
 		return result;
 	}
 
@@ -6194,5 +6198,33 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		return result;
 
+	}
+
+	@Override
+	public VsacApiResult updateCQLVSACValueSets(String measureId, String expansionId, String sessionId) {
+		CQLQualityDataModelWrapper details = getCQLAppliedQDMFromMeasureXml(measureId, false);
+		List<CQLQualityDataSetDTO> appliedQDMList = details.getQualityDataDTO();
+		VsacApiResult result = getVsacService().updateCQLVSACValueSets(appliedQDMList, expansionId, sessionId);
+		if(result.isSuccess()){
+			updateAllCQLInMeasureXml(result.getCqlQualityDataSetMap(), measureId);
+		}
+		return result;
+	}
+	
+	/** Method to Iterate through Map of Quality Data set DTO(modify With) as key and Quality Data Set DTO (modifiable) as Value and update
+	 * Measure XML by calling {@link MeasureLibraryServiceImpl} method 'updateMeasureXML'.
+	 * @param map - HaspMap
+	 * @param measureId - String */
+	private void updateAllCQLInMeasureXml(HashMap<CQLQualityDataSetDTO, CQLQualityDataSetDTO> map, String measureId) {
+		logger.info("Start VSACAPIServiceImpl updateAllInMeasureXml :");
+		Iterator<Entry<CQLQualityDataSetDTO, CQLQualityDataSetDTO>> it = map.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<CQLQualityDataSetDTO, CQLQualityDataSetDTO> entrySet = it.next();
+			logger.info("Calling updateMeasureXML for : " + entrySet.getKey().getOid());
+			updateCQLLookUpTagWithModifiedValueSet(entrySet.getKey(),
+					entrySet.getValue(), measureId);
+			logger.info("Successfully updated Measure XML for  : " + entrySet.getKey().getOid());
+		}
+		logger.info("End VSACAPIServiceImpl updateAllInMeasureXml :");
 	}
 }

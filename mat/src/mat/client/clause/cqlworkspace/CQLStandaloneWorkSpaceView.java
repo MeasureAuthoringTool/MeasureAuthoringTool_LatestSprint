@@ -1,14 +1,23 @@
 package mat.client.clause.cqlworkspace;
 
+import java.util.List;
+import java.util.Map;
+
+import org.gwtbootstrap3.client.ui.InlineRadio;
 import org.gwtbootstrap3.client.ui.gwt.FlowPanel;
 
+import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
+import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
+import mat.client.shared.CQLButtonToolBar;
+import mat.client.shared.MatContext;
 import mat.client.shared.SpacerWidget;
+import mat.model.cql.CQLFunctionArgument;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -29,7 +38,7 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 	private FlowPanel mainFlowPanel = new FlowPanel();
 	
 	/** The qdm view. */
-	private CQLAppliedValueSetView qdmView;
+	private CQLAppliedValueSetView valueSetView;
 
 	/** The incl view. */
 	private CQLIncludeLibraryView inclView;
@@ -67,7 +76,7 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		cqlParametersView = new CQLParametersView();
 		cqlDefinitionsView = new CQlDefinitionsView();
 		cqlFunctionsView = new CQLFunctionsView();
-		qdmView = new CQLAppliedValueSetView();
+		valueSetView = new CQLAppliedValueSetView();
 		inclView = new CQLIncludeLibraryView();
 		cqlViewCQLView = new CQLViewCQLView();
 		cqlLeftNavBarPanelView = new CQLLeftNavBarPanelView();
@@ -98,7 +107,7 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		mainHPPanel.add(cqlLeftNavBarPanelView.buildMeasureLibCQLView());
 		mainHPPanel.add(mainPanel);
 		mainVPanel.add(mainHPPanel);
-        mainVPanel.add(qdmView.getCellTableMainPanel());
+        mainVPanel.add(valueSetView.getCellTableMainPanel());
 		
 	}
 	
@@ -145,6 +154,58 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 	}
 	
 	
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see mat.client.clause.CQLWorkSpacePresenter.ViewDisplay#
+	 * buildParameterLibraryView()
+	 */
+	/**
+	 * Builds the parameter library view.
+	 */
+	@Override
+	public void buildParameterLibraryView() {
+		unsetEachSectionSelectedObject();
+		mainFlowPanel.clear();
+		mainFlowPanel.add(cqlParametersView.getView());
+
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see mat.client.clause.CQLWorkSpacePresenter.ViewDisplay#
+	 * buildDefinitionLibraryView()
+	 */
+	/**
+	 * Builds the definition library view.
+	 */
+	@Override
+	public void buildDefinitionLibraryView() {
+		unsetEachSectionSelectedObject();
+		mainFlowPanel.clear();
+		mainFlowPanel.add(cqlDefinitionsView.getView());
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see mat.client.clause.CQLWorkSpacePresenter.ViewDisplay#
+	 * buildFunctionLibraryView()
+	 */
+	/**
+	 * Builds the function library view.
+	 */
+	@Override
+	public void buildFunctionLibraryView() {
+		unsetEachSectionSelectedObject();
+		mainFlowPanel.clear();
+		mainFlowPanel.add(cqlFunctionsView.getView(MatContext.get().getLibraryLockService().checkForEditPermission()));
+	}
+	
+	
 	/**
 	 * Unset each section selected object and clear Value sets CellTable Panel.
 	 */
@@ -157,7 +218,7 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		if (cqlFunctionsView.getFunctionArgumentList().size() > 0) {
 			cqlFunctionsView.getFunctionArgumentList().clear();
 		}
-		qdmView.clearCellTableMainPanel();
+		valueSetView.clearCellTableMainPanel();
 	}
 	
 	
@@ -256,7 +317,37 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 		cqlLeftNavBarPanelView.setIsPageDirty(false);
 		resetMessageDisplay();
 	}
+	
+	
+   /* @Override
+	public void buildInfoPanel(Widget sourceWidget) {
 
+		PopupPanel panel = new PopupPanel();
+		panel.setAutoHideEnabled(true);
+		panel.setPopupPosition(sourceWidget.getAbsoluteLeft() + 40, sourceWidget.getAbsoluteTop() + 20);
+		VerticalPanel dialogContents = new VerticalPanel();
+		dialogContents.getElement().setId("dialogContents_VerticalPanel");
+		panel.setWidget(dialogContents);
+
+		HTML html1 = new HTML("Ctrl-Alt-v  : Value Sets");
+		HTML html2 = new HTML("Ctrl-Alt-y  : Datatypes");
+		HTML html3 = new HTML("Ctrl-Alt-t  : Timings");
+		HTML html4 = new HTML("Ctrl-Alt-f  : Functions");
+		HTML html5 = new HTML("Ctrl-Alt-d  : Definitions");
+		HTML html6 = new HTML("Ctrl-Alt-p  : Parameters");
+		HTML html7 = new HTML("Ctrl-Alt-a  : Attributes");
+		HTML html8 = new HTML("Ctrl-Space  : All");
+
+		dialogContents.add(html1);
+		dialogContents.add(html2);
+		dialogContents.add(html3);
+		dialogContents.add(html4);
+		dialogContents.add(html5);
+		dialogContents.add(html6);
+		dialogContents.add(html7);
+		dialogContents.add(html8);
+		panel.show();
+	}*/
 
 	/* (non-Javadoc)
 	 * @see mat.client.clause.cqlworkspace.CQLStandaloneWorkSpacePresenter.ViewDisplay#getClickedMenu()
@@ -368,6 +459,180 @@ public class CQLStandaloneWorkSpaceView implements CQLStandaloneWorkSpacePresent
 	@Override
 	public TextBox getOwnerNameTextBox() {
 		return getIncludeView().getOwnerNameTextBox();
+	}
+
+
+	@Override
+	public void createAddArgumentViewForFunctions(List<CQLFunctionArgument> argumentList) {
+		cqlFunctionsView.createAddArgumentViewForFunctions(argumentList, MatContext.get().getLibraryLockService().checkForEditPermission());
+	}
+	
+	@Override
+	public CQLButtonToolBar getParameterButtonBar() {
+		return cqlParametersView.getParameterButtonBar();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#
+	 * getDefineButtonBar()
+	 */
+	@Override
+	public CQLButtonToolBar getDefineButtonBar() {
+		return cqlDefinitionsView.getDefineButtonBar();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#
+	 * getFunctionButtonBar()
+	 */
+	@Override
+	public CQLButtonToolBar getFunctionButtonBar() {
+		return cqlFunctionsView.getFunctionButtonBar();
+	}
+	
+	@Override
+	public TextBox getDefineNameTxtArea() {
+		return cqlDefinitionsView.getDefineNameTxtArea();
+	}
+	
+	@Override
+	public AceEditor getDefineAceEditor() {
+		return cqlDefinitionsView.getDefineAceEditor();
+	}
+	
+	@Override
+	public InlineRadio getContextDefinePATRadioBtn() {
+		return cqlDefinitionsView.getContextDefinePATRadioBtn();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#
+	 * getContextPOPToggleSwitch()
+	 */
+	@Override
+	public InlineRadio getContextDefinePOPRadioBtn() {
+		return cqlDefinitionsView.getContextDefinePOPRadioBtn();
+	}
+	
+	/**
+	 * Gets the func name txt area.
+	 *
+	 * @return the func name txt area
+	 */
+	@Override
+	public TextBox getFuncNameTxtArea() {
+		return cqlFunctionsView.getFuncNameTxtArea();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#
+	 * getFunctionBodyAceEditor()
+	 */
+	@Override
+	public AceEditor getFunctionBodyAceEditor() {
+		return cqlFunctionsView.getFunctionBodyAceEditor();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#
+	 * getContextFuncPATRadioBtn()
+	 */
+	@Override
+	public InlineRadio getContextFuncPATRadioBtn() {
+		return cqlFunctionsView.getContextFuncPATRadioBtn();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#
+	 * getContextFuncPOPRadioBtn()
+	 */
+	@Override
+	public InlineRadio getContextFuncPOPRadioBtn() {
+		return cqlFunctionsView.getContextFuncPOPRadioBtn();
+	}
+	
+	@Override
+	public List<CQLFunctionArgument> getFunctionArgumentList() {
+		return cqlFunctionsView.getFunctionArgumentList();
+	}
+	
+	/**
+	 * Gets the parameter name txt area.
+	 *
+	 * @return the parameter name txt area
+	 */
+	@Override
+	public TextBox getParameterNameTxtArea() {
+		return cqlParametersView.getParameterNameTxtArea();
+	}
+	
+	/**
+	 * Gets the parameter ace editor.
+	 *
+	 * @return the parameter ace editor
+	 */
+	@Override
+	public AceEditor getParameterAceEditor() {
+		return cqlParametersView.getParameterAceEditor();
+	}
+
+	@Override
+	public Map<String, CQLFunctionArgument> getFunctionArgNameMap() {
+		return cqlFunctionsView.getFunctionArgNameMap();
+	}
+	
+	/**
+	 * Creates the add argument view for functions.
+	 *
+	 * @param argumentList
+	 *            the argument list
+	 */
+	@Override
+	public void createAddArgumentViewForFunctions(List<CQLFunctionArgument> argumentList,boolean isEditable) {
+		cqlFunctionsView.createAddArgumentViewForFunctions(argumentList,isEditable);
+	}
+
+	/* (non-Javadoc)
+	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#buildAppliedQDM()
+	 */
+	@Override
+	public void buildAppliedQDM() {
+		mainFlowPanel.clear();
+		valueSetView.resetVSACValueSetWidget();
+		valueSetView.setWidgetToDefault();
+		resetMessageDisplay();
+		
+		unsetEachSectionSelectedObject();
+		VerticalPanel appliedQDMTopPanel = new VerticalPanel();
+
+		appliedQDMTopPanel.add(valueSetView.asWidget());
+		valueSetView.buildCellTableWidget();
+		VerticalPanel vp = new VerticalPanel();
+		vp.setStyleName("cqlRightContainer");
+		vp.setWidth("700px");
+		appliedQDMTopPanel.setWidth("700px");
+		appliedQDMTopPanel.setStyleName("marginLeft15px");
+		vp.add(appliedQDMTopPanel);
+		
+		mainFlowPanel.add(vp);
+
+	}
+
+	@Override
+	public CQLAppliedValueSetView getValueSetView() {
+		return valueSetView;
 	}
 
 }
