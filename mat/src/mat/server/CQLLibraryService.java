@@ -42,6 +42,7 @@ import mat.dao.UserDAO;
 import mat.dao.clause.CQLLibraryDAO;
 import mat.dao.clause.CQLLibrarySetDAO;
 import mat.dao.clause.CQLLibraryShareDAO;
+import mat.dao.clause.MeasureDAO;
 import mat.dao.clause.ShareLevelDAO;
 import mat.model.CQLValueSetTransferObject;
 import mat.model.LockedUserInfo;
@@ -55,6 +56,7 @@ import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLKeywords;
+import mat.model.cql.CQLLibraryAssociation;
 import mat.model.cql.CQLLibraryDataSetObject;
 import mat.model.cql.CQLLibraryShare;
 import mat.model.cql.CQLLibraryShareDTO;
@@ -85,6 +87,10 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	/** The cql library DAO. */
 	@Autowired
 	private CQLLibraryDAO cqlLibraryDAO;
+	
+	/** The measure dao. */
+	@Autowired
+	private MeasureDAO measureDAO;
 	
 	/** The cql library set DAO. */
 	@Autowired
@@ -137,31 +143,18 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	 * @see mat.server.service.CQLLibraryServiceInterface#searchForIncludes(java.lang.String)
 	 */
 	@Override
-	public SaveCQLLibraryResult searchForIncludes(String searchText){
-		SaveCQLLibraryResult saveCQLLibraryResult = new SaveCQLLibraryResult();
-		List<CQLLibraryDataSetObject> allLibraries = new ArrayList<CQLLibraryDataSetObject>();
-		List<CQLLibrary> list = cqlLibraryDAO.searchForIncludes(searchText);
-		
-		saveCQLLibraryResult.setResultsTotal(list.size());
-		
-		for(CQLLibrary cqlLibrary : list){
-			CQLLibraryDataSetObject object = extractCQLLibraryDataObject(cqlLibrary);
-			if(object.getMeasureId() != null){
-				if(countNumberOfAssociation(object.getMeasureId()) == 0){
-					allLibraries.add(object);
-				}
-			}else{
-				if(object.getId() != null){
-					if(countNumberOfAssociation(object.getId()) == 0){
-						allLibraries.add(object);
-					}
-				}
-			}
-		}
-		
-		saveCQLLibraryResult.setCqlLibraryDataSetObjects(allLibraries);
-		return saveCQLLibraryResult;
-	}
+	public SaveCQLLibraryResult searchForIncludes(String setId, String searchText){
+        SaveCQLLibraryResult saveCQLLibraryResult = new SaveCQLLibraryResult();
+        List<CQLLibraryDataSetObject> allLibraries = new ArrayList<CQLLibraryDataSetObject>();
+        List<CQLLibrary> list = cqlLibraryDAO.searchForIncludes(setId, searchText);
+        saveCQLLibraryResult.setResultsTotal(list.size());
+        for(CQLLibrary cqlLibrary : list){
+               CQLLibraryDataSetObject object = extractCQLLibraryDataObject(cqlLibrary);
+               allLibraries.add(object);
+        }
+        saveCQLLibraryResult.setCqlLibraryDataSetObjects(allLibraries);
+        return saveCQLLibraryResult;
+ }
 	
 
 	/* (non-Javadoc)
@@ -461,7 +454,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		}
 		
 		SaveUpdateCQLResult cqlResult  = getCQLData(libraryId);
-		if(cqlResult.getCqlErrors().size() >0){
+		if(cqlResult.getCqlErrors().size() >0 || !cqlResult.isDatatypeUsedCorrectly()){
 			result.setSuccess(false);
 			result.setFailureReason(ConstantMessages.INVALID_CQL_DATA);
 			return result;
@@ -833,6 +826,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		if(str != null) {
 			cqlResult = cqlService.getCQLData(str);
 			cqlResult.setExpIdentifier(getDefaultExpansionIdentifier(str));
+			cqlResult.setSetId(cqlLibrary.getSet_id());
 			cqlResult.setSuccess(true);
 		}
 		
@@ -1138,6 +1132,11 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	@Override
 	public int countNumberOfAssociation(String Id){
 		return cqlService.countNumberOfAssociation(Id);
+	}
+	
+	@Override
+	public List<CQLLibraryAssociation> getAssociations(String Id){
+		return cqlService.getAssociations(Id);
 	}
 	
 	/**

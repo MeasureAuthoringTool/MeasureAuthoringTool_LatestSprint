@@ -65,8 +65,6 @@ import mat.model.cql.CQLQualityDataSetDTO;
  */
 public class CQLLeftNavBarPanelView {
 	
-	
-	
 	/** The right hand nav panel. */
 	private VerticalPanel rightHandNavPanel = new VerticalPanel();
 	
@@ -95,8 +93,11 @@ public class CQLLeftNavBarPanelView {
 	/** The include library map. */
 	private HashMap<String, CQLIncludeLibrary> includeLibraryMap = new HashMap<String, CQLIncludeLibrary>();
 
-	/** The define badge. */
+	/** The includes badge. */
 	private Badge includesBadge = new Badge();
+	
+	/** The valuesets badge. */
+	private Badge valueSetBadge = new Badge();
 
 	/** The param badge. */
 	private Badge paramBadge = new Badge();
@@ -109,6 +110,9 @@ public class CQLLeftNavBarPanelView {
 
 	/** The includes label. */
 	private Label includesLabel = new Label("Includes");
+	
+	/** The value Set label. */
+	private Label valueSetLabel = new Label("Value Sets");
 
 	/** The param label. */
 	private Label paramLabel = new Label("Parameter");
@@ -130,6 +134,9 @@ public class CQLLeftNavBarPanelView {
 	
 	/** The Includes Collapse. */
 	PanelCollapse includesCollapse = new PanelCollapse();
+	
+	/** The ValueSets Collapse. */
+	PanelCollapse valueSetCollapse = new PanelCollapse();
 	
 	/** The view cql. */
 	private AnchorListItem viewCQL;
@@ -256,6 +263,9 @@ public class CQLLeftNavBarPanelView {
 	/** The is nav bar click. */
 	private Boolean isNavBarClick = false;
 	
+	/** The Loading flag for page. */
+	private Boolean isLoading = false;
+	
 	/** The current selected definition obj id. */
 	private String currentSelectedDefinitionObjId = null;
 
@@ -280,6 +290,7 @@ public class CQLLeftNavBarPanelView {
 	 */
 	public VerticalPanel buildMeasureLibCQLView(){
 		globalWarningConfirmationMessageAlert = new WarningConfirmationMessageAlert();
+		valueSetCollapse = createValuesetCollapsablePanel();
 		includesCollapse = createIncludesCollapsablePanel();
 		paramCollapse = createParameterCollapsablePanel();
 		defineCollapse = createDefineCollapsablePanel();
@@ -352,10 +363,29 @@ public class CQLLeftNavBarPanelView {
 		includesLibrary.add(includesCollapse);
 
 		appliedQDM.setIcon(IconType.PENCIL);
-		appliedQDM.setText("Value Sets/Codes");
-		appliedQDM.setTitle("Value Sets/Codes");
-		appliedQDM.setActive(false);
-		appliedQDM.setId("CQLValuesets_Anchor");
+		appliedQDM.setTitle("ValueSets/Codes");
+		valueSetBadge.setText("0" + appliedQdmTableList.size());
+		Anchor valueSetAnchor = (Anchor) (appliedQDM.getWidget(0));
+		// Double Click causing issues.So Event is not propogated
+		valueSetAnchor.addDoubleClickHandler(new DoubleClickHandler() {
+			@Override
+			public void onDoubleClick(DoubleClickEvent event) {
+				// TODO Auto-generated method stub
+				event.stopPropagation();
+			}
+		});
+		valueSetLabel.setStyleName("transparentLabel");
+		valueSetLabel.setId("valueSetLabel_Label");
+		valueSetAnchor.add(valueSetLabel);
+		valueSetBadge.setPull(Pull.RIGHT);
+		valueSetBadge.setMarginLeft(52);
+		valueSetBadge.setId("valueSetBadge_Badge");
+		valueSetAnchor.add(valueSetBadge);
+		valueSetAnchor.setDataParent("#navGroup");
+		appliedQDM.setDataToggle(Toggle.COLLAPSE);
+		appliedQDM.setHref("#collapseValueSets");
+		appliedQDM.setId("valueSet_Anchor");
+		appliedQDM.add(valueSetCollapse);
 
 		parameterLibrary.setIcon(IconType.PENCIL);
 		parameterLibrary.setTitle("Parameter");
@@ -463,6 +493,33 @@ public class CQLLeftNavBarPanelView {
 		rightHandNavPanel.add(navPills);
 	}
 
+	/**
+	 * Creates the valueSet collapsable panel.
+	 *
+	 * @return the panel collapse
+	 */
+	private PanelCollapse createValuesetCollapsablePanel() {
+
+		includesCollapse.setId("collapseValueSets");
+
+		PanelBody valueSetCollapseBody = new PanelBody();
+
+		HorizontalPanel valueSetFP = new HorizontalPanel();
+
+		VerticalPanel rightVerticalPanel = new VerticalPanel();
+		rightVerticalPanel.setSpacing(10);
+
+		rightVerticalPanel.getElement().setId("rhsVerticalPanel_VerticalPanelValueSet");
+		rightVerticalPanel.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
+		Label includesLibraryLabel = new Label("Value Sets");
+		rightVerticalPanel.setCellHorizontalAlignment(includesLibraryLabel, HasHorizontalAlignment.ALIGN_LEFT);
+		valueSetFP.add(rightVerticalPanel);
+		valueSetCollapseBody.add(valueSetFP);
+
+		valueSetCollapse.add(valueSetCollapseBody);
+		return valueSetCollapse;
+
+	}
 	
 	
 	/**
@@ -918,6 +975,19 @@ public class CQLLeftNavBarPanelView {
 
 	}
 	
+	/**
+	 * Update valueset values.
+	 * @param appliedValueSetTableList 
+	 */
+	public void updateValueSetMap(List<CQLQualityDataSetDTO> appliedValueSetTableList) {
+		if (getAppliedQdmTableList().size() < 10) {
+			getValueSetBadge().setText("0" + appliedValueSetTableList.size());
+		} else {
+			getValueSetBadge().setText("" + appliedValueSetTableList.size());
+		}
+
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -1336,6 +1406,22 @@ public class CQLLeftNavBarPanelView {
 	 */
 	public void setViewFunctions(List<CQLFunctions> viewFunctions) {
 		this.viewFunctions = viewFunctions;
+	}
+
+
+	/**
+	 * @return the valueSetBadge
+	 */
+	public Badge getValueSetBadge() {
+		return valueSetBadge;
+	}
+
+
+	/**
+	 * @param valueSetBadge the valueSetBadge to set
+	 */
+	public void setValueSetBadge(Badge valueSetBadge) {
+		this.valueSetBadge = valueSetBadge;
 	}
 
 
@@ -2325,14 +2411,14 @@ public class CQLLeftNavBarPanelView {
 		dialogContents.getElement().setId("dialogContents_VerticalPanel");
 		panel.setWidget(dialogContents);
 
-		HTML html1 = new HTML("Ctrl-Alt-v  : Value Sets");
-		HTML html2 = new HTML("Ctrl-Alt-y  : Datatypes");
-		HTML html3 = new HTML("Ctrl-Alt-t  : Timings");
-		HTML html4 = new HTML("Ctrl-Alt-f  : Functions");
-		HTML html5 = new HTML("Ctrl-Alt-d  : Definitions");
-		HTML html6 = new HTML("Ctrl-Alt-p  : Parameters");
-		HTML html7 = new HTML("Ctrl-Alt-a  : Attributes");
-		HTML html8 = new HTML("Ctrl-Space  : All");
+		HTML html1 = new HTML("Ctrl-Alt-a: attributes");
+		HTML html2 = new HTML("Ctrl-Alt-y: datatypes");
+		HTML html3 = new HTML("Ctrl-Alt-d: definitions");
+		HTML html4 = new HTML("Ctrl-Alt-f: functions");
+		HTML html5 = new HTML("Ctrl-Alt-p: parameters");
+		HTML html6 = new HTML("Ctrl-Alt-t: timings");
+		HTML html7 = new HTML("Ctrl-Alt-v: value sets");
+		HTML html8 = new HTML("Ctrl-Space: all");
 
 		dialogContents.add(html1);
 		dialogContents.add(html2);
@@ -2343,5 +2429,15 @@ public class CQLLeftNavBarPanelView {
 		dialogContents.add(html7);
 		dialogContents.add(html8);
 		panel.show();
+	}
+
+
+	public Boolean getIsLoading() {
+		return isLoading;
+	}
+
+
+	public void setIsLoading(Boolean isLoading) {
+		this.isLoading = isLoading;
 	}
 }

@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -333,16 +335,20 @@ public class ExportSimpleXML {
 			CQLUtil.removeUnusedCQLFunctions(originalDoc, result.getUsedCQLArtifacts().getUsedCQLFunctions());
 			CQLUtil.removeUnusedParameters(originalDoc, result.getUsedCQLArtifacts().getUsedCQLParameters());
 			
-			resolveValueSetsWithDataTypesUsed(originalDoc, result.getUsedCQLArtifacts().getValueSetDataTypeMap(), cqlModel);
+			resolveValueSetsWithDataTypesUsed(originalDoc, result, cqlModel);
 			
 			CQLUtil.removeUnusedIncludes(originalDoc, result.getUsedCQLArtifacts().getUsedCQLLibraries(), cqlModel);
 			CQLUtil.addUsedCQLLibstoSimpleXML(originalDoc, result.getUsedCQLArtifacts().getIncludeLibMap());
+			CQLUtil.addUnUsedGrandChildrentoSimpleXML(originalDoc, result, cqlModel);
+			
+			System.out.println("All included libs:"+cqlModel.getIncludedCQLLibXMLMap().keySet());			
 		}
 		
 		private static void resolveValueSetsWithDataTypesUsed(
-				Document originalDoc, Map<String, List<String>> usedValueSetDatatypeMap, CQLModel cqlModel) throws XPathExpressionException {
+				Document originalDoc, SaveUpdateCQLResult result, CQLModel cqlModel) throws XPathExpressionException {
 			
-			System.out.println("usedValueSetMap:"+usedValueSetDatatypeMap);
+			System.out.println("usedValueSetMap:"+result.getUsedCQLArtifacts().getValueSetDataTypeMap());
+			
 			Map<String, Document> includedXMLMap = new HashMap<String, Document>();
 			List<String> valueSetDataTypeUniqueList = new ArrayList<String>();
 						
@@ -359,8 +365,8 @@ public class ExportSimpleXML {
 				parentNode.appendChild(elementLookUpNode);
 			}
 			
-			for(String valueSetName:usedValueSetDatatypeMap.keySet()){
-				List<String> dataTypeList = usedValueSetDatatypeMap.get(valueSetName);
+			for(String valueSetName:result.getUsedCQLArtifacts().getValueSetDataTypeMap().keySet()){
+				List<String> dataTypeList = result.getUsedCQLArtifacts().getValueSetDataTypeMap().get(valueSetName);
 				
 				Document xmlDoc = findXMLProcessor(valueSetName, cqlModel, includedXMLMap);
 				if(xmlDoc == null){
@@ -445,7 +451,10 @@ public class ExportSimpleXML {
 				}
 			}
 			
-			CQLUtil.removeUnusedValuesets(originalDoc, usedValueSetDatatypeMap.keySet());			
+			Set<String> valuesetSet = new HashSet<String>(result.getUsedCQLArtifacts().getValueSetDataTypeMap().keySet());
+			valuesetSet.addAll(result.getUsedCQLArtifacts().getUsedCQLValueSets());
+			System.out.println("used value sets:"+valuesetSet);
+			CQLUtil.removeUnusedValuesets(originalDoc, valuesetSet);			
 		}
 
 	private static Document findXMLProcessor(String valueSetName,
@@ -465,7 +474,7 @@ public class ExportSimpleXML {
 			if(returnDoc == null){
 				Map<String, mat.shared.LibHolderObject> cqlLibXMLMap = cqlModel.getIncludedCQLLibXMLMap();
 				System.out.println(cqlLibXMLMap.keySet());
-				String xml = cqlLibXMLMap.get(includedLibName).getMeasureXML();
+				String xml = cqlLibXMLMap.get(includedLibName + "|" + nameSplitArr[1]).getMeasureXML();
 				if(xml != null){
 					XmlProcessor xmlProcessor = new XmlProcessor(xml);
 					includedXMLMap.put(includedLibName, xmlProcessor.getOriginalDoc());

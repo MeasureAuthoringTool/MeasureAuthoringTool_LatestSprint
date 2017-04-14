@@ -341,7 +341,7 @@ public class SimpleEMeasureServiceImpl implements SimpleEMeasureService {
 	private void getIncludedCQLLibs(ExportResult result,
 			XmlProcessor xmlProcessor) throws XPathExpressionException {
 		
-		String xPathForIncludedLibs = "/measure/allUsedCQLLibs/lib";
+		String xPathForIncludedLibs = "//allUsedCQLLibs/lib[not( preceding::lib/@id =@id)]";
 		NodeList includedCQLLibNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), xPathForIncludedLibs);
 		
 		for(int i=0;i<includedCQLLibNodes.getLength();i++){
@@ -399,7 +399,8 @@ public class SimpleEMeasureServiceImpl implements SimpleEMeasureService {
 	private void getIncludedCQLELMs(ExportResult result,
 			XmlProcessor xmlProcessor) throws XPathExpressionException {
 		
-		String xPathForIncludedLibs = "/measure/allUsedCQLLibs/lib";
+		//String xPathForIncludedLibs = "/measure/allUsedCQLLibs/lib";
+		String xPathForIncludedLibs ="//allUsedCQLLibs/lib[not( preceding::lib/@id =@id)]";
 		NodeList includedCQLLibNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), xPathForIncludedLibs);
 		
 		for(int i=0;i<includedCQLLibNodes.getLength();i++){
@@ -505,7 +506,7 @@ public class SimpleEMeasureServiceImpl implements SimpleEMeasureService {
 		
 		MeasureXML measureExport = measureXMLDAO.findForMeasure(measureId);
 		String measureXML = measureExport.getMeasureXMLAsString();
-		String html = HumanReadableGenerator.generateHTMLForPopulationOrSubtree(measureId, populationSubXML, measureXML);
+		String html = HumanReadableGenerator.generateHTMLForPopulationOrSubtree(measureId, populationSubXML, measureXML, cqlLibraryDAO);
 				
 		result.export = html;
 		return result;
@@ -674,7 +675,7 @@ public class SimpleEMeasureServiceImpl implements SimpleEMeasureService {
 	private String getHumanReadableForMeasure(String measureId,
 			String simpleXmlStr, String measureVersionNumber) {
 		
-		String html = HumanReadableGenerator.generateHTMLForMeasure(measureId,simpleXmlStr, measureVersionNumber);
+		String html = HumanReadableGenerator.generateHTMLForMeasure(measureId,simpleXmlStr, measureVersionNumber, cqlLibraryDAO);
 		return html;
 
 	}

@@ -9,6 +9,8 @@ import java.util.Map;
 
 import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLModel;
+import mat.shared.CQLExpressionObject;
+import mat.shared.CQLObject;
 
 import org.cqframework.cql.cql2elm.CQLtoELM;
 import org.cqframework.cql.cql2elm.QdmModelInfoProvider;
@@ -29,6 +31,7 @@ import org.hl7.elm.r1.ExpressionRef;
 import org.hl7.elm.r1.Filter;
 import org.hl7.elm.r1.First;
 import org.hl7.elm.r1.ForEach;
+import org.hl7.elm.r1.FunctionDef;
 import org.hl7.elm.r1.FunctionRef;
 import org.hl7.elm.r1.If;
 import org.hl7.elm.r1.InCodeSystem;
@@ -42,6 +45,7 @@ import org.hl7.elm.r1.Last;
 import org.hl7.elm.r1.Library;
 import org.hl7.elm.r1.Literal;
 import org.hl7.elm.r1.NaryExpression;
+import org.hl7.elm.r1.ParameterDef;
 import org.hl7.elm.r1.ParameterRef;
 import org.hl7.elm.r1.PositionOf;
 import org.hl7.elm.r1.Property;
@@ -84,35 +88,48 @@ public class CQLFilter {
     /**
      * The used functions list
      */
-    private List<String> usedFunctions = new ArrayList<String>();;
+    private List<String> usedFunctions = new ArrayList<String>();
 
     /**
      * The used cql valuesets
      */
-    private List<String> usedValuesets = new ArrayList<String>();;
+    private List<String> usedValuesets = new ArrayList<String>();
 
     /**
      * THe used parameters list
      */
-    private List<String> usedParameters = new ArrayList<String>();;
+    private List<String> usedParameters = new ArrayList<String>();
 
     
     /**
      * The used code systems list
      */
-    private List<String> usedCodeSystems = new ArrayList<String>();;
+    private List<String> usedCodeSystems = new ArrayList<String>();
     
-    /**
+    private String currentDefinitionName = "";
+    private String currentFunctionName = "";
+    private String currentParameterName = "";
+    
+    private Map<String, List<String>> definitionToDefinitionMap = new HashMap<String, List<String>>();   
+
+	private Map<String, List<String>> definitionToFunctionMap = new HashMap<String, List<String>>();
+   
+	private Map<String, List<String>> functionToDefinitionMap = new HashMap<String, List<String>>();
+    
+	private Map<String, List<String>> functionToFunctionMap = new HashMap<String, List<String>>();
+       
+  	/**
      * The used codes list
      */
-    private List<String> usedCodes = new ArrayList<String>();;
+    private List<String> usedCodes = new ArrayList<String>();
+    private Map<String, List<String>> valueSetDataTypeMap;
 
     /**
      * Map for included Library objects
      */
     private Map<String, LibraryHolder> includedLibraries;
     
-    private Map<String, List<String>> valueSetDataTypeMap;
+  
     
     private LibraryHolder currentLibraryHolder;
     
@@ -120,7 +137,10 @@ public class CQLFilter {
     
     private static Map<String, String> qdmTypeInfoMap = new HashMap<String, String>();
     
-    /**
+    private CQLObject cqlObject = new CQLObject();
+       
+    
+	/**
      * The cql filter
      * @param library the library of the CQL
      * @param populationList the lists of populations that are included in MAT
@@ -174,12 +194,32 @@ public class CQLFilter {
         	this.currentLibraryHolder = new LibraryHolder(this.library, "", "", "");
         	
         	checkForUsedStatements(expressionName);
+        	
+        	ExpressionDef expression = findExpressionByName(expressionName);
+        	if(expression != null) {
+        		createCQLExpressionObject(expression);
+        	}
         }
-
+        collectUsed();
         System.out.println(this.includedLibraries);
     }
+    
+    // Combine All expressions used data for packaging and export.
+    private void collectUsed() {
+		// TODO Auto-generated method stub
+		List<CQLExpressionObject> allExpressionList = cqlObject.getAllExpressionList();
+		for(CQLExpressionObject expressionObject : allExpressionList){
+			this.getUsedCodes().addAll(expressionObject.getUsedCodes());
+			this.getUsedCodeSystems().addAll(expressionObject.getUsedCodeSystems());
+			this.getUsedExpressions().addAll(expressionObject.getUsedExpressions());
+			this.getUsedFunctions().addAll(expressionObject.getUsedFunctions());
+			this.getUsedParameters().addAll(expressionObject.getUsedParameters());
+			this.getUsedValuesets().addAll(expressionObject.getUsedValuesets());
+			this.getValueSetDataTypeMap().putAll(expressionObject.getValueSetDataTypeMap());
+		}
+	}
 
-    /**
+	/**
      * Entry point for getting used statements. This takes in an expression name, which is passed in to the Filter class.
      * This name should be associated with a population. Then, it finds the expression object associated with that name,
      * and then checks for the used statements on that object.
@@ -189,9 +229,9 @@ public class CQLFilter {
 
         System.out.println("<<<<<Getting expressions for "  + expressionName + ">>>>>");
         
-        Expression expression = findExpressionByName(expressionName);
-
-        if(expression == null) {
+        ExpressionDef expression = findExpressionByName(expressionName);
+        
+        if(expression == null || expression.getExpression() == null) {
 //            System.err.println(String.format("Expression %s not found.", expressionName));
 //            try{
 //            throw new Exception("hiiiii");
@@ -200,11 +240,94 @@ public class CQLFilter {
 //            }
             return;
         }
-
-        checkForUsedStatements(expression);
+        
+        String expressionNameWithLib = expressionName;
+        if(this.currentLibraryHolder != null && this.currentLibraryHolder.getLibraryAlias().length() > 0){
+        	expressionNameWithLib = this.currentLibraryHolder.getLibraryName() + "-" + this.currentLibraryHolder.getLibraryVersion() + "|" + this.currentLibraryHolder.getLibraryAlias() + "|" + expressionName;
+        }
+        
+        if(expression.getClass().equals(FunctionDef.class)) {
+        	this.currentFunctionName = expressionNameWithLib;
+        	this.currentDefinitionName = "";
+        	this.currentParameterName = "";
+        }else if(expression.getClass().equals(ParameterDef.class)){
+        	this.currentParameterName = expressionNameWithLib;
+        	this.currentFunctionName = "";
+        	this.currentDefinitionName = "";
+        }else if(expression.getClass().equals(ExpressionDef.class)){
+        	this.currentDefinitionName = expressionNameWithLib;
+        	this.currentParameterName = "";
+        	this.currentFunctionName = "";
+        }
+        
+        checkForUsedStatements(expression.getExpression());
+       
+        
     }
 
-    /**
+    private void createCQLExpressionObject(ExpressionDef expression) {
+    	
+    	if(expression.getClass().equals(ExpressionDef.class)) {
+           CQLExpressionObject definitionObject = new CQLExpressionObject("Definition",expression.getName());
+           definitionObject.getUsedCodes().addAll(this.getUsedCodes());
+           definitionObject.getUsedCodeSystems().addAll(this.getUsedCodeSystems());
+           definitionObject.getUsedExpressions().addAll(this.getUsedExpressions());
+           definitionObject.getUsedFunctions().addAll(this.getUsedFunctions());
+           definitionObject.getUsedParameters().addAll(this.getUsedParameters());
+           definitionObject.getUsedValuesets().addAll(this.getUsedValuesets());
+           definitionObject.getValueSetDataTypeMap().putAll(this.getValueSetDataTypeMap());
+           cqlObject.getCqlDefinitionObjectList().add(definitionObject);
+           
+           clearUsed();
+           
+        }
+
+        else if(expression.getClass().equals(FunctionDef.class)) {
+        	CQLExpressionObject funcObject = new CQLExpressionObject("Function",expression.getName());
+        	funcObject.getUsedCodes().addAll(this.getUsedCodes());
+        	funcObject.getUsedCodeSystems().addAll(this.getUsedCodeSystems());
+        	funcObject.getUsedExpressions().addAll(this.getUsedExpressions());
+        	funcObject.getUsedFunctions().addAll(this.getUsedFunctions());
+        	funcObject.getUsedParameters().addAll(this.getUsedParameters());
+        	funcObject.getUsedValuesets().addAll(this.getUsedValuesets());
+        	funcObject.getValueSetDataTypeMap().putAll(this.getValueSetDataTypeMap());
+        	cqlObject.getCqlFunctionObjectList().add(funcObject);
+        	
+        	System.out.println("Created Function object" + expression.getName() + " with used definitions as:"+funcObject.getUsedExpressions());
+        	
+        	clearUsed();
+        }
+
+        // check for parameters
+        else if(expression.getClass().equals(ParameterDef.class)) {
+        	CQLExpressionObject paramObject = new CQLExpressionObject("Parameter",expression.getName());
+        	paramObject.getUsedCodes().addAll(this.getUsedCodes());
+        	paramObject.getUsedCodeSystems().addAll(this.getUsedCodeSystems());
+        	paramObject.getUsedExpressions().addAll(this.getUsedExpressions());
+        	paramObject.getUsedFunctions().addAll(this.getUsedFunctions());
+        	paramObject.getUsedParameters().addAll(this.getUsedParameters());
+        	paramObject.getUsedValuesets().addAll(this.getUsedValuesets());
+        	paramObject.getValueSetDataTypeMap().putAll(this.getValueSetDataTypeMap());
+
+        	cqlObject.getCqlParameterObjectList().add(paramObject);
+        	
+        	clearUsed();
+        }		
+	}
+
+	private void clearUsed() {
+		this.getUsedCodes().clear();
+		this.getUsedCodeSystems().clear();
+		this.getUsedExpressions().clear();
+		this.getUsedFunctions().clear();
+		this.getUsedParameters().clear();
+		this.getUsedValuesets().clear();
+		this.getValueSetDataTypeMap().clear();
+	}
+	
+	
+
+	/**
      * Checks for the used statements for the given expression.
      * @param expression the expression
      */
@@ -424,14 +547,52 @@ public class CQLFilter {
     		}
     	}
     	
+        if(!expressionName.equals("Patient")){
+        	addToDirectRefDefMap(this.getUsedExpressions().get(this.getUsedExpressions().size() - 1));
+    	}        
+        String tempCurrentDef = this.currentDefinitionName;
+        String tempCurrentFunc = this.currentFunctionName;
+        String tempCurrentParam = this.currentParameterName;
+        		
         checkForUsedStatements(expressionName);
+        
+        this.currentDefinitionName = tempCurrentDef;
+        this.currentFunctionName = tempCurrentFunc;
+        this.currentParameterName = tempCurrentParam;
+        
         
         if(existingLibrary != null){
         	this.currentLibraryHolder = existingLibrary;
         }
     }
 
-    private void checkForFunctionRef(Expression expression) {
+    private void addToDirectRefDefMap(String expressionName) {
+    	
+    	if(this.currentDefinitionName.length() > 0){
+    		
+    		if(this.definitionToDefinitionMap.get(this.currentDefinitionName) == null){
+    			this.definitionToDefinitionMap.put(this.currentDefinitionName, new ArrayList<String>());
+    		}
+    		
+    		if(!this.definitionToDefinitionMap.get(this.currentDefinitionName).contains(expressionName)){
+    			this.definitionToDefinitionMap.get(this.currentDefinitionName).add(expressionName);
+    		}
+    		
+    	}else if(this.currentFunctionName.length() > 0){
+    		
+    		if(this.functionToDefinitionMap.get(this.currentFunctionName) == null){
+    			this.functionToDefinitionMap.put(this.currentFunctionName, new ArrayList<String>());
+    		}
+    		
+    		if(!this.functionToDefinitionMap.get(this.currentFunctionName).contains(expressionName)){
+    			this.functionToDefinitionMap.get(this.currentFunctionName).add(expressionName);
+    		}
+    		
+    	}
+		
+	}
+
+	private void checkForFunctionRef(Expression expression) {
         FunctionRef functionRef = (FunctionRef) expression;
        
         // since we found a function ref, we want to get the details of it.
@@ -456,14 +617,49 @@ public class CQLFilter {
     		}
     	}
         
+		addToDirectRefFuncMap(this.getUsedFunctions().get(this.getUsedFunctions().size() - 1));
+	    String tempCurrentDef = this.currentDefinitionName;
+	    String tempCurrentFunc = this.currentFunctionName;
+	    String tempCurrentParam = this.currentParameterName;
+    	
         checkForUsedStatements(expressionName);
+        
+        this.currentDefinitionName = tempCurrentDef;
+        this.currentFunctionName = tempCurrentFunc;
+        this.currentParameterName = tempCurrentParam;
         
         if(existingLibrary != null){
         	this.currentLibraryHolder = existingLibrary;
         }
     }
 
-    /**
+    private void addToDirectRefFuncMap(String expressionName) {
+		
+    	if(this.currentDefinitionName.length() > 0){
+    		
+    		if(this.definitionToFunctionMap.get(this.currentDefinitionName) == null){
+    			this.definitionToFunctionMap.put(this.currentDefinitionName, new ArrayList<String>());
+    		}
+    		
+    		if(!this.definitionToFunctionMap.get(this.currentDefinitionName).contains(expressionName)){
+    			this.definitionToFunctionMap.get(this.currentDefinitionName).add(expressionName);
+    		}
+    		
+    	}else if(this.currentFunctionName.length() > 0){
+    		
+    		if(this.functionToFunctionMap.get(this.currentFunctionName) == null){
+    			this.functionToFunctionMap.put(this.currentFunctionName, new ArrayList<String>());
+    		}
+    		
+    		if(!this.functionToFunctionMap.get(this.currentFunctionName).contains(expressionName)){
+    			this.functionToFunctionMap.get(this.currentFunctionName).add(expressionName);
+    		}
+    		
+    	}
+		
+	}
+
+	/**
      * Check for parameter references and add it to the used parameter reference list
      * @param expression the expression
      */
@@ -885,9 +1081,9 @@ public class CQLFilter {
      * @param expressionName the expression name
      * @return the expression assoicated with the given name, null if none are found
      */
-    private Expression findExpressionByName(String expressionName) {
+    private ExpressionDef findExpressionByName(String expressionName) {
         
-    	Expression expression = findExpression(expressionName, this.currentLibraryHolder);
+    	ExpressionDef expression = findExpression(expressionName, this.currentLibraryHolder);
         
 //        String s = this.library.getIncludes().getDef().get(0).getLocalIdentifier();
 //        System.out.println("sssssssss:"+s);
@@ -898,14 +1094,15 @@ public class CQLFilter {
 
     }
 
-	public Expression findExpression(String expressionName, LibraryHolder libraryHolder) {
+	public ExpressionDef findExpression(String expressionName, LibraryHolder libraryHolder) {
 		if(libraryHolder.getLibrary() != null){
 			List<ExpressionDef> expressionDefs = libraryHolder.getLibrary().getStatements().getDef();
 	        
 	        for(ExpressionDef expressionDef : expressionDefs) {
-	        	//System.out.println(expressionDef.getName());
+	        	System.out.println(expressionDef.getName());
 	            if(expressionDef.getName().equals(expressionName)) {
-	                return expressionDef.getExpression();
+	               // return expressionDef.getExpression();
+	            	return expressionDef;
 	            }
 	        }
 		}
@@ -924,7 +1121,7 @@ public class CQLFilter {
     		
     		if(includeDef.getLocalIdentifier().equals(libraryAliasName)){
     			//System.out.println("includedLibraryName:"+this.currentLibraryHolder.library);
-    			includedLibrary = this.includedLibraries.get(includeDef.getPath() + "-" + includeDef.getVersion() + "|" +libraryAliasName);
+    			includedLibrary = this.includedLibraries.get(includeDef.getPath() + "-" + includeDef.getVersion() + "|" + libraryAliasName);
     			
     			if(includedLibrary == null){
     				String libraryPathName = includeDef.getPath() + "-" + includeDef.getVersion();
@@ -940,7 +1137,7 @@ public class CQLFilter {
 						
 						includedLibrary = new LibraryHolder(includedCQLtoELM.getLibrary(), libraryAliasName, includeDef.getPath(), includeDef.getVersion());
 						CQLIncludeLibrary cqlIncludeLibrary = this.cqlModel.getIncludedCQLLibXMLMap().
-								get(includeDef.getPath() + "-" + includeDef.getVersion()).getCqlLibrary();
+								get(includeDef.getPath() + "-" + includeDef.getVersion() + "|" + libraryAliasName).getCqlLibrary();
 						
 						includedLibrary.setCqlIncludeLibraryObject(cqlIncludeLibrary);
 												
@@ -1022,9 +1219,16 @@ public class CQLFilter {
             this.usedCodes.add(codeName);
         }
     }
+    
+    public CQLObject getCqlObject() {
+		return cqlObject;
+	}
 
-
-    /**
+	public void setCqlObject(CQLObject cqlObject) {
+		this.cqlObject = cqlObject;
+	}
+	
+	/**
      * Gets used expressions
      * @return used expressions list
      */
@@ -1107,6 +1311,22 @@ public class CQLFilter {
     	String dataTypeName = qdmTypeInfoMap.get(dataTypeIdentifier);
     	return dataTypeName;
     }
+    
+    public Map<String, List<String>> getFunctionToFunctionMap() {
+		return functionToFunctionMap;
+	}
+
+	public Map<String, List<String>> getDefinitionToDefinitionMap() {
+		return definitionToDefinitionMap;
+	}
+    
+    public Map<String, List<String>> getDefinitionToFunctionMap() {
+		return definitionToFunctionMap;
+	}
+    
+    public Map<String, List<String>> getFunctionToDefinitionMap() {
+		return functionToDefinitionMap;
+	}
     
     public class LibraryHolder{
     	private Library library;

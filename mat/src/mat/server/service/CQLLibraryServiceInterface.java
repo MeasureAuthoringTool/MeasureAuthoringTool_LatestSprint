@@ -10,6 +10,7 @@ import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLKeywords;
+import mat.model.cql.CQLLibraryAssociation;
 import mat.model.cql.CQLLibraryDataSetObject;
 import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLQualityDataSetDTO;
@@ -58,7 +59,7 @@ public interface CQLLibraryServiceInterface {
 
 	SaveCQLLibraryResult getUserShareInfo(String cqlId, String searchText);
 
-	SaveCQLLibraryResult searchForIncludes(String searchText);
+	SaveCQLLibraryResult searchForIncludes(String setId, String searchText);
 
 	void updateUsersShare(SaveCQLLibraryResult result);
 
@@ -104,4 +105,6 @@ public interface CQLLibraryServiceInterface {
 
 	VsacApiResult updateCQLVSACValueSets(String cqlLibraryId, String expansionId, String sessionId);
 	CQLKeywords getCQLKeywordsLists();
+
+	List<CQLLibraryAssociation> getAssociations(String Id);
 }
