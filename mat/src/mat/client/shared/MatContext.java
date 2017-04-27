@@ -270,6 +270,12 @@ public class MatContext implements IsSerializable {
 	/** The all CQL units list. */
 	private List<String> allCQLUnitsList = new ArrayList<String>();
 	
+	private List<String> includedDefNames = new ArrayList<String>();
+	private List<String> includedFuncNames = new ArrayList<String>();
+	private List<String> includedValueSetNames = new ArrayList<String>();
+	private List<String> includedParamNames = new ArrayList<String>();
+	private List<String> includedCodeNames = new ArrayList<String>();
+	
 	
 	//private GlobalCopyPaste copyPaste;
 	
@@ -2299,6 +2305,48 @@ public class MatContext implements IsSerializable {
 	}
 	
 	/**
+	 * Gets the current CQL Library id.
+	 * 
+	 * @return the CQL Library id
+	 */
+	public String getCurrentCQLLibraryLockedUserId() {
+		if(currentLibraryInfo != null) {
+			return currentLibraryInfo.getLockedUserId();
+		}
+		else {
+			return "";
+		}
+	}
+	
+	/**
+	 * Gets the current CQL Library id.
+	 * 
+	 * @return the CQL Library id
+	 */
+	public String getCurrentCQLLibraryLockedUserName() {
+		if(currentLibraryInfo != null) {
+			return currentLibraryInfo.getLockedUserName();
+		}
+		else {
+			return "";
+		}
+	}
+	
+	/**
+	 * Gets the current CQL Library id.
+	 * 
+	 * @return the CQL Library id
+	 */
+	public String getCurrentCQLLibraryLockedUserEmail() {
+		if(currentLibraryInfo != null) {
+			return currentLibraryInfo.getLockedUserEmail();
+		}
+		else {
+			return "";
+		}
+	}
+	
+	/**
 	 * Gets the current CQL Library name.
 	 * 
 	 * @return the current CQL Library name
@@ -2343,6 +2391,74 @@ public class MatContext implements IsSerializable {
 			cqlLibraryService = (CQLLibraryServiceAsync) GWT.create(CQLLibraryService.class);
 		}
 		return cqlLibraryService;
+	}
+	
+	/**
+	 * Checks if is measure is CQL Measure depending 
+	 * on Measure release version.
+	 *
+	 * @param releaseVersion the release version
+	 * @return true, if is CQL measure
+	 */
+	public boolean isCQLMeasure(String releaseVersion) {
+		
+		String str[] = releaseVersion.replace("v", "").split("\\.");
+		int version_int = Integer.parseInt(str[0]);
+		if(version_int<5){
+			return false;
+		}
+		
+		return true;
+	}
+
+
+	public List<String> getIncludedDefNames() {
+		return includedDefNames;
+	}
+
+
+	public void setIncludedDefNames(List<String> includedDefNames) {
+		this.includedDefNames = includedDefNames;
+	}
+
+
+	public List<String> getIncludedFuncNames() {
+		return includedFuncNames;
+	}
+
+
+	public void setIncludedFuncNames(List<String> includedFuncNames) {
+		this.includedFuncNames = includedFuncNames;
+	}
+
+
+	public List<String> getIncludedValueSetNames() {
+		return includedValueSetNames;
+	}
+
+
+	public void setIncludedValueSetNames(List<String> includedValueSetNames) {
+		this.includedValueSetNames = includedValueSetNames;
+	}
+
+
+	public List<String> getIncludedParamNames() {
+		return includedParamNames;
+	}
+
+
+	public void setIncludedParamNames(List<String> includedParamNames) {
+		this.includedParamNames = includedParamNames;
+	}
+
+
+	public List<String> getIncludedCodeNames() {
+		return includedCodeNames;
+	}
+
+
+	public void setIncludedCodeNames(List<String> includedCodeNames) {
+		this.includedCodeNames = includedCodeNames;
 	}
 
 	/*public GlobalCopyPaste getCopyPaste() {

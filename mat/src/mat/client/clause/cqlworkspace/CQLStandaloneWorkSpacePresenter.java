@@ -98,7 +98,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 
 	/** The exp profile to all qdm. */
 	private String expProfileToAllValueSet = "";
-	
+
 	/** The setId for the current library. */
 	private String setId = null;
 
@@ -252,8 +252,14 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		void createAddArgumentViewForFunctions(List<CQLFunctionArgument> argumentList, boolean isEditable);
 
 		CQLAppliedValueSetView getValueSetView();
+		
+		CQLCodesView getCodesView();
 
 		void buildAppliedQDM();
+
+		void buildCodes();
+
+		HorizontalPanel getLockedButtonVPanel();
 
 	}
 
@@ -537,104 +543,107 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		 * 
 		 * } });
 		 */
-
 		searchDisplay.getCqlLeftNavBarPanelView().getParameterNameListBox()
 				.addDoubleClickHandler(new DoubleClickHandler() {
 					@Override
 					public void onDoubleClick(DoubleClickEvent event) {
-					
+
 						if (searchDisplay.getCqlLeftNavBarPanelView().getIsLoading()) {
 							event.stopPropagation();
 						} else {
-						searchDisplay.getCQLParametersView().getParameterAceEditor().clearAnnotations();
-						searchDisplay.getCQLParametersView().getParameterAceEditor().removeAllMarkers();
-						searchDisplay.getCQLParametersView().getParameterAceEditor().redisplay();
-						System.out.println("In addParameterEventHandler on DoubleClick isPageDirty = "
-								+ searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty() + " selectedIndex = "
-								+ searchDisplay.getCqlLeftNavBarPanelView().getParameterNameListBox()
-										.getSelectedIndex());
-						searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(true);
-						searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(false);
-						if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
-							searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
-						} else {
-							int selectedIndex = searchDisplay.getCqlLeftNavBarPanelView().getParameterNameListBox()
-									.getSelectedIndex();
-							if (selectedIndex != -1) {
-								final String selectedParamID = searchDisplay.getCqlLeftNavBarPanelView()
-										.getParameterNameListBox().getValue(selectedIndex);
-								searchDisplay.getCqlLeftNavBarPanelView()
-										.setCurrentSelectedParamerterObjId(selectedParamID);
-								if (searchDisplay.getCqlLeftNavBarPanelView().getParameterMap()
-										.get(selectedParamID) != null) {
-									searchDisplay.getCQLParametersView().getParameterNameTxtArea()
-											.setText(searchDisplay.getCqlLeftNavBarPanelView().getParameterMap()
-													.get(selectedParamID).getParameterName());
-									searchDisplay.getCQLParametersView().getParameterAceEditor()
-											.setText(searchDisplay.getCqlLeftNavBarPanelView().getParameterMap()
-													.get(selectedParamID).getParameterLogic());
-									System.out.println("In Parameter DoubleClickHandler, doing setText()");
-									// disable parameterName and Logic fields
-									// for
-									// Default Parameter
-									boolean isReadOnly = searchDisplay.getCqlLeftNavBarPanelView().getParameterMap()
-											.get(selectedParamID).isReadOnly();
-									searchDisplay.getCQLParametersView().getParameterButtonBar().getDeleteButton()
-											.setTitle("Delete");
+							searchDisplay.getCQLParametersView().getParameterAceEditor().clearAnnotations();
+							searchDisplay.getCQLParametersView().getParameterAceEditor().removeAllMarkers();
+							searchDisplay.getCQLParametersView().getParameterAceEditor().redisplay();
+							System.out.println("In addParameterEventHandler on DoubleClick isPageDirty = "
+									+ searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty() + " selectedIndex = "
+									+ searchDisplay.getCqlLeftNavBarPanelView().getParameterNameListBox()
+											.getSelectedIndex());
+							searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(true);
+							searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(false);
+							if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
+								searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
+							} else {
+								int selectedIndex = searchDisplay.getCqlLeftNavBarPanelView().getParameterNameListBox()
+										.getSelectedIndex();
+								if (selectedIndex != -1) {
+									final String selectedParamID = searchDisplay.getCqlLeftNavBarPanelView()
+											.getParameterNameListBox().getValue(selectedIndex);
+									searchDisplay.getCqlLeftNavBarPanelView()
+											.setCurrentSelectedParamerterObjId(selectedParamID);
+									if (searchDisplay.getCqlLeftNavBarPanelView().getParameterMap()
+											.get(selectedParamID) != null) {
+										searchDisplay.getCQLParametersView().getParameterNameTxtArea()
+												.setText(searchDisplay.getCqlLeftNavBarPanelView().getParameterMap()
+														.get(selectedParamID).getParameterName());
+										searchDisplay.getCQLParametersView().getParameterAceEditor()
+												.setText(searchDisplay.getCqlLeftNavBarPanelView().getParameterMap()
+														.get(selectedParamID).getParameterLogic());
+										System.out.println("In Parameter DoubleClickHandler, doing setText()");
+										// disable parameterName and Logic
+										// fields
+										// for
+										// Default Parameter
+										boolean isReadOnly = searchDisplay.getCqlLeftNavBarPanelView().getParameterMap()
+												.get(selectedParamID).isReadOnly();
+										searchDisplay.getCQLParametersView().getParameterButtonBar().getDeleteButton()
+												.setTitle("Delete");
 
-									if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
-										searchDisplay.getCQLParametersView().setWidgetReadOnly(!isReadOnly);
-										searchDisplay.getCQLParametersView().getParameterButtonBar().getEraseButton()
-												.setEnabled(true);
+										if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+											searchDisplay.getCQLParametersView().setWidgetReadOnly(!isReadOnly);
+											searchDisplay.getCQLParametersView().getParameterButtonBar()
+													.getEraseButton().setEnabled(true);
+										}
+
+										// load most recent used cql artifacts
+										MatContext.get().getCQLLibraryService().getUsedCqlArtifacts(
+												MatContext.get().getCurrentCQLLibraryId(),
+												new AsyncCallback<GetUsedCQLArtifactsResult>() {
+
+													@Override
+													public void onFailure(Throwable caught) {
+														Window.alert(MatContext.get().getMessageDelegate()
+																.getGenericErrorMessage());
+													}
+
+													@Override
+													public void onSuccess(GetUsedCQLArtifactsResult result) {
+
+														CQLParameter currentParameter = searchDisplay
+																.getCqlLeftNavBarPanelView().getParameterMap()
+																.get(selectedParamID);
+
+														// if there are cql
+														// errors,
+														// enable the parameter
+														// delete button
+														if (!result.getCqlErrors().isEmpty()) {
+															searchDisplay.getCQLParametersView().getParameterButtonBar()
+																	.getDeleteButton().setEnabled(true);
+
+														}
+
+														// check if the
+														// parameter is
+														// in use, if it is
+														// disable
+														// the parameter delete
+														// button
+														else if (result.getUsedCQLParameters()
+																.contains(currentParameter.getParameterName())) {
+															searchDisplay.getCQLParametersView().getParameterButtonBar()
+																	.getDeleteButton().setEnabled(false);
+
+														}
+
+													}
+
+												});
 									}
-
-									// load most recent used cql artifacts
-									MatContext.get().getCQLLibraryService().getUsedCqlArtifacts(
-											MatContext.get().getCurrentCQLLibraryId(),
-											new AsyncCallback<GetUsedCQLArtifactsResult>() {
-
-												@Override
-												public void onFailure(Throwable caught) {
-													Window.alert(MatContext.get().getMessageDelegate()
-															.getGenericErrorMessage());
-												}
-
-												@Override
-												public void onSuccess(GetUsedCQLArtifactsResult result) {
-
-													CQLParameter currentParameter = searchDisplay
-															.getCqlLeftNavBarPanelView().getParameterMap()
-															.get(selectedParamID);
-
-													// if there are cql errors,
-													// enable the parameter
-													// delete button
-													if (!result.getCqlErrors().isEmpty()) {
-														searchDisplay.getCQLParametersView().getParameterButtonBar()
-																.getDeleteButton().setEnabled(true);
-
-													}
-
-													// check if the parameter is
-													// in use, if it is disable
-													// the parameter delete
-													// button
-													else if (result.getUsedCQLParameters()
-															.contains(currentParameter.getParameterName())) {
-														searchDisplay.getCQLParametersView().getParameterButtonBar()
-																.getDeleteButton().setEnabled(false);
-
-													}
-
-												}
-
-											});
 								}
+
+								searchDisplay.resetMessageDisplay();
+
 							}
-
-							searchDisplay.resetMessageDisplay();
-
-						}
 						}
 					}
 				});
@@ -710,98 +719,100 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 						if (searchDisplay.getCqlLeftNavBarPanelView().getIsLoading()) {
 							event.stopPropagation();
 						} else {
-							
-						
-						searchDisplay.getCQLDefinitionsView().getDefineAceEditor().clearAnnotations();
-						searchDisplay.getCQLDefinitionsView().getDefineAceEditor().removeAllMarkers();
-						searchDisplay.getCQLDefinitionsView().getDefineAceEditor().redisplay();
-						searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(true);
-						if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
-							searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
-						} else {
-							int selectedIndex = searchDisplay.getCqlLeftNavBarPanelView().getDefineNameListBox()
-									.getSelectedIndex();
-							if (selectedIndex != -1) {
-								final String selectedDefinitionID = searchDisplay.getCqlLeftNavBarPanelView()
-										.getDefineNameListBox().getValue(selectedIndex);
-								searchDisplay.getCqlLeftNavBarPanelView()
-										.setCurrentSelectedDefinitionObjId(selectedDefinitionID);
-								if (searchDisplay.getCqlLeftNavBarPanelView().getDefinitionMap()
-										.get(selectedDefinitionID) != null) {
-									searchDisplay.getCQLDefinitionsView().getDefineNameTxtArea()
-											.setText(searchDisplay.getCqlLeftNavBarPanelView().getDefinitionMap()
-													.get(selectedDefinitionID).getDefinitionName());
-									searchDisplay.getCQLDefinitionsView().getDefineAceEditor()
-											.setText(searchDisplay.getCqlLeftNavBarPanelView().getDefinitionMap()
-													.get(selectedDefinitionID).getDefinitionLogic());
+
+							searchDisplay.getCQLDefinitionsView().getDefineAceEditor().clearAnnotations();
+							searchDisplay.getCQLDefinitionsView().getDefineAceEditor().removeAllMarkers();
+							searchDisplay.getCQLDefinitionsView().getDefineAceEditor().redisplay();
+							searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(true);
+							if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
+								searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
+							} else {
+								int selectedIndex = searchDisplay.getCqlLeftNavBarPanelView().getDefineNameListBox()
+										.getSelectedIndex();
+								if (selectedIndex != -1) {
+									final String selectedDefinitionID = searchDisplay.getCqlLeftNavBarPanelView()
+											.getDefineNameListBox().getValue(selectedIndex);
+									searchDisplay.getCqlLeftNavBarPanelView()
+											.setCurrentSelectedDefinitionObjId(selectedDefinitionID);
 									if (searchDisplay.getCqlLeftNavBarPanelView().getDefinitionMap()
-											.get(selectedDefinitionID).getContext().equalsIgnoreCase("patient")) {
-										searchDisplay.getCQLDefinitionsView().getContextDefinePATRadioBtn()
-												.setValue(true);
-										searchDisplay.getCQLDefinitionsView().getContextDefinePOPRadioBtn()
-												.setValue(false);
-									} else {
-										searchDisplay.getCQLDefinitionsView().getContextDefinePOPRadioBtn()
-												.setValue(true);
-										searchDisplay.getCQLDefinitionsView().getContextDefinePATRadioBtn()
-												.setValue(false);
-									}
-									// disable definitionName and fields for
-									// Supplemental data definitions
-									boolean isReadOnly = searchDisplay.getCqlLeftNavBarPanelView().getDefinitionMap()
-											.get(selectedDefinitionID).isSupplDataElement();
-									searchDisplay.getCQLDefinitionsView().getDefineButtonBar().getDeleteButton()
-											.setTitle("Delete");
+											.get(selectedDefinitionID) != null) {
+										searchDisplay.getCQLDefinitionsView().getDefineNameTxtArea()
+												.setText(searchDisplay.getCqlLeftNavBarPanelView().getDefinitionMap()
+														.get(selectedDefinitionID).getDefinitionName());
+										searchDisplay.getCQLDefinitionsView().getDefineAceEditor()
+												.setText(searchDisplay.getCqlLeftNavBarPanelView().getDefinitionMap()
+														.get(selectedDefinitionID).getDefinitionLogic());
+										if (searchDisplay.getCqlLeftNavBarPanelView().getDefinitionMap()
+												.get(selectedDefinitionID).getContext().equalsIgnoreCase("patient")) {
+											searchDisplay.getCQLDefinitionsView().getContextDefinePATRadioBtn()
+													.setValue(true);
+											searchDisplay.getCQLDefinitionsView().getContextDefinePOPRadioBtn()
+													.setValue(false);
+										} else {
+											searchDisplay.getCQLDefinitionsView().getContextDefinePOPRadioBtn()
+													.setValue(true);
+											searchDisplay.getCQLDefinitionsView().getContextDefinePATRadioBtn()
+													.setValue(false);
+										}
+										// disable definitionName and fields for
+										// Supplemental data definitions
+										boolean isReadOnly = searchDisplay.getCqlLeftNavBarPanelView()
+												.getDefinitionMap().get(selectedDefinitionID).isSupplDataElement();
+										searchDisplay.getCQLDefinitionsView().getDefineButtonBar().getDeleteButton()
+												.setTitle("Delete");
 
-									if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
-										searchDisplay.getCQLDefinitionsView().setWidgetReadOnly(!isReadOnly);
-										searchDisplay.getCQLDefinitionsView().getDefineButtonBar().getEraseButton()
-												.setEnabled(true);
-									}
+										if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+											searchDisplay.getCQLDefinitionsView().setWidgetReadOnly(!isReadOnly);
+											searchDisplay.getCQLDefinitionsView().getDefineButtonBar().getEraseButton()
+													.setEnabled(true);
+										}
 
-									// load most recent used cql artifacts
-									MatContext.get().getCQLLibraryService().getUsedCqlArtifacts(
-											MatContext.get().getCurrentCQLLibraryId(),
-											new AsyncCallback<GetUsedCQLArtifactsResult>() {
+										// load most recent used cql artifacts
+										MatContext.get().getCQLLibraryService().getUsedCqlArtifacts(
+												MatContext.get().getCurrentCQLLibraryId(),
+												new AsyncCallback<GetUsedCQLArtifactsResult>() {
 
-												@Override
-												public void onFailure(Throwable caught) {
-													Window.alert(MatContext.get().getMessageDelegate()
-															.getGenericErrorMessage());
-												}
-
-												@Override
-												public void onSuccess(GetUsedCQLArtifactsResult result) {
-
-													CQLDefinition currentDefinition = searchDisplay
-															.getCqlLeftNavBarPanelView().getDefinitionMap()
-															.get(selectedDefinitionID);
-
-													// if there are cql errors,
-													// enable the definition
-													// delete button
-													if (!result.getCqlErrors().isEmpty()) {
-														searchDisplay.getCQLDefinitionsView().getDefineButtonBar()
-																.getDeleteButton().setEnabled(true);
+													@Override
+													public void onFailure(Throwable caught) {
+														Window.alert(MatContext.get().getMessageDelegate()
+																.getGenericErrorMessage());
 													}
 
-													// if the definition is in
-													// use, disable the
-													// definition delete button
-													else if (result.getUsedCQLDefinitions()
-															.contains(currentDefinition.getDefinitionName())) {
-														searchDisplay.getCQLDefinitionsView().getDefineButtonBar()
-																.getDeleteButton().setEnabled(false);
+													@Override
+													public void onSuccess(GetUsedCQLArtifactsResult result) {
+
+														CQLDefinition currentDefinition = searchDisplay
+																.getCqlLeftNavBarPanelView().getDefinitionMap()
+																.get(selectedDefinitionID);
+
+														// if there are cql
+														// errors,
+														// enable the definition
+														// delete button
+														if (!result.getCqlErrors().isEmpty()) {
+															searchDisplay.getCQLDefinitionsView().getDefineButtonBar()
+																	.getDeleteButton().setEnabled(true);
+														}
+
+														// if the definition is
+														// in
+														// use, disable the
+														// definition delete
+														// button
+														else if (result.getUsedCQLDefinitions()
+																.contains(currentDefinition.getDefinitionName())) {
+															searchDisplay.getCQLDefinitionsView().getDefineButtonBar()
+																	.getDeleteButton().setEnabled(false);
+														}
+
 													}
 
-												}
-
-											});
+												});
+									}
 								}
-							}
 
-							searchDisplay.resetMessageDisplay();
-						}
+								searchDisplay.resetMessageDisplay();
+							}
 						}
 					}
 				});
@@ -877,100 +888,105 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 				if (searchDisplay.getCqlLeftNavBarPanelView().getIsLoading()) {
 					event.stopPropagation();
 				} else {
-				searchDisplay.getCQLFunctionsView().getFunctionBodyAceEditor().clearAnnotations();
-				searchDisplay.getCQLFunctionsView().getFunctionBodyAceEditor().removeAllMarkers();
-				searchDisplay.getCQLFunctionsView().getFunctionBodyAceEditor().redisplay();
-				searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(true);
-				searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(false);
-				if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
-					searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
-				} else {
-					int selectedIndex = searchDisplay.getCqlLeftNavBarPanelView().getFuncNameListBox()
-							.getSelectedIndex();
-					if (selectedIndex != -1) {
-						final String selectedFunctionId = searchDisplay.getCqlLeftNavBarPanelView().getFuncNameListBox()
-								.getValue(selectedIndex);
-						searchDisplay.getCqlLeftNavBarPanelView().setCurrentSelectedFunctionObjId(selectedFunctionId);
-						if (searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap()
-								.get(selectedFunctionId) != null) {
-							searchDisplay.getCQLFunctionsView().getFuncNameTxtArea()
-									.setText(searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap()
-											.get(selectedFunctionId).getFunctionName());
-							searchDisplay.getCQLFunctionsView().getFunctionBodyAceEditor()
-									.setText(searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap()
-											.get(selectedFunctionId).getFunctionLogic());
-							if (searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap().get(selectedFunctionId)
-									.getContext().equalsIgnoreCase("patient")) {
-								searchDisplay.getCQLFunctionsView().getContextFuncPATRadioBtn().setValue(true);
-								searchDisplay.getCQLFunctionsView().getContextFuncPOPRadioBtn().setValue(false);
-							} else {
-								searchDisplay.getCQLFunctionsView().getContextFuncPOPRadioBtn().setValue(true);
-								searchDisplay.getCQLFunctionsView().getContextFuncPATRadioBtn().setValue(false);
-							}
+					searchDisplay.getCQLFunctionsView().getFunctionBodyAceEditor().clearAnnotations();
+					searchDisplay.getCQLFunctionsView().getFunctionBodyAceEditor().removeAllMarkers();
+					searchDisplay.getCQLFunctionsView().getFunctionBodyAceEditor().redisplay();
+					searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(true);
+					searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(false);
+					if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
+						searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
+					} else {
+						int selectedIndex = searchDisplay.getCqlLeftNavBarPanelView().getFuncNameListBox()
+								.getSelectedIndex();
+						if (selectedIndex != -1) {
+							final String selectedFunctionId = searchDisplay.getCqlLeftNavBarPanelView()
+									.getFuncNameListBox().getValue(selectedIndex);
+							searchDisplay.getCqlLeftNavBarPanelView()
+									.setCurrentSelectedFunctionObjId(selectedFunctionId);
+							if (searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap()
+									.get(selectedFunctionId) != null) {
+								searchDisplay.getCQLFunctionsView().getFuncNameTxtArea()
+										.setText(searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap()
+												.get(selectedFunctionId).getFunctionName());
+								searchDisplay.getCQLFunctionsView().getFunctionBodyAceEditor()
+										.setText(searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap()
+												.get(selectedFunctionId).getFunctionLogic());
+								if (searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap().get(selectedFunctionId)
+										.getContext().equalsIgnoreCase("patient")) {
+									searchDisplay.getCQLFunctionsView().getContextFuncPATRadioBtn().setValue(true);
+									searchDisplay.getCQLFunctionsView().getContextFuncPOPRadioBtn().setValue(false);
+								} else {
+									searchDisplay.getCQLFunctionsView().getContextFuncPOPRadioBtn().setValue(true);
+									searchDisplay.getCQLFunctionsView().getContextFuncPATRadioBtn().setValue(false);
+								}
 
-							if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
-								searchDisplay.getCQLFunctionsView().setWidgetReadOnly(true);
-								searchDisplay.getCQLFunctionsView().getFunctionButtonBar().getDeleteButton()
-										.setEnabled(true);
-							}
+								if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+									searchDisplay.getCQLFunctionsView().setWidgetReadOnly(true);
+									searchDisplay.getCQLFunctionsView().getFunctionButtonBar().getDeleteButton()
+											.setEnabled(true);
+								}
 
-							// load most recent used cql artifacts
-							MatContext.get().getCQLLibraryService().getUsedCqlArtifacts(
-									MatContext.get().getCurrentCQLLibraryId(),
-									new AsyncCallback<GetUsedCQLArtifactsResult>() {
+								// load most recent used cql artifacts
+								MatContext.get().getCQLLibraryService().getUsedCqlArtifacts(
+										MatContext.get().getCurrentCQLLibraryId(),
+										new AsyncCallback<GetUsedCQLArtifactsResult>() {
 
-										@Override
-										public void onFailure(Throwable caught) {
-											Window.alert(
-													MatContext.get().getMessageDelegate().getGenericErrorMessage());
-										}
-
-										@Override
-										public void onSuccess(GetUsedCQLArtifactsResult result) {
-
-											// if the cql file has errors,
-											// enable the function delete button
-											if (!result.getCqlErrors().isEmpty()) {
-												searchDisplay.getCQLFunctionsView().getFunctionButtonBar()
-														.getDeleteButton().setEnabled(true);
+											@Override
+											public void onFailure(Throwable caught) {
+												Window.alert(
+														MatContext.get().getMessageDelegate().getGenericErrorMessage());
 											}
 
-									else {
-												// if the function is in use,
-												// disable the function delete
+											@Override
+											public void onSuccess(GetUsedCQLArtifactsResult result) {
+
+												// if the cql file has errors,
+												// enable the function delete
 												// button
-												if (result.getUsedCQLFunctions()
-														.contains(searchDisplay.getCqlLeftNavBarPanelView()
-																.getFunctionMap().get(selectedFunctionId)
-																.getFunctionName())) {
+												if (!result.getCqlErrors().isEmpty()) {
 													searchDisplay.getCQLFunctionsView().getFunctionButtonBar()
-															.getDeleteButton().setEnabled(false);
-
+															.getDeleteButton().setEnabled(true);
 												}
+
+										else {
+													// if the function is in
+													// use,
+													// disable the function
+													// delete
+													// button
+													if (result.getUsedCQLFunctions()
+															.contains(searchDisplay.getCqlLeftNavBarPanelView()
+																	.getFunctionMap().get(selectedFunctionId)
+																	.getFunctionName())) {
+														searchDisplay.getCQLFunctionsView().getFunctionButtonBar()
+																.getDeleteButton().setEnabled(false);
+
+													}
+												}
+
 											}
 
-										}
-
-									});
+										});
+							}
 						}
-					}
-					if (searchDisplay.getCqlLeftNavBarPanelView().getCurrentSelectedFunctionObjId() != null) {
-						CQLFunctions selectedFunction = searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap()
-								.get(searchDisplay.getCqlLeftNavBarPanelView().getCurrentSelectedFunctionObjId());
-						if (selectedFunction.getArgumentList() != null) {
-							searchDisplay.getCQLFunctionsView().getFunctionArgumentList().clear();
-							searchDisplay.getCQLFunctionsView().getFunctionArgumentList()
-									.addAll(selectedFunction.getArgumentList());
-						} else {
-							searchDisplay.getCQLFunctionsView().getFunctionArgumentList().clear();
+						if (searchDisplay.getCqlLeftNavBarPanelView().getCurrentSelectedFunctionObjId() != null) {
+							CQLFunctions selectedFunction = searchDisplay.getCqlLeftNavBarPanelView().getFunctionMap()
+									.get(searchDisplay.getCqlLeftNavBarPanelView().getCurrentSelectedFunctionObjId());
+							if (selectedFunction.getArgumentList() != null) {
+								searchDisplay.getCQLFunctionsView().getFunctionArgumentList().clear();
+								searchDisplay.getCQLFunctionsView().getFunctionArgumentList()
+										.addAll(selectedFunction.getArgumentList());
+							} else {
+								searchDisplay.getCQLFunctionsView().getFunctionArgumentList().clear();
+							}
 						}
+						searchDisplay.resetMessageDisplay();
 					}
+					searchDisplay.getCQLFunctionsView().createAddArgumentViewForFunctions(
+							searchDisplay.getCQLFunctionsView().getFunctionArgumentList(),
+							MatContext.get().getLibraryLockService().checkForEditPermission());
+					
 				}
-				searchDisplay.getCQLFunctionsView().createAddArgumentViewForFunctions(
-						searchDisplay.getCQLFunctionsView().getFunctionArgumentList(),
-						MatContext.get().getLibraryLockService().checkForEditPermission());
-				searchDisplay.resetMessageDisplay();
-			}
 			}
 		});
 		// Function Insert Icon Functionality
@@ -1651,7 +1667,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 													.setEnabled(true);
 										}
 
-						else {
+										else {
 											// if the saved function is in use,
 											// then disable the delete button
 											if (result.getUsedCQLArtifacts().getUsedCQLFunctions()
@@ -1660,7 +1676,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 														.getDeleteButton().setEnabled(false);
 											}
 
-						else {
+											else {
 												searchDisplay.getCQLFunctionsView().getFunctionButtonBar()
 														.getDeleteButton().setEnabled(true);
 											}
@@ -1693,6 +1709,10 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 											searchDisplay.createAddArgumentViewForFunctions(
 													result.getFunction().getArgumentList());
 										}
+									} else if (result.getFailureReason() == 6) {
+										searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert().clearAlert();
+										searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().createAlert(MatContext.get()
+												.getMessageDelegate().getCqlFunctionArgumentNameError());
 									}
 
 								}
@@ -2063,6 +2083,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 															.getIncludeLibrarySuccessMessage(
 																	result.getIncludeLibrary().getAliasName()));
 											clearAlias();
+											MatContext.get().setIncludedDefNames(result.getCqlModel().getIncludedDefNames());
 											if (searchDisplay.getCqlLeftNavBarPanelView().getIncludesNameListbox()
 													.getItemCount() >= CQLWorkSpaceConstants.VALID_INCLUDE_COUNT) {
 												searchDisplay.getCqlLeftNavBarPanelView().getWarningMessageAlert()
@@ -2516,7 +2537,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 											.setViewIncludeLibrarys(result.getCqlModel().getCqlIncludeLibrarys());
 									MatContext.get()
 											.setIncludes(getIncludesList(result.getCqlModel().getCqlIncludeLibrarys()));
-
+									MatContext.get().setIncludedDefNames(result.getCqlModel().getIncludedDefNames());
 									searchDisplay.getCqlLeftNavBarPanelView().clearAndAddAliasNamesToListBox();
 									searchDisplay.getCqlLeftNavBarPanelView().udpateIncludeLibraryMap();
 									searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().clearAlert();
@@ -2648,6 +2669,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		searchDisplay.getCqlLeftNavBarPanelView().setCurrentSelectedFunctionObjId(null);
 		searchDisplay.getFunctionArgNameMap().clear();
 		searchDisplay.getValueSetView().clearCellTableMainPanel();
+		searchDisplay.getCodesView().clearCellTableMainPanel();
 		searchDisplay.getIncludeView().getSearchTextBox().setText("");
 		searchDisplay.getCqlLeftNavBarPanelView().setIsPageDirty(false);
 		searchDisplay.resetMessageDisplay();
@@ -2671,7 +2693,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		searchDisplay.resetAll();
 		panel.clear();
 		searchDisplay.getMainPanel().clear();
-		 MatContext.get().getValuesets().clear(); 
+		MatContext.get().getValuesets().clear();
 	}
 
 	@Override
@@ -2682,6 +2704,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 			displayEmpty();
 		} else {
 			panel.clear();
+			searchDisplay.getLockedButtonVPanel();
 			panel.add(searchDisplay.asWidget());
 			if (!isCQLWorkSpaceLoaded) { // this check is made so that when CQL
 											// is
@@ -2713,7 +2736,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 								// System.out.println("I got the model");
 
 								// if(result.getCqlModel().getLibraryName()!=null){
-								if(result.getSetId() != null){
+								if (result.getSetId() != null) {
 									setId = result.getSetId();
 								}
 								if (result.getCqlModel().getLibraryName() != null) {
@@ -2800,6 +2823,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 									searchDisplay.getCqlLeftNavBarPanelView().udpateIncludeLibraryMap();
 									MatContext.get()
 											.setIncludes(getIncludesList(result.getCqlModel().getCqlIncludeLibrarys()));
+									MatContext.get().setIncludedDefNames(result.getCqlModel().getIncludedDefNames());
 								} else {
 									searchDisplay.getCqlLeftNavBarPanelView().getIncludesBadge().setText("00");
 									searchDisplay.getCqlLeftNavBarPanelView().getIncludeLibraryMap().clear();
@@ -2848,6 +2872,25 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 			}
 		});
 
+		searchDisplay.getCqlLeftNavBarPanelView().getCodesLibrary().addClickHandler(new ClickHandler() {
+
+			@Override
+			public void onClick(ClickEvent event) {
+				searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(true);
+				searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(false);
+				// searchDisplay.hideAceEditorAutoCompletePopUp();
+				if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
+					nextSection = CQLWorkSpaceConstants.CQL_CODES;
+					searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
+					event.stopPropagation();
+				} else {
+					codesEvent();
+				}
+
+			}
+			
+		});
+		
 		searchDisplay.getCqlLeftNavBarPanelView().getAppliedQDM().addClickHandler(new ClickHandler() {
 
 			@Override
@@ -3956,6 +3999,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(true);
 		searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(false);
 		searchDisplay.getValueSetView().getCellTableMainPanel().clear();
+		searchDisplay.getCodesView().getCellTableMainPanel().clear();
 		if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
 			nextSection = CQLWorkSpaceConstants.CQL_GENERAL_MENU;
 			searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
@@ -3995,6 +4039,32 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		}
 
 	}
+	
+	/**
+	 * codes event.
+	 */
+	private void codesEvent() {
+		// server
+		searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(true);
+		searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(false);
+		if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
+			nextSection = CQLWorkSpaceConstants.CQL_CODES;
+			searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
+
+		} else {
+			unsetActiveMenuItem(currentSection);
+			searchDisplay.getCqlLeftNavBarPanelView().getCodesLibrary().setActive(true);
+			currentSection = CQLWorkSpaceConstants.CQL_CODES;
+			searchDisplay.buildCodes();
+			searchDisplay.getCodesView().buildCodesCellTable(
+					searchDisplay.getCqlLeftNavBarPanelView().getCodesTableList(),
+					MatContext.get().getLibraryLockService().checkForEditPermission());
+			searchDisplay.getCodesView()
+					.setWidgetsReadOnly(MatContext.get().getLibraryLockService().checkForEditPermission());
+			searchDisplay.getCodesView().resetCQLCodesSearchPanel();
+		}
+
+	}
 
 	/**
 	 * Build View for Parameter when Parameter AnchorList item is clicked.
@@ -4002,6 +4072,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 	private void parameterEvent() {
 		unsetActiveMenuItem(currentSection);
 		searchDisplay.getValueSetView().getCellTableMainPanel().clear();
+		searchDisplay.getCodesView().getCellTableMainPanel().clear();
 		searchDisplay.getCqlLeftNavBarPanelView().getParameterLibrary().setActive(true);
 		currentSection = CQLWorkSpaceConstants.CQL_PARAMETER_MENU;
 		searchDisplay.buildParameterLibraryView();
@@ -4022,6 +4093,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(true);
 		searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(false);
 		searchDisplay.getValueSetView().getCellTableMainPanel().clear();
+		searchDisplay.getCodesView().getCellTableMainPanel().clear();
 		searchDisplay.getCqlLeftNavBarPanelView().getIncludesLibrary().setActive(true);
 		currentSection = CQLWorkSpaceConstants.CQL_INCLUDES_MENU;
 		searchDisplay.getMainFlowPanel().clear();
@@ -4042,6 +4114,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(true);
 		searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(false);
 		searchDisplay.getValueSetView().getCellTableMainPanel().clear();
+		searchDisplay.getCodesView().getCellTableMainPanel().clear();
 
 		searchDisplay.getCqlLeftNavBarPanelView().getDefinitionLibrary().setActive(true);
 		currentSection = CQLWorkSpaceConstants.CQL_DEFINE_MENU;
@@ -4061,6 +4134,8 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 	private void functionEvent() {
 		searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(true);
 		searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(false);
+		searchDisplay.getValueSetView().getCellTableMainPanel().clear();
+		searchDisplay.getCodesView().getCellTableMainPanel().clear();
 		unsetActiveMenuItem(currentSection);
 		searchDisplay.getCqlLeftNavBarPanelView().getFunctionLibrary().setActive(true);
 		currentSection = CQLWorkSpaceConstants.CQL_FUNCTION_MENU;
@@ -4080,6 +4155,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		searchDisplay.getCqlLeftNavBarPanelView().setIsNavBarClick(true);
 		searchDisplay.getCqlLeftNavBarPanelView().setIsDoubleClick(false);
 		searchDisplay.getValueSetView().getCellTableMainPanel().clear();
+		searchDisplay.getCodesView().getCellTableMainPanel().clear();
 		if (searchDisplay.getCqlLeftNavBarPanelView().getIsPageDirty()) {
 			nextSection = CQLWorkSpaceConstants.CQL_VIEW_MENU;
 			searchDisplay.getCqlLeftNavBarPanelView().showUnsavedChangesWarning();
@@ -4128,12 +4204,14 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 												error.getErrorMessage(), AceAnnotationType.WARNING);
 									}
 									searchDisplay.getCqlAceEditor().setText(result.getCqlString());
+									//searchDisplay.getCqlAceEditor().lockEditor(0, 0);
 									searchDisplay.getCqlAceEditor().setAnnotations();
 									searchDisplay.getCqlAceEditor().redisplay();
 								} else if (!result.isDatatypeUsedCorrectly()) {
 									searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert().clearAlert();
-									searchDisplay.getCqlLeftNavBarPanelView().getWarningMessageAlert().createAlert(
-											MatContext.get().getMessageDelegate().getVIEW_CQL_ERROR_MESSAGE_BAD_VALUESET_DATATYPE());
+									searchDisplay.getCqlLeftNavBarPanelView().getWarningMessageAlert()
+											.createAlert(MatContext.get().getMessageDelegate()
+													.getVIEW_CQL_ERROR_MESSAGE_BAD_VALUESET_DATATYPE());
 									searchDisplay.getCqlAceEditor().setText(result.getCqlString());
 								} else {
 									searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert().setVisible(true);
@@ -4189,6 +4267,8 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 				searchDisplay.getCqlLeftNavBarPanelView().getViewCQL().setActive(false);
 			} else if (menuClickedBefore.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_APPLIED_QDM)) {
 				searchDisplay.getCqlLeftNavBarPanelView().getAppliedQDM().setActive(false);
+			}else if (menuClickedBefore.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_CODES)) {
+				searchDisplay.getCqlLeftNavBarPanelView().getCodesLibrary().setActive(false);
 			} else if (menuClickedBefore.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_INCLUDES_MENU)) {
 				searchDisplay.getCqlLeftNavBarPanelView().getIncludesLibrary().setActive(false);
 				searchDisplay.getCqlLeftNavBarPanelView().getIncludesNameListbox().setSelectedIndex(-1);
@@ -4215,8 +4295,8 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert().clearAlert();
 		searchDisplay.getCqlLeftNavBarPanelView().getWarningMessageAlert().clearAlert();
 		showSearchingBusy(true);
-		
-		MatContext.get().getCQLLibraryService().searchForIncludes(setId,searchText,
+
+		MatContext.get().getCQLLibraryService().searchForIncludes(setId, searchText,
 				new AsyncCallback<SaveCQLLibraryResult>() {
 
 					@Override
@@ -4267,6 +4347,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		searchDisplay.getCqlLeftNavBarPanelView().getGeneralInformation().setEnabled(!busy);
 		if (!currentSection.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_INCLUDES_MENU))
 			searchDisplay.getCqlLeftNavBarPanelView().getIncludesLibrary().setEnabled(!busy);
+		searchDisplay.getCqlLeftNavBarPanelView().getCodesLibrary().setEnabled(!busy);
 		searchDisplay.getCqlLeftNavBarPanelView().getAppliedQDM().setEnabled(!busy);
 		searchDisplay.getCqlLeftNavBarPanelView().getParameterLibrary().setEnabled(!busy);
 		searchDisplay.getCqlLeftNavBarPanelView().getDefinitionLibrary().setEnabled(!busy);
@@ -4300,6 +4381,10 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 			searchDisplay.getValueSetView().getCancelQDMButton().setEnabled(!busy);
 			searchDisplay.getValueSetView().getUpdateFromVSACButton().setEnabled(!busy);
 			searchDisplay.getValueSetView().getRetrieveFromVSACButton().setEnabled(!busy);
+			
+			searchDisplay.getCodesView().getSaveButton().setEnabled(!busy);
+			searchDisplay.getCodesView().getCancelCodeButton().setEnabled(!busy);
+			searchDisplay.getCodesView().getRetrieveFromVSACButton().setEnabled(!busy);
 		}
 		searchDisplay.getIncludeView().getSearchButton().setEnabled(!busy);
 
@@ -4454,6 +4539,10 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 			unsetActiveMenuItem(currentSection);
 			searchDisplay.getCqlLeftNavBarPanelView().getAppliedQDM().setActive(false);
 			break;
+		case (CQLWorkSpaceConstants.CQL_CODES):
+			unsetActiveMenuItem(currentSection);
+			searchDisplay.getCqlLeftNavBarPanelView().getCodesLibrary().setActive(false);
+			break;
 		case (CQLWorkSpaceConstants.CQL_FUNCTION_MENU):
 			unsetActiveMenuItem(currentSection);
 			searchDisplay.getCqlLeftNavBarPanelView().getFunctionLibrary().setActive(false);
@@ -4514,6 +4603,10 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		case (CQLWorkSpaceConstants.CQL_APPLIED_QDM):
 			currentSection = nextSection;
 			appliedQDMEvent();
+			break;
+		case (CQLWorkSpaceConstants.CQL_CODES):
+			currentSection = nextSection;
+			codesEvent();
 			break;
 		default:
 			break;

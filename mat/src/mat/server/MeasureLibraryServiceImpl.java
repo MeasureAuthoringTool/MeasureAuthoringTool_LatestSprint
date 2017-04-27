@@ -39,7 +39,7 @@ import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.MeasureNotesModel;
 import mat.client.measure.NqfModel;
 import mat.client.measure.PeriodModel;
-import mat.client.measure.TransferMeasureOwnerShipModel;
+import mat.client.measure.TransferOwnerShipModel;
 import mat.client.measure.service.CQLService;
 import mat.client.measure.service.SaveMeasureNotesResult;
 import mat.client.measure.service.SaveMeasureResult;
@@ -1578,15 +1578,14 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			detail.setMeasureLocked(isLocked);
 			// Prod issue fixed - Measure Shared with Regular users not loaded
 			// as editable measures.
-			List<MeasureShareDTO> measureShare = getMeasureDAO().getMeasureShareInfoForMeasureAndUser(currentUserId,
-					measure.getId());
-			if (measureShare.size() > 0) {
+			/*List<MeasureShareDTO> measureShare = getMeasureDAO().getMeasureShareInfoForMeasureAndUser(currentUserId,
+					measure.getId());*/
+			/*if (measureShare.size() > 0) {
 				detail.setEditable(((currentUserId.equals(measure.getOwner().getId()) || isSuperUser
 						|| ShareLevel.MODIFY_ID.equals(measureShare.get(0).getShareLevel()))) && measure.isDraft());
 			} else {
-				detail.setEditable(
-						(currentUserId.equals(measure.getOwner().getId()) || isSuperUser) && measure.isDraft());
-			}
+			*/	detail.setEditable(MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, measure.getId()));
+			//}
 			if (isLocked && (measure.getLockedUser() != null)) {
 				LockedUserInfo lockedUserInfo = new LockedUserInfo();
 				lockedUserInfo.setUserId(measure.getLockedUser().getId());
@@ -3134,7 +3133,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @see mat.server.service.MeasureLibraryService#searchUsers(int, int)
 	 */
 	@Override
-	public final TransferMeasureOwnerShipModel searchUsers(final String searchText, final int startIndex,
+	public final TransferOwnerShipModel searchUsers(final String searchText, final int startIndex,
 			final int pageSize) {
 		UserService usersService = getUserService();
 		List<User> searchResults;
@@ -3145,10 +3144,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		logger.info("User search returned " + searchResults.size());
 
-		TransferMeasureOwnerShipModel result = new TransferMeasureOwnerShipModel();
-		List<TransferMeasureOwnerShipModel.Result> detailList = new ArrayList<TransferMeasureOwnerShipModel.Result>();
+		TransferOwnerShipModel result = new TransferOwnerShipModel();
+		List<TransferOwnerShipModel.Result> detailList = new ArrayList<TransferOwnerShipModel.Result>();
 		for (User user : searchResults) {
-			TransferMeasureOwnerShipModel.Result r = new TransferMeasureOwnerShipModel.Result();
+			TransferOwnerShipModel.Result r = new TransferOwnerShipModel.Result();
 			r.setFirstName(user.getFirstName());
 			r.setLastName(user.getLastName());
 			r.setEmailId(user.getEmailAddress());
@@ -5682,27 +5681,30 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				if (measureXML != null) {
 					String measureXmlString = measureXML.getMeasureXMLAsString();
 					if (measureXmlString != null) {
-						MeasureOwnerReportDTO ownerReportDTO = new MeasureOwnerReportDTO();
-						ownerReportDTO.setFirstName(user.getFirstName());
-						ownerReportDTO.setLastName(user.getLastName());
-						ownerReportDTO.setOrganizationName(user.getOrganizationName());
-						ownerReportDTO.setMeasureDescription(measure.getDescription());
-						ownerReportDTO.setCmsNumber(measure.geteMeasureId());
+						String firstName = user.getFirstName();
+						String lastName = user.getLastName();
+						String organizationName = user.getOrganizationName();
+						String measureDescription = measure.getDescription();
+						int cmsNumber = measure.geteMeasureId();
 						XmlProcessor processor = new XmlProcessor(measureXmlString);
 						String xpathNqfId = "/measure/measureDetails/nqfid";
 						String xpathGuid = "/measure/measureDetails/guid";
 						Node nqfNode = processor.findNode(processor.getOriginalDoc(), xpathNqfId);
+						String nqfId = "";
 						if (nqfNode != null) {
 							if (nqfNode.getAttributes().getNamedItem("extension") != null) {
 								String nqfNumber = nqfNode.getAttributes().getNamedItem("extension").getNodeValue();
-								ownerReportDTO.setNqfId(nqfNumber);
+								nqfId = nqfNumber;
 							}
 						}
 						Node guidNode = processor.findNode(processor.getOriginalDoc(), xpathGuid);
+						String guid = "";
 						if (guidNode != null) {
 							String guidNumber = guidNode.getTextContent();
-							ownerReportDTO.setGuid(guidNumber);
+							guid = guidNumber;
 						}
+						
+						MeasureOwnerReportDTO ownerReportDTO = new MeasureOwnerReportDTO(firstName, lastName, organizationName, measureDescription, cmsNumber, nqfId, guid);
 						measureOwnerReportDTOs.add(ownerReportDTO);
 					}
 				} else {
@@ -6225,6 +6227,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		if (model != null && !StringUtils.isEmpty(model.getXml())) {
 			String xmlString = model.getXml();
 			result = cqlService.getCQLData(xmlString);
+			result.setExpIdentifier(cqlService.getDefaultExpansionIdentifier(xmlString));
 			result.setSetId(measure.getMeasureSet().getId());
 			result.setSuccess(true);
 		} else {

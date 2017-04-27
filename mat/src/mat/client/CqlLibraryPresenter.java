@@ -15,6 +15,8 @@ import com.google.gwt.event.dom.client.KeyUpHandler;
 import com.google.gwt.event.logical.shared.HasSelectionHandlers;
 import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
+import com.google.gwt.user.client.Command;
+import com.google.gwt.user.client.DeferredCommand;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.FlowPanel;
@@ -46,6 +48,7 @@ import mat.client.shared.MostRecentCQLLibraryWidget;
 import mat.client.shared.SearchWidget;
 import mat.client.shared.SearchWidgetWithFilter;
 import mat.client.shared.SkipListBuilder;
+import mat.client.shared.SynchronizationDelegate;
 import mat.client.shared.search.SearchResultUpdate;
 import mat.model.cql.CQLLibraryDataSetObject;
 import mat.model.cql.CQLLibraryShareDTO;
@@ -59,6 +62,7 @@ import mat.shared.ConstantMessages;
  *
  * @author jnarang
  */
+@SuppressWarnings("deprecation")
 public class CqlLibraryPresenter implements MatPresenter {
 
 	/** The panel. */
@@ -826,7 +830,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 				draftDisplay.getSearchWidget().getSearchInput().setText("");
 				if(result.isSuccess()){
 					fireCQLLibrarySelectedEvent(result.getId(), result.getVersionStr(), result.getCqlLibraryName(), result.isEditable(), false,
-							null);
+							null,"","");
 					fireCqlLibraryEditEvent();
 					MatContext
 					.get()
@@ -870,7 +874,30 @@ public class CqlLibraryPresenter implements MatPresenter {
 			@Override
 			public void onSelection(SelectionEvent<CQLLibraryDataSetObject> event) {
 				final String mid = event.getSelectedItem().getId();
-				isLibrarySelected(event.getSelectedItem());
+				final CQLLibraryDataSetObject selectedItem = event.getSelectedItem();
+				MatContext.get().getLibraryLockService().isLibraryLocked(mid);
+				Command waitForLockCheck = new Command() {
+					@Override
+					public void execute() {
+						SynchronizationDelegate synchDel = MatContext.get().getSynchronizationDelegate();
+						if (!synchDel.isCheckingLock()) {
+							if (!synchDel.isLibraryIsLocked()) {
+								isLibrarySelected(selectedItem);
+								if (selectedItem.isEditable()) {
+									MatContext.get().getLibraryLockService().setLibraryLock();
+								}
+							} else {
+								isLibrarySelected(selectedItem);
+								if (selectedItem.isEditable()) {
+									MatContext.get().getLibraryLockService().setLibraryLock();
+								}
+							}
+						} else {
+							DeferredCommand.addCommand(this);
+						}
+					}
+				};
+				waitForLockCheck.execute();
 			}
 
 			
@@ -886,8 +913,35 @@ public class CqlLibraryPresenter implements MatPresenter {
 
 			@Override
 			public void onSelection(SelectionEvent<CQLLibraryDataSetObject> event) {
-				String cqlId = event.getSelectedItem().getId();
-				isLibrarySelected(event.getSelectedItem());
+				//String cqlId = event.getSelectedItem().getId();
+				//isLibrarySelected(event.getSelectedItem());
+				final String mid = event.getSelectedItem().getId();
+				//final boolean isEditable = event.getSelectedItem().isEditable();
+				final CQLLibraryDataSetObject selectedItem = event.getSelectedItem();
+				isLibrarySelected(selectedItem);
+				MatContext.get().getLibraryLockService().isLibraryLocked(mid);
+				Command waitForLockCheck = new Command() {
+					@Override
+					public void execute() {
+						SynchronizationDelegate synchDel = MatContext.get().getSynchronizationDelegate();
+						if (!synchDel.isCheckingLock()) {
+							if (!synchDel.isLibraryIsLocked()) {
+								isLibrarySelected(selectedItem);
+								if (selectedItem.isEditable()) {
+									MatContext.get().getLibraryLockService().setLibraryLock();
+								}
+							} else {
+								isLibrarySelected(selectedItem);
+								if (selectedItem.isEditable()) {
+									MatContext.get().getLibraryLockService().setLibraryLock();
+								}
+							}
+						} else {
+							DeferredCommand.addCommand(this);
+						}
+					}
+				};
+				waitForLockCheck.execute();
 				
 			}
 		});
@@ -900,9 +954,11 @@ public class CqlLibraryPresenter implements MatPresenter {
 	 * @param selectedItem the selected item
 	 */
 	private void isLibrarySelected(CQLLibraryDataSetObject selectedItem) {
-		
-		fireCQLLibrarySelectedEvent(selectedItem.getId(), selectedItem.getVersion(), selectedItem.getCqlName(), selectedItem.isEditable(), false,
-				null);
+		String userId = selectedItem.getLockedUserId(selectedItem.getLockedUserInfo());
+		String email = selectedItem.getLockedUserEmail(selectedItem.getLockedUserInfo());
+		String userName  = selectedItem.getLockedUserName(selectedItem.getLockedUserInfo());
+		fireCQLLibrarySelectedEvent(selectedItem.getId(), selectedItem.getVersion(), selectedItem.getCqlName(), selectedItem.isEditable(), selectedItem.isLocked(),
+				userId,email,userName);
 		fireCqlLibraryEditEvent();
 	}
 
@@ -1086,7 +1142,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 			public void onSuccess(SaveCQLLibraryResult result) {
 				if(result.isSuccess()){
 					fireCQLLibrarySelectedEvent(result.getId(), result.getVersionStr(), result.getCqlLibraryName(), result.isEditable(), false,
-									null);
+									null,"","");
 					fireCqlLibraryEditEvent();
 				} else {
 						detailDisplay.getErrorMessage().createAlert(MatContext.get().getMessageDelegate().getCqlStandAloneLibraryNameError());
@@ -1114,8 +1170,8 @@ public class CqlLibraryPresenter implements MatPresenter {
 	 * @param lockedUserId the locked user id
 	 */
 	private void fireCQLLibrarySelectedEvent(String id, String version,
-			String name, boolean isEditable, boolean isLocked, String lockedUserId) {
-		CQLLibrarySelectedEvent evt = new CQLLibrarySelectedEvent(id, version, name,isEditable, isLocked, lockedUserId);
+			String name, boolean isEditable, boolean isLocked, String lockedUserId, String lockedUserEmail, String lockedUserName) {
+		CQLLibrarySelectedEvent evt = new CQLLibrarySelectedEvent(id, version, name,isEditable, isLocked, lockedUserId,lockedUserEmail,lockedUserName);
 		cqlLibraryView.getErrorMessageAlert().clearAlert();
 		detailDisplay.getErrorMessage().clearAlert();
 		MatContext.get().getEventBus().fireEvent(evt);
@@ -1530,7 +1586,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 					
 					@Override
 					public void onFailure(Throwable caught) {
-						
+						Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
 						
 					}
 				});
@@ -1592,7 +1648,21 @@ public class CqlLibraryPresenter implements MatPresenter {
 		
 		cqlLibraryView.buildDefaultView();
 		cqlLibraryView.clearSelections();
-		displaySearch();
+		Command waitForUnlock = new Command() {
+			@Override
+			public void execute() {
+				if (!MatContext.get().getLibraryLockService().isResettingLock()) {
+					displaySearch();
+				} else {
+					DeferredCommand.addCommand(this);
+				}
+			}
+		};
+		if (MatContext.get().getLibraryLockService().isResettingLock()) {
+			waitForUnlock.execute();
+		} else {
+			displaySearch();
+		}
 
 	}
 

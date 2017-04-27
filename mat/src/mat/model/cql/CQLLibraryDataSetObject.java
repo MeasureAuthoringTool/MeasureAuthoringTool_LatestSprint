@@ -34,6 +34,7 @@ public class CQLLibraryDataSetObject implements IsSerializable,BaseModel{
 	private String ownerId;
 	private String cqlSetId;
 	private boolean isEditable;
+	private boolean isTransferable;
 	
 	/** The cql errors. */
 	private List<CQLErrors> cqlErrors = new ArrayList<CQLErrors>();
@@ -46,6 +47,25 @@ public class CQLLibraryDataSetObject implements IsSerializable,BaseModel{
 	}
 	public LockedUserInfo getLockedUserInfo() {
 		return lockedUserInfo;
+	}
+	public String getLockedUserId(LockedUserInfo info){
+		if(info != null)
+			return info.getUserId();
+		else
+			return "";
+	}
+	public String getLockedUserEmail(LockedUserInfo info){
+		if(info != null)
+			return info.getEmailAddress();
+		else
+			return "";
+	}
+	
+	public String getLockedUserName(LockedUserInfo info){
+		if(info != null)
+			return info.getFirstName() + " " + info.getLastName();
+		else
+			return "";
 	}
 	public void setLockedUserInfo(LockedUserInfo lockedUserInfo) {
 		this.lockedUserInfo = lockedUserInfo;
@@ -194,5 +214,11 @@ public class CQLLibraryDataSetObject implements IsSerializable,BaseModel{
 	}
 	public void setEditable(boolean isEditable) {
 		this.isEditable = isEditable;
+	}
+	public boolean isTransferable() {
+		return isTransferable;
+	}
+	public void setTransferable(boolean isTransferable) {
+		this.isTransferable = isTransferable;
 	}
 }

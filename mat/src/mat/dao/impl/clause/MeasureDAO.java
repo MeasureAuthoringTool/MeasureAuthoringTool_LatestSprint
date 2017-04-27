@@ -706,6 +706,7 @@ mat.dao.clause.MeasureDAO {
 		
 		return dtoList;
 	}
+
 	
 	/*@Override
 	public List<MeasureShareDTO> getMeasuresForVersion(String searchText,User user,

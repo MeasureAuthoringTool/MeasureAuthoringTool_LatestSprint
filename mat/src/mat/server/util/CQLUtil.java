@@ -45,12 +45,26 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class CQLUtil.
+ */
 public class CQLUtil {
 
 	/** The Constant xPath. */
 	static final javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
+	
+	/** The Constant logger. */
 	private static final Log logger = LogFactory.getLog(CQLUtil.class);
 
+	/**
+	 * Gets the used CQL artifacts.
+	 *
+	 * @param originalDoc the original doc
+	 * @param cqlFileObject the cql file object
+	 * @return the used CQL artifacts
+	 * @throws XPathExpressionException the x path expression exception
+	 */
 	public static CQLArtifactHolder getUsedCQLArtifacts(Document originalDoc, CQLFileObject cqlFileObject)
 			throws XPathExpressionException {
 
@@ -87,6 +101,14 @@ public class CQLUtil {
 		return usedCQLArtifactHolder;
 	}
 
+	/**
+	 * Gets the view CQL used CQL artifacts.
+	 *
+	 * @param originalDoc the original doc
+	 * @param cqlFileObject the cql file object
+	 * @return the view CQL used CQL artifacts
+	 * @throws XPathExpressionException the x path expression exception
+	 */
 	public static CQLArtifactHolder getViewCQLUsedCQLArtifacts(Document originalDoc, CQLFileObject cqlFileObject)
 			throws XPathExpressionException {
 
@@ -139,12 +161,12 @@ public class CQLUtil {
 	 * referred to definitions and functions. On each definition and function,
 	 * recursively find all of the referred to definitions and functions for
 	 * them.
-	 * 
-	 * @param originalDoc
-	 * @param cqlFileObject
-	 * @param cqlBaseStatementInterface
-	 * @param usedCQLArtifactHolder
-	 * @throws XPathExpressionException
+	 *
+	 * @param originalDoc the original doc
+	 * @param cqlFileObject the cql file object
+	 * @param cqlBaseStatementInterface the cql base statement interface
+	 * @param usedCQLArtifactHolder the used CQL artifact holder
+	 * @throws XPathExpressionException the x path expression exception
 	 */
 	public static void collectUsedCQLArtifacts(Document originalDoc, CQLFileObject cqlFileObject,
 			CQLBaseStatementInterface cqlBaseStatementInterface, CQLArtifactHolder usedCQLArtifactHolder)
@@ -194,18 +216,19 @@ public class CQLUtil {
 	/**
 	 * Given a CqlDefinitionModelObject, find out the <definition> node and
 	 * return its "uuid" attribute value.
-	 * 
-	 * @param originalDoc
-	 * @param cqlModelObject
-	 * @return
-	 * @throws XPathExpressionException
+	 *
+	 * @param originalDoc the original doc
+	 * @param cqlModelObject the cql model object
+	 * @param isDefinition the is definition
+	 * @return the CQL definition UUID
+	 * @throws XPathExpressionException the x path expression exception
 	 */
 	public static String getCQLDefinitionUUID(Document originalDoc, CQLBaseStatementInterface cqlModelObject,
 			boolean isDefinition) throws XPathExpressionException {
 
-		System.out.println("cql defn name bfor:" + cqlModelObject.getIdentifier());
+		//System.out.println("cql defn name bfor:" + cqlModelObject.getIdentifier());
 		String defnName = cqlModelObject.getIdentifier().replaceAll("\"", "");
-		System.out.println("cql defn name aftr:" + defnName);
+		//System.out.println("cql defn name aftr:" + defnName);
 
 		String cqlArtifactName = "definitions//definition";
 		if (!isDefinition) {
@@ -213,7 +236,7 @@ public class CQLUtil {
 		}
 
 		String xPathForDefinitions = "//cqlLookUp/" + cqlArtifactName + "[@name='" + defnName + "']/@id";
-		System.out.println(xPathForDefinitions);
+		//System.out.println(xPathForDefinitions);
 		Node cqlDefinitionUUID = (Node) xPath.evaluate(xPathForDefinitions, originalDoc.getDocumentElement(),
 				XPathConstants.NODE);
 		return cqlDefinitionUUID.getNodeValue();
@@ -222,10 +245,9 @@ public class CQLUtil {
 	/**
 	 * This method will find out all the CQLDefinitions referred to by
 	 * populations defined in a measure.
-	 * 
-	 * @param originalDoc
-	 * @param cqlFileObject
-	 * @return
+	 *
+	 * @param originalDoc the original doc
+	 * @return the CQL artifacts referred by poplns
 	 */
 	public static CQLArtifactHolder getCQLArtifactsReferredByPoplns(Document originalDoc) {
 		CQLUtil cqlUtil = new CQLUtil();
@@ -268,10 +290,10 @@ public class CQLUtil {
 	/**
 	 * This method will find out all the CQLDefinitions/Functions/Parameters
 	 * referred in viewCQL.
-	 * 
-	 * @param originalDoc
-	 * @param cqlFileObject
-	 * @return
+	 *
+	 * @param originalDoc the original doc
+	 * @param cqlFileObject the cql file object
+	 * @return the CQL artifacts referred by view CQL
 	 */
 	private static CQLArtifactHolder getCQLArtifactsReferredByViewCQL(Document originalDoc,
 			CQLFileObject cqlFileObject) {
@@ -281,6 +303,13 @@ public class CQLUtil {
 		return cqlArtifactHolder;
 	}
 
+	/**
+	 * Gets the used CQL valuesets.
+	 *
+	 * @param cqlFileObject the cql file object
+	 * @return the used CQL valuesets
+	 * @throws XPathExpressionException the x path expression exception
+	 */
 	public static CQLArtifactHolder getUsedCQLValuesets(CQLFileObject cqlFileObject) throws XPathExpressionException {
 
 		CQLUtil cqlUtil = new CQLUtil();
@@ -327,12 +356,10 @@ public class CQLUtil {
 	 * Removes all unused cql definitions from the simple xml file. Iterates
 	 * through the usedcqldefinitions set, adds them to the xpath string, and
 	 * then removes all nodes that are not a part of the xpath string.
-	 * 
-	 * @param originalDoc
-	 *            the simple xml document
-	 * @param usedDefinitionsList
-	 *            the usedcqldefinitions
-	 * @throws XPathExpressionException
+	 *
+	 * @param originalDoc            the simple xml document
+	 * @param usedDefinitionsList            the usedcqldefinitions
+	 * @throws XPathExpressionException the x path expression exception
 	 */
 	public static void removeUnusedCQLDefinitions(Document originalDoc, List<String> usedDefinitionsList)
 			throws XPathExpressionException {
@@ -343,7 +370,7 @@ public class CQLUtil {
 		}
 
 		String xPathForUnusedDefinitions = "//cqlLookUp//definition" + idXPathString;
-		System.out.println(xPathForUnusedDefinitions);
+		//System.out.println(xPathForUnusedDefinitions);
 
 		NodeList unusedCQLDefNodeList = (NodeList) xPath.evaluate(xPathForUnusedDefinitions,
 				originalDoc.getDocumentElement(), XPathConstants.NODESET);
@@ -361,12 +388,10 @@ public class CQLUtil {
 	 * Removes all unused cql functions from the simple xml file. Iterates
 	 * through the usedcqlfunctions set, adds them to the xpath string, and then
 	 * removes all nodes that are not a part of the xpath string.
-	 * 
-	 * @param originalDoc
-	 *            the simple xml document
-	 * @param list
-	 *            the usedcqlfunctions
-	 * @throws XPathExpressionException
+	 *
+	 * @param originalDoc            the simple xml document
+	 * @param usedFunctionsList the used functions list
+	 * @throws XPathExpressionException the x path expression exception
 	 */
 	public static void removeUnusedCQLFunctions(Document originalDoc, List<String> usedFunctionsList)
 			throws XPathExpressionException {
@@ -376,7 +401,7 @@ public class CQLUtil {
 		}
 
 		String xPathForUnusedFunctions = "//cqlLookUp//function" + idXPathString;
-		System.out.println(xPathForUnusedFunctions);
+		//System.out.println(xPathForUnusedFunctions);
 
 		NodeList unusedCqlFuncNodeList = (NodeList) xPath.evaluate(xPathForUnusedFunctions,
 				originalDoc.getDocumentElement(), XPathConstants.NODESET);
@@ -392,12 +417,10 @@ public class CQLUtil {
 	 * Removes all unused cql valuesets from the simple xml file. Iterates
 	 * through the usedcqlvaluesets set, adds them to the xpath string, and then
 	 * removes all nodes that are not a part of the xpath string.
-	 * 
-	 * @param originalDoc
-	 *            the simple xml document
-	 * @param cqlValuesetIdentifierSet
-	 *            the usevaluesets
-	 * @throws XPathExpressionException
+	 *
+	 * @param originalDoc            the simple xml document
+	 * @param cqlValuesetIdentifierSet            the usevaluesets
+	 * @throws XPathExpressionException the x path expression exception
 	 */
 	public static void removeUnusedValuesets(Document originalDoc, Set<String> cqlValuesetIdentifierSet)
 			throws XPathExpressionException {
@@ -413,7 +436,7 @@ public class CQLUtil {
 		}	
 			
 		String xPathForUnusedValuesets = "//cqlLookUp//valueset" + nameXPathString;
-		System.out.println(xPathForUnusedValuesets);
+		//System.out.println(xPathForUnusedValuesets);
 
 		NodeList unusedCqlValuesetNodeList = (NodeList) xPath.evaluate(xPathForUnusedValuesets,
 				originalDoc.getDocumentElement(), XPathConstants.NODESET);
@@ -432,12 +455,10 @@ public class CQLUtil {
 	 * Removes all unused cql codes from the simple xml file. Iterates through
 	 * the usedcodes set, adds them to the xpath string, and then removes all
 	 * nodes that are not a part of the xpath string.
-	 * 
-	 * @param originalDoc
-	 *            the simple xml document
-	 * @param cqlCodesIdentifierSet
-	 *            the usevaluesets
-	 * @throws XPathExpressionException
+	 *
+	 * @param originalDoc            the simple xml document
+	 * @param cqlCodesIdentifierSet            the usevaluesets
+	 * @throws XPathExpressionException the x path expression exception
 	 */
 	public static void removeUnusedCodes(Document originalDoc, Set<String> cqlCodesIdentifierSet)
 			throws XPathExpressionException {
@@ -447,7 +468,7 @@ public class CQLUtil {
 		}
 
 		String xPathForUnusedCodes = "//cqlLookUp//code" + nameXPathString;
-		System.out.println(xPathForUnusedCodes);
+		//System.out.println(xPathForUnusedCodes);
 
 		NodeList unusedCqlCodesNodeList = (NodeList) xPath.evaluate(xPathForUnusedCodes,
 				originalDoc.getDocumentElement(), XPathConstants.NODESET);
@@ -461,9 +482,8 @@ public class CQLUtil {
 	/**
 	 * Removes the unsed code systems.
 	 *
-	 * @param originalDoc
-	 *            the original doc
-	 * @throws XPathExpressionException
+	 * @param originalDoc            the original doc
+	 * @throws XPathExpressionException the x path expression exception
 	 */
 	private static void removeUnsedCodeSystems(Document originalDoc) throws XPathExpressionException {
 
@@ -494,12 +514,10 @@ public class CQLUtil {
 	 * Removes all unused cql parameters from the simple xml file. Iterates
 	 * through the usedcqlparameters set, adds them to the xpath string, and
 	 * then removes all nodes that are not a part of the xpath string.
-	 * 
-	 * @param originalDoc
-	 *            the simple xml document
-	 * @param usedParameterList
-	 *            the used parameters
-	 * @throws XPathExpressionException
+	 *
+	 * @param originalDoc            the simple xml document
+	 * @param usedParameterList            the used parameters
+	 * @throws XPathExpressionException the x path expression exception
 	 */
 	public static void removeUnusedParameters(Document originalDoc, List<String> usedParameterList)
 			throws XPathExpressionException {
@@ -509,7 +527,7 @@ public class CQLUtil {
 		}
 
 		String xPathForUnusedParameters = "//cqlLookUp//parameter" + nameXPathString;
-		System.out.println(xPathForUnusedParameters);
+		//System.out.println(xPathForUnusedParameters);
 
 		NodeList unusedCqlParameterNodeList = (NodeList) xPath.evaluate(xPathForUnusedParameters,
 				originalDoc.getDocumentElement(), XPathConstants.NODESET);
@@ -525,12 +543,11 @@ public class CQLUtil {
 	 * Removes all unused cql includes from the simple xml file. Iterates
 	 * through the usedCQLLibraries set, adds them to the xpath string, and then
 	 * removes all nodes that are not a part of the xpath string.
-	 * 
-	 * @param originalDoc
-	 *            the simple xml document
-	 * @param usedLibList
-	 *            the used includes
-	 * @throws XPathExpressionException
+	 *
+	 * @param originalDoc            the simple xml document
+	 * @param usedLibList            the used includes
+	 * @param cqlModel the cql model
+	 * @throws XPathExpressionException the x path expression exception
 	 */
 	public static void removeUnusedIncludes(Document originalDoc, List<String> usedLibList, CQLModel cqlModel)
 			throws XPathExpressionException {
@@ -550,8 +567,8 @@ public class CQLUtil {
 		}
 
 		String xPathForUnusedIncludes = "//cqlLookUp//includeLibrarys/includeLibrary" + nameXPathString;
-		System.out.println("xPathForUnusedIncludes");
-		System.out.println(xPathForUnusedIncludes);
+		//System.out.println("xPathForUnusedIncludes");
+		//System.out.println(xPathForUnusedIncludes);
 		NodeList unusedCqlIncludeNodeList = (NodeList) xPath.evaluate(xPathForUnusedIncludes,
 				originalDoc.getDocumentElement(), XPathConstants.NODESET);
 		for (int i = 0; i < unusedCqlIncludeNodeList.getLength(); i++) {
@@ -561,15 +578,39 @@ public class CQLUtil {
 		}
 	}
 
+	/**
+	 * Generate ELM.
+	 *
+	 * @param cqlModel the cql model
+	 * @param cqlLibraryDAO the cql library DAO
+	 * @return the save update CQL result
+	 */
 	public static SaveUpdateCQLResult generateELM(CQLModel cqlModel, CQLLibraryDAO cqlLibraryDAO) {
 		return parseCQLLibraryForErrors(cqlModel, cqlLibraryDAO, null, true);
 	}
 	
+	/**
+	 * Parses the CQL library for errors.
+	 *
+	 * @param cqlModel the cql model
+	 * @param cqlLibraryDAO the cql library DAO
+	 * @param exprList the expr list
+	 * @return the save update CQL result
+	 */
 	public static SaveUpdateCQLResult parseCQLLibraryForErrors(CQLModel cqlModel, CQLLibraryDAO cqlLibraryDAO,
 			List<String> exprList) {
 		return parseCQLLibraryForErrors(cqlModel, cqlLibraryDAO, exprList, false);
 	}
 
+	/**
+	 * Parses the CQL library for errors.
+	 *
+	 * @param cqlModel the cql model
+	 * @param cqlLibraryDAO the cql library DAO
+	 * @param exprList the expr list
+	 * @param generateELM the generate ELM
+	 * @return the save update CQL result
+	 */
 	private static SaveUpdateCQLResult parseCQLLibraryForErrors(CQLModel cqlModel, CQLLibraryDAO cqlLibraryDAO,
 			List<String> exprList, boolean generateELM) {
 
@@ -580,12 +621,23 @@ public class CQLUtil {
 		getCQLIncludeLibMap(cqlModel, cqlLibNameMap, cqlLibraryDAO);
 
 		cqlModel.setIncludedCQLLibXMLMap(cqlLibNameMap);
+		
+		setIncludedCQLExpressions(cqlModel);
 
 		validateCQLWithIncludes(cqlModel, cqlLibNameMap, parsedCQL, exprList, generateELM);
 
 		return parsedCQL;
 	}
 
+	
+	/**
+	 * Gets the CQL include lib map.
+	 *
+	 * @param cqlModel the cql model
+	 * @param cqlLibNameMap the cql lib name map
+	 * @param cqlLibraryDAO the cql library DAO
+	 * @return the CQL include lib map
+	 */
 	private static void getCQLIncludeLibMap(CQLModel cqlModel, Map<String, LibHolderObject> cqlLibNameMap,
 			CQLLibraryDAO cqlLibraryDAO) {
 
@@ -613,6 +665,15 @@ public class CQLUtil {
 		}
 	}
 
+	/**
+	 * Validate CQL with includes.
+	 *
+	 * @param cqlModel the cql model
+	 * @param cqlLibNameMap the cql lib name map
+	 * @param parsedCQL the parsed CQL
+	 * @param exprList the expr list
+	 * @param generateELM the generate ELM
+	 */
 	private static void validateCQLWithIncludes(CQLModel cqlModel, Map<String, LibHolderObject> cqlLibNameMap,
 			SaveUpdateCQLResult parsedCQL, List<String> exprList, boolean generateELM) {
 
@@ -690,8 +751,13 @@ public class CQLUtil {
 	}
 
 	/**
-	 * @param parsedCQL
-	 * @param forHumanReadable 
+	 * Filter CQL artifacts.
+	 *
+	 * @param cqlModel the cql model
+	 * @param parsedCQL the parsed CQL
+	 * @param folder the folder
+	 * @param cqlToElm the cql to elm
+	 * @param exprList the expr list
 	 */
 	
 	private static void filterCQLArtifacts(CQLModel cqlModel, SaveUpdateCQLResult parsedCQL, File folder,
@@ -714,20 +780,29 @@ public class CQLUtil {
 			parsedCQL.setUsedCQLArtifacts(usedArtifacts);
 			parsedCQL.setCqlObject(cqlObject);
 			
-			System.out.println("Def to Def:"+cqlFilter.getDefinitionToDefinitionMap());
+			//System.out.println("Def to Def:"+cqlFilter.getDefinitionToDefinitionMap());
 			usedArtifacts.setDefinitionToDefinitionMap(cqlFilter.getDefinitionToDefinitionMap());
 						
-			System.out.println("Def to Func:"+cqlFilter.getDefinitionToFunctionMap());
+			//System.out.println("Def to Func:"+cqlFilter.getDefinitionToFunctionMap());
 			usedArtifacts.setDefinitionToFunctionMap(cqlFilter.getDefinitionToFunctionMap());
 			
-			System.out.println("Func to Def:"+cqlFilter.getFunctionToDefinitionMap());
+			//System.out.println("Func to Def:"+cqlFilter.getFunctionToDefinitionMap());
 			usedArtifacts.setFunctionToDefinitionMap(cqlFilter.getFunctionToDefinitionMap());
 			
-			System.out.println("Func to Func:"+cqlFilter.getFunctionToFunctionMap());
+			//System.out.println("Func to Func:"+cqlFilter.getFunctionToFunctionMap());
 			usedArtifacts.setFunctionToFunctionMap(cqlFilter.getFunctionToFunctionMap());
 		}
 	}
 
+	/**
+	 * Creates the CQL temp file.
+	 *
+	 * @param cqlFileString the cql file string
+	 * @param name the name
+	 * @param parentFolder the parent folder
+	 * @return the file
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
 	private static File createCQLTempFile(String cqlFileString, String name, File parentFolder) throws IOException {
 		File cqlFile = new File(parentFolder, name + ".cql");
 		FileWriter fw = new FileWriter(cqlFile);
@@ -735,103 +810,297 @@ public class CQLUtil {
 		fw.close();
 		return cqlFile;
 	}
+	
+	/**
+	 * This method will extract all the CQL expressions (Definitions, Functions, ValueSets, Parameters) from included 
+	 * child (only child, not grand child) CQL Libs and set them inside CQLModel object.
+	 * 
+	 * This extracted list will then be used by UI CQL Workspace.
+	 *
+	 * @param cqlModel the new included CQL expressions
+	 */
+	private static void setIncludedCQLExpressions(CQLModel cqlModel) {
+		
+		List<CQLIncludeLibrary> cqlIncludeLibraries = cqlModel.getCqlIncludeLibrarys();
+		if (cqlIncludeLibraries == null) {
+			return;
+		}
+		
+		for (CQLIncludeLibrary cqlIncludeLibrary : cqlIncludeLibraries) {
+			
+			LibHolderObject libHolderObject = cqlModel.getIncludedCQLLibXMLMap().get(cqlIncludeLibrary.getCqlLibraryName() + "-" + cqlIncludeLibrary.getVersion() + "|" + cqlIncludeLibrary.getAliasName());
+			String alias = cqlIncludeLibrary.getAliasName();
+			
+			String xml = libHolderObject.getMeasureXML();
+			XmlProcessor xmlProcessor = new XmlProcessor(xml);
+			
+			addNamesToList(alias, xmlProcessor, "//cqlLookUp/definitions/definition/@name", cqlModel.getIncludedDefNames());
+			addNamesToList(alias, xmlProcessor, "//cqlLookUp/functions/function/@name", cqlModel.getIncludedFuncNames());
+			addNamesToList(alias, xmlProcessor, "//cqlLookUp/valuesets/valueset/@name", cqlModel.getIncludedValueSetNames());
+			addNamesToList(alias, xmlProcessor, "//cqlLookUp/parameters/parameter/@name", cqlModel.getIncludedParamNames());
+			addNamesToList(alias, xmlProcessor, "//cqlLookUp/codes/code/@codeSystemName", cqlModel.getIncludedCodeNames());
+			
+		}
+		
+		/*System.out.println("Included Definition names:" + cqlModel.getIncludedDefNames());
+		System.out.println("Included Function names:" + cqlModel.getIncludedFuncNames());
+		System.out.println("Included Value-Set names:" + cqlModel.getIncludedValueSetNames());
+		System.out.println("Included Parameter names:" + cqlModel.getIncludedParamNames());
+		System.out.println("Included Code names:" + cqlModel.getIncludedCodeNames());*/
+	}
+	
+	/**
+	 * Adds the names to list.
+	 *
+	 * @param alias the alias
+	 * @param xmlProcessor the xml processor
+	 * @param xPathForFetch the x path for fetch
+	 * @param listToAddTo the list to add to
+	 */
+	private static void addNamesToList(String alias,
+			XmlProcessor xmlProcessor, String xPathForFetch, List<String> listToAddTo) {
+		try {
+			
+			NodeList exprList = (NodeList) xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), xPathForFetch);
+			
+			if(exprList != null){
+				
+				List<String> exprNameList = new ArrayList<String>();
+				for(int i=0; i < exprList.getLength(); i++){
+					exprNameList.add(alias + "." + exprList.item(i).getNodeValue());
+				}
+				listToAddTo.addAll(exprNameList);
+			}			
+			
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
+
+	/**
+	 * The Class CQLArtifactHolder.
+	 */
 	public class CQLArtifactHolder {
 
+		/** The cql definition UUID set. */
 		private Set<String> cqlDefinitionUUIDSet = new HashSet<String>();
+		
+		/** The cql function UUID set. */
 		private Set<String> cqlFunctionUUIDSet = new HashSet<String>();
+		
+		/** The cql valueset identifier set. */
 		private Set<String> cqlValuesetIdentifierSet = new HashSet<String>();
+		
+		/** The cql parameter identifier set. */
 		private Set<String> cqlParameterIdentifierSet = new HashSet<String>();
+		
+		/** The cql codes set. */
 		private Set<String> cqlCodesSet = new HashSet<String>();
 
+		/** The cql def from pop set. */
 		private Set<String> cqlDefFromPopSet = new HashSet<String>();
+		
+		/** The cql func from pop set. */
 		private Set<String> cqlFuncFromPopSet = new HashSet<String>();
 
+		/**
+		 * Gets the cql definition UUID set.
+		 *
+		 * @return the cql definition UUID set
+		 */
 		public Set<String> getCqlDefinitionUUIDSet() {
 			return cqlDefinitionUUIDSet;
 		}
 
+		/**
+		 * Gets the cql function UUID set.
+		 *
+		 * @return the cql function UUID set
+		 */
 		public Set<String> getCqlFunctionUUIDSet() {
 			return cqlFunctionUUIDSet;
 		}
 
+		/**
+		 * Gets the cql valueset identifier set.
+		 *
+		 * @return the cql valueset identifier set
+		 */
 		public Set<String> getCqlValuesetIdentifierSet() {
 			return cqlValuesetIdentifierSet;
 		}
 
+		/**
+		 * Gets the cql parameter identifier set.
+		 *
+		 * @return the cql parameter identifier set
+		 */
 		public Set<String> getCqlParameterIdentifierSet() {
 			return cqlParameterIdentifierSet;
 		}
 
+		/**
+		 * Adds the definition UUID.
+		 *
+		 * @param uuid the uuid
+		 */
 		public void addDefinitionUUID(String uuid) {
 			cqlDefinitionUUIDSet.add(uuid);
 		}
 
+		/**
+		 * Adds the function UUID.
+		 *
+		 * @param uuid the uuid
+		 */
 		public void addFunctionUUID(String uuid) {
 			cqlFunctionUUIDSet.add(uuid);
 		}
 
+		/**
+		 * Adds the valueset identifier.
+		 *
+		 * @param identifier the identifier
+		 */
 		public void addValuesetIdentifier(String identifier) {
 			cqlValuesetIdentifierSet.add(identifier);
 		}
 
+		/**
+		 * Adds the parameter identifier.
+		 *
+		 * @param identifier the identifier
+		 */
 		public void addParameterIdentifier(String identifier) {
 			cqlParameterIdentifierSet.add(identifier);
 		}
 
+		/**
+		 * Adds the definition identifier.
+		 *
+		 * @param identifier the identifier
+		 */
 		public void addDefinitionIdentifier(String identifier) {
 			cqlDefFromPopSet.add(identifier);
 		}
 
+		/**
+		 * Adds the function identifier.
+		 *
+		 * @param identifier the identifier
+		 */
 		public void addFunctionIdentifier(String identifier) {
 			cqlFuncFromPopSet.add(identifier);
 		}
 
+		/**
+		 * Sets the cql definition UUID set.
+		 *
+		 * @param cqlDefinitionUUIDSet the new cql definition UUID set
+		 */
 		public void setCqlDefinitionUUIDSet(Set<String> cqlDefinitionUUIDSet) {
 			this.cqlDefinitionUUIDSet = cqlDefinitionUUIDSet;
 		}
 
+		/**
+		 * Sets the cql function UUID set.
+		 *
+		 * @param cqlFunctionUUIDSet the new cql function UUID set
+		 */
 		public void setCqlFunctionUUIDSet(Set<String> cqlFunctionUUIDSet) {
 			this.cqlFunctionUUIDSet = cqlFunctionUUIDSet;
 		}
 
+		/**
+		 * Sets the cql valueset identifier set.
+		 *
+		 * @param cqlValuesetIdentifierSet the new cql valueset identifier set
+		 */
 		public void setCqlValuesetIdentifierSet(Set<String> cqlValuesetIdentifierSet) {
 			this.cqlValuesetIdentifierSet = cqlValuesetIdentifierSet;
 		}
 
+		/**
+		 * Sets the cql parameter identifier set.
+		 *
+		 * @param cqlParameterIdentifierSet the new cql parameter identifier set
+		 */
 		public void setCqlParameterIdentifierSet(Set<String> cqlParameterIdentifierSet) {
 			this.cqlParameterIdentifierSet = cqlParameterIdentifierSet;
 		}
 
+		/**
+		 * Gets the cql codes set.
+		 *
+		 * @return the cql codes set
+		 */
 		public Set<String> getCqlCodesSet() {
 			return cqlCodesSet;
 		}
 
+		/**
+		 * Sets the cql codes set.
+		 *
+		 * @param cqlCodesSet the new cql codes set
+		 */
 		public void setCqlCodesSet(Set<String> cqlCodesSet) {
 			this.cqlCodesSet = cqlCodesSet;
 		}
 
+		/**
+		 * Adds the CQL code.
+		 *
+		 * @param identifier the identifier
+		 */
 		public void addCQLCode(String identifier) {
 			this.cqlCodesSet.add(identifier);
 		}
 
+		/**
+		 * Gets the cql def from pop set.
+		 *
+		 * @return the cql def from pop set
+		 */
 		public Set<String> getCqlDefFromPopSet() {
 			return cqlDefFromPopSet;
 		}
 
+		/**
+		 * Sets the cql def from pop set.
+		 *
+		 * @param cqlDefFromPopSet the new cql def from pop set
+		 */
 		public void setCqlDefFromPopSet(Set<String> cqlDefFromPopSet) {
 			this.cqlDefFromPopSet = cqlDefFromPopSet;
 		}
 
+		/**
+		 * Gets the cql func from pop set.
+		 *
+		 * @return the cql func from pop set
+		 */
 		public Set<String> getCqlFuncFromPopSet() {
 			return cqlFuncFromPopSet;
 		}
 
+		/**
+		 * Sets the cql func from pop set.
+		 *
+		 * @param cqlFuncFromPopSet the new cql func from pop set
+		 */
 		public void setCqlFuncFromPopSet(Set<String> cqlFuncFromPopSet) {
 			this.cqlFuncFromPopSet = cqlFuncFromPopSet;
 		}
 	}
 
+	/**
+	 * Adds the used CQL libsto simple XML.
+	 *
+	 * @param originalDoc the original doc
+	 * @param includeLibMap the include lib map
+	 */
 	public static void addUsedCQLLibstoSimpleXML(Document originalDoc, Map<String, CQLIncludeLibrary> includeLibMap) {
 
 		Node allUsedLibsNode = originalDoc.createElement("allUsedCQLLibs");
@@ -852,6 +1121,14 @@ public class CQLUtil {
 
 	}
 	
+	/**
+	 * Adds the un used grand childrento simple XML.
+	 *
+	 * @param originalDoc the original doc
+	 * @param result the result
+	 * @param cqlModel the cql model
+	 * @throws XPathExpressionException the x path expression exception
+	 */
 	public static void addUnUsedGrandChildrentoSimpleXML(Document originalDoc, SaveUpdateCQLResult result, CQLModel cqlModel) throws XPathExpressionException {
 
 		String allUsedCQLLibsXPath = "//allUsedCQLLibs";
@@ -903,6 +1180,22 @@ public class CQLUtil {
 				}
 			}
 		}
+	}
+	
+	
+	/**
+	 * Gets the included CQL expressions.
+	 *
+	 * @param cqlModel the cql model
+	 * @param cqlLibraryDAO the cql library DAO
+	 * @return the included CQL expressions
+	 */
+	public static void getIncludedCQLExpressions(CQLModel cqlModel, CQLLibraryDAO cqlLibraryDAO){
+		
+		Map<String, LibHolderObject> cqlLibNameMap = new HashMap<String, LibHolderObject>();
+		getCQLIncludeLibMap(cqlModel, cqlLibNameMap, cqlLibraryDAO);
+		cqlModel.setIncludedCQLLibXMLMap(cqlLibNameMap);
+		setIncludedCQLExpressions(cqlModel);
 	}
 	
 //	private static boolean foundCQLLib(Collection<CQLIncludeLibrary> libs, CQLIncludeLibrary library){

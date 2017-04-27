@@ -406,9 +406,15 @@ public class InsertIntoAceEditorDialogBox {
 										
 									} else if(itemTypeName.equalsIgnoreCase("definitions") || itemTypeName.equalsIgnoreCase("parameters")) {
 										StringBuilder sb = new StringBuilder(); 
-										sb = sb.append("\""); 
-										sb = sb.append(itemNameToBeInserted);
-										sb = sb.append("\""); 
+										String[] str = itemNameToBeInserted.toString().split("\\.");
+										if(str.length>1){
+											sb = sb.append(str[0]);
+											sb = sb.append(".").append("\""); 
+											sb = sb.append(str[1]).append("\""); 
+										} else {
+											sb = sb.append("\"").append(str[0]).append("\"");
+										}
+										
 										itemNameToBeInserted = sb.toString(); 
 									} else if(itemTypeName.equalsIgnoreCase("functions")) {
 										StringBuilder sb = new StringBuilder(); 
@@ -863,6 +869,11 @@ public class InsertIntoAceEditorDialogBox {
 							listAllItemNames.addItem(cqlNavBarView.getViewDefinitions().get(i)
 									.getDefinitionName());
 						}
+						
+						for (int j = 0; j < MatContext.get().getIncludedDefNames().size(); j++) {
+							listAllItemNames.addItem(MatContext.get().getIncludedDefNames().get(j));
+						}
+						
 					} /*else if (itemTypeSelected.equalsIgnoreCase("timing")) {
 						listAllItemNames.clear();
 						listAllItemNames.setEnabled(true);

@@ -66,7 +66,9 @@ public class MessageDelegate {
 	
 	public static final String LIBRARY_NAME_REQUIRED = "Library Name is required.";
 	
-	public static final String CQL_STAND_ALONE_LIBRARY_NAME_ERROR = "Invalid Library Name. Must start with an alpha-character or underscore followed by an alpha-numeric character(s) or underscore(s), and must not contain spaces.";
+	public static final String CQL_STAND_ALONE_LIBRARY_NAME_ERROR = "Invalid Library Name.Must start with an alpha-character or underscore followed by an alpha-numeric character(s) or underscore(s), and must not contain spaces.";
+	
+	public static final String CQL_FUNCTION_ARGUMENT_NAME_ERROR = "Invalid argument name. Must start with an alpha-character or underscore followed by an alpha-numeric character(s) or underscore(s), and must not contain spaces.";
 	/** The Constant EMAIL_ID_INCORRECT_FORMAT. */
 	public static final String EMAIL_ID_INCORRECT_FORMAT = "Email Address has an incorrect format.";
 	/** The Constant EMAIL_ID_REQUIRED. */
@@ -663,6 +665,9 @@ public class MessageDelegate {
 	
 	/** The transfer checkbox error measure. */
 	private final String TRANSFER_CHECKBOX_ERROR_MEASURE = "Please select at least one Measure to transfer ownership.";
+	
+	/** The transfer checkbox error measure. */
+	private final String TRANSFER_CHECKBOX_ERROR_CQL_LIBRARY = "Please select at least one CQL Library to transfer ownership.";
 	
 	/** The transfer ownership success. */
 	private final String TRANSFER_OWNERSHIP_SUCCESS = "Ownership successfully transferred to ";
@@ -2750,7 +2755,7 @@ public class MessageDelegate {
 		return CQL_STAND_ALONE_LIBRARY_NAME_ERROR;
 	}
 
-	public static String getNoLibrarues() {
+	public String getNoLibrarues() {
 		return NO_LIBRARUES;
 	}
 
@@ -2828,6 +2833,14 @@ public class MessageDelegate {
 
 	public String getERROR_INVALID_DATE_TIME() {
 		return ERROR_INVALID_DATE_TIME;
+	}
+
+	public String getCqlFunctionArgumentNameError() {
+		return CQL_FUNCTION_ARGUMENT_NAME_ERROR;
+	}
+
+	public String getTRANSFER_CHECKBOX_ERROR_CQL_LIBRARY() {
+		return TRANSFER_CHECKBOX_ERROR_CQL_LIBRARY;
 	}
 	
 }
