@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import mat.client.umls.service.VsacApiResult;
 import mat.dao.DataTypeDAO;
 import mat.model.DataType;
+import mat.model.DirectReferenceCode;
 import mat.model.MatValueSet;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
@@ -214,6 +215,44 @@ public class VSACApiServImpl implements VSACApiService{
 		LOGGER.info("End VSACAPIServiceImpl convertXmlToVersionList");
 		return versionDetails;
 	}
+	
+	
+	private DirectReferenceCode convertXmltoDirectCodeRef(final String xmlPayLoad) {
+		LOGGER.info("Start VSACAPIServiceImpl convertXmltoValueSet");		
+		DirectReferenceCode details = null;
+		int firstIndex = xmlPayLoad.indexOf("<csCode>");
+		int lastIndex = xmlPayLoad.lastIndexOf("</csCode>");
+		
+		String xml = xmlPayLoad.substring(firstIndex, lastIndex).concat("</csCode>");
+		if ((xml != null) && StringUtils.isNotBlank(xml)) {
+			LOGGER.info("xml To reterive csCode tag is not null ");
+		}
+		try {
+			Mapping mapping = new Mapping();
+			mapping.loadMapping(new ResourceLoader().getResourceAsURL("DirectCodeReferenceMapping.xml"));
+			Unmarshaller unmar = new Unmarshaller(mapping);
+			unmar.setClass(DirectReferenceCode.class);
+			unmar.setWhitespacePreserve(true);
+			details = (DirectReferenceCode) unmar.unmarshal(new InputSource(new StringReader(xml)));
+			LOGGER.info("unmarshalling complete..csCode"
+					+ details.getCodeDescriptor());
+			
+		} catch (Exception e) {
+			if (e instanceof IOException) {
+				LOGGER.info("Failed to load DirectCodeReferenceMapping.xml" + e);
+			} else if (e instanceof MappingException) {
+				LOGGER.info("Mapping Failed" + e);
+			} else if (e instanceof MarshalException) {
+				LOGGER.info("Unmarshalling Failed" + e);
+			} else {
+				LOGGER.info("Other Exception" + e);
+			}
+		}
+		LOGGER.info("End VSACAPIServiceImpl convertXmltoDirectCodeRef");
+		return details;
+	}
+	
+	
 	@Override
 	public final void inValidateVsacUser(String sessionId) {
 		LOGGER.info("Start VSACAPIServiceImpl inValidateVsacUser");
@@ -252,7 +291,7 @@ public class VSACApiServImpl implements VSACApiService{
 	/** Method to Iterate through Map of Quality Data set DTO(modify With) as key and Quality Data Set DTO (modifiable) as Value and update
 	 * Measure XML by calling {@link MeasureLibraryServiceImpl} method 'updateMeasureXML'.
 	 * @param map - HaspMap
-	 * @param measureId - String */
+	 * @param id - String */
 	private void updateAllCQLInLibraryXml(HashMap<CQLQualityDataSetDTO, CQLQualityDataSetDTO> map, String libraryId) {
 		LOGGER.info("Start VSACAPIServiceImpl updateAllInMeasureXml :");
 		Iterator<Entry<CQLQualityDataSetDTO, CQLQualityDataSetDTO>> it = map.entrySet().iterator();
@@ -608,7 +647,7 @@ public class VSACApiServImpl implements VSACApiService{
 	 * Method to update valueset's without versions from VSAC in Measure XML.
 	 * Skip supplemental Data Elements and Timing elements, Expired, Birth date and User defined QDM.
 	 *
-	 * @param measureId            - Selected Measure Id.
+	 * @param id            - Selected Measure Id.
 	 * @param defaultExpId the default exp id
 	 * @return VsacApiResult - Result.
 	 */
@@ -806,6 +845,38 @@ public class VSACApiServImpl implements VSACApiService{
 		}
 		LOGGER.info("End VSACAPIServiceImpl getValueSetBasedOIDAndVersion method : oid entered :"
 				+ oid + "for version entered :" + version);
+		return result;
+	}
+	
+	@Override
+	public final VsacApiResult getDirectReferenceCode (final String url, String sessionId) {
+		LOGGER.info("Start VSACAPIServiceImpl getValueSetBasedOIDAndVersion method : oid entered :" + url);
+		VsacApiResult result = new VsacApiResult();
+		String eightHourTicket = UMLSSessionTicket.getTicket(sessionId);
+		if (eightHourTicket != null) {
+			if ((url != null) && StringUtils.isNotEmpty(url) && StringUtils.isNotBlank(url)) {
+				LOGGER.info("Start ValueSetsResponseDAO...Using Proxy:" + PROXY_HOST + ":" + PROXY_PORT);
+				String fiveMinServiceTicket = vGroovyClient.getServiceTicket(eightHourTicket);
+				VSACResponseResult vsacResponseResult = vGroovyClient.getStandardDirectReferenceCode(fiveMinServiceTicket);	
+				
+				if((vsacResponseResult != null) && (vsacResponseResult.getXmlPayLoad() != null)
+						&& (!StringUtils.isEmpty(vsacResponseResult.getXmlPayLoad()))) {
+					DirectReferenceCode referenceCode = convertXmltoDirectCodeRef(vsacResponseResult.getXmlPayLoad());
+					result.setDirectReferenceCode(referenceCode);
+					result.setSuccess(true);
+				}
+			}  else {
+				result.setSuccess(false);
+				result.setFailureReason(result.OID_REQUIRED);
+				LOGGER.info("URL is required");
+			}
+		} else {
+			result.setSuccess(false);
+			result.setFailureReason(result.UMLS_NOT_LOGGEDIN);
+			LOGGER.info("UMLS Login is required");
+		}
+		
+		LOGGER.info("End VSACAPIServiceImpl getDirectReferenceCode method : url entered :" + url);
 		return result;
 	}
 	

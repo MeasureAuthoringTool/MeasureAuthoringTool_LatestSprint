@@ -22,6 +22,7 @@ import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.shared.MatException;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.CQLValueSetTransferObject;
+import mat.model.MatCodeTransferObject;
 import mat.model.MatValueSet;
 import mat.model.MeasureOwnerReportDTO;
 import mat.model.MeasureType;
@@ -29,6 +30,7 @@ import mat.model.Organization;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
+import mat.model.cql.CQLCodeWrapper;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLIncludeLibrary;
@@ -294,23 +296,7 @@ public interface MeasureLibraryService {
 	ManageMeasureSearchModel search(String searchText, int startIndex,
 			int pageSize, int filter);
 	
-	
-	/**
-	 * Search measures for draft.
-	 *
-	 * @param searchText the search text
-	 * @return the manage measure search model
-	 */
-	ManageMeasureSearchModel searchMeasuresForDraft(String searchText);
-	
-	/**
-	 * Search measures for version.
-	 *
-	 * @param searchText the search text
-	 * @return the manage measure search model
-	 */
-	ManageMeasureSearchModel searchMeasuresForVersion(String searchText);
-	
+		
 	/**
 	 * Search users.
 	 *
@@ -771,5 +757,9 @@ public interface MeasureLibraryService {
 			List<CQLIncludeLibrary> viewIncludeLibrarys);
 
 	VsacApiResult updateCQLVSACValueSets(String currentMeasureId, String expansionId, String sessionId);
+
+	SaveUpdateCQLResult saveCQLCodestoMeasure(MatCodeTransferObject transferObject);
+
+	CQLCodeWrapper getCQLCodes(String measureID);
 
 }

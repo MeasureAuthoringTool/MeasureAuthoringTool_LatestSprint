@@ -761,7 +761,7 @@ public class MessageDelegate {
 	
 	private final String DELETE_CONFIRMATION_INCLUDE = "You have selected to delete this expression. Do you want to permanently delete this Library Alias?";
 	
-	private final String ERROR_LIBRARY_VERSION ="Please select a Library Name to version and select a version type of Major or Minor.";
+	private final String ERROR_LIBRARY_VERSION ="Please select version type Major or Minor.";
 	
 	private final String ERROR_LIBRARY_DRAFT = "Please select a Library Version to create a draft.";
 	
@@ -2843,4 +2843,7 @@ public class MessageDelegate {
 		return TRANSFER_CHECKBOX_ERROR_CQL_LIBRARY;
 	}
 	
+	public String getCodeSuccessMessage(String codeName) {
+		return "Code " + codeName + " has been applied successfully.";
+	}
 }

@@ -3,12 +3,15 @@
  */
 package mat.client.clause.cqlworkspace;
 
+import org.gwtbootstrap3.client.ui.ButtonGroup;
+import org.gwtbootstrap3.client.ui.FormGroup;
 import org.gwtbootstrap3.client.ui.InlineRadio;
 import org.gwtbootstrap3.client.ui.Label;
 import org.gwtbootstrap3.client.ui.constants.LabelType;
 import org.gwtbootstrap3.client.ui.gwt.FlowPanel;
 
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.user.client.ui.Grid;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
@@ -16,6 +19,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditorMode;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditorTheme;
+import mat.client.shared.CQLAddNewButton;
 import mat.client.shared.CQLButtonToolBar;
 import mat.client.shared.SpacerWidget;
 import mat.client.util.MatTextBox;
@@ -29,6 +33,8 @@ public class CQlDefinitionsView {
 	/** The define ace editor. */
 	private AceEditor defineAceEditor = new AceEditor();
 	
+	private ButtonGroup contextGroup = new ButtonGroup();
+	
 	/** The context pat toggle switch. */
 	private InlineRadio contextDefinePATRadioBtn = new InlineRadio("Patient");
 	
@@ -37,6 +43,9 @@ public class CQlDefinitionsView {
 	
 	/** The define button bar. */
 	private CQLButtonToolBar defineButtonBar = new CQLButtonToolBar("definition");
+	
+	/** The define add new button. */
+	private CQLAddNewButton addNewButtonBar = new CQLAddNewButton("definition");
 	
 	
 	private VerticalPanel mainDefineViewVerticalPanel = new VerticalPanel();;
@@ -50,6 +59,8 @@ public class CQlDefinitionsView {
 	private void buildView(){
 		VerticalPanel definitionVP = new VerticalPanel();
 		HorizontalPanel definitionFP = new HorizontalPanel();
+		HorizontalPanel definitionHP = new HorizontalPanel();
+		FormGroup definitionFormGroup = new FormGroup();
 		
 		Label defineLabel = new Label(LabelType.INFO, "Definition Name");
 		defineLabel.setMarginTop(5);
@@ -60,6 +71,15 @@ public class CQlDefinitionsView {
 		defineNameTxtArea.getElement().setId("defineNameField");
 		defineNameTxtArea.setName("defineName");
 		defineLabel.setText("Definition Name");
+		
+		definitionFormGroup.clear();
+		definitionFormGroup.add(defineLabel);
+		definitionFormGroup.add(addNewButtonBar);
+
+		Grid queryGrid = new Grid(1,1);
+		queryGrid.setWidget(0, 0, definitionFormGroup);
+
+		definitionHP.add(queryGrid);
 		
 		SimplePanel defAceEditorPanel = new SimplePanel();
 		defAceEditorPanel.setSize("685px", "510px");
@@ -88,14 +108,16 @@ public class CQlDefinitionsView {
 		contextDefinePOPRadioBtn.setValue(false);
 		contextDefinePOPRadioBtn.setText("Population");
 		contextDefinePOPRadioBtn.setId("context_PopulationRadioButton");
+		contextGroup.add(contextDefinePATRadioBtn);
+		contextGroup.add(contextDefinePOPRadioBtn);
+		contextGroup.setStyleName("contextToggleSwitch");
 		
 		defineButtonBar.getTimingExpButton().setVisible(false);
 		defineButtonBar.getCloseButton().setVisible(false);
-		defineConextPanel.add(contextDefinePATRadioBtn);
-		defineConextPanel.add(contextDefinePOPRadioBtn);
+		defineConextPanel.add(contextGroup);
 		defineConextPanel.setStyleName("contextToggleSwitch");
 		definitionVP.add(new SpacerWidget());
-		definitionVP.add(defineLabel);
+		definitionVP.add(definitionHP);
 		definitionVP.add(new SpacerWidget());
 		definitionVP.add(defineNameTxtArea);
 		definitionVP.add(new SpacerWidget());
@@ -145,6 +167,14 @@ public class CQlDefinitionsView {
 		this.defineAceEditor = defineAceEditor;
 	}
 
+	public ButtonGroup getContextGroup() {
+		return contextGroup;
+	}
+
+	public void setContextGroup(ButtonGroup contextGroup) {
+		this.contextGroup = contextGroup;
+	}
+
 	public InlineRadio getContextDefinePATRadioBtn() {
 		return contextDefinePATRadioBtn;
 	}
@@ -169,6 +199,14 @@ public class CQlDefinitionsView {
 		this.defineButtonBar = defineButtonBar;
 	}
 	
+	public CQLAddNewButton getAddNewButtonBar() {
+		return addNewButtonBar;
+	}
+
+	public void setAddNewButtonBar(CQLAddNewButton addNewButtonBar) {
+		this.addNewButtonBar = addNewButtonBar;
+	}
+
 	public void resetAll() {
 		getDefineNameTxtArea().setText("");
 		getDefineAceEditor().setText("");
@@ -184,6 +222,7 @@ public class CQlDefinitionsView {
 		getDefineAceEditor().setReadOnly(!isEditable);
 		getContextDefinePATRadioBtn().setEnabled(isEditable);
 		getContextDefinePOPRadioBtn().setEnabled(isEditable);
+		getAddNewButtonBar().getaddNewButton().setEnabled(isEditable);
 		System.out.println("in setDefinitionWidgetReadOnly: setting Ace Editor read only flag. read only = " + !isEditable);
 		getDefineButtonBar().getSaveButton().setEnabled(isEditable);
 		getDefineButtonBar().getDeleteButton().setEnabled(isEditable);

@@ -31,6 +31,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.cqlworkspace.CQLWorkSpaceConstants;
 import mat.client.measure.service.CQLService;
 import mat.client.measure.service.SaveCQLLibraryResult;
@@ -48,12 +49,14 @@ import mat.dao.clause.ShareLevelDAO;
 import mat.model.CQLLibraryOwnerReportDTO;
 import mat.model.CQLValueSetTransferObject;
 import mat.model.LockedUserInfo;
+import mat.model.MatCodeTransferObject;
 import mat.model.RecentCQLActivityLog;
 import mat.model.SecurityRole;
 import mat.model.User;
 import mat.model.clause.CQLLibrary;
 import mat.model.clause.CQLLibrarySet;
 import mat.model.clause.ShareLevel;
+import mat.model.cql.CQLCodeWrapper;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLIncludeLibrary;
@@ -195,101 +198,6 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		
 		return searchModel;
 	}
-	
-	/* (non-Javadoc)
-	 * @see mat.server.service.CQLLibraryServiceInterface#searchForVersion(java.lang.String)
-	 */
-	@Override
-	public SaveCQLLibraryResult searchForVersion(String searchText){
-		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
-		
-		ArrayList<CQLLibraryDataSetObject> cqList = new ArrayList<CQLLibraryDataSetObject>();
-		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
-		// To reuse existing search, filter is passed as -1 which otherwise has value 0 or 1
-		List<CQLLibraryShareDTO> list = cqlLibraryDAO.search(searchText,Integer.MAX_VALUE, user,-1);
-		
-		for(CQLLibraryShareDTO shareDTO : list){
-			CQLLibraryDataSetObject cqlLibraryDataSetObject = extractCQLLibraryDataObjectFromShareDTO(user, shareDTO);
-			
-			if(cqlLibraryDataSetObject != null) {
-				boolean canVersion = false;
-				if(!cqlLibraryDataSetObject.isDraft()){
-					canVersion = false;
-				} else {
-					if(cqlLibraryDataSetObject.isLocked()){
-						canVersion = false;
-					} else {
-						if(MatContextServiceUtil.get().isCurrentCQLLibraryEditable(
-								cqlLibraryDAO, cqlLibraryDataSetObject.getId())){
-							canVersion = true;
-						} else {
-							canVersion = false;
-						}
-					}
-				}
-				if(canVersion){
-					cqList.add(cqlLibraryDataSetObject);
-				}
-			}
-		}
-		result.setResultsTotal(cqList.size());
-		result.setCqlLibraryDataSetObjects(cqList);
-		return result;
-		
-	}
-	
-	/* (non-Javadoc)
-	 * @see mat.server.service.CQLLibraryServiceInterface#searchForDraft(java.lang.String)
-	 */
-	@Override
-	public SaveCQLLibraryResult searchForDraft(String searchText) {
-		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
-
-		ArrayList<CQLLibraryDataSetObject> cqList = new ArrayList<CQLLibraryDataSetObject>();
-		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
-		// To reuse existing search, filter is passed as -1 which otherwise has value 0 or 1
-		List<CQLLibraryShareDTO> list = cqlLibraryDAO.search(searchText, Integer.MAX_VALUE, user, -1);
-		HashSet<String> hasDraft = new HashSet<String>();
-		for (CQLLibraryShareDTO library : list) {
-			if (library.isDraft()) {
-				String setId = library.getCqlLibrarySetId();
-				hasDraft.add(setId);
-			}
-		}
-		
-		for (CQLLibraryShareDTO shareDTO : list) {
-			CQLLibraryDataSetObject cqlLibraryDataSetObject = extractCQLLibraryDataObjectFromShareDTO(user, shareDTO);
-
-			if (cqlLibraryDataSetObject != null) {
-				boolean canDraft = false;
-				if (cqlLibraryDataSetObject.isDraft()) {
-					canDraft = false;
-				} else {
-						if(hasDraft.contains(shareDTO.getCqlLibrarySetId())){
-							canDraft = false;
-						} else {
-							if (cqlLibraryDataSetObject.isLocked()) {
-								canDraft = false;
-							} else {
-								if(MatContextServiceUtil.get().isCurrentCQLLibraryDraftable(
-										cqlLibraryDAO, cqlLibraryDataSetObject.getId())){
-									canDraft = true;
-								} else {
-									canDraft = false;
-								}
-							}
-						}
-					}
-				if (canDraft) {
-					cqList.add(cqlLibraryDataSetObject);
-				}
-			}
-		}
-		result.setResultsTotal(cqList.size());
-		result.setCqlLibraryDataSetObjects(cqList);
-		return result;
-	}
-	
 	
 	
 	/* (non-Javadoc)
@@ -1352,6 +1260,23 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		return result;
 	}
 	
+	@Override
+	public SaveUpdateCQLResult saveCQLCodestoCQLLibrary(MatCodeTransferObject transferObject) {
+		
+		SaveUpdateCQLResult result = null;
+		if (MatContextServiceUtil.get().isCurrentCQLLibraryEditable(cqlLibraryDAO, transferObject.getId())) {
+			result = cqlService.saveCQLCodes(transferObject);
+			CQLLibrary library = cqlLibraryDAO.find(transferObject.getId());
+			if(result != null && result.isSuccess()) {
+				String nodeName = "code";
+				String parentNode = "//cqlLookUp/codes";
+				appendAndSaveNode(library, nodeName, result.getXml(), parentNode);
+			}
+		}
+		return result;
+	}
+	
+	
 	/**
 	 * Save CQL user defined valuesetto measure.
 	 *
@@ -1505,6 +1430,8 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		dataObject.setCqlSetId(dto.getCqlLibrarySetId());
 		dataObject.setEditable(MatContextServiceUtil.get().isCurrentCQLLibraryEditable(
 				cqlLibraryDAO, dto.getCqlLibraryId()));
+		dataObject.setDraftable(dto.isDraftable());
+		dataObject.setVersionable(dto.isVersionable());
 		return dataObject;
 	}
 	

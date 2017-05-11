@@ -124,7 +124,10 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	public void buildCellTable(SaveCQLLibraryResult result, String searchText,int filter) {
 		cqlLibrarySearchView.buildCellTable(result, searchText,filter);
 	}
-
+	@Override
+	public VerticalPanel getCellTablePanel() {
+		return cqlLibrarySearchView.getCellTablePanel();
+	}
 	@Override
 	public CreateNewItemWidget getCreateNewItemWidget() {
 		return createNewItemWidget;
@@ -177,7 +180,7 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	public Widget asWidget() {
 		widgetVP.clear();
 		widgetVP.add(searchFilterWidget);
-		getSearchFilterWidget().getSearchFilterDisclosurePanel().setOpen(false);
+		//getSearchFilterWidget().getSearchFilterDisclosurePanel().setOpen(false);
 		return mainPanel;
 	}
 	

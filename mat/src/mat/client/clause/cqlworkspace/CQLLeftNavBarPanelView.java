@@ -52,6 +52,7 @@ import mat.client.shared.SuccessMessageAlert;
 import mat.client.shared.WarningConfirmationMessageAlert;
 import mat.client.shared.WarningMessageAlert;
 import mat.model.clause.QDSAttributes;
+import mat.model.cql.CQLCode;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLIncludeLibrary;
@@ -184,10 +185,12 @@ public class CQLLeftNavBarPanelView {
 	private List<CQLQualityDataSetDTO> appliedQdmList = new ArrayList<CQLQualityDataSetDTO>();
 
 	/** The codes list. */
-	private List<CQLQualityDataSetDTO> codesList = new ArrayList<CQLQualityDataSetDTO>();
+	private List<CQLCode> codesList = new ArrayList<CQLCode>();
 	
 	/** The applied qdm to show in Table list. */
 	private List<CQLQualityDataSetDTO> appliedQdmTableList = new ArrayList<CQLQualityDataSetDTO>();
+	
+	private List<CQLCode> appliedCodeTableList = new ArrayList<CQLCode>();
 
 	/** The include library list. */
 	private List<CQLLibraryDataSetObject> includeLibraryList = new ArrayList<CQLLibraryDataSetObject>();
@@ -977,6 +980,21 @@ public class CQLLeftNavBarPanelView {
 		}
 
 	}
+	
+	
+	/**
+	 * Update valueset values.
+	 * @param appliedValueSetTableList 
+	 */
+	public void updateCodeMap(List<CQLCode> appliedCodeTableList) {
+		if (getAppliedQdmTableList().size() < 10) {
+			getCodesBadge().setText("0" + appliedCodeTableList.size());
+		} else {
+			getCodesBadge().setText("" + appliedCodeTableList.size());
+		}
+
+	}
+	
 	
 	/*
 	 * (non-Javadoc)
@@ -2438,10 +2456,12 @@ public class CQLLeftNavBarPanelView {
 		HTML html2 = new HTML("Ctrl-Alt-y: datatypes");
 		HTML html3 = new HTML("Ctrl-Alt-d: definitions");
 		HTML html4 = new HTML("Ctrl-Alt-f: functions");
-		HTML html5 = new HTML("Ctrl-Alt-p: parameters");
-		HTML html6 = new HTML("Ctrl-Alt-t: timings");
-		HTML html7 = new HTML("Ctrl-Alt-v: value sets");
-		HTML html8 = new HTML("Ctrl-Space: all");
+		HTML html5 = new HTML("Ctrl-Alt-k: keywords");
+		HTML html6 = new HTML("Ctrl-Alt-p: parameters");
+		HTML html7 = new HTML("Ctrl-Alt-t: timings");
+		HTML html8 = new HTML("Ctrl-Alt-v: value sets");
+		
+		HTML html9 = new HTML("Ctrl-Space: all");
 
 		dialogContents.add(html1);
 		dialogContents.add(html2);
@@ -2451,6 +2471,7 @@ public class CQLLeftNavBarPanelView {
 		dialogContents.add(html6);
 		dialogContents.add(html7);
 		dialogContents.add(html8);
+		dialogContents.add(html9);
 		panel.show();
 	}
 
@@ -2465,7 +2486,17 @@ public class CQLLeftNavBarPanelView {
 	}
 
 
-	public List<CQLQualityDataSetDTO> getCodesTableList() {
+	public List<CQLCode> getCodesTableList() {
 		return codesList;
+	}
+
+
+	public List<CQLCode> getAppliedCodeTableList() {
+		return appliedCodeTableList;
+	}
+
+
+	public void setAppliedCodeTableList(List<CQLCode> appliedCodeTableList) {
+		this.appliedCodeTableList = appliedCodeTableList;
 	}
 }
