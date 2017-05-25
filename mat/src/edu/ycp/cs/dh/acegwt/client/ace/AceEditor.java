@@ -901,11 +901,9 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 	
 	@SuppressWarnings("unchecked")
 	private static JsArrayString createValueSetJsArrayString() {
-		List<String> valueSetList = MatContext.get().getValuesets();
-		valueSetList.add("SDE Ethnicity");
-		valueSetList.add("SDE Race");
-		valueSetList.add("SDE Sex");
-		valueSetList.add("SDE Payer");
+		List<String> valueSetList = new ArrayList<String>();
+		valueSetList.addAll(MatContext.get().getValuesets());
+		valueSetList.addAll(MatContext.get().getIncludedValueSetNames());
 		
 		Collections.sort(valueSetList, new Comparator() {
 
@@ -919,8 +917,14 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 		});
 		
 		JsArrayString jsArray = (JsArrayString) JsArrayString.createArray(); 
-		for(String string : valueSetList) {
-			jsArray.push("\"" + string + "\"");
+		for (String string : valueSetList) {
+			String str[] = string.split("\\.");
+			if(str.length>1){
+				string = str[0] + "." + "\"" + str[1] + "\"";
+			} else {
+				string = '"'+string+'"';
+			}
+			jsArray.push(string);
 		}
 
 		
@@ -934,7 +938,7 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 	 * @return the js array string
 	 */
 	private static JsArrayString createDatatypesJsArrayString() {
-		List<String> dataTypeList = MatContext.get().dataTypeList;
+		List<String> dataTypeList = MatContext.get().getCqlConstantContainer().getCqlDatatypeList();
 		JsArrayString jsArray = (JsArrayString) JsArrayString.createArray();
 		
 		for(String string: dataTypeList) {
@@ -953,16 +957,18 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 	 * @return the js array string
 	 */
 	private static JsArrayString createDefinitionsJsArrayString() {
-		List<String> defineList = MatContext.get().definitions;
+		List<String> defineList = new ArrayList<String>();
+		defineList.addAll(MatContext.get().getDefinitions());
+		defineList.addAll(MatContext.get().getIncludedDefNames());
 		JsArrayString jsArray = (JsArrayString) JsArrayString.createArray();
-		for (String string : defineList) {
-			jsArray.push('"'+string+'"');
-		}
 		
-		List<String> includedDefList = MatContext.get().getIncludedDefNames();
-		for (String string : includedDefList) {
+		for (String string : defineList) {
 			String str[] = string.split("\\.");
-			string = str[0] + "." + "\"" + str[1] + "\"";
+			if(str.length>1){
+				string = str[0] + "." + "\"" + str[1] + "\"";
+			} else {
+				string = '"'+string+'"';
+			}
 			jsArray.push(string);
 		}
 		
@@ -975,10 +981,18 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 	 * @return the js array string
 	 */
 	private static JsArrayString createParamsJsArrayString() {
-		List<String> paramList = MatContext.get().parameters;
+		List<String> paramList = new ArrayList<String>();
+		paramList.addAll(MatContext.get().getParameters());
+		paramList.addAll(MatContext.get().getIncludedParamNames());
 		JsArrayString jsArray = (JsArrayString) JsArrayString.createArray();
 		for (String string : paramList) {
-			jsArray.push('"'+string+'"');
+			String str[] = string.split("\\.");
+			if(str.length>1){
+				string = str[0] + "." + "\"" + str[1] + "\"";
+			} else {
+				string = '"'+string+'"';
+			}
+			jsArray.push(string);
 		}
 		return jsArray;
 	}
@@ -989,16 +1003,24 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 	 * @return the js array string
 	 */
 	private static JsArrayString createfuncsJsArrayString() {
-		List<String> funcsList = MatContext.get().funcs;
+		List<String> funcsList = new ArrayList<String>();
+		funcsList.addAll(MatContext.get().getFuncs());
+		funcsList.addAll(MatContext.get().getIncludedFuncNames());
 		JsArrayString jsArray = (JsArrayString) JsArrayString.createArray();
 		for (String string : funcsList) {
+			String str[] = string.split("\\.");
+			if(str.length>1){
+				string = str[0] + "." + "\"" + str[1] + "\"" + "()";
+			} else {
+				string = '"'+string+'"' +"()";
+			}
 			jsArray.push(string);
 		}
 		return jsArray;
 	}
 	
 	private static JsArrayString createAttributesJsArrayString() {
-		List<String> funcsList = MatContext.get().allAttributeList;
+		List<String> funcsList = MatContext.get().getCqlConstantContainer().getCqlAttributeList();
 		JsArrayString jsArray = (JsArrayString) JsArrayString.createArray();
 		for (String string : funcsList) {
 			jsArray.push(convertToCamelCase(string));

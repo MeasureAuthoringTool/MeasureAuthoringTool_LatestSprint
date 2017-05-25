@@ -4,8 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.gwtbootstrap3.client.ui.Button;
+import org.gwtbootstrap3.client.ui.FormGroup;
+import org.gwtbootstrap3.client.ui.HelpBlock;
+import org.gwtbootstrap3.client.ui.constants.ButtonType;
+import org.gwtbootstrap3.client.ui.constants.IconSize;
+import org.gwtbootstrap3.client.ui.constants.IconType;
+import org.gwtbootstrap3.client.ui.constants.ValidationState;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.event.dom.client.ChangeEvent;
+import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
@@ -29,6 +37,7 @@ import com.google.gwt.user.client.ui.FormPanel;
 import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
 import com.google.gwt.user.client.ui.HasValue;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
@@ -52,7 +61,6 @@ import mat.client.measure.service.MeasureCloningService;
 import mat.client.measure.service.MeasureCloningServiceAsync;
 import mat.client.measure.service.SaveMeasureResult;
 import mat.client.shared.ContentWithHeadingWidget;
-import mat.client.shared.CreateNewItemWidget;
 import mat.client.shared.CustomButton;
 import mat.client.shared.FocusableWidget;
 import mat.client.shared.ListBoxMVP;
@@ -68,6 +76,7 @@ import mat.client.shared.SynchronizationDelegate;
 import mat.client.shared.search.SearchResultUpdate;
 import mat.client.util.ClientConstants;
 import mat.shared.ConstantMessages;
+import mat.shared.MatConstants;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -191,6 +200,16 @@ public class ManageMeasurePresenter implements MatPresenter {
 		 *            the show
 		 */
 		public void showMeasureName(boolean show);
+
+		
+		ListBox getPatientBasedInput();
+
+		
+		HelpBlock getHelpBlock();
+
+		FormGroup getMessageFormGrp();
+
+		void setPatientBasedInput(ListBox patientBasedInput);
 	}
 
 	/**
@@ -433,11 +452,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 		public void clearBulkExportCheckBoxes(Grid508 dataTable);
 
 		/**
-		 * Clear selections.
-		 */
-		public void clearSelections();
-
-		/**
 		 * Gets the bulk export button.
 		 * 
 		 * @return the bulk export button
@@ -445,25 +459,11 @@ public class ManageMeasurePresenter implements MatPresenter {
 		public HasClickHandlers getBulkExportButton();
 
 		/**
-		 * Gets the creates the button.
-		 * 
-		 * @return the creates the button
-		 */
-		public HasClickHandlers getCreateButton();
-
-		/**
 		 * Gets the creates the measure button.
 		 * 
 		 * @return the creates the measure button
 		 */
-		CustomButton getCreateMeasureButton();
-
-		/**
-		 * Gets the creates the measure widget.
-		 * 
-		 * @return the creates the measure widget
-		 */
-		CreateNewItemWidget getCreateMeasureWidget();
+		Button getCreateMeasureButton();
 
 		/**
 		 * Gets the error measure deletion.
@@ -687,7 +687,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 			detailDisplay.getName().setValue("");
 			detailDisplay.getShortName().setValue("");
-			searchDisplay.clearSelections();
 			displaySearch();
 		}
 	};
@@ -719,20 +718,11 @@ public class ManageMeasurePresenter implements MatPresenter {
 	/** The is clone. */
 	private boolean isClone;
 
-	/** The is create measure widget visible. */
-	boolean isCreateMeasureWidgetVisible = false;
-
 	/** The is measure deleted. */
 	private boolean isMeasureDeleted = false;
 
 	/** The is measure search filter visible. */
 	boolean isMeasureSearchFilterVisible = true;
-
-	/** The is search visible on draft. */
-	boolean isSearchVisibleOnDraft = true;
-
-	/** The is search visible on version. */
-	boolean isSearchVisibleOnVersion = true;
 
 	/** The sub skip content holder. */
 	private static FocusableWidget subSkipContentHolder;
@@ -831,7 +821,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 		displaySearch();
 		if (searchDisplay != null) {
 			searchDisplay.getMeasureSearchFilterWidget().setVisible(isMeasureSearchFilterVisible);
-			searchDisplay.getCreateMeasureWidget().setVisible(isCreateMeasureWidgetVisible);
 			searchDisplayHandlers(searchDisplay);
 		}
 
@@ -902,6 +891,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 		measureDeletion = false;
 		isClone = false;
 		isLoading = false;
+		detailDisplay.getMessageFormGrp().setValidationState(ValidationState.NONE);
+		detailDisplay.getHelpBlock().setText("");
 	}
 
 	/*
@@ -1112,6 +1103,38 @@ public class ManageMeasurePresenter implements MatPresenter {
 				detailDisplay.setScoringChoices(result);
 			}
 		});
+		
+		detailDisplay.getMeasScoringChoice().addChangeHandler(new ChangeHandler() {
+
+			@Override
+			public void onChange(ChangeEvent event) {
+				if(detailDisplay.getMeasScoringChoice().getItemText(detailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.PROPORTION) ||
+						detailDisplay.getMeasScoringChoice().getItemText(detailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.COHORT) || 
+						detailDisplay.getMeasScoringChoice().getItemText(detailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.RATIO)) {
+						resetPatientBasedInput(); 
+						
+						// default the selected index to be 1, which is yes.  
+						
+						detailDisplay.getPatientBasedInput().setSelectedIndex(1);
+						detailDisplay.getMessageFormGrp().setValidationState(ValidationState.SUCCESS);
+						detailDisplay.getHelpBlock().setColor("transparent");
+						detailDisplay.getHelpBlock().setText("Patient based indicator set to yes.");
+						
+						
+				}
+				
+				if(detailDisplay.getMeasScoringChoice().getItemText(detailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE)) {
+
+					// yes is the second element in the list, so the 1 index. 
+					detailDisplay.getPatientBasedInput().removeItem(1);
+					detailDisplay.getPatientBasedInput().setSelectedIndex(0);
+					detailDisplay.getMessageFormGrp().setValidationState(ValidationState.SUCCESS);
+					detailDisplay.getHelpBlock().setColor("transparent");
+					detailDisplay.getHelpBlock().setText("Patient based indicator set to no.");
+					
+				}
+			}			
+		});
 	}
 
 	/**
@@ -1119,6 +1142,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 */
 	private void displayDetailForAdd() {
 		panel.getButtonPanel().clear();
+		resetPatientBasedInput(); 
+			
 		panel.setHeading("My Measures > Create New Measure", "MeasureLibrary");
 		setDetailsToView();
 		detailDisplay.showMeasureName(false);
@@ -1131,9 +1156,26 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 */
 	private void displayDetailForClone() {
 		detailDisplay.clearFields();
+		resetPatientBasedInput(); 
+		
 		detailDisplay.setMeasureName(currentDetails.getName());
 		detailDisplay.showMeasureName(true);
+		detailDisplay.showCautionMsg(true);
 		detailDisplay.getMeasScoringChoice().setValueMetadata(currentDetails.getMeasScoring());
+		
+		// set the patient based indicators, yes is index 1, no is index 0
+		if(currentDetails.isPatientBased()) {
+			detailDisplay.getPatientBasedInput().setSelectedIndex(1);
+		} else {
+			detailDisplay.getPatientBasedInput().setSelectedIndex(0);
+		}
+		
+		if(currentDetails.getMeasScoring().equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE)) {
+			detailDisplay.getPatientBasedInput().removeItem(1);
+			detailDisplay.getPatientBasedInput().setSelectedIndex(0);
+		}
+		
+		
 		panel.getButtonPanel().clear();
 		panel.setHeading("My Measures > Clone Measure", "MeasureLibrary");
 		panel.setContent(detailDisplay.asWidget());
@@ -1145,11 +1187,35 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 */
 	private void displayDetailForEdit() {
 		panel.getButtonPanel().clear();
+		resetPatientBasedInput(); 
+				
 		panel.setHeading("My Measures > Edit Measure", "MeasureLibrary");
 		detailDisplay.showMeasureName(false);
 		detailDisplay.showCautionMsg(true);
 		setDetailsToView();
+		
+		// set the patient based indicators, yes is index 1, no is index 0
+		if(currentDetails.isPatientBased()) {
+			detailDisplay.getPatientBasedInput().setSelectedIndex(1);
+		} else {
+			detailDisplay.getPatientBasedInput().setSelectedIndex(0);
+		}
+		
+		if(currentDetails.getMeasScoring().equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE)) {
+			detailDisplay.getPatientBasedInput().removeItem(1);
+		}
+		
 		panel.setContent(detailDisplay.asWidget());
+	}
+	
+	/**
+	 * resets the patient based input by clearing the list, adding no and yes options, and setting the selected index to 0. 
+	 */
+	private void resetPatientBasedInput() {
+		detailDisplay.getPatientBasedInput().clear();
+		detailDisplay.getPatientBasedInput().addItem("No");
+		detailDisplay.getPatientBasedInput().addItem("Yes");
+		detailDisplay.getPatientBasedInput().setSelectedIndex(1);
 	}
 
 	/**
@@ -1198,21 +1264,34 @@ public class ManageMeasurePresenter implements MatPresenter {
 			fp.add(searchDisplay.asWidget());
 		} else {
 			// MAT-1929 : Retain filters at measure library screen
-			searchDisplay.getCreateMeasureWidget().setVisible(false);
 			searchDisplay.getMeasureSearchFilterWidget().setVisible(true);
 			isMeasureSearchFilterVisible = true;
-			isCreateMeasureWidgetVisible = false;
 			filter = searchDisplay.getSelectedFilter();
 			search(searchDisplay.getSearchString().getValue(), 1, Integer.MAX_VALUE, filter);
 			searchRecentMeasures();
-			panel.getButtonPanel().clear();
-			panel.setButtonPanel(searchDisplay.getCreateMeasureButton(), "createElement_measureLib",
-					searchDisplay.getZoomButton(), "searchButton_measureLib");
+			buildCreateMeasure(); 
+			
 			fp.add(searchDisplay.asWidget());
 		}
 
 		panel.setContent(fp);
 		Mat.focusSkipLists("MeasureLibrary");
+	}
+	
+	/**
+	 * Builds the Create Measure Button
+	 */
+	private void buildCreateMeasure() {
+		panel.getButtonPanel().clear();
+
+		searchDisplay.getCreateMeasureButton().setId("newMeasure_button");
+		searchDisplay.getCreateMeasureButton().setIcon(IconType.LIGHTBULB_O);
+		searchDisplay.getCreateMeasureButton().setIconSize(IconSize.LARGE);
+		searchDisplay.getCreateMeasureButton().setType(ButtonType.LINK);
+		searchDisplay.getCreateMeasureButton().setTitle("Click to create new measure");
+				
+		searchDisplay.getCreateMeasureButton().setStyleName("createNewButton");
+		panel.getButtonPanel().add(searchDisplay.getCreateMeasureButton());
 	}
 
 	/**
@@ -1578,7 +1657,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 					public void onSuccess(SaveMeasureResult result) {
 						showSearchingBusy(false);
 						if (result.isSuccess()) {
-							searchDisplay.clearSelections();
 							displaySearch();
 							String versionStr = result.getVersionStr();
 							MatContext.get().getAuditService().recordMeasureEvent(measureId, "Measure Versioned",
@@ -1983,7 +2061,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 						}
 					}
 				});
-		searchDisplay.getCreateButton().addClickHandler(new ClickHandler() {
+		searchDisplay.getCreateMeasureButton().addClickHandler(new ClickHandler() {
 
 			@Override
 			public void onClick(ClickEvent event) {
@@ -1992,13 +2070,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 				measureDeletion = false;
 				isMeasureDeleted = false;
 
-				if (searchDisplay.getSelectedOption().equalsIgnoreCase(ConstantMessages.CREATE_NEW_MEASURE)) {
-					createNew();
-				} else {
-					searchDisplay.getErrorMessageDisplayForBulkExport().clearAlert();
-					searchDisplay.getErrorMessageDisplay()
-							.createAlert("Please select an option from the Create list box.");
-				}
+				createNew(); 
 			}
 		});
 
@@ -2014,39 +2086,39 @@ public class ManageMeasurePresenter implements MatPresenter {
 				search(searchDisplay.getSearchString().getValue(), startIndex, Integer.MAX_VALUE, filter);
 			}
 		});
-		searchDisplay.getZoomButton().addClickHandler(new ClickHandler() {
-			@Override
-			public void onClick(ClickEvent event) {
-				searchDisplay.getSuccessMeasureDeletion().clearAlert();
-				searchDisplay.getErrorMeasureDeletion().clearAlert();
-				searchDisplay.getErrorMessageDisplayForBulkExport().clearAlert();
-				searchDisplay.getErrorMessageDisplay().clearAlert();
-				if (isCreateMeasureWidgetVisible) {
-					isCreateMeasureWidgetVisible = !isCreateMeasureWidgetVisible;
-					searchDisplay.getCreateMeasureWidget().setVisible(isCreateMeasureWidgetVisible);
-				}
-				isMeasureSearchFilterVisible = !isMeasureSearchFilterVisible;
-				searchDisplay.getMeasureSearchFilterWidget().setVisible(isMeasureSearchFilterVisible);
-
-			}
-		});
-
-		searchDisplay.getCreateMeasureButton().addClickHandler(new ClickHandler() {
-
-			@Override
-			public void onClick(ClickEvent event) {
-				searchDisplay.getSuccessMeasureDeletion().clearAlert();
-				searchDisplay.getErrorMeasureDeletion().clearAlert();
-				searchDisplay.getErrorMessageDisplayForBulkExport().clearAlert();
-				searchDisplay.getErrorMessageDisplay().clearAlert();
-				if (isMeasureSearchFilterVisible) {
-					isMeasureSearchFilterVisible = !isMeasureSearchFilterVisible;
-					searchDisplay.getMeasureSearchFilterWidget().setVisible(isMeasureSearchFilterVisible);
-				}
-				isCreateMeasureWidgetVisible = !isCreateMeasureWidgetVisible;
-				searchDisplay.getCreateMeasureWidget().setVisible(isCreateMeasureWidgetVisible);
-			}
-		});
+//		searchDisplay.getZoomButton().addClickHandler(new ClickHandler() {
+//			@Override
+//			public void onClick(ClickEvent event) {
+//				searchDisplay.getSuccessMeasureDeletion().clearAlert();
+//				searchDisplay.getErrorMeasureDeletion().clearAlert();
+//				searchDisplay.getErrorMessageDisplayForBulkExport().clearAlert();
+//				searchDisplay.getErrorMessageDisplay().clearAlert();
+//				if (isCreateMeasureWidgetVisible) {
+//					isCreateMeasureWidgetVisible = !isCreateMeasureWidgetVisible;
+//					searchDisplay.getCreateMeasureWidget().setVisible(isCreateMeasureWidgetVisible);
+//				}
+//				isMeasureSearchFilterVisible = !isMeasureSearchFilterVisible;
+//				searchDisplay.getMeasureSearchFilterWidget().setVisible(isMeasureSearchFilterVisible);
+//
+//			}
+//		});
+//
+//		searchDisplay.getCreateMeasureButton().addClickHandler(new ClickHandler() {
+//
+//			@Override
+//			public void onClick(ClickEvent event) {
+//				searchDisplay.getSuccessMeasureDeletion().clearAlert();
+//				searchDisplay.getErrorMeasureDeletion().clearAlert();
+//				searchDisplay.getErrorMessageDisplayForBulkExport().clearAlert();
+//				searchDisplay.getErrorMessageDisplay().clearAlert();
+//				if (isMeasureSearchFilterVisible) {
+//					isMeasureSearchFilterVisible = !isMeasureSearchFilterVisible;
+//					searchDisplay.getMeasureSearchFilterWidget().setVisible(isMeasureSearchFilterVisible);
+//				}
+//				isCreateMeasureWidgetVisible = !isCreateMeasureWidgetVisible;
+//				searchDisplay.getCreateMeasureWidget().setVisible(isCreateMeasureWidgetVisible);
+//			}
+//		});
 		searchDisplay.getBulkExportButton().addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
@@ -2411,7 +2483,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			final String name = currentDetails.getName();
 			final String shortName = currentDetails.getShortName();
 			final String scoringType = currentDetails.getMeasScoring();
-			final String version = currentDetails.getVersionNumber();
+			final String version = currentDetails.getVersionNumber();		
 			MatContext.get().getMeasureService().save(currentDetails, new AsyncCallback<SaveMeasureResult>() {
 
 				@Override
@@ -2457,11 +2529,19 @@ public class ManageMeasurePresenter implements MatPresenter {
 		currentDetails.setName(detailDisplay.getName().getValue().trim());
 		currentDetails.setShortName(detailDisplay.getShortName().getValue().trim());
 		String measureScoring = detailDisplay.getMeasScoringValue();
-
+		
 		// US 421. Update the Measure scoring choice from the UI.
 		// if (isValidValue(measureScoring)) {
 		currentDetails.setMeasScoring(measureScoring);
 		// }
+		
+		// update the current measure details model based on the patient based radio buttons
+		if(detailDisplay.getPatientBasedInput().getItemText(detailDisplay.getPatientBasedInput().getSelectedIndex()).equalsIgnoreCase("Yes")) {
+			currentDetails.setIsPatientBased(true);
+		} else {
+			currentDetails.setIsPatientBased(false);
+		}
+		
 		currentDetails.scrubForMarkUp();
 		detailDisplay.getName().setValue(currentDetails.getName());
 		detailDisplay.getShortName().setValue(currentDetails.getShortName());

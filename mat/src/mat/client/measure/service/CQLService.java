@@ -5,6 +5,7 @@ import java.util.List;
 import mat.model.CQLValueSetTransferObject;
 import mat.model.MatCodeTransferObject;
 import mat.model.clause.CQLData;
+import mat.model.cql.CQLCodeSystem;
 import mat.model.cql.CQLCodeWrapper;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
@@ -204,8 +205,12 @@ public interface CQLService {
 
 	String getDefaultExpansionIdentifier(String xml);
 
-	SaveUpdateCQLResult saveCQLCodes(MatCodeTransferObject transferObject);
+	SaveUpdateCQLResult saveCQLCodes(String xml , MatCodeTransferObject codeTransferObject);
 
-	CQLCodeWrapper getCQLCodes(String measureId, CQLCodeWrapper cqlCodeWrapper);
+	CQLCodeWrapper getCQLCodes(String xmlString);
+
+	SaveUpdateCQLResult deleteCode(String xml, String toBeDeletedCodeId);
+
+	SaveUpdateCQLResult saveCQLCodeSystem(String xml, CQLCodeSystem codeSystem);
 
 }

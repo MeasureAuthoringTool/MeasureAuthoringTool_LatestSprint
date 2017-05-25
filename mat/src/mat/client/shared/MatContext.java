@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -22,7 +23,9 @@ import com.google.gwt.user.client.ui.Widget;
 //import mat.client.measure.AdminManageMeasureSearchView;
 
 import mat.DTO.OperatorDTO;
+import mat.DTO.UnitDTO;
 import mat.client.Enableable;
+import mat.client.Mat;
 import mat.client.admin.service.AdminService;
 import mat.client.admin.service.AdminServiceAsync;
 import mat.client.audit.service.AuditService;
@@ -33,11 +36,13 @@ import mat.client.clause.QDSAppliedListView;
 import mat.client.clause.QDSAttributesService;
 import mat.client.clause.QDSAttributesServiceAsync;
 import mat.client.clause.QDSCodeListSearchView;
-import mat.client.codelist.AdminManageCodeListSearchModel;
+
 import mat.client.codelist.HasListBox;
 import mat.client.codelist.ListBoxCodeProvider;
 import mat.client.codelist.service.CodeListService;
 import mat.client.codelist.service.CodeListServiceAsync;
+import mat.client.cqlconstant.service.CQLConstantService;
+import mat.client.cqlconstant.service.CQLConstantServiceAsync;
 import mat.client.event.CQLLibrarySelectedEvent;
 import mat.client.event.ForgottenPasswordEvent;
 import mat.client.event.MeasureSelectedEvent;
@@ -93,10 +98,7 @@ public class MatContext implements IsSerializable {
 	
 	/** The Constant PLEASE_SELECT. */
 	public static final String PLEASE_SELECT = "--Select--";
-	
-	/** The cql keywords. */
-	public CQLKeywords cqlKeywords = new CQLKeywords();
-	
+		
 	/** The instance. */
 	private static MatContext instance = new MatContext();
 	
@@ -108,6 +110,8 @@ public class MatContext implements IsSerializable {
 	
 	/** The measure service. */
 	private MeasureServiceAsync measureService;
+	
+	private CQLConstantServiceAsync cqlConstantService; 
 	
 	/** The cql library service. */
 	private CQLLibraryServiceAsync cqlLibraryService;
@@ -192,7 +196,7 @@ public class MatContext implements IsSerializable {
 	//private ManageCodeListSearchView manageCodeListSearchView;
 	
 	/** The manage code list search model. */
-	private AdminManageCodeListSearchModel manageCodeListSearchModel;
+	//private AdminManageCodeListSearchModel manageCodeListSearchModel;
 	
 	
 	/** The synchronization delegate. */
@@ -230,12 +234,6 @@ public class MatContext implements IsSerializable {
 	
 	/** The removed relationship types. */
 	public Map<String, String> removedRelationshipTypes = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER);
-	
-	/** The data type list. */
-	public List<String> dataTypeList = new ArrayList<String>();
-	
-	/** The qdm data type list. */
-	private List<String> qdmDataTypeList = new ArrayList<String>();
 		
 	/** The profile list. */
 	private List<String> expProfileList = new ArrayList<String>();
@@ -260,22 +258,14 @@ public class MatContext implements IsSerializable {
 	
 	/** The includes. */
 	public List<String> includes = new ArrayList<String>();
-	
-	/** The all attribute list. */
-	public List<String> allAttributeList = new ArrayList<String>();
-	
-	/** The all units list. */
-	public List<String> allUnitsList = new ArrayList<String>();
-	
-	/** The all CQL units list. */
-	private List<String> allCQLUnitsList = new ArrayList<String>();
-	
+		
 	private List<String> includedDefNames = new ArrayList<String>();
 	private List<String> includedFuncNames = new ArrayList<String>();
 	private List<String> includedValueSetNames = new ArrayList<String>();
 	private List<String> includedParamNames = new ArrayList<String>();
 	private List<String> includedCodeNames = new ArrayList<String>();
 	
+	private CQLConstantContainer cqlConstantContainer = new CQLConstantContainer(); 
 	
 	//private GlobalCopyPaste copyPaste;
 	
@@ -585,6 +575,15 @@ public class MatContext implements IsSerializable {
 			sessionService = (SessionManagementServiceAsync) GWT.create(SessionManagementService.class);
 		}
 		return sessionService;
+	}
+	
+	public CQLConstantServiceAsync getCQLContantService() {
+		
+		if(cqlConstantService == null) {
+			cqlConstantService = (CQLConstantServiceAsync) GWT.create(CQLConstantService.class);
+		}
+		
+		return cqlConstantService; 
 	}
 	
 	/**
@@ -1525,26 +1524,6 @@ public class MatContext implements IsSerializable {
 	
 	
 	/**
-	 * Sets the manage code list searc model.
-	 * 
-	 * @param manageCodeListSearchModel
-	 *            the new manage code list searc model
-	 */
-	public void setManageCodeListSearcModel(AdminManageCodeListSearchModel manageCodeListSearchModel) {
-		this.manageCodeListSearchModel =  manageCodeListSearchModel;
-	}
-	
-	
-	/**
-	 * Gets the manage code list search model.
-	 * 
-	 * @return the manageCodeListSearcModel
-	 */
-	public AdminManageCodeListSearchModel getManageCodeListSearchModel() {
-		return manageCodeListSearchModel;
-	}
-	
-	/**
 	 * Method is called on SignOut/ X out / Time Out.
 	 * 
 	 * @param activityType
@@ -1624,213 +1603,7 @@ public class MatContext implements IsSerializable {
 				removedRelationshipTypes.put("Has Outcome Of", "OUTC");
 			}
 		});
-	}
-	
-	
-	/**
-	 * Gets the all data type.
-	 *
-	 * @return the all data type
-	 */
-	public void getAllDataType() {
-		
-		listBoxCodeProvider.getAllDataType(
-				new AsyncCallback<List<? extends HasListBox>>() {
-					
-					@Override
-					public void onFailure(final Throwable caught) {
-					}
-					
-					@Override
-					public void onSuccess(
-							final List<? extends HasListBox> result) {
-						Collections.sort(result,
-								new HasListBox.Comparator());
-						setAllDataTypeOptions(result);
-					}
-				});
-	}
-	
-	/**
-	 * Gets the qdm data type list.
-	 *
-	 * @return the qdm data type list
-	 */
-	public List<String> getQdmDataTypeList() {
-		return qdmDataTypeList;
-	}
-
-
-	/**
-	 * Sets the qdm data type list.
-	 *
-	 * @param qdmDataTypeList the new qdm data type list
-	 */
-	public void setQdmDataTypeList(List<String> qdmDataTypeList) {
-		this.qdmDataTypeList = qdmDataTypeList;
-	}
-
-
-	// Get all CQL Data types/Timings/Functions from cqlTemplate.xml
-	// And All QDM Data types except Attributes.
-	/**
-	 * Gets the all cql keywords and qdm datatypes for cql work space.
-	 *
-	 * @return the all cql keywords and qdm datatypes for cql work space
-	 */
-	public void getAllCqlKeywordsAndQDMDatatypesForCQLWorkSpace(){
-				
-		measureService.getCQLKeywordsList(new AsyncCallback<CQLKeywords>() {
-			
-			@Override
-			public void onFailure(Throwable caught) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void onSuccess(CQLKeywords result) {
-				cqlKeywords = result;
-				
-			}
-		});
-		getAllDataType();
-		
-	}
-
-	public void getAllCqlKeywordsAndQDMDatatypesForCQLWorkSpaceSA(){
-		
-		cqlLibraryService.getCQLKeywordsLists(new AsyncCallback<CQLKeywords>() {
-			
-			@Override
-			public void onFailure(Throwable caught) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void onSuccess(CQLKeywords result) {
-				cqlKeywords = result;
-				
-			}
-		});
-		getAllDataType();
-		
-	}
-
-/*	private void getAllDataTypes() {
-		listBoxCodeProvider.getAllDataType(
-				new AsyncCallback<List<? extends HasListBox>>() {
-					
-					@Override
-					public void onFailure(final Throwable caught) {
-					}
-					
-					@Override
-					public void onSuccess(
-							final List<? extends HasListBox> result) {
-						Collections.sort(result,
-								new HasListBox.Comparator());
-						dataTypeList.clear();
-						dataTypeList.add(MatContext.PLEASE_SELECT);
-						if (result != null) {
-							for (HasListBox listBoxContent : result) {
-								if(! listBoxContent.getItem().equalsIgnoreCase("attribute")){
-									dataTypeList.add(listBoxContent.getItem());
-								}
-								
-							}
-							
-						}
-					}
-				});
-	}*/
-	
-	/**
- * Gets of all of the units and updates the all units list.
- *
- * @return the all units
- */
-	public void getAllUnits() {
-		
-		listBoxCodeProvider.getUnitList(new AsyncCallback<List<? extends HasListBox>>() {
-
-			@Override
-			public void onFailure(Throwable caught) {				
-			}
-
-			@Override
-			public void onSuccess(List<? extends HasListBox> result) {
-				if(result != null){
-					allUnitsList.clear();
-					allUnitsList.add(MatContext.PLEASE_SELECT);
-					for(HasListBox listBoxContent : result) {
-						allUnitsList.add(listBoxContent.getItem());
-					}
-				}
-			}
-		}); 
-	}
-	
-	/**
-	 * Gets of all of the units and updates the all units list. 
-	 * @return all cql list.
-	 */
-	public List<String> getAllCQLUnits() {
-		getCodeListService().getAllCqlUnits(new AsyncCallback<List<String>> (){
-
-			@Override
-			public void onFailure(Throwable caught) {
-				
-			}
-
-			@Override
-			public void onSuccess(List<String> result) {
-				if(result != null){
-					allCQLUnitsList.clear();
-					allCQLUnitsList.add(MatContext.PLEASE_SELECT);
-					for(String listBoxContent : result) {
-						allCQLUnitsList.add(listBoxContent);
-					}
-				}
-			}
-		});
-		return allCQLUnitsList;
-		
-	}
-	
-	/**
-	 * Sets the all data type options.
-	 *
-	 * @param texts the new all data type options
-	 */
-	public void setAllDataTypeOptions(List<? extends HasListBox> texts) {
-		setListBoxItems(texts, MatContext.PLEASE_SELECT);
-	}
-		
-	/**
-	 * Sets the list box items.
-	 *
-	 * @param itemList the item list
-	 * @param defaultOption the default option
-	 */
-	private void setListBoxItems(List<? extends HasListBox> itemList, String defaultOption) {
-		dataTypeList.clear();
-		dataTypeList.add(defaultOption);
-		if (itemList != null) {
-			for (HasListBox listBoxContent : itemList) {
-				//MAT-4366
-				if(! listBoxContent.getItem().equalsIgnoreCase("attribute")){
-						dataTypeList.add(listBoxContent.getItem());
-				}
-				qdmDataTypeList.add(listBoxContent.getItem());
-			
-				
-			}
-			
-		}
-	}
-	
+	}	
 	
 	/**
 	 * Gets the all versions by oid.
@@ -1858,43 +1631,6 @@ public class MatContext implements IsSerializable {
 		});
 	}
 	
-	/**
-	 * Gets the all attributes list.
-	 *
-	 * @return the all attributes list
-	 */
-	public void getAllAttributesList(){
-		getQdsAttributesServiceAsync().getAllAttributes(new AsyncCallback<List<String>>() {
-			
-			@Override
-			public void onSuccess(List<String> result) {
-				setAllAttributesList(result);
-				
-			}
-			
-			@Override
-			public void onFailure(Throwable caught) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
-	}
-	
-	/**
-	 * Sets the all attributes list.
-	 *
-	 * @param result the new all attributes list
-	 */
-	protected void setAllAttributesList(List<String> result) {
-		if(result != null){
-			allAttributeList.clear();
-			Collections.sort(result);
-			allAttributeList.addAll(result);
-		}
-		
-	}
-
-
 	/**
 	 * Gets the all profile list.
 	 *
@@ -1970,18 +1706,7 @@ public class MatContext implements IsSerializable {
 	 */
 	public boolean isUMLSLoggedIn() {
 		return isUMLSLoggedIn;
-	}
-	
-	
-	/**
-	 * Gets the data type list.
-	 *
-	 * @return the data type list
-	 */
-	public List<String> getDataTypeList() {
-		return dataTypeList;
-	}
-	
+	}	
 	
 	/**
 	 * Sets the uMLS logged in.
@@ -2094,16 +1819,6 @@ public class MatContext implements IsSerializable {
 		getSessionService().getCurrentReleaseVersion(currentReleaseVersionCallback);
 	}
 
-	
-	/**
-	 * Gets the cql grammar data type.
-	 *
-	 * @return the cql grammar data type
-	 */
-	public CQLKeywords getCqlGrammarDataType() {
-		return cqlKeywords;
-	}
-
 
 	/**
 	 * Gets the valuesets
@@ -2213,64 +1928,7 @@ public class MatContext implements IsSerializable {
 	public void setQdsAttributesServiceAsync(QDSAttributesServiceAsync qdsAttributesServiceAsync) {
 		this.qdsAttributesServiceAsync = qdsAttributesServiceAsync;
 	}
-
-
-	/**
-	 * Gets the all attribute list.
-	 *
-	 * @return the all attribute list
-	 */
-	public List<String> getAllAttributeList() {
-		return allAttributeList;
-	}
-
-
-	/**
-	 * Sets the all attribute list.
-	 *
-	 * @param allAttributeList the new all attribute list
-	 */
-	public void setAllAttributeList(List<String> allAttributeList) {
-		this.allAttributeList = allAttributeList;
-	}	
-	
-	/**
-	 * Gets the list of all of the units.
-	 *
-	 * @return the list of all of the units
-	 */
-	public List<String> getAllUnitsList() {
-		return this.allUnitsList;
-	}
-	
-	/**
-	 * Sets the list of all of the units.
-	 *
-	 * @param allUnitsList the list of all of the units
-	 */
-	public void setAllUnitsList(List<String> allUnitsList) {
-		this.allUnitsList = allUnitsList;
-	}
-	
-	/**
-	 * Gets the list of all of the cql units.
-	 *
-	 * @return the list of all of the cql units
-	 */
-	public List<String> getAllCQLUnitsList() {
-		return this.allCQLUnitsList;
-	}
-	
-	/**
-	 * Sets the list of all of the cql units.
-	 *
-	 * @param allCQLUnitsList the new all CQL units list
-	 */
-	public void setAllCQLUnitsList(List<String> allCQLUnitsList) {
-		this.allCQLUnitsList = allCQLUnitsList;
-	}
-
-
+				
 	/**
 	 * Gets the includes.
 	 *
@@ -2459,6 +2117,34 @@ public class MatContext implements IsSerializable {
 
 	public void setIncludedCodeNames(List<String> includedCodeNames) {
 		this.includedCodeNames = includedCodeNames;
+	}
+	
+	public void getCQLConstants() {
+		CQLConstantServiceAsync cqlConstantService = (CQLConstantServiceAsync) GWT.create(CQLConstantService.class);
+
+		cqlConstantService.getAllCQLConstants(new AsyncCallback<CQLConstantContainer>() {
+		
+			@Override
+			public void onFailure(Throwable caught) {
+				Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+			}
+
+			@Override
+			public void onSuccess(CQLConstantContainer result) {
+				cqlConstantContainer = result; 
+			}
+			
+		});
+	}
+
+
+	public CQLConstantContainer getCqlConstantContainer() {
+		return cqlConstantContainer;
+	}
+
+
+	public void setCqlConstantContainer(CQLConstantContainer cqlConstantContainer) {
+		this.cqlConstantContainer = cqlConstantContainer;
 	}
 
 	/*public GlobalCopyPaste getCopyPaste() {

@@ -17,11 +17,10 @@ import com.google.gwt.cell.client.CompositeCell;
 import com.google.gwt.cell.client.FieldUpdater;
 import com.google.gwt.cell.client.HasCell;
 import com.google.gwt.cell.client.SafeHtmlCell;
-import com.google.gwt.cell.client.Cell.Context;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Element;
-import com.google.gwt.dom.client.TableCaptionElement;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.dom.client.TableCaptionElement;
 import com.google.gwt.event.logical.shared.HasSelectionHandlers;
 import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
@@ -46,8 +45,8 @@ import com.google.gwt.view.client.ListDataProvider;
 
 import mat.client.CustomPager;
 import mat.client.Mat;
+import mat.client.clause.cqlworkspace.CQLAppliedValueSetView.Observer;
 import mat.client.shared.LabelBuilder;
-import mat.client.shared.ListBoxMVP;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatSimplePager;
 import mat.client.shared.SearchWidgetBootStrap;
@@ -57,9 +56,7 @@ import mat.client.umls.service.VsacApiResult;
 import mat.client.util.CellTableUtility;
 import mat.client.util.MatTextBox;
 import mat.model.cql.CQLCode;
-import mat.model.cql.CQLCode;
 import mat.shared.ClickableSafeHtmlCell;
-import mat.shared.ConstantMessages;
 
 
 
@@ -67,21 +64,12 @@ import mat.shared.ConstantMessages;
 /**
  * The Class QDMAppliedSelectionView.
  */
-public class CQLCodesView implements HasSelectionHandlers<Boolean>{
-	
+public class CQLCodesView {
 	
 	/**
 	 * The Interface Observer.
 	 */
-	public static interface Observer {
-		
-		/**
-		 * On modify clicked.
-		 * 
-		 * @param result
-		 *            the result
-		 */
-		void onModifyClicked(CQLCode result);
+	public static interface Delegator {
 		
 		/**
 		 * On delete clicked.
@@ -92,9 +80,14 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		void onDeleteClicked(CQLCode result, int index);
 		
 	}
+	private static final String BIRTHDATE = "21112-8";
+
+	public static final String DEAD = "419099009";
+
+	
 	
 	/** The observer. */
-	private Observer observer;
+	private Delegator delegator;
 	
 	/** The container panel. */
 	private SimplePanel containerPanel = new SimplePanel();
@@ -131,6 +124,8 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 	/** the Code system Version input */
 	private MatTextBox codeSystemVersionInput = new MatTextBox();
 	
+	private String CodeSystemOid;
+	
 	/** The is editable. */
 	private boolean isEditable;
 	
@@ -144,7 +139,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 	private Button cancelButton = new Button("Cancel");
 	
 	/** The s widget. */
-	private SearchWidgetBootStrap sWidget = new SearchWidgetBootStrap("Retrieve","Enter Code");
+	private SearchWidgetBootStrap sWidget = new SearchWidgetBootStrap("Retrieve","Enter Code Identifier");
 	
 	/** The main panel. */
 	private VerticalPanel mainPanel;
@@ -246,7 +241,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 
 
 		searchPanel.add(searchHeader);
-		searchPanel.setWidth("550px");
+		/*searchPanel.setWidth("550px");*/
 		searchPanel.setHeight("350px");
 		searchPanelBody.add(new SpacerWidget());
 
@@ -258,7 +253,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		cancelButton.setTitle("Cancel");
 
 		Grid searchGrid = new Grid(2, 1);
-		Grid codeGrid = new Grid(3, 2);
+		Grid codeGrid = new Grid(2, 3);
 		ButtonToolBar buttonToolBar = new ButtonToolBar();
 		buttonToolBar.add(saveCode);
 		buttonToolBar.add(cancelButton);
@@ -271,8 +266,9 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 
 
 		VerticalPanel searchWidgetFormGroup = new VerticalPanel();
-		sWidget.setSearchBoxWidth("400px");
+		sWidget.setSearchBoxWidth("430px");
 		sWidget.getGo().setEnabled(true);
+		sWidget.getGo().setTitle("Reterive Code Identifier");
 		searchWidgetFormGroup.add(sWidget.getSearchWidget());
 		searchWidgetFormGroup.add(new SpacerWidget());
 
@@ -288,7 +284,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		codeSystemLabel.setText("Code System");
 		codeSystemLabel.setTitle("Code System");
 		codeSystemInput.setTitle("Code System");
-		codeSystemInput.setWidth("200px");
+		codeSystemInput.setWidth("180px");
 		codeSystemInput.setHeight("30px");
 
 		VerticalPanel codeGroup = new VerticalPanel();
@@ -303,7 +299,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		codeDescriptorLabel.setText("Code Descriptor");
 		codeDescriptorLabel.setTitle("Code Descriptor");
 		codeDescriptorInput.setTitle("Code Descriptor");
-		codeDescriptorInput.setWidth("400px");
+		codeDescriptorInput.setWidth("510px");
 		codeDescriptorInput.setHeight("30px");
 
 		codeDescriptorGroup.add(codeDescriptorLabel);
@@ -325,9 +321,9 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		searchGrid.setStyleName("secondLabel");
 		
 		codeGrid.setWidget(0, 0, codeGroup);
-		codeGrid.setWidget(1, 0, codeSystemGroup);
-		codeGrid.setWidget(1, 1, versionFormGroup);
-		codeGrid.setWidget(2, 0, buttonFormGroup);
+		codeGrid.setWidget(0, 1, codeSystemGroup);
+		codeGrid.setWidget(0, 2, versionFormGroup);
+		codeGrid.setWidget(1, 0, buttonFormGroup);
 		codeGrid.setStyleName("code-grid");
 
 		VerticalPanel codeFormGroup = new VerticalPanel();
@@ -350,20 +346,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		return containerPanel;
 	}
 	
-	/**
-	 * Gets the data type text.
-	 *
-	 * @param inputListBox the input list box
-	 * @return the data type text
-	 */
-	public String getDataTypeText(ListBoxMVP inputListBox) {
-		if (inputListBox.getSelectedIndex() >= 0) {
-			return inputListBox.getItemText(inputListBox.getSelectedIndex());
-		} else {
-			return "";
-		}
-	}
-	
+
 	/**
 	 * Check for enable.
 	 * 
@@ -379,7 +362,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 	 */
 	public void resetVSACCodeWidget() {
 		if(checkForEnable()){
-			sWidget.getSearchBox().setTitle("Enter Code");
+			sWidget.getSearchBox().setTitle("Enter Code Identifier");
 		}
 		HTML searchHeaderText = new HTML("<strong>Search</strong>");
 		searchHeader.clear();
@@ -393,6 +376,14 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 	public void fireEvent(GwtEvent<?> event) {
 		handlerManager.fireEvent(event);
 	}
+	public Delegator getDelegator() {
+		return delegator;
+	}
+
+	public void setDelegator(Delegator delegator) {
+		this.delegator = delegator;
+	}
+
 	/**
 	 * Adds the selection handler.
 	 *
@@ -402,24 +393,6 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 	public HandlerRegistration addSelectionHandler(
 			SelectionHandler<Boolean> handler) {
 		return handlerManager.addHandler(SelectionEvent.getType(), handler);
-	}
-	
-	/**
-	 * Gets the observer.
-	 * 
-	 * @return the observer
-	 */
-	public Observer getObserver() {
-		return observer;
-	}
-	
-	/**
-	 * Sets the observer.
-	 *
-	 * @param observer the new observer
-	 */
-	public void setObserver(Observer observer) {
-		this.observer = observer;
 	}
 	
 	
@@ -437,7 +410,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 	 *
 	 * @return the retrieve from vsac button
 	 */
-	public org.gwtbootstrap3.client.ui.Button getRetrieveFromVSACButton(){
+	public Button getRetrieveFromVSACButton(){
 		return sWidget.getGo();
 	}
 	
@@ -591,9 +564,9 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		getCodeInput().setEnabled(false);
 		getCodeSystemInput().setEnabled(false);
 		getCodeSystemVersionInput().setEnabled(false);
-		
+		getRetrieveFromVSACButton().setEnabled(editable);
 		getCancelCodeButton().setEnabled(editable);
-	//	getRetrieveFromVSACButton().setEnabled(editable);
+	
 		getSaveButton().setEnabled(false);
 		
 	}
@@ -654,8 +627,8 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		case VsacApiResult.UMLS_NOT_LOGGEDIN:
 			message = MatContext.get().getMessageDelegate().getUMLS_NOT_LOGGEDIN();
 			break;
-		case VsacApiResult.OID_REQUIRED:
-			message = MatContext.get().getMessageDelegate().getUMLS_OID_REQUIRED();
+		case VsacApiResult.CODE_URL_REQUIRED:
+			message = MatContext.get().getMessageDelegate().getUMLS_CODE_IDENTIFIER_REQUIRED();
 			break;
 		default:
 			message = MatContext.get().getMessageDelegate().getVSAC_RETRIEVE_FAILED();
@@ -673,11 +646,12 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		getSearchHeader().add(searchHeaderText);
 		getCodeSearchInput().setEnabled(true);
 		getCodeSearchInput().setValue("");
-		getCodeSearchInput().setTitle("Enter Code");
+		
 		getCodeDescriptorInput().setValue("");
 		getCodeInput().setValue("");
 		getCodeSystemInput().setValue("");
 		getCodeSystemVersionInput().setValue("");
+		setCodeSystemOid("");
 		getSaveButton().setEnabled(false);
 	}
 
@@ -685,7 +659,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		cellTablePanel.clear();
 		cellTablePanelBody.clear();
 		cellTablePanel.setStyleName("cellTablePanel");
-		cellTablePanel.setWidth("95%");
+		cellTablePanel.setWidth("100%");
 		PanelHeader codesElementsHeader = new PanelHeader();
 		codesElementsHeader.getElement().setId("searchHeader_Label");
 		codesElementsHeader.setStyleName("measureGroupingTableHeader");
@@ -778,14 +752,14 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 					title = title.append("Descriptor : ").append(value);
 					title.append("");
 					
-					return CellTableUtility.getNameColumnToolTip(value, title.toString());
+					return CellTableUtility.getCodeDescriptorColumnToolTip(value, title.toString());
 				}
 			};
 			table.addColumn(nameColumn, SafeHtmlUtils
 					.fromSafeConstant("<span title=\"Descriptor\">" + "Descriptor"
 							+ "</span>"));
 			
-			// Identifier Column
+			/*// Identifier Column
 			Column<CQLCode, SafeHtml> identifierColumn = new Column<CQLCode, SafeHtml>(
 					new SafeHtmlCell()) {
 				@Override
@@ -799,7 +773,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 			};
 			table.addColumn(identifierColumn, SafeHtmlUtils
 					.fromSafeConstant("<span title=\"Identifier\">" + "Identifier"
-							+ "</span>"));
+							+ "</span>"));*/
 			
 			
 			// Code Profile Column
@@ -848,9 +822,9 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 			
 			if(isEditable){
 				// Modify by Delete Column
-				String colName = "Modify";
+				String colName = "Delete";
 				table.addColumn(new Column<CQLCode, CQLCode>(
-						getCompositeCellForQDMModifyAndDelete(isEditable)) {
+						getCompositeCell(isEditable)) {
 					
 					@Override
 					public CQLCode getValue(CQLCode object) {
@@ -860,23 +834,23 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 						+ colName + "</span>"));
 			}
 			
-			table.setColumnWidth(0, 25.0, Unit.PCT);
-			table.setColumnWidth(1, 25.0, Unit.PCT);
-			table.setColumnWidth(2, 25.0, Unit.PCT);
-			table.setColumnWidth(3, 10.0, Unit.PCT);
-			table.setColumnWidth(4, 10.0, Unit.PCT);
-			table.setColumnWidth(5, 2.0, Unit.PCT);
+			table.setColumnWidth(0, 55.0, Unit.PCT);
+			table.setColumnWidth(1, 15.0, Unit.PCT);
+			table.setColumnWidth(2, 15.0, Unit.PCT);
+			table.setColumnWidth(3, 15.0, Unit.PCT);
+			table.setColumnWidth(4, 5.0, Unit.PCT);
+			/*table.setColumnWidth(5, 2.0, Unit.PCT);*/
 		}
 		
 		return table;
 	}
 	
 	
-	private CompositeCell<CQLCode> getCompositeCellForQDMModifyAndDelete(boolean isEditable) {
+	private CompositeCell<CQLCode> getCompositeCell(boolean isEditable) {
 		final List<HasCell<CQLCode, ?>> cells = new LinkedList<HasCell<CQLCode, ?>>();
 		if(isEditable){
-			cells.add(getModifyQDMButtonCell());
-			cells.add(getDeleteQDMButtonCell());
+			//cells.add(getModifyQDMButtonCell());
+			cells.add(getDeleteButtonCell());
 		}
 		
 		CompositeCell<CQLCode> cell = new CompositeCell<CQLCode>(
@@ -918,7 +892,7 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 	 * Gets the modify qdm button cell.
 	 * 
 	 * @return the modify qdm button cell
-	 */
+	 *//*
 	private HasCell<CQLCode, SafeHtml> getModifyQDMButtonCell() {
 		
 		HasCell<CQLCode, SafeHtml> hasCell = new HasCell<CQLCode, SafeHtml>() {
@@ -937,9 +911,9 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 					@Override
 					public void update(int index, CQLCode object,
 							SafeHtml value) {
-						/*if ((object != null)) {
+						if ((object != null)) {
 							observer.onModifyClicked(object);
-						}*/
+						}
 					}
 				};
 			}
@@ -949,10 +923,10 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 				SafeHtmlBuilder sb = new SafeHtmlBuilder();
 				String title = "Click to modify Code";
 				String cssClass = "customEditButton";
-				/*if(isEditable){
+				if(isEditable){
 					sb.appendHtmlConstant("<button tabindex=\"0\" type=\"button\" title='" + title
 							+ "' class=\" " + cssClass + "\">Editable</button>");
-				} else {*/
+				} else {
 					sb.appendHtmlConstant("<button tabindex=\"0\" type=\"button\" title='" + title
 							+ "' class=\" " + cssClass + "\" disabled/>Editable</button>");
 				//}
@@ -962,14 +936,14 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 		};
 		
 		return hasCell;
-	}
+	}*/
 	
 	/**
 	 * Gets the delete qdm button cell.
 	 * 
 	 * @return the delete qdm button cell
 	 */
-	private HasCell<CQLCode, SafeHtml> getDeleteQDMButtonCell() {
+	private HasCell<CQLCode, SafeHtml> getDeleteButtonCell() {
 		
 		HasCell<CQLCode, SafeHtml> hasCell = new HasCell<CQLCode, SafeHtml>() {
 			
@@ -987,10 +961,10 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 					@Override
 					public void update(int index, CQLCode object,
 							SafeHtml value) {
-						/*if ((object != null) && !object.isUsed()) {
+						if ((object != null) && !object.isUsed()) {
 							lastSelectedObject = object;
-							observer.onDeleteClicked(object, index);
-						}*/
+							delegator.onDeleteClicked(object, index);
+						}
 					}
 				};
 			}
@@ -1000,7 +974,10 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 				SafeHtmlBuilder sb = new SafeHtmlBuilder();
 				String title = "Click to delete Code";
 				String cssClass;
-				/*if (object.isUsed()) {
+				// Delete button is not created for default codes - Dead and Birthdate.
+				if(object.getCodeOID().equals(DEAD) || object.getCodeOID().equals(BIRTHDATE)){
+					sb.appendHtmlConstant("<span></span>");
+				} else	if (object.isUsed()) {
 					cssClass = "customDeleteDisableButton";
 					sb.appendHtmlConstant("<button type=\"button\" title='"
 							+ title + "' tabindex=\"0\" class=\" " + cssClass
@@ -1010,18 +987,21 @@ public class CQLCodesView implements HasSelectionHandlers<Boolean>{
 					sb.appendHtmlConstant("<button tabindex=\"0\"type=\"button\" title='"
 							+ title + "' class=\" " + cssClass
 							+ "\"/>Delete</button>");
-				}*/
-				cssClass = "customDeleteDisableButton";
-				sb.appendHtmlConstant("<button type=\"button\" title='"
-						+ title + "' tabindex=\"0\" class=\" " + cssClass
-						+ "\"disabled/>Delete</button>");
-				
-				
+				}
+								
 				return sb.toSafeHtml();
 			}
 		};
 		
 		return hasCell;
+	}
+
+	public String getCodeSystemOid() {
+		return CodeSystemOid;
+	}
+
+	public void setCodeSystemOid(String codeSystemOid) {
+		CodeSystemOid = codeSystemOid;
 	}
 	
 }

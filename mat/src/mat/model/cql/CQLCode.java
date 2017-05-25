@@ -20,12 +20,17 @@ public class CQLCode implements IsSerializable {
 	/** The code system version. */
 	private String codeSystemVersion;
 	
+	private String codeSystemOID;
+	
 	/** The OID. */
 	private String codeOID;
 	
 	/** The Display Name. */
 	private String displayName;
+	
+	private String codeIdentifier;
 
+	private boolean isUsed;
 	
 	/**
 	 * Gets the id.
@@ -120,5 +125,31 @@ public class CQLCode implements IsSerializable {
 	public void setDisplayName(String displayName) {
 		this.displayName = displayName;
 	}
+
+	public boolean isUsed() {
+		return isUsed;
+	}
+
+	public void setUsed(boolean isUsed) {
+		this.isUsed = isUsed;
+	}
+
+	public String getCodeIdentifier() {
+		return codeIdentifier;
+	}
+
+	public void setCodeIdentifier(String codeIdentifier) {
+		this.codeIdentifier = codeIdentifier;
+	}
+
+	public String getCodeSystemOID() {
+		return codeSystemOID;
+	}
+
+	public void setCodeSystemOID(String codeSystemOID) {
+		this.codeSystemOID = codeSystemOID;
+	}
+
+	
 	
 }

@@ -1566,7 +1566,7 @@ var Autocomplete = function() {
             	matches = [];
             	var fk = [];
             	for(var i=0;i<funcsKeywords.length;i++){
-            		fk.push('"'+funcsKeywords[i]+'"()');	
+            		fk.push(funcsKeywords[i]);	
             	}
             	for(var i=0;i<functionKeywords.length;i++){
             		fk.push(functionKeywords[i]+'()');	
@@ -1602,7 +1602,7 @@ var Autocomplete = function() {
             	
             	var fk1 = [];
             	for(var i=0;i<funcsKeywords.length;i++){
-            		fk1.push('"'+funcsKeywords[i]+'"()');	
+            		fk1.push(funcsKeywords[i]);	
             	}
             	for(var i=0;i<functionKeywords.length;i++){
             		fk1.push(functionKeywords[i]+'()');	

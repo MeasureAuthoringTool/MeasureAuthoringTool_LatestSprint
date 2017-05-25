@@ -986,8 +986,8 @@ public class CQLLeftNavBarPanelView {
 	 * Update valueset values.
 	 * @param appliedValueSetTableList 
 	 */
-	public void updateCodeMap(List<CQLCode> appliedCodeTableList) {
-		if (getAppliedQdmTableList().size() < 10) {
+	public void setCodeBadgeValue(List<CQLCode> appliedCodeTableList) {
+		if (appliedCodeTableList.size() < 10) {
 			getCodesBadge().setText("0" + appliedCodeTableList.size());
 		} else {
 			getCodesBadge().setText("" + appliedCodeTableList.size());
@@ -2440,7 +2440,11 @@ public class CQLLeftNavBarPanelView {
 		MatContext.get().getFuncs().clear();
 		MatContext.get().getValuesets().clear();
 		MatContext.get().getIncludes().clear();
+		MatContext.get().getIncludedValueSetNames().clear();
+		MatContext.get().getIncludedParamNames().clear();
 		MatContext.get().getIncludedDefNames().clear();
+		MatContext.get().getIncludedFuncNames().clear();
+		
 	}
 	
 	public void buildInfoPanel(Widget sourceWidget) {

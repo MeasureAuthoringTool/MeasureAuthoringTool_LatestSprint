@@ -72,6 +72,8 @@ public class SaveUpdateCQLResult extends GenericResult{
 	/** The Constant SERVER_SIDE_VALIDATION. */
 	public static final int FUNCTION_ARGUMENT_INVALID = 6;
 	
+	private static final int DUPLICATE_CODE=7;
+	
 	/** The cql applied QDM list. */
 	List<CQLQualityDataSetDTO> cqlAppliedQDMList ;
 	
@@ -354,6 +356,10 @@ public class SaveUpdateCQLResult extends GenericResult{
 
 	public void setCqlObject(CQLObject cqlObject) {
 		this.cqlObject = cqlObject;
+	}
+
+	public int getDuplicateCode() {
+		return DUPLICATE_CODE;
 	}
 	
 }

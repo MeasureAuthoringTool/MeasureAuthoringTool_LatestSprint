@@ -121,6 +121,8 @@ public class MessageDelegate {
 	/** The Constant s_ERR_MEASURE_SCORE_REQUIRED. */
 	public static final String s_ERR_MEASURE_SCORE_REQUIRED = "Measure Scoring is required.";
 	
+	public static final String CONTINOUS_VARIABLE_IS_NOT_PATIENT_BASED_ERROR = "Continous Variable measures must not be patient based.";
+	
 	// US 171
 	/** The Constant s_ERR_RETRIEVE_OPERATOR. */
 	public static final String s_ERR_RETRIEVE_OPERATOR = "Problem while retrieving operator.";
@@ -683,6 +685,9 @@ public class MessageDelegate {
 	
 	/** The umls oid required. */
 	private final String UMLS_OID_REQUIRED = "Please enter an OID.";
+	
+	/** The umls oid required. */
+	private final String UMLS_CODE_IDENTIFIER_REQUIRED = "Please enter a code identifier.";
 	
 	/** The umls successfull login. */
 	private final String UMLS_SUCCESSFULL_LOGIN = "Successfully logged into UMLS";
@@ -2844,6 +2849,10 @@ public class MessageDelegate {
 	}
 	
 	public String getCodeSuccessMessage(String codeName) {
-		return "Code " + codeName + " has been applied successfully.";
+		return "Code "+ codeName + " has been applied successfully.";
+	}
+
+	public String getUMLS_CODE_IDENTIFIER_REQUIRED() {
+		return UMLS_CODE_IDENTIFIER_REQUIRED;
 	}
 }

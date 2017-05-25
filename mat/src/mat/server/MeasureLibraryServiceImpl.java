@@ -26,6 +26,29 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.exolab.castor.mapping.Mapping;
+import org.exolab.castor.mapping.MappingException;
+import org.exolab.castor.xml.MarshalException;
+import org.exolab.castor.xml.Marshaller;
+import org.exolab.castor.xml.Unmarshaller;
+import org.exolab.castor.xml.ValidationException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import mat.DTO.MeasureNoteDTO;
 import mat.DTO.MeasureTypeDTO;
 import mat.DTO.OperatorDTO;
@@ -49,7 +72,6 @@ import mat.client.shared.ManageMeasureNotesModelValidator;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatException;
 import mat.client.umls.service.VsacApiResult;
-import mat.dao.AuthorDAO;
 import mat.dao.DataTypeDAO;
 import mat.dao.MeasureNotesDAO;
 import mat.dao.MeasureTypeDAO;
@@ -82,7 +104,8 @@ import mat.model.clause.MeasureSet;
 import mat.model.clause.MeasureShareDTO;
 import mat.model.clause.MeasureXML;
 import mat.model.clause.QDSAttributes;
-import mat.model.clause.ShareLevel;
+import mat.model.cql.CQLCode;
+import mat.model.cql.CQLCodeSystem;
 import mat.model.cql.CQLCodeWrapper;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
@@ -115,34 +138,10 @@ import mat.shared.SaveUpdateCQLResult;
 import mat.shared.UUIDUtilClient;
 import mat.shared.model.util.MeasureDetailsUtil;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.exolab.castor.mapping.Mapping;
-import org.exolab.castor.mapping.MappingException;
-import org.exolab.castor.xml.MarshalException;
-import org.exolab.castor.xml.Marshaller;
-import org.exolab.castor.xml.Unmarshaller;
-import org.exolab.castor.xml.ValidationException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
 // TODO: Auto-generated Javadoc
 /**
  * The Class MeasureLibraryServiceImpl.
  */
-@SuppressWarnings("serial")
 public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 
 	/**
@@ -192,33 +191,17 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	@Autowired
 	private ApplicationContext context;
 
-	/** The measure package service. */
-	@Autowired
-	private MeasurePackageService measurePackageService;
-
 	/** The measure dao. */
 	@Autowired
 	private MeasureDAO measureDAO;
-
-	/** The qds attributes dao. */
-	@Autowired
-	private QDSAttributesDAO qDSAttributesDAO;
 
 	/** The recent msr activity log dao. */
 	@Autowired
 	private RecentMSRActivityLogDAO recentMSRActivityLogDAO;
 
-	/** The user service. */
-	@Autowired
-	private UserService userService;
-
 	/** The measure type dao. */
 	@Autowired
 	private MeasureTypeDAO measureTypeDAO;
-
-	/** The author dao. */
-	@Autowired
-	private AuthorDAO authorDAO;
 
 	/** The operator dao. */
 	@Autowired
@@ -251,16 +234,17 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * clause.clauseworkspace.model.MeasureXmlModel, java.lang.String)
 	 */
 	@Override
-	public final void appendAndSaveNode(final MeasureXmlModel measureXmlModel, final String nodeName) {
+	public final String appendAndSaveNode(final MeasureXmlModel measureXmlModel, final String nodeName) {
+		String result = new String();
 		MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
 		if ((xmlModel != null && StringUtils.isNotBlank(xmlModel.getXml()))
 				&& (nodeName != null && StringUtils.isNotBlank(nodeName))) {
-			String result = callAppendNode(xmlModel, measureXmlModel.getXml(), nodeName,
+			 result = callAppendNode(xmlModel, measureXmlModel.getXml(), nodeName,
 					measureXmlModel.getParentNode());
 			xmlModel.setXml(result);
 			getService().saveMeasureXml(xmlModel);
 		}
-
+		return result;
 	}
 
 	/*
@@ -1554,9 +1538,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		ManageMeasureSearchModel manageMeasureSearchModel = new ManageMeasureSearchModel();
 		List<ManageMeasureSearchModel.Result> detailModelList = new ArrayList<ManageMeasureSearchModel.Result>();
 		manageMeasureSearchModel.setData(detailModelList);
-		String currentUserId = LoggedInUserUtil.getLoggedInUser();
-		String userRole = LoggedInUserUtil.getLoggedInUserRole();
-		boolean isSuperUser = SecurityRole.SUPER_USER_ROLE.equals(userRole);
+		
 		for (RecentMSRActivityLog activityLog : recentMeasureActivityList) {
 			Measure measure = getMeasureDAO().find(activityLog.getMeasureId());
 			ManageMeasureSearchModel.Result detail = new ManageMeasureSearchModel.Result();
@@ -3153,50 +3135,12 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	}
 
 	/**
-	 * Sets the dt oto model.
-	 * 
-	 * @param detailModelList
-	 *            - {@link ManageMeasureSearchModel.Result}.
-	 * @param dto
-	 *            - {@link MeasureShareDTO}.
-	 * @param currentUserId
-	 *            - {@link String}.
-	 * @param isSuperUser
-	 *            - {@link Boolean}. *
-	 */
-	private void setDTOtoModel(final List<ManageMeasureSearchModel.Result> detailModelList, final MeasureShareDTO dto,
-			final String currentUserId, final boolean isSuperUser) {
-		boolean isOwner = currentUserId.equals(dto.getOwnerUserId());
-		ManageMeasureSearchModel.Result detail = new ManageMeasureSearchModel.Result();
-		detail.setName(dto.getMeasureName());
-		detail.setShortName(dto.getShortName());
-		detail.setStatus(dto.getStatus());
-		detail.setId(dto.getMeasureId());
-		detail.setStatus(dto.getStatus());
-		detail.setClonable(isOwner || isSuperUser);
-		detail.setEditable(
-				(isOwner || isSuperUser || ShareLevel.MODIFY_ID.equals(dto.getShareLevel())) && dto.isDraft());
-		detail.setMeasureLocked(dto.isLocked());
-		detail.setExportable(dto.isPackaged());
-		detail.setSharable(isOwner || isSuperUser);
-		detail.setLockedUserInfo(dto.getLockedUserInfo());
-		detail.setDraft(dto.isDraft());
-		String formattedVersion = MeasureUtility.getVersionTextWithRevisionNumber(dto.getVersion(),
-				dto.getRevisionNumber(), dto.isDraft());
-		detail.setVersion(formattedVersion);
-		detail.setScoringType(dto.getScoringType());
-		detail.setMeasureSetId(dto.getMeasureSetId());
-		detailModelList.add(detail);
-	}
-
-	/**
 	 * Sets the measure package service.
 	 * 
 	 * @param measurePackagerService
 	 *            the new measure package service
 	 */
 	public final void setMeasurePackageService(final MeasurePackageService measurePackagerService) {
-		measurePackageService = measurePackagerService;
 	}
 
 	/**
@@ -3231,7 +3175,6 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 *            the new user service
 	 */
 	public final void setUserService(final UserService usersService) {
-		userService = usersService;
 	}
 
 	/**
@@ -5990,6 +5933,25 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		return cqlResult;
 	}
+	
+	
+	@Override
+	public SaveUpdateCQLResult deleteCode(String toBeDeletedId, String measureID) {
+		
+		SaveUpdateCQLResult cqlResult = new SaveUpdateCQLResult();
+		if (MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, measureID)) {
+			MeasureXmlModel model = getService().getMeasureXmlForMeasure(measureID);
+			if(model != null && model.getXml() != null){
+				cqlResult = getCqlService().deleteCode(model.getXml(), toBeDeletedId);
+				if(cqlResult != null && cqlResult.isSuccess()){
+					model.setXml(cqlResult.getXml());
+					getService().saveMeasureXml(model);
+					cqlResult.setCqlCodeList(getCQLCodes(measureID).getCqlCodeList());
+				}
+			}
+		}
+		return cqlResult;
+	}
 
 	@Override
 	public SaveUpdateCQLResult parseCQLStringForError(String cqlFileString) {
@@ -6080,11 +6042,32 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	@Override
 	public SaveUpdateCQLResult saveCQLCodestoMeasure(MatCodeTransferObject transferObject) {
 		
-		SaveUpdateCQLResult result = null;
+		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		if (MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, transferObject.getId())) {
-			result = getCqlService().saveCQLCodes(transferObject);
-			if(result != null && result.isSuccess()) {
-				saveCQLCodesInMeasureXml(result, transferObject.getId());
+			MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(transferObject.getId());
+			if (xmlModel != null && !xmlModel.getXml().isEmpty()) {
+				result = getCqlService().saveCQLCodes(xmlModel.getXml(), transferObject);
+				if (result != null && result.isSuccess()) {
+					String newSavedXml = saveCQLCodesInMeasureXml(result, transferObject.getId());
+					if(!newSavedXml.isEmpty()){
+						CQLCodeWrapper wrapper = getCqlService().getCQLCodes(newSavedXml);
+						if(wrapper!= null && !wrapper.getCqlCodeList().isEmpty()){
+							result.setCqlCodeList(wrapper.getCqlCodeList());
+						}
+						CQLCodeSystem codeSystem = new CQLCodeSystem();
+						codeSystem.setCodeSystem(transferObject.getCqlCode().getCodeSystemOID());
+						codeSystem.setCodeSystemName(transferObject.getCqlCode().getCodeSystemName());
+						codeSystem.setCodeSystemVersion(transferObject.getCqlCode().getCodeSystemVersion());
+						SaveUpdateCQLResult updatedResult = getCqlService().saveCQLCodeSystem(newSavedXml, codeSystem);
+						if(updatedResult.isSuccess()) {
+							 saveCQLCodeSystemInMeasureXml(updatedResult, transferObject.getId());
+						}
+						
+						
+						
+					}
+				}
+
 			}
 		}
 		return result;
@@ -6092,8 +6075,14 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	
 	@Override
 	public CQLCodeWrapper getCQLCodes(String measureID) {
-		CQLCodeWrapper wrapper = new CQLCodeWrapper();
-		return this.getCqlService().getCQLCodes(measureID, wrapper);
+		CQLCodeWrapper cqlCodeWrapper = new CQLCodeWrapper();
+		MeasureXmlModel model = getService().getMeasureXmlForMeasure(measureID);
+		if(model != null){
+			String xmlString = model.getXml();
+			cqlCodeWrapper = getCqlService().getCQLCodes(xmlString);
+		}
+		
+		return cqlCodeWrapper;
 	}
 	
 	/**
@@ -6102,7 +6091,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @param result
 	 *            the result
 	 */
-	private void saveCQLCodesInMeasureXml(SaveUpdateCQLResult result, String measureId) {
+	private String saveCQLCodesInMeasureXml(SaveUpdateCQLResult result, String measureId) {
 		final String nodeName = "code";
 		MeasureXmlModel xmlModal = new MeasureXmlModel();
 		xmlModal.setMeasureId(measureId);
@@ -6111,9 +6100,23 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		System.out.println("CODE NEW XML " + result.getXml());
 		xmlModal.setXml(result.getXml());
 
-		appendAndSaveNode(xmlModal, nodeName);
+		return appendAndSaveNode(xmlModal, nodeName);
+		
 	}
 
+	
+	private String saveCQLCodeSystemInMeasureXml(SaveUpdateCQLResult result, String measureId) {
+		final String nodeName = "codeSystem";
+		MeasureXmlModel xmlModal = new MeasureXmlModel();
+		xmlModal.setMeasureId(measureId);
+		xmlModal.setParentNode("//cqlLookUp/codeSystems");
+		xmlModal.setToReplaceNode(nodeName);
+		System.out.println("codeSystems NEW XML " + result.getXml());
+		xmlModal.setXml(result.getXml());
+
+		return appendAndSaveNode(xmlModal, nodeName);
+		
+	}
 
 	/**
 	 * Save CQL valueset in measure xml.
