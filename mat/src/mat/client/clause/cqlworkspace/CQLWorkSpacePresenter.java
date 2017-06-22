@@ -670,6 +670,8 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 					searchDisplay.getCqlLeftNavBarPanelView().getFuncNameListBox().getSelectedIndex(),
 					false);
 		}
+		searchDisplay.getCqlFunctionsView().getContextFuncPATRadioBtn().setEnabled(true);
+		searchDisplay.getCqlFunctionsView().getContextFuncPOPRadioBtn().setEnabled(true);
 		searchDisplay.getCqlFunctionsView().getContextFuncPATRadioBtn().setValue(true);
 		searchDisplay.getCqlFunctionsView().getContextFuncPOPRadioBtn().setValue(false);
 		searchDisplay.getCqlFunctionsView().getFunctionButtonBar().getDeleteButton().setEnabled(false);
@@ -2902,6 +2904,51 @@ public class CQLWorkSpacePresenter implements MatPresenter {
                      });
         
 	}
+	
+	/**
+	 * Call this to update used status for delete button.
+	 */
+	private void getUsedCodes() {
+		searchDisplay.getCodesView().showSearchingBusyOnCodes(true);
+		MatContext.get().getMeasureService().getUsedCQLArtifacts(
+		        MatContext.get().getCurrentMeasureId(),
+		        new AsyncCallback<GetUsedCQLArtifactsResult>() {
+
+		               @Override
+		               public void onFailure(Throwable caught) {
+		                      Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+		                      searchDisplay.getCodesView().showSearchingBusyOnCodes(false);
+		               }
+
+		               @Override
+		               public void onSuccess(GetUsedCQLArtifactsResult result) {
+		            	searchDisplay.getCodesView().showSearchingBusyOnCodes(false);
+		               	// if there are errors, set the codes to not used.
+		               	if(!result.getCqlErrors().isEmpty()) {
+		               		for(CQLCode cqlCode : appliedCodeTableList){
+		                         cqlCode.setUsed(false);
+		               		}
+		               	}
+		               	
+		               	// otherwise, check if the valueset is in the used valusets list
+		               	else {
+		                      for(CQLCode cqlCode : appliedCodeTableList){
+		                             if (result.getUsedCQLcodes().contains(cqlCode.getCodeName())) {
+		                                    cqlCode.setUsed(true);
+		                             } else{
+		                           	  cqlCode.setUsed(false);
+		                             }
+		                      }
+		               	}
+		               	       
+		               	if(searchDisplay.getCqlLeftNavBarPanelView().getAppliedCodeTableList().size() > 0) {
+		                   	searchDisplay.getCodesView().getCelltable().redraw();
+		                   	searchDisplay.getCodesView().getListDataProvider().refresh();
+		               	}
+		               }
+		               
+		        });
+	}	
 
 	
 	/**
@@ -2959,7 +3006,7 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 			unsetActiveMenuItem(currentSection);
 			searchDisplay.getCqlLeftNavBarPanelView().getCodesLibrary().setActive(true);
 			currentSection = CQLWorkSpaceConstants.CQL_CODES;
-			searchDisplay.getCodesView().showSearchingBusyOnCodes(true);
+		//	searchDisplay.getCodesView().showSearchingBusyOnCodes(true);
 			searchDisplay.buildCodes();
 			searchDisplay.getCodesView().buildCodesCellTable(
 					appliedCodeTableList,
@@ -2968,49 +3015,14 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 					.setWidgetsReadOnly(MatContext.get().getMeasureLockService().checkForEditPermission());
 			searchDisplay.getCodesView().resetCQLCodesSearchPanel();
 			
-			MatContext.get().getMeasureService().getUsedCQLArtifacts(
-                    MatContext.get().getCurrentMeasureId(),
-                    new AsyncCallback<GetUsedCQLArtifactsResult>() {
-
-                           @Override
-                           public void onFailure(Throwable caught) {
-                                  Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-                                  searchDisplay.getCodesView().showSearchingBusyOnCodes(false);
-                           }
-
-                           @Override
-                           public void onSuccess(GetUsedCQLArtifactsResult result) {
-                        	searchDisplay.getCodesView().showSearchingBusyOnCodes(false);
-                           	// if there are errors, set the codes to not used.
-                           	if(!result.getCqlErrors().isEmpty()) {
-                           		for(CQLCode cqlCode : appliedCodeTableList){
-                                     cqlCode.setUsed(false);
-                           		}
-                           	}
-                           	
-                           	// otherwise, check if the valueset is in the used valusets list
-                           	else {
-                                  for(CQLCode cqlCode : appliedCodeTableList){
-                                         if (result.getUsedCQLcodes().contains(cqlCode.getCodeName())) {
-                                                cqlCode.setUsed(true);
-                                         } else{
-                                       	  cqlCode.setUsed(false);
-                                         }
-                                  }
-                           	}
-                           	       
-                           	if(searchDisplay.getCqlLeftNavBarPanelView().getAppliedCodeTableList().size() > 0) {
-                               	searchDisplay.getCodesView().getCelltable().redraw();
-                               	searchDisplay.getCodesView().getListDataProvider().refresh();
-                           	}
-                           }
-                           
-                    });
+			getUsedCodes();
 			
 			
 		}
 
-	}	
+	}
+
+	
 	
 	/**
 	 * Build View for Definition when Definition AnchorList item is clicked.
@@ -3916,6 +3928,8 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 	
 
 	private void addNewCodes() {
+		searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert().clearAlert();
+		searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().clearAlert();
 		String measureId = MatContext.get().getCurrentMeasureId();
 		MatCodeTransferObject transferObject = new MatCodeTransferObject();
 		CQLCode refCode = new CQLCode();
@@ -3941,7 +3955,7 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 							getMessageDelegate().getCodeSuccessMessage(searchDisplay.getCodesView().getCodeInput().getText()));
 					searchDisplay.getCodesView().resetCQLCodesSearchPanel();
 					appliedCodeTableList.clear();
-					appliedCodeTableList.addAll(result.getCqlCodeList());
+					appliedCodeTableList .addAll(result.getCqlCodeList());
 					searchDisplay.getCqlLeftNavBarPanelView().setCodeBadgeValue(appliedCodeTableList);
 					System.out.println("in addNewCodes...Used codes:"+result.getUsedCQLArtifacts().getUsedCQLcodes());
 					searchDisplay.getCodesView().buildCodesCellTable(
@@ -3950,11 +3964,15 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 					//Temporary fix to update codes for insert Icon.
 					getAppliedValueSetList();
 				} else {
-					searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert().clear();
+					searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert().clearAlert();
 					if(result.getFailureReason()==result.getDuplicateCode()){
 						searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().createAlert("Code "+ searchDisplay.getCodesView().getCodeInput().getText() +" already exists.");
+						searchDisplay.getCodesView().buildCodesCellTable(
+								appliedCodeTableList,
+								MatContext.get().getMeasureLockService().checkForEditPermission());
 					}
 				}
+				getUsedCodes();
 				
 			}
 			
@@ -3967,6 +3985,16 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 			}
 		});
 	}
+	
+	/*List<CQLCode> cloneCQLCodeList(List<CQLCode> list){
+		List<CQLCode> newList = new ArrayList<CQLCode>();
+		
+		for(CQLCode code : list){
+			newList.add((CQLCode) code.clonez());
+		}
+		
+		return newList;
+	}*/
 	
 	/**
 	 * Update vsac value sets.
@@ -4171,8 +4199,27 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 			return;
 		}
 		
-		searchDisplay.getCodesView().showSearchingBusyOnCodes(true);
+		//Code Identifier validation to check Identifier starts with "CODE:"
+		if(validator.validateForCodeIdentifier(url)){
+			searchDisplay.getCodesView().getSaveButton().setEnabled(false);
+			searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().createAlert(MatContext.get().getMessageDelegate().getUMLS_INVALID_CODE_IDENTIFIER());
+
+			return;
+		} else {
+			retrieveCodeReferences(url);
+		}
 		
+				
+	}
+
+	/**
+	 * Retrieve code references.
+	 *
+	 * @param url the url
+	 */
+	private void retrieveCodeReferences(String url){
+		
+		searchDisplay.getCodesView().showSearchingBusyOnCodes(true);
 		
 		vsacapiService.getDirectReferenceCode(url, new AsyncCallback<VsacApiResult>() {
 
@@ -4196,15 +4243,17 @@ public class CQLWorkSpacePresenter implements MatPresenter {
 					searchDisplay.getCodesView().setCodeSystemOid(result.getDirectReferenceCode().getCodeSystemOid());
 					searchDisplay.getCodesView().getSaveButton().setEnabled(true);
 					
-				} else {
-					searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().createAlert(MatContext.get().getMessageDelegate().getVSAC_RETRIEVE_FAILED());
-				}
+			 } else if (result.getFailureReason() == 5) { 
+				 searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().createAlert(MatContext.get().getMessageDelegate().getUMLS_INVALID_CODE_IDENTIFIER());
+				 
+			 } else {
+				 searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().createAlert(MatContext.get().getMessageDelegate().getVSAC_RETRIEVE_FAILED());
+			 }
 				searchDisplay.getCodesView().showSearchingBusyOnCodes(false);
 			}
 		});
-		
-	}
 
+	}
 	
 	/**
 	 * Search value set in vsac.
