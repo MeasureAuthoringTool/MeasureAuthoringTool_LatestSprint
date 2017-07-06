@@ -11,16 +11,21 @@ import java.util.Map;
 
 import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.ButtonGroup;
-import org.gwtbootstrap3.client.ui.FormGroup;
+import org.gwtbootstrap3.client.ui.FormLabel;
 import org.gwtbootstrap3.client.ui.InlineRadio;
 import org.gwtbootstrap3.client.ui.Label;
+import org.gwtbootstrap3.client.ui.Panel;
+import org.gwtbootstrap3.client.ui.PanelBody;
+import org.gwtbootstrap3.client.ui.PanelCollapse;
+import org.gwtbootstrap3.client.ui.PanelHeader;
 import org.gwtbootstrap3.client.ui.constants.ButtonSize;
 import org.gwtbootstrap3.client.ui.constants.ButtonType;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.constants.LabelType;
+import org.gwtbootstrap3.client.ui.constants.PanelType;
 import org.gwtbootstrap3.client.ui.constants.Pull;
+import org.gwtbootstrap3.client.ui.constants.Toggle;
 import org.gwtbootstrap3.client.ui.gwt.CellTable;
-import org.gwtbootstrap3.client.ui.gwt.FlowPanel;
 
 import com.google.gwt.cell.client.Cell;
 import com.google.gwt.cell.client.CompositeCell;
@@ -29,8 +34,8 @@ import com.google.gwt.cell.client.HasCell;
 import com.google.gwt.cell.client.SafeHtmlCell;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Element;
-import com.google.gwt.dom.client.TableCaptionElement;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.dom.client.TableCaptionElement;
 import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.safehtml.shared.SafeHtmlUtils;
@@ -50,6 +55,8 @@ import edu.ycp.cs.dh.acegwt.client.ace.AceEditorTheme;
 import mat.client.CustomPager;
 import mat.client.shared.CQLAddNewButton;
 import mat.client.shared.CQLButtonToolBar;
+import mat.client.shared.CQLCollapsibleCQLPanelWidget;
+import mat.client.shared.CommentTextAreaWithMaxLength;
 import mat.client.shared.MatSimplePager;
 import mat.client.shared.SpacerWidget;
 import mat.client.util.CellTableUtility;
@@ -141,6 +148,9 @@ public class CQLFunctionsView {
 	/** The is editable. */
 	boolean isEditable = false;
 	
+	private CQLCollapsibleCQLPanelWidget collapsibleCQLPanelWidget = new CQLCollapsibleCQLPanelWidget();
+	
+	private CommentTextAreaWithMaxLength funcCommentTextArea = new CommentTextAreaWithMaxLength(250);
 
 	/**
 	 * Instantiates a new CQL functions view.
@@ -149,6 +159,13 @@ public class CQLFunctionsView {
 		// TODO Auto-generated constructor stub
 		mainFunctionVerticalPanel.clear();
 		functionBodyAceEditor.startEditor();
+		
+		collapsibleCQLPanelWidget.getViewCQLAceEditor().startEditor();
+		collapsibleCQLPanelWidget.getViewCQLAnchor().setDataToggle(Toggle.COLLAPSE);
+		collapsibleCQLPanelWidget.getViewCQLAnchor().setDataParent("#panelGroup");
+		collapsibleCQLPanelWidget.getViewCQLAnchor().setHref("#panelCollapse");
+		collapsibleCQLPanelWidget.getViewCQLAnchor().setText("Click to View CQL");
+		collapsibleCQLPanelWidget.getViewCQLAnchor().setColor("White");
 	}
 
 	/**
@@ -156,36 +173,42 @@ public class CQLFunctionsView {
 	 */
 	@SuppressWarnings("static-access")
 	private void buildView(boolean isEditable) {
+		collapsibleCQLPanelWidget.getPanelViewCQLCollapse().clear();
 		VerticalPanel funcVP = new VerticalPanel();
 		HorizontalPanel funcFP = new HorizontalPanel();
-		HorizontalPanel funcHP = new HorizontalPanel();
-		FormGroup funcFormGroup = new FormGroup();
-		Label functionNameLabel = new Label(LabelType.INFO, "Function Name");
+		/*Label functionNameLabel = new Label(LabelType.INFO, "Function Name");
 		functionNameLabel.setMarginTop(5);
-		functionNameLabel.setId("Function_Label");
+		functionNameLabel.setId("Function_Label");*/
+		
+		FormLabel functionNameLabel = new FormLabel();
+		functionNameLabel.setText("Function Name");
+		functionNameLabel.setTitle("Function Name");
+		functionNameLabel.setMarginTop(5);
+		functionNameLabel.setId("FunctionName_Label");
+		
 		funcNameTxtArea.setText("");
 		// funcNameTxtArea.setPlaceholder("Enter Function Name here.");
-		funcNameTxtArea.setSize("260px", "25px");
+		funcNameTxtArea.setSize("550px", "25px");
 		funcNameTxtArea.getElement().setId("FunctionNameField");
 		funcNameTxtArea.setName("FunctionName");
+		SimplePanel funcNamePanel = new SimplePanel();
+		funcNamePanel.setStyleName("marginLeft20px");
+		funcNamePanel.getElement().setId("FuncName_SimplePanel");
+		funcNamePanel.add(funcNameTxtArea);
 		functionNameLabel.setText("Function Name");
-		
-		funcFormGroup.clear();
-		funcFormGroup.add(functionNameLabel);
-		funcFormGroup.add(addNewButtonBar);
-		
-		Grid queryGrid = new Grid(1,1);
-		queryGrid.setWidget(0, 0, funcFormGroup);
 
-		funcHP.add(queryGrid);
-
+		Panel aceEditorPanel = new Panel(PanelType.PRIMARY);
+		PanelHeader header = new PanelHeader();
+		header.setText("Build CQL Expression.");
+		PanelBody body = new PanelBody();
+		
 		SimplePanel funcAceEditorPanel = new SimplePanel();
-		funcAceEditorPanel.setSize("685", "510");
+		funcAceEditorPanel.setSize("650", "200");
 		functionBodyAceEditor.setText("");
 		functionBodyAceEditor.setMode(AceEditorMode.CQL);
 		functionBodyAceEditor.setTheme(AceEditorTheme.ECLIPSE);
 		functionBodyAceEditor.getElement().getStyle().setFontSize(14, Unit.PX);
-		functionBodyAceEditor.setSize("675px", "500px");
+		functionBodyAceEditor.setSize("650px", "200px");
 		functionBodyAceEditor.setAutocompleteEnabled(true);
 		functionBodyAceEditor.addAutoCompletions();
 		functionBodyAceEditor.setUseWrapMode(true);
@@ -195,7 +218,10 @@ public class CQLFunctionsView {
 		functionBodyAceEditor.getElement().setAttribute("id", "Func_AceEditorID");
 		funcAceEditorPanel.add(functionBodyAceEditor);
 		funcAceEditorPanel.getElement().setAttribute("id", "SimplePanel_Function_AceEditor");
-		funcAceEditorPanel.setStyleName("cqlRightContainer");
+		//funcAceEditorPanel.setStyleName("cqlRightContainer");
+		body.add(funcAceEditorPanel);
+		aceEditorPanel.add(header);
+		aceEditorPanel.add(body);
 
 		addNewArgument.setType(ButtonType.LINK);
 		addNewArgument.getElement().setId("addArgument_Button");
@@ -208,7 +234,13 @@ public class CQLFunctionsView {
 
 		addNewArgument.setPull(Pull.RIGHT);
 
-		Label funcContextLabel = new Label(LabelType.INFO, "Context");
+		/*Label funcContextLabel = new Label(LabelType.INFO, "Context");*/
+		
+		FormLabel funcContextLabel = new FormLabel();
+		funcContextLabel.setText("Context");
+		funcContextLabel.setTitle("Context");
+		funcContextLabel.setMarginTop(5);
+		funcContextLabel.setId("FunctionContext_Label");
 
 		contextFuncPATRadioBtn.setValue(true);
 		contextFuncPATRadioBtn.setText("Patient");
@@ -220,23 +252,48 @@ public class CQLFunctionsView {
 		functionButtonBar.getCloseButton().setVisible(false);
 		contextGroup.add(contextFuncPATRadioBtn);
 		contextGroup.add(contextFuncPOPRadioBtn);
-		contextGroup.setStyleName("contextToggleSwitch");
+		contextGroup.setStyleName("contextToggleSwitch marginLeft20px");
+		
+		/*Label funcCommentLabel = new Label(LabelType.INFO, "Comment");
+		funcCommentLabel.setId("definComment_Label");
+		*/
+		FormLabel funcCommentLabel = new FormLabel();
+		funcCommentLabel.setText("Comment");
+		funcCommentLabel.setTitle("Comment");
+		funcCommentLabel.setMarginTop(5);
+		funcCommentLabel.setId("FunctionComment_Label");
+		
+		funcCommentTextArea.setId("FunctionCommentTextArea_Id");
+		funcCommentTextArea.setSize("550px", "40px");
+		funcCommentTextArea.setText("");
+		funcCommentTextArea.setName("Function Comment");
+		funcCommentTextArea.getElement().setAttribute("style", "resize:none");
+		
+		SimplePanel funcCommentPanel = new SimplePanel();
+		funcCommentPanel.getElement().setId("FunctionComment_SimplePanel");
+		funcCommentPanel.setStyleName("topping marginLeft20px");
+		funcCommentPanel.add(funcCommentTextArea);
+		
+		
+		Grid queryGrid = new Grid(4, 2);
+		queryGrid.setWidget(0, 0, addNewButtonBar);
+		queryGrid.setWidget(1, 0, functionNameLabel);
+		queryGrid.setWidget(1, 1, funcNamePanel);
+		queryGrid.setWidget(2, 0, funcContextLabel);
+		queryGrid.setWidget(2, 1, contextGroup);
+		queryGrid.setWidget(3, 0, funcCommentLabel);
+		queryGrid.setWidget(3, 1, funcCommentPanel);
 
-		funcVP.add(new SpacerWidget());
-		funcVP.add(funcHP);
-		funcVP.add(new SpacerWidget());
-		funcVP.add(funcNameTxtArea);
-		funcVP.add(new SpacerWidget());
-		funcVP.add(funcContextLabel);
-		funcVP.add(new SpacerWidget());
-		funcVP.add(contextGroup);
+		funcVP.add(queryGrid);
 		funcVP.add(new SpacerWidget());
 		funcVP.add(addNewArgument);
 		createAddArgumentViewForFunctions(functionArgumentList,isEditable);
 		funcVP.add(cellTablePanel);
 		funcVP.add(functionButtonBar);
 		funcVP.add(new SpacerWidget());
-		funcVP.add(funcAceEditorPanel);
+		funcVP.add(aceEditorPanel);
+		funcVP.add(new SpacerWidget());
+		funcVP.add(collapsibleCQLPanelWidget.buildViewCQLCollapsiblePanel());
 		funcVP.add(new SpacerWidget());
 		funcVP.setStyleName("topping");
 		funcFP.add(funcVP);
@@ -252,7 +309,6 @@ public class CQLFunctionsView {
 		mainFunctionVerticalPanel.add(funcFP);
 		mainFunctionVerticalPanel.setHeight("675px");
 	}
-	
 	
 	/**
 	 * Gets the view.
@@ -272,6 +328,17 @@ public class CQLFunctionsView {
 	public void resetAll() {
 		getFuncNameTxtArea().setText("");
 		getFunctionBodyAceEditor().setText("");
+		
+		getViewCQLAceEditor().setText("");
+		collapsibleCQLPanelWidget.getPanelViewCQLCollapse().getElement().setClassName("panel-collapse collapse");
+	}
+	
+	public PanelCollapse getPanelViewCQLCollapse() {
+		return collapsibleCQLPanelWidget.getPanelViewCQLCollapse();
+	}
+
+	public AceEditor getViewCQLAceEditor() {
+		return collapsibleCQLPanelWidget.getViewCQLAceEditor();
 	}
 	
 	/**
@@ -313,7 +380,7 @@ public class CQLFunctionsView {
 			com.google.gwt.user.client.ui.Label tableHeader = new com.google.gwt.user.client.ui.Label(
 					"Added Arguments List");
 			tableHeader.getElement().setId("tableHeader_Label");
-			tableHeader.setStyleName("measureGroupingTableHeader");
+			tableHeader.setStyleName("CqlWorkSpaceTableHeader");
 			tableHeader.getElement().setAttribute("tabIndex", "0");
 			HTML desc = new HTML("<p> No Arguments Added.</p>");
 			cellTablePanel.add(tableHeader);
@@ -838,6 +905,7 @@ public class CQLFunctionsView {
 	public void setWidgetReadOnly(boolean isEditable) {
 
 		getFuncNameTxtArea().setEnabled(isEditable);
+		getFunctionCommentTextArea().setEnabled(isEditable);
 		getFunctionBodyAceEditor().setReadOnly(!isEditable);
 		getFunctionButtonBar().setEnabled(isEditable);
 		getAddNewButtonBar().getaddNewButton().setEnabled(isEditable);
@@ -846,5 +914,13 @@ public class CQLFunctionsView {
 		getContextFuncPOPRadioBtn().setEnabled(isEditable);
 		getFunctionButtonBar().getDeleteButton().setTitle("Delete");
 
+	}
+
+	public CommentTextAreaWithMaxLength getFunctionCommentTextArea() {
+		return funcCommentTextArea;
+	}
+
+	public void setFunctionCommentTextArea(CommentTextAreaWithMaxLength functionCommentTextArea) {
+		this.funcCommentTextArea = functionCommentTextArea;
 	}
 }

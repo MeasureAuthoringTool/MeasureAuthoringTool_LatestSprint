@@ -501,6 +501,7 @@ public class CQLServiceImpl implements CQLService {
               CQLParametersWrapper wrapper = new CQLParametersWrapper();
               CQLModelValidator validtor = new CQLModelValidator();
               boolean isDuplicate = false;
+              String XPATH_EXPRESSION_PARAMETERS = "//cqlLookUp/parameters";
               if (xml != null && !xml.isEmpty()) {
 
                      XmlProcessor processor = new XmlProcessor(xml);
@@ -532,19 +533,30 @@ public class CQLServiceImpl implements CQLService {
                                                        XPATH_EXPRESSION_CQLLOOKUP_PARAMETER);
 
                                          if (nodeParameter != null) {
-                                                nodeParameter.getAttributes().getNamedItem("name")
+                                                /*nodeParameter.getAttributes().getNamedItem("name")
                                                               .setNodeValue(currentObj.getParameterName());
 
                                                 Node logicNode = nodeParameter.getFirstChild();
                                                 logicNode.setTextContent(currentObj.getParameterLogic());
+                                                Node commentNode = nodeParameter.getLastChild();
+                                                commentNode.setTextContent(currentObj.getCommentString());
                                                 String finalUpdatedString = processor.transform(processor.getOriginalDoc());
+                                                
+                                                */
+                                        	 
+                                        	 String cqlString = createParametersXML(currentObj);
+                                             processor.removeFromParent(nodeParameter);
+                                             processor.appendNode(cqlString, "parameter", XPATH_EXPRESSION_PARAMETERS);
 
+                                             String finalUpdatedXmlString = processor.transform(processor.getOriginalDoc());
+
+                                             
                                                 String cqlExpressionName = "parameter" + " \"" + currentObj.getParameterName() + "\"";
 
-                                                result.setXml(finalUpdatedString);
+                                                result.setXml(finalUpdatedXmlString);
                                                 cqlModel = CQLUtilityClass.getCQLStringFromXML(xml);
 
-                                                parseCQLExpressionForErrors(result, finalUpdatedString, cqlExpressionName,
+                                                parseCQLExpressionForErrors(result, finalUpdatedXmlString, cqlExpressionName,
                                                               currentObj.getParameterLogic(), currentObj.getParameterName(), "Parameter");
 
                                                 wrapper = modfiyCQLParameterList(toBeModifiedObj, currentObj, parameterList);
@@ -558,7 +570,13 @@ public class CQLServiceImpl implements CQLService {
                                          result.setSuccess(false);
                                          e.printStackTrace();
 
-                                  }
+                                  } catch (SAXException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
                                   logger.debug(" CQLServiceImpl: saveAndModifyParameters End :  ");
 
                            } else {
@@ -582,7 +600,6 @@ public class CQLServiceImpl implements CQLService {
                            if (!isDuplicate) {
 
                                   String cqlString = createParametersXML(currentObj);
-                                  String XPATH_EXPRESSION_PARAMETERS = "//cqlLookUp/parameters";
 
                                   try {
                                          Node nodeParameters = processor.findNode(processor.getOriginalDoc(),
@@ -652,6 +669,7 @@ public class CQLServiceImpl implements CQLService {
               CQLDefinitionsWrapper wrapper = new CQLDefinitionsWrapper();
               CQLModelValidator validator = new CQLModelValidator();
               boolean isDuplicate = false;
+              String XPATH_EXPRESSION_DEFINTIONS = "//cqlLookUp/definitions";
               if (xml != null && !xml.isEmpty()) {
 
                      XmlProcessor processor = new XmlProcessor(xml);
@@ -697,14 +715,23 @@ public class CQLServiceImpl implements CQLService {
                                                        }
                                                        
                                                 } 
-                                                nodeDefinition.getAttributes().getNamedItem("context")
+                                                /*nodeDefinition.getAttributes().getNamedItem("context")
                                                               .setNodeValue(currentObj.getContext());
                                                 nodeDefinition.getAttributes().getNamedItem("name")
                                                               .setNodeValue(currentObj.getDefinitionName());
                                                 Node logicNode = nodeDefinition.getFirstChild();
                                                 logicNode.setTextContent(currentObj.getDefinitionLogic());
+                                                Node commentNode = nodeDefinition.getLastChild();
+                                                commentNode.setTextContent(currentObj.getCommentString());*/
+                                                
+                                                
                                                 // to update Definition Name on RiskAdjusment
                                                 // Variable Section
+                                                
+                                                String cqlString = createDefinitionsXML(currentObj);
+                                                processor.removeFromParent(nodeDefinition);
+                                                processor.appendNode(cqlString, "definition", XPATH_EXPRESSION_DEFINTIONS);
+                                                
                                                 updateRiskAdjustmentVariables(processor, toBeModifiedObj, currentObj);
                                                 String finalUpdatedXmlString = processor.transform(processor.getOriginalDoc());
 
@@ -725,7 +752,13 @@ public class CQLServiceImpl implements CQLService {
                                    } catch (XPathExpressionException e) {
                                          result.setSuccess(false);
                                          e.printStackTrace();
-                                  }
+                                  } catch (SAXException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
                                   logger.debug(" CQLServiceImpl: saveAndModifyDefinitions End :  ");
                            } else {
                                   result.setSuccess(false);
@@ -747,7 +780,7 @@ public class CQLServiceImpl implements CQLService {
                            isDuplicate = isDuplicateIdentifierName(currentObj.getDefinitionName(), xml);
                            if (!isDuplicate) {
                                   String cqlString = createDefinitionsXML(currentObj);
-                                  String XPATH_EXPRESSION_DEFINTIONS = "//cqlLookUp/definitions";
+                                  
                                   try {
                                          Node nodeDefinitions = processor.findNode(processor.getOriginalDoc(),
                                                        XPATH_EXPRESSION_DEFINTIONS);
@@ -1309,7 +1342,7 @@ public class CQLServiceImpl implements CQLService {
                      parsedCQL.setUsedCQLArtifacts(getUsedCQlArtifacts(xmlString));
             	  	 setUsedValuesets(parsedCQL, cqlModel);
             	  	 setUsedCodes(parsedCQL, cqlModel);
-                     boolean isValid = isValidDataTypeUsed(parsedCQL.getUsedCQLArtifacts().getValueSetDataTypeMap(), 
+                     boolean isValid = CQLUtil.isValidDataTypeUsed(parsedCQL.getUsedCQLArtifacts().getValueSetDataTypeMap(), 
                     		 parsedCQL.getUsedCQLArtifacts().getCodeDataTypeMap());;
                      parsedCQL.setDatatypeUsedCorrectly(isValid);
               }
@@ -2124,76 +2157,13 @@ public class CQLServiceImpl implements CQLService {
               CQLExpressionObject cqlExpressionObject = findExpressionObject(expressionName, expressionList);
               boolean isValid = true;
               if (cqlExpressionObject != null) {
-                     isValid = isValidDataTypeUsed(cqlExpressionObject.getValueSetDataTypeMap(), cqlExpressionObject.getCodeDataTypeMap());
+                     isValid = CQLUtil.isValidDataTypeUsed(cqlExpressionObject.getValueSetDataTypeMap(), cqlExpressionObject.getCodeDataTypeMap());
               }
               return isValid;
        }
 
        // @Override
-       public boolean isValidDataTypeUsed(Map<String, List<String>> valueSetDataTypeMap, Map<String, List<String>> codeDataTypeMap) {
-              if (valueSetDataTypeMap != null && !valueSetDataTypeMap.isEmpty()) {
-                     for (String valueSetName : valueSetDataTypeMap.keySet()) {
-                           List<String> dataTypeList = valueSetDataTypeMap.get(valueSetName);
-                           String[] valueSetNameArray = valueSetName.split(Pattern.quote("|"));
-                           if (valueSetNameArray.length == 3) {
-                                  valueSetName = valueSetNameArray[2];
-                           }
-                           
-                           if(!isValidDataTypeCombination(valueSetName, dataTypeList)) {
-                                  return false;   
-                           }
-                     }
-              }
-              
-              if(codeDataTypeMap != null && !codeDataTypeMap.isEmpty()) {
-                     for (String codeName : codeDataTypeMap.keySet()) {
-                           List<String> dataTypeList = codeDataTypeMap.get(codeName);
-                           String[] codeNameArray = codeName.split(Pattern.quote("|"));
-                           if (codeNameArray.length == 3) {
-                                  codeName = codeNameArray[2];
-                           }
-                           
-                           if(!isValidDataTypeCombination(codeName, dataTypeList)) {
-                                  return false;   
-                           }
-                     }
-              }
-              
-              return true;
-       }
-       
-       /**
-       * Checks if the valueset/code has a valid datatype combination. 
-        * @return true if it valid, false if it is not.
-       */
-       private boolean isValidDataTypeCombination(String name, List<String> dataTypeList) {
-              boolean isValid = true; 
-              
-              // check if the birthdate valueset is being used with something other than then Patient Characteristic Birthdate datatype
-              if (name.equalsIgnoreCase(BIRTHDATE)) {
-                 for (String dataType : dataTypeList) {
-                       if (!dataType.equalsIgnoreCase(PATIENT_CHARACTERISTIC_BIRTHDATE)) {
-                              return false; 
-                       }
-                 }
-              } 
-              
-              // check if the dead valueset is being used with something other than the Patient Characteristic Expired datatype
-              else if (name.equalsIgnoreCase(DEAD)) {
-                 for (String dataType : dataTypeList) {
-                       if (!dataType.equalsIgnoreCase(PATIENT_CHARACTERSTICS_EXPIRED)) {
-                              return false; 
-                       }
-                 }
-              } 
-              
-              // if not birthdate or dead, check if the datatype list contains Patient Characteristic Birthdate or Dead, any non Birthdate or Dead code cannot use these datatypes. 
-              else if(dataTypeList.contains(PATIENT_CHARACTERISTIC_BIRTHDATE) || dataTypeList.contains(PATIENT_CHARACTERSTICS_EXPIRED)) {
-            	  return false; 
-              }
-              
-          return true; 
-       }
+
 
        private CQLExpressionObject findExpressionObject(String expressionName, List<CQLExpressionObject> expressionList) {
               CQLExpressionObject cqlExpressionObject = null;
@@ -2321,45 +2291,45 @@ public class CQLServiceImpl implements CQLService {
        */
        @Override
        public SaveUpdateCQLResult parseCQLStringForError(String cqlFileString) {
-              SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-              List<CqlTranslatorException> cqlErrorsList = new ArrayList<CqlTranslatorException>();
-              List<CQLErrors> errors = new ArrayList<CQLErrors>();
-              if (!StringUtils.isBlank(cqlFileString)) {
-
-                     CQLtoELM cqlToElm = new CQLtoELM(cqlFileString);
-                     try {
-                           cqlToElm.doTranslation(true, false, false);
-                     } catch (IOException e) {
-                           // TODO Auto-generated catch block
-                           e.printStackTrace();
-                     }
-
-                     if (cqlToElm.getErrors() != null) {
-                           cqlErrorsList.addAll(cqlToElm.getErrors());
-                     }
-              }
-
-              for (CqlTranslatorException cte : cqlErrorsList) {
-
-                     CQLErrors cqlErrors = new CQLErrors();
-
-                     cqlErrors.setStartErrorInLine(cte.getLocator().getStartLine());
-
-                     cqlErrors.setErrorInLine(cte.getLocator().getStartLine());
-                     cqlErrors.setErrorAtOffeset(cte.getLocator().getStartChar());
-
-                     cqlErrors.setEndErrorInLine(cte.getLocator().getEndLine());
-                     cqlErrors.setEndErrorAtOffset(cte.getLocator().getEndChar());
-
-                     cqlErrors.setErrorMessage(cte.getMessage());
-                     errors.add(cqlErrors);
-                     System.out.println(cte.getMessage());
-
-              }
-
-              result.setCqlErrors(errors);
-
-              return result;
+//              SaveUpdateCQLResult result = new SaveUpdateCQLResult();
+//              List<CqlTranslatorException> cqlErrorsList = new ArrayList<CqlTranslatorException>();
+//              List<CQLErrors> errors = new ArrayList<CQLErrors>();
+//              if (!StringUtils.isBlank(cqlFileString)) {
+//
+//                     CQLtoELM cqlToElm = new CQLtoELM(cqlFileString);
+//                     try {
+//                           cqlToElm.doTranslation(true, false, false);
+//                     } catch (IOException e) {
+//                           // TODO Auto-generated catch block
+//                           e.printStackTrace();
+//                     }
+//
+//                     if (cqlToElm.getErrors() != null) {
+//                           cqlErrorsList.addAll(cqlToElm.getErrors());
+//                     }
+//              }
+//
+//              for (CqlTranslatorException cte : cqlErrorsList) {
+//
+//                     CQLErrors cqlErrors = new CQLErrors();
+//
+//                     cqlErrors.setStartErrorInLine(cte.getLocator().getStartLine());
+//
+//                     cqlErrors.setErrorInLine(cte.getLocator().getStartLine());
+//                     cqlErrors.setErrorAtOffeset(cte.getLocator().getStartChar());
+//
+//                     cqlErrors.setEndErrorInLine(cte.getLocator().getEndLine());
+//                     cqlErrors.setEndErrorAtOffset(cte.getLocator().getEndChar());
+//
+//                     cqlErrors.setErrorMessage(cte.getMessage());
+//                     errors.add(cqlErrors);
+//                     System.out.println(cte.getMessage());
+//
+//              }
+//
+//              result.setCqlErrors(errors);
+//
+              return null;
        }
 
        /**

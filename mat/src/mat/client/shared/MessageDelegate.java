@@ -315,7 +315,7 @@ public class MessageDelegate {
 	/** The Constant NO_VERSION_CREATED. */
 	public static final String NO_VERSION_CREATED = "Unable to version. There are validation errors in CQL. Please correct and try again.";
 
-	private final String MSG_TYPE_CHECK_VALIDATION_MEASURE_PACKAGE = "Unable to create measure package. There is an incorrect return type. Please re-save your measure grouping(s) and try again.";
+	private final String MSG_TYPE_CHECK_VALIDATION_MEASURE_PACKAGE = "Unable to create measure package. There is an incorrect return type in the following grouping(s): ";
 	
 	/**
 	 * Gets the measure save server error message.
@@ -874,6 +874,12 @@ public class MessageDelegate {
 	
 	/** The error invalid date time. */
 	private final String ERROR_INVALID_DATE_TIME = "Please Enter a valid Date/Time.";
+	
+	private final String WARNING_DELETION_CQL_LIBRARY = "Deleting a draft of a library will permanently remove the designated "
+			+ "library draft from the Measure Authoring Tool. Deleted libraries cannot be recovered.";
+	
+	/** The cql library deletion success msg. */
+	private final String CQL_LIBRARY_DELETION_SUCCESS_MSG = "CQL Library successfully deleted.";
 	
 	/**
 	 * Gets the only one child required.
@@ -3259,5 +3265,13 @@ public class MessageDelegate {
 	
 	public String getCreatePackageTypeCheckError() {
 		return MSG_TYPE_CHECK_VALIDATION_MEASURE_PACKAGE;
+	}
+
+	public String getWARNING_DELETION_CQL_LIBRARY() {
+		return WARNING_DELETION_CQL_LIBRARY;
+	}
+
+	public String getCQL_LIBRARY_DELETION_SUCCESS_MSG() {
+		return CQL_LIBRARY_DELETION_SUCCESS_MSG;
 	}
 }

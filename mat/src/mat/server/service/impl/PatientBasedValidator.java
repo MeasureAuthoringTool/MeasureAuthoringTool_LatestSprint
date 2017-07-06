@@ -214,17 +214,19 @@ public class PatientBasedValidator {
 			List<CQLExpressionOprandObject> argumentList =  cqlExpressionObject.getOprandList();
 			if(argumentList.isEmpty() || argumentList.size() > 1){
 				returnMessages.add("For an added measure observation, the user-defined function "+ cqlExpressionObject.getName()+" must have exactly 1 argument in the argument list.");
-				returnMessages.add("For an added measure observation, the argument in the user-defined function must match the return type"
-						+ " of the definition directly applied to the Associated Population.");
+				//This is commented as Sridhar and Gayathri thinks if illegal number of arguments are passed then this check should not be made.
+				/*returnMessages.add("For an added measure observation, the argument in the user-defined function must match the return type"
+						+ " of the definition directly applied to the Associated Population.");*/
 			} else {
 				String funcArgumentReturnType = argumentList.get(0).getReturnType();
+				logger.info("funcArgumentReturnType Start ==========" + funcArgumentReturnType);
 				// for now parser returns  positive with positive qdm data model and negative of positive for negative qdm data model for function argument return type.
 				// Definition dont return positive or negative. It return only qdm data model. For comparison we have to drop positive/negative if it is present in return type.
-				if(funcArgumentReturnType.contains(POSITIVE)){
+				/*if(funcArgumentReturnType.contains(POSITIVE)){
 					funcArgumentReturnType = funcArgumentReturnType.replaceAll(POSITIVE, "");
 				} else if(funcArgumentReturnType.contains(NEGATIVE)){
 					funcArgumentReturnType = funcArgumentReturnType.replaceAll(NEGATIVE, "");
-				}
+				}*/
 				for(CQLExpressionObject expressionObject : associatedPopExpressionTobeChecked){
 					String returnTypeOfExpression = expressionObject.getReturnType();
 					//in case list<qdm.{data Model}> , comparison had to be with only qdm.{data Model}. So dropping list and < ,> from definition return type if exists.
@@ -236,6 +238,7 @@ public class PatientBasedValidator {
 							logger.info("returnTypeOfExpression ==========" + returnTypeOfExpression);
 						}
 					}
+					logger.info("funcArgumentReturnType ==========" + funcArgumentReturnType);
 					if(!returnTypeOfExpression.equalsIgnoreCase(funcArgumentReturnType)){
 						returnMessages.add("For an added measure observation, the argument in the user-defined function must match the return type"
 								+ " of the definition directly applied to the Associated Population.");
@@ -256,14 +259,19 @@ public class PatientBasedValidator {
 		String returnType = null;
 		
 		for(CQLExpressionObject cqlExpressionObject : expressionsToBeChecked){
-			
+
 			logger.info("Return type for "+cqlExpressionObject.getName()+" is "+cqlExpressionObject.getReturnType());
 			String expressionReturnType = cqlExpressionObject.getReturnType();
+			boolean isList = expressionReturnType.toLowerCase().startsWith("list");
 			
-			if(returnType == null){
-				returnType = expressionReturnType;
-			}else if(!returnType.equals(expressionReturnType)){
-				returnMessages.add("Return types for all definitions in a group should be similar.");
+			if(!isList){
+				returnMessages.add("For Episode Measures, the return type for all definitions in a population must be the same and must also return a list.");
+			}else{
+				if(returnType == null){
+					returnType = expressionReturnType;
+				}else if(!returnType.equals(expressionReturnType)){
+					returnMessages.add("For Episode Measures, the return type for all definitions in a population must be the same and must also return a list.");
+				}
 			}
 		}
 		
