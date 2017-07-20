@@ -18,11 +18,17 @@ public class CQLModelValidator {
 	/*private final RegExp regAliasExp = RegExp.compile(REGEX_ALIAS_EXPRESSION);*/
 	
 	/** The code regex expression. */
-	private final String CODE_REGEX_EXPRESSION = "^(CODE:/CodeSystem/)([a-zA-Z]+)"
-			+ "(/Version/)([_A-Za-z0-9-\\.]+)(/Code/)([_A-Za-z0-9-\\.]+)(/Info)$";
+	private final String CODE_REGEX_EXPRESSION = "^(CODE:/CodeSystem/)([^/]*)" +
+	        "(/Version/)([^/]*)(/Code/)([^/]*)(/Info)$";
 	
 	/** The code reg exp. */
 	private final RegExp codeRegExp = RegExp.compile(CODE_REGEX_EXPRESSION);
+	
+	/** The comment regex expression. */
+	private final String COMMENT_REGEX_EXPRESSION = "(\\*/)|(/\\*)";
+	
+	/** The comment reg exp. */
+	private final RegExp commentRegExp = RegExp.compile(COMMENT_REGEX_EXPRESSION);
 	
 	/**
 	 * Validate for special character in CQL 
@@ -83,6 +89,21 @@ public class CQLModelValidator {
 	public boolean validateForCodeIdentifier(String url){
 		boolean isValidCodeIdentifier = codeRegExp.test(url);
 		return !isValidCodeIdentifier;
+	}
+	
+	/**
+	 * Validate for comment text area.
+	 *
+	 * @param comment the comment
+	 * @return true, if successful
+	 */
+	public boolean validateForCommentTextArea(String comment) {
+		boolean isInValid = false;
+
+		if (comment.length() > 250 || commentRegExp.test(comment)) {
+			isInValid = true;
+		}
+		return isInValid;
 	}
 	
 }

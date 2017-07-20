@@ -2,9 +2,7 @@ package mat.client.clause.cqlworkspace;
 
 import org.gwtbootstrap3.client.ui.gwt.FlowPanel;
 
-import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
-import com.google.gwt.user.client.ui.PopupPanel;
 //import org.gwtbootstrap3.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
@@ -65,7 +63,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 	private CQLFunctionsView cqlFunctionsView;
 	
 	/** The cql view CQL view. */
-	private CQLViewCQLView cqlViewCQLView;
+	private CQLView cqlViewCQLView;
 	
 	/** The cql left nav bar panel view. */
 	private CQLLeftNavBarPanelView cqlLeftNavBarPanelView;
@@ -81,7 +79,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		codesView = new CQLCodesView();
 		valueSetView = new CQLAppliedValueSetView();
 		inclView = new CQLIncludeLibraryView();
-		cqlViewCQLView = new CQLViewCQLView();
+		cqlViewCQLView = new CQLView();
 		cqlLeftNavBarPanelView = new CQLLeftNavBarPanelView();
 		
 		resetAll();
@@ -499,6 +497,8 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 		cqlLeftNavBarPanelView.setCurrentSelectedDefinitionObjId(null);
 		cqlLeftNavBarPanelView.setCurrentSelectedParamerterObjId(null);
 		cqlLeftNavBarPanelView.setCurrentSelectedFunctionObjId(null);
+		cqlLeftNavBarPanelView.setCurrentSelectedFunctionArgumentObjId(null);
+		cqlLeftNavBarPanelView.setCurrentSelectedFunctionArgumentName(null);
 		cqlLeftNavBarPanelView.setCurrentSelectedIncLibraryObjId(null);
 		cqlFunctionsView.getFunctionArgNameMap().clear();
 		if (cqlFunctionsView.getFunctionArgumentList().size() > 0) {
@@ -522,11 +522,20 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 			cqlLeftNavBarPanelView.getGlobalWarningConfirmationMessageAlert().clearAlert();
 		//cqlLeftNavBarPanelView.getDeleteConfirmationMessgeAlert().clearAlert();
 		hideAceEditorAutoCompletePopUp();
-
+		resetFormGroups();
 	}
 
 	
 	
+	private void resetFormGroups() {
+		cqlDefinitionsView.resetDefineFormGroup();
+		cqlParametersView.resetParamFormGroup();
+		cqlFunctionsView.resetFuncFormGroup();
+		generalInformationView.resetFormGroup();
+		inclView.resetFromGroup();
+		
+	}
+
 	/* (non-Javadoc)
 	 * @see mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay#getCqlLeftNavBarPanelView()
 	 */
@@ -589,7 +598,7 @@ public class CQLWorkSpaceView implements CQLWorkSpacePresenter.ViewDisplay {
 	 * @return the view CQL view
 	 */
 	@Override
-	public CQLViewCQLView getViewCQLView(){
+	public CQLView getViewCQLView(){
 		return cqlViewCQLView;
 	}
 

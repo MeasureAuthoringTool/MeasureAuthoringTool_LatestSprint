@@ -1005,8 +1005,15 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 	  
 	  $wnd.timingList = @edu.ycp.cs.dh.acegwt.client.ace.AceEditor::createTimingJsArrayString(); 
 	  
+	  $wnd.unitsList = @edu.ycp.cs.dh.acegwt.client.ace.AceEditor::createUnitsJsArrayString();
+	  
 	}-*/;
 	
+	/**
+	 * Creates the timing js array string.
+	 *
+	 * @return the js array string
+	 */
 	private static JsArrayString createTimingJsArrayString() {
 		List<String> timingList = MatContext.get().getCqlConstantContainer().getCqlTimingList();
 		
@@ -1018,6 +1025,11 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 		return jsArray; 
 	}
 	
+	/**
+	 * Creates the value set js array string.
+	 *
+	 * @return the js array string
+	 */
 	@SuppressWarnings("unchecked")
 	private static JsArrayString createValueSetJsArrayString() {
 		List<String> valueSetList = new ArrayList<String>();
@@ -1051,9 +1063,8 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 	}
 	
 	/**
-	 * Creates the datatypes js array string
-	 * 
-	 * 
+	 * Creates the datatypes js array string.
+	 *
 	 * @return the js array string
 	 */
 	private static JsArrayString createDatatypesJsArrayString() {
@@ -1138,6 +1149,11 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 		return jsArray;
 	}
 	
+	/**
+	 * Creates the attributes js array string.
+	 *
+	 * @return the js array string
+	 */
 	private static JsArrayString createAttributesJsArrayString() {
 		List<String> funcsList = MatContext.get().getCqlConstantContainer().getCqlAttributeList();
 		JsArrayString jsArray = (JsArrayString) JsArrayString.createArray();
@@ -1147,6 +1163,12 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
 		return jsArray;
 	}
 	
+	/**
+	 * Convert to camel case.
+	 *
+	 * @param str the str
+	 * @return the string
+	 */
 	private static String convertToCamelCase(String str){
         String result = "";
         char firstChar = str.charAt(0);
@@ -1162,5 +1184,20 @@ public class AceEditor extends Composite implements RequiresResize, HasText, Tak
         }
         return result.replaceAll(" ", "");
 	}
+	
+	/**
+	 * Creates the units js array string.
+	 *
+	 * @return the js array string
+	 */
+	private static JsArrayString createUnitsJsArrayString(){
+		List<String> unitsList = MatContext.get().getShorcutKeyUnits();
+		JsArrayString jsArray = (JsArrayString) JsArrayString.createArray();
+		for (String string : unitsList) {
+			jsArray.push(string);
+		}
+		return jsArray;
+	}
+	
 	
 }

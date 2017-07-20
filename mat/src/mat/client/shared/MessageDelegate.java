@@ -222,7 +222,7 @@ public class MessageDelegate {
 			"to the selected Version and/or Expansion Identifier.";
 	
 	/** The view cql error message. */
-	public final String VIEW_CQL_ERROR_MESSAGE = "You are viewing CQL with few validation errors. Errors are marked with triangle sign on line number.";
+	public final String VIEW_CQL_ERROR_MESSAGE = "You are viewing CQL with validation errors. Errors are marked with a red square on the line number.";
 	
 	/** The view cql no errors message. */
 	public final String VIEW_CQL_NO_ERRORS_MESSAGE ="You are viewing CQL with no validation errors.";
@@ -316,6 +316,10 @@ public class MessageDelegate {
 	public static final String NO_VERSION_CREATED = "Unable to version. There are validation errors in CQL. Please correct and try again.";
 
 	private final String MSG_TYPE_CHECK_VALIDATION_MEASURE_PACKAGE = "Unable to create measure package. There is an incorrect return type in the following grouping(s): ";
+	
+	private final String ERROR_VALIDATION_COMMENT_AREA = "Comment cannot exceed 250 characters. ";
+	
+	private static final String PACKAGER_CQL_ERROR = "Your CQL file contains validation errors. Errors must be corrected before proceeding to measure packaging. Please return to the CQL Workspace to make corrections.";
 	
 	/**
 	 * Gets the measure save server error message.
@@ -413,6 +417,24 @@ public class MessageDelegate {
 	
 	/** The clause empty. */
 	private final String CLAUSE_EMPTY = "Clause must contain logic.";
+	
+	//MAT-8606 validations.	
+	private final String PATIENT_BASED_DEFINITIONS_SAVE_GROUPING_VALIDATION_MESSAGE = "For Patient-based Measures, all definitions directly added to populations must return a Boolean.";
+	
+	//MAT-8608 validations.	
+	private final String EPISODE_BASED_DEFINITIONS_SAVE_GROUPING_VALIDATION_MESSAGE = "For Episode-based Measures, all definitions directly added to populations must return a list of the same type.";
+		
+	//MAT-8622 Measure Observation and Patient-based Measure Indicator in Ratio scoring type.
+	private final String EPISODE_BASED_RATIO_MEASURE_SAVE_GROUPING_VALIDATION_MESSAGE = "Measure Observations can only be added to a measure grouping in a Ratio measure, if the measure is Episode-based.";
+			
+	//MAT-8624 Single Argument Required for Measure Observation User-defined Function .
+	private final String MEASURE_OBSERVATION_USER_DEFINED_FUNC_VALIDATION_MESSAGE = "Measure Observations added to a measure grouping may only contain a user-defined function that has exactly 1 argument in the argument list.";
+	
+	//MAT-8626 validations for Argument Type for Measure Observation Function Must Match Return Type of Associated Population.	
+	private final String MEASURE_OBSERVATION_RETURN_SAME_TYPE_VALIDATION_MESSAGE = "Measure Observations added to a measure grouping must have an argument that returns the same type as the definition directly applied to the Measure Population associated with the Measure Observation.";
+		
+	//MAT-8627 validations for functions attached to Measure Observations.
+	private final String MEASURE_OBSERVATION_USER_DEFINED_FUNC_REURN_TYPE_VALIDATION_MESSAGE = "Measure Observations added to a measure grouping must contain a user-defined function that returns an integer, a decimal, or a quantity.";
 	
 	/**
 	 * Gets the population work space validation error.
@@ -833,8 +855,17 @@ public class MessageDelegate {
 	/** The delete confirmation function. */
 	private final String DELETE_CONFIRMATION_FUNCTION = "You have selected to delete this expression. Do you want to permanently delete this Function?";
 	
+	/** The delete confirmation function. */
+	private final String DELETE_CONFIRMATION_FUNCTION_ARGUMENT = "You have selected to delete this Argument. Please confirm that you want to remove this Argument.";
+	
 	/** The delete confirmation include. */
 	private final String DELETE_CONFIRMATION_INCLUDE = "You have selected to delete this expression. Do you want to permanently delete this Library Alias?";
+	
+	/** The delete confirmation valueset. */
+	private final String DELETE_CONFIRMATION_VALUESET = "You have selected to delete this Value Set. Please confirm that you want to remove this Value Set.";
+	
+	/** The delete confirmation codes. */
+	private final String DELETE_CONFIRMATION_CODES = "You have selected to delete this Code. Please confirm that you want to remove this Code.";
 	
 	/** The error library version. */
 	private final String ERROR_LIBRARY_VERSION ="Please select version type Major or Minor.";
@@ -3274,4 +3305,79 @@ public class MessageDelegate {
 	public String getCQL_LIBRARY_DELETION_SUCCESS_MSG() {
 		return CQL_LIBRARY_DELETION_SUCCESS_MSG;
 	}
+
+	public String getERROR_VALIDATION_COMMENT_AREA() {
+		return ERROR_VALIDATION_COMMENT_AREA;
+	}
+
+	/**
+	 * @return the pATIENT_BASED_DEFINITIONS_SAVE_GROUPING_VALIDATION_MESSAGE
+	 */
+	public String getPATIENT_BASED_DEFINITIONS_SAVE_GROUPING_VALIDATION_MESSAGE() {
+		return PATIENT_BASED_DEFINITIONS_SAVE_GROUPING_VALIDATION_MESSAGE;
+	}
+
+	/**
+	 * @return the ePISODE_BASED_DEFINITIONS_SAVE_GROUPING_VALIDATION_MESSAGE
+	 */
+	public String getEPISODE_BASED_DEFINITIONS_SAVE_GROUPING_VALIDATION_MESSAGE() {
+		return EPISODE_BASED_DEFINITIONS_SAVE_GROUPING_VALIDATION_MESSAGE;
+	}
+
+	/**
+	 * @return the ePISODE_BASED_RATIO_MEASURE_SAVE_GROUPING_VALIDATION_MESSAGE
+	 */
+	public String getEPISODE_BASED_RATIO_MEASURE_SAVE_GROUPING_VALIDATION_MESSAGE() {
+		return EPISODE_BASED_RATIO_MEASURE_SAVE_GROUPING_VALIDATION_MESSAGE;
+	}
+
+	/**
+	 * @return the mEASURE_OBSERVATION_USER_DEFINED_FUNC_VALIDATION_MESSAGE
+	 */
+	public String getMEASURE_OBSERVATION_USER_DEFINED_FUNC_VALIDATION_MESSAGE() {
+		return MEASURE_OBSERVATION_USER_DEFINED_FUNC_VALIDATION_MESSAGE;
+	}
+
+	/**
+	 * @return the mEASURE_OBSERVATION_RETURN_SAME_TYPE_VALIDATION_MESSAGE
+	 */
+	public String getMEASURE_OBSERVATION_RETURN_SAME_TYPE_VALIDATION_MESSAGE() {
+		return MEASURE_OBSERVATION_RETURN_SAME_TYPE_VALIDATION_MESSAGE;
+	}
+
+	/**
+	 * @return the mEASURE_OBSERVATION_USER_DEFINED_FUNC_REURN_TYPE_VALIDATION_MESSAGE
+	 */
+	public String getMEASURE_OBSERVATION_USER_DEFINED_FUNC_REURN_TYPE_VALIDATION_MESSAGE() {
+		return MEASURE_OBSERVATION_USER_DEFINED_FUNC_REURN_TYPE_VALIDATION_MESSAGE;
+	}
+
+	/**
+	 * @return the dELETE_CONFIRMATION_CODES
+	 */
+	public String getDELETE_CONFIRMATION_CODES() {
+		return DELETE_CONFIRMATION_CODES;
+	}
+
+	/**
+	 * @return the dELETE_CONFIRMATION_VALUESET
+	 */
+	public String getDELETE_CONFIRMATION_VALUESET() {
+		return DELETE_CONFIRMATION_VALUESET;
+	}
+
+	/**
+	 * @return the dELETE_CONFIRMATION_FUNCTION_ARGUMENT
+	 */
+	public String getDELETE_CONFIRMATION_FUNCTION_ARGUMENT() {
+		return DELETE_CONFIRMATION_FUNCTION_ARGUMENT;
+	}
+	
+	/**
+	 * @return the PACKAGER_CQL_ERROR
+	 */
+	public static String getPACKAGER_CQL_ERROR() {
+		return PACKAGER_CQL_ERROR;
+	}
+
 }

@@ -71,21 +71,25 @@ public class PackagerServiceImpl implements PackagerService {
 	/** The Constant XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_ELEMENTREF. */
 	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_ELEMENTREF = "/measure/supplementalDataElements/elementRef/@id";
 
+	/** The Constant XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_CQLDEFINITION. */
 	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_CQLDEFINITION = "/measure/supplementalDataElements/cqldefinition/@uuid";
 
 	/** The Constant XPATH_MEASURE_RISK_ADJ_VARIABLES. */
 	private static final String XPATH_MEASURE_RISK_ADJ_VARIABLES = "/measure/riskAdjustmentVariables/subTreeRef/@id";
 
+	/** The Constant XPATH_MEASURE_NEW_RISK_ADJ_VARIABLES. */
 	private static final String XPATH_MEASURE_NEW_RISK_ADJ_VARIABLES = "/measure/riskAdjustmentVariables/cqldefinition/@uuid";
 
 	/** The Constant XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_EXPRESSION. */
 	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_EXPRESSION = "/measure/supplementalDataElements/elementRef[@id";
 
+	/** The Constant XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_CQLDEF_EXPRESSION. */
 	private static final String XPATH_MEASURE_SUPPLEMENTAL_DATA_ELEMENTS_CQLDEF_EXPRESSION = "/measure/supplementalDataElements/cqldefinition[@uuid";
 
 	/** The Constant XPATH_MEASURE_RISK_ADJ_VARIABLES_EXPRESSION. */
 	private static final String XPATH_MEASURE_RISK_ADJ_VARIABLES_EXPRESSION = "/measure/riskAdjustmentVariables/subTreeRef[@id";
 
+	/** The Constant XPATH_MEASURE_NEW_RISK_ADJ_VARIABLES_EXPRESSION. */
 	private static final String XPATH_MEASURE_NEW_RISK_ADJ_VARIABLES_EXPRESSION = "/measure/riskAdjustmentVariables/cqldefinition[@uuid";
 	/** The Constant XPATH_MEASURE_ELEMENT_LOOKUP_QDM. */
 	private static final String XPATH_MEASURE_ELEMENT_LOOKUP_QDM = "/measure/elementLookUp/qdm";
@@ -98,12 +102,16 @@ public class PackagerServiceImpl implements PackagerService {
 	/** The Constant XPATH_SD_ELEMENTS_ELEMENTREF. */
 	private static final String XPATH_SD_ELEMENTS_ELEMENTREF = "/measure/supplementalDataElements/elementRef";
 
+	/** The Constant XPATH_MEASURE_NEW_RISK_ADJSUTMENT_VARIABLE. */
 	private static final String XPATH_MEASURE_NEW_RISK_ADJSUTMENT_VARIABLE = "/measure/riskAdjustmentVariables/cqldefinition";
 
+	/** The Constant XPATH_MEASURE_CQL_LOOKUP_DEFINITIONS. */
 	private static final String XPATH_MEASURE_CQL_LOOKUP_DEFINITIONS = "/measure/cqlLookUp/definitions/definition";
 
+	/** The Constant XPATH_MEASURE_CQL_LOOKUP_DEFINITIONS_CONTEXT_PATIENT. */
 	private static final String XPATH_MEASURE_CQL_LOOKUP_DEFINITIONS_CONTEXT_PATIENT = "/measure/cqlLookUp/definitions/definition[@context='Patient']";
 
+	/** The Constant XPATH_SD_ELEMENTS_CQLDEFINITION. */
 	private static final String XPATH_SD_ELEMENTS_CQLDEFINITION = "/measure/supplementalDataElements/cqldefinition";
 
 	/** The Constant INSTANCE. */
@@ -111,11 +119,15 @@ public class PackagerServiceImpl implements PackagerService {
 
 	/** The Constant UUID. */
 	private static final String UUID_STRING = "uuid";
+	
+	/** The Constant MEASURE_OBSERVATION. */
+	private static final String MEASURE_OBSERVATION = "measureObservation";
 
 	/** The measure xmldao. */
 	@Autowired
 	private MeasureXMLDAO measureXMLDAO;
 
+	/** The measure DAO. */
 	@Autowired
 	private MeasureDAO measureDAO;
 	
@@ -190,6 +202,15 @@ public class PackagerServiceImpl implements PackagerService {
 									displayNameNode.getNodeValue(), XmlProcessor.STRATIFICATION, associatedClauseUUID,
 									qdmSelectedList));
 						}
+						
+					} else if (typeNode == null || typeNode.getNodeValue().equalsIgnoreCase(MEASURE_OBSERVATION)) {
+						boolean isUserDefineFuncAdded = checkIfMeasureObeservationIsValid(measureClauses.item(i));
+						if(isUserDefineFuncAdded){
+							clauses.add(createMeasurePackageClauseDetail(uuidNode.getNodeValue(),
+									displayNameNode.getNodeValue(), MEASURE_OBSERVATION, associatedClauseUUID,
+									qdmSelectedList));
+						}
+						
 					} else if (allowedPopulationsInPackage.contains(typeNode.getNodeValue())) {// filter
 																								// unAllowed
 																								// populations
@@ -313,11 +334,31 @@ public class PackagerServiceImpl implements PackagerService {
 	}
 
 	/**
+	 * Check if measure obeservation is valid.
+	 *
+	 * @param measureObeservationNode the measure obeservation node
+	 * @return true, if successful
+	 */
+	private boolean checkIfMeasureObeservationIsValid(Node measureObeservationNode) {
+		boolean isUserDefineFunc = true;
+		if(measureObeservationNode.hasChildNodes()){
+			Node childNode = measureObeservationNode.getFirstChild();
+			if (childNode.getNodeName().equalsIgnoreCase("cqlaggfunction")) {
+				if (!childNode.hasChildNodes()) {
+					isUserDefineFunc = false;
+				}
+			}
+		}
+		
+		return isUserDefineFunc;
+	}
+
+	/**
 	 * MAT-8571 : Display only paired definitions/functions on package grouping
 	 * section This method checks if all Stratum's inside stratification node
 	 * contains child definition.
 	 *
-	 * @param stratificationNode
+	 * @param stratificationNode the stratification node
 	 * @return boolean
 	 */
 	public boolean checkIfStratificationIsValid(Node stratificationNode) {
@@ -375,6 +416,12 @@ public class PackagerServiceImpl implements PackagerService {
 		return stream;
 	}
 
+	/**
+	 * Convert definitions to supple data XML.
+	 *
+	 * @param cqlDefineWrapper the cql define wrapper
+	 * @return the byte array output stream
+	 */
 	private ByteArrayOutputStream convertDefinitionsToSuppleDataXML(CQLDefinitionsWrapper cqlDefineWrapper) {
 		logger.info("In PackagerServiceImpl.convertQDMOToSuppleDataXML()");
 		Mapping mapping = new Mapping();
@@ -442,6 +489,12 @@ public class PackagerServiceImpl implements PackagerService {
 
 	}
 
+	/**
+	 * Convertdefinitions to risk adj var XML.
+	 *
+	 * @param riskAdjVarDTO the risk adj var DTO
+	 * @return the byte array output stream
+	 */
 	private ByteArrayOutputStream convertdefinitionsToRiskAdjVarXML(CQLDefinitionsWrapper riskAdjVarDTO) {
 
 		logger.info("In PackagerServiceImpl.convertdefinitionsToRiskAdjVarXML()");
@@ -560,8 +613,8 @@ public class PackagerServiceImpl implements PackagerService {
 	/**
 	 * Gets the risk adj variables for measure packager.
 	 *
-	 * @param processor
-	 *            the processor
+	 * @param overview the overview
+	 * @param processor            the processor
 	 * @return the risk adj variables for measure packager
 	 */
 	public void getRiskAdjVariablesForMeasurePackager(MeasurePackageOverview overview, XmlProcessor processor) {
@@ -614,6 +667,13 @@ public class PackagerServiceImpl implements PackagerService {
 		}
 	}
 
+	/**
+	 * Gets the new risk adj variables for measure packager.
+	 *
+	 * @param overview the overview
+	 * @param processor the processor
+	 * @return the new risk adj variables for measure packager
+	 */
 	public void getNewRiskAdjVariablesForMeasurePackager(MeasurePackageOverview overview, XmlProcessor processor) {
 		ArrayList<RiskAdjustmentDTO> definitionList = new ArrayList<RiskAdjustmentDTO>();
 		ArrayList<RiskAdjustmentDTO> riskAdkVariableList = new ArrayList<RiskAdjustmentDTO>();
@@ -661,12 +721,10 @@ public class PackagerServiceImpl implements PackagerService {
 	/**
 	 * This function takes a subtree id and then recursively evaluates that
 	 * subtree and nested child subtrees to verify that no datetimeDif function
-	 * is used in that clause
-	 * 
-	 * @param subtreeId
-	 *            the subtree id to evaluate
-	 * @param processor
-	 *            the xml processor that evaluates the subtree
+	 * is used in that clause.
+	 *
+	 * @param subtreeId            the subtree id to evaluate
+	 * @param processor            the xml processor that evaluates the subtree
 	 * @return true: the subtree or nested subtrees contains a datetimeDif
 	 *         false: the subtree and nested subtrees contain no datetimeDif
 	 */
@@ -705,10 +763,9 @@ public class PackagerServiceImpl implements PackagerService {
 	/**
 	 * Gets the intersection of qdm and sde.
 	 *
-	 * @param processor
-	 *            the processor
-	 * @param measureId
-	 *            the measure id
+	 * @param overview the overview
+	 * @param processor            the processor
+	 * @param measureId            the measure id
 	 * @return the intersection of qdm and sde
 	 */
 	private void getIntersectionOfQDMAndSDE(MeasurePackageOverview overview, XmlProcessor processor, String measureId) {
@@ -722,8 +779,8 @@ public class PackagerServiceImpl implements PackagerService {
 	/**
 	 * Sort sde and qd ms for measure packager.
 	 *
-	 * @param processor
-	 *            the processor
+	 * @param overview the overview
+	 * @param processor            the processor
 	 * @return the map
 	 */
 	public void sortSDEAndQDMsForMeasurePackager(MeasurePackageOverview overview, XmlProcessor processor) {
@@ -855,8 +912,8 @@ public class PackagerServiceImpl implements PackagerService {
 	/**
 	 * QDM and SDE for measure packager from CQLLookup.
 	 *
-	 * @param processor
-	 *            the processor
+	 * @param overview the overview
+	 * @param processor            the processor
 	 * @return the map
 	 */
 	private void qdmAndSupplDataforMeasurePackager(MeasurePackageOverview overview, XmlProcessor processor) {
@@ -1097,6 +1154,12 @@ public class PackagerServiceImpl implements PackagerService {
 		}
 	}
 
+	/**
+	 * Save QDM data.
+	 *
+	 * @param measureXML the measure XML
+	 * @param supplQDMList the suppl QDM list
+	 */
 	private void saveQDMData(MeasureXML measureXML, List<QualityDataSetDTO> supplQDMList) {
 		ArrayList<QualityDataSetDTO> supplementDataElementsAll = (ArrayList<QualityDataSetDTO>) supplQDMList;
 		QualityDataModelWrapper wrapper = new QualityDataModelWrapper();
@@ -1205,6 +1268,12 @@ public class PackagerServiceImpl implements PackagerService {
 		measureXMLDAO.save(measureXML);
 	}
 
+	/**
+	 * Save risk adj variable with clauses.
+	 *
+	 * @param allRiskAdjVars the all risk adj vars
+	 * @param processor the processor
+	 */
 	private void saveRiskAdjVariableWithClauses(List<RiskAdjustmentDTO> allRiskAdjVars, XmlProcessor processor) {
 
 		QualityDataModelWrapper wrapper = new QualityDataModelWrapper();
@@ -1234,6 +1303,12 @@ public class PackagerServiceImpl implements PackagerService {
 		}
 	}
 
+	/**
+	 * Save risk adj variable with definitions.
+	 *
+	 * @param allRiskAdjVars the all risk adj vars
+	 * @param processor the processor
+	 */
 	private void saveRiskAdjVariableWithDefinitions(List<RiskAdjustmentDTO> allRiskAdjVars, XmlProcessor processor) {
 
 		CQLDefinitionsWrapper wrapper = new CQLDefinitionsWrapper();

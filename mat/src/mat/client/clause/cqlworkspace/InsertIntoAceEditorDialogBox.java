@@ -3,8 +3,6 @@ package mat.client.clause.cqlworkspace;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,12 +42,13 @@ import com.google.gwt.user.client.ui.ListBox;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
 import mat.client.clause.QDSAttributesService;
 import mat.client.clause.QDSAttributesServiceAsync;
-import mat.client.clause.cqlworkspace.CQLWorkSpacePresenter.ViewDisplay;
 import mat.client.shared.CustomDateTimeTextBox;
 import mat.client.shared.CustomQuantityTextBox;
 import mat.client.shared.JSONAttributeModeUtility;
 import mat.client.shared.ListBoxMVP;
 import mat.client.shared.MatContext;
+import mat.client.shared.NameValuePair;
+import mat.model.ModeDetailModel;
 import mat.model.clause.QDSAttributes;
 import mat.model.cql.CQLFunctionArgument;
 import mat.model.cql.CQLFunctions;
@@ -59,6 +58,10 @@ import mat.model.cql.CQLFunctions;
  * The Class InsertIntoAceEditorDialogBox.
  */
 public class InsertIntoAceEditorDialogBox {
+	private static final String VALUE_SETS_CODES = "Value Sets/Codes";
+
+	private static final String NULLABLE = "Nullable";
+
 	/**
 	 * List of availableInsertItemList.
 	 */
@@ -77,7 +80,7 @@ public class InsertIntoAceEditorDialogBox {
 	 */
 	private static Map<String, String> allCqlUnits = MatContext.get().getCqlConstantContainer().getCqlUnitMap();
 		
-	private static HashSet<String> nonQuoteUnits = new HashSet<String>();
+	private static HashSet<String> nonQuoteUnits = MatContext.get().getNonQuotesUnits();
 	
 	/** The attribute service. */
 	private static QDSAttributesServiceAsync attributeService = (QDSAttributesServiceAsync) GWT
@@ -613,6 +616,7 @@ public class InsertIntoAceEditorDialogBox {
 				if (selectedIndex != 0) {
 					String modeSelected = ModelistBox.getItemText(selectedIndex);
 					ModeDetailslistBox.setEnabled(true);
+					
 					addModeDetailslist(ModeDetailslistBox,JSONAttributeModeUtility.getModeDetailsList(modeSelected)); 
 					ModeDetailslistBox.setSelectedIndex(0);
 				} else {
@@ -1071,13 +1075,24 @@ public class InsertIntoAceEditorDialogBox {
 		}
 	}
 	
-	private static void addModeDetailslist(ListBoxMVP availableItemToInsert, List<String> modeDetailsList) {
-		availableItemToInsert.addItem(MatContext.get().PLEASE_SELECT);
-		for (int i = 0; i < modeDetailsList.size(); i++) {
-			if(!modeDetailsList.get(i).equalsIgnoreCase(MatContext.get().PLEASE_SELECT)){
-				availableItemToInsert.addItem(modeDetailsList.get(i));
+	private static void addModeDetailslist(ListBoxMVP availableItemToInsert, List<ModeDetailModel> list) {
+		/*availableItemToInsert.addItem(MatContext.get().PLEASE_SELECT);
+		for (int i = 0; i < list.size(); i++) {
+			if(!list.get(i).equalsIgnoreCase(MatContext.get().PLEASE_SELECT)){
+				availableItemToInsert.addItem(list.get(i));
 			}
+		}*/
+		
+		List<NameValuePair> retList = new ArrayList<NameValuePair>();
+		for(int i=0; i < list.size();i++){
+			ModeDetailModel mode = list.get(i);
+			NameValuePair nvp = new NameValuePair();
+			nvp.setName(mode.getModeName());
+			nvp.setValue(mode.getModeValue());
+			retList.add(nvp);
 		}
+		availableItemToInsert.setDropdownOptions(retList,true);
+		
 	}
 	
 	/**
@@ -1185,7 +1200,6 @@ public class InsertIntoAceEditorDialogBox {
 	 * @return the string
 	 */
 	private static String attributeStringBuilder(){
-		nonQuoteUnits = getNonQuotesUnits();
 		StringBuilder sb = new StringBuilder();
 		String selectedAttrItem = "";
 		String selectedMode = "";
@@ -1203,18 +1217,36 @@ public class InsertIntoAceEditorDialogBox {
 		
 		if(ModeDetailslistBox.getSelectedIndex()>0){
 			selectedMDetailsItem = ModeDetailslistBox.getItemText(ModeDetailslistBox.getSelectedIndex());
+			//selectedMDetailsItem = ModeDetailslistBox.getSelectedItemText();
 		}
 		 
 		if(selectedMode.isEmpty() && selectedMDetailsItem.isEmpty()){
 			sb.append(".").append(selectedAttrItem);
-		}else if(selectedMode.equalsIgnoreCase("Nullable")){
+		}else if(selectedMode.equalsIgnoreCase(NULLABLE)){
 			sb.append(".").append(selectedAttrItem).append(" ").append(selectedMDetailsItem);
-		}else if(selectedMode.equalsIgnoreCase("Value Sets")){
-			if(selectedAttrItem.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_ATTRIBUTE_RESULT) || selectedAttrItem.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_ATTRIBUTE_TARGET_OUTCOME)){
-				sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_AS_CODE).append("\"").append(selectedMDetailsItem).append("\"");
-			}else{
-				sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_IN).append("\"").append(selectedMDetailsItem).append("\"");
+		}else if(selectedMode.equalsIgnoreCase(VALUE_SETS_CODES)){
+			String valueArray[] = ModeDetailslistBox.getValue().split(":");
+			String type="";
+			String value = "";
+			if(valueArray.length > 0){
+				type = valueArray[0];
+				value = valueArray[1];
+				if(selectedAttrItem.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_ATTRIBUTE_RESULT)
+						|| selectedAttrItem.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_ATTRIBUTE_TARGET_OUTCOME)){
+					if(type.equalsIgnoreCase("valueset")) { // For Value Set
+						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_AS_CODE_IN).append("\"").append(value).append("\"");
+					} else { // For Code 
+						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_AS_CODE).append("\"").append(value).append("\"");
+					}
+				}else{
+					if(type.equalsIgnoreCase("valueset")) { // For Value Set
+						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_IN).append("\"").append(value).append("\"");
+					} else { // For Code
+						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_EQUALS).append("\"").append(value).append("\"");
+					}
+				}
 			}
+			
 		}else if(QuantityTextBox.isEnabled()){
 			
 			sb.append(".").append(selectedAttrItem).append(" ").append(selectedMDetailsItem).append(" ").append(selectedQuantity).append(" ");
@@ -1228,28 +1260,6 @@ public class InsertIntoAceEditorDialogBox {
 		
 	}
 	
-	private static HashSet<String> getNonQuotesUnits(){
-		 HashSet<String> hset = 
-	               new HashSet<String>();
-		hset.add("millisecond");
-		hset.add("milliseconds");
-		hset.add("second");
-		hset.add("seconds");
-		hset.add("minute");
-		hset.add("minutes");
-		hset.add("hour");
-		hset.add("hours");
-		hset.add("day");
-		hset.add("days");
-		hset.add("week");
-		hset.add("weeks");
-		hset.add("month");
-		hset.add("months");
-		hset.add("year");
-		hset.add("years");
-		
-		return hset;
-	}
 	/**
 	 * Builds the date time string.
 	 *

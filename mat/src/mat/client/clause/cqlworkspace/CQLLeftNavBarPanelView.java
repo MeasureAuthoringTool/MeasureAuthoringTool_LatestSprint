@@ -292,9 +292,21 @@ public class CQLLeftNavBarPanelView {
 
 	/** The current selected function obj id. */
 	private String currentSelectedFunctionObjId = null;
+	
+	/** The current selected function argument obj id. */
+	private String currentSelectedFunctionArgumentObjId = null;
+	
+	/** The current selected function argument name. */
+	private String currentSelectedFunctionArgumentName = null;
 
 	/** The current selected inc library obj id. */
 	private String currentSelectedIncLibraryObjId = null;
+	
+	/** The current selected valueset obj id. */
+	private String currentSelectedValueSetObjId = null;
+	
+	/** The current selected codes obj id. */
+	private String currentSelectedCodesObjId = null;
 	
 	/** The available QDS attribute list. */
 	private List<QDSAttributes> availableQDSAttributeList;
@@ -2281,6 +2293,38 @@ public class CQLLeftNavBarPanelView {
 
 
 	/**
+	 * @return the currentSelectedFunctionArgumentObjId
+	 */
+	public String getCurrentSelectedFunctionArgumentObjId() {
+		return currentSelectedFunctionArgumentObjId;
+	}
+
+
+	/**
+	 * @param currentSelectedFunctionArgumentObjId the currentSelectedFunctionArgumentObjId to set
+	 */
+	public void setCurrentSelectedFunctionArgumentObjId(String currentSelectedFunctionArgumentObjId) {
+		this.currentSelectedFunctionArgumentObjId = currentSelectedFunctionArgumentObjId;
+	}
+
+
+	/**
+	 * @return the currentSelectedFunctionArgumentName
+	 */
+	public String getCurrentSelectedFunctionArgumentName() {
+		return currentSelectedFunctionArgumentName;
+	}
+
+
+	/**
+	 * @param currentSelectedFunctionArgumentName the currentSelectedFunctionArgumentName to set
+	 */
+	public void setCurrentSelectedFunctionArgumentName(String currentSelectedFunctionArgumentName) {
+		this.currentSelectedFunctionArgumentName = currentSelectedFunctionArgumentName;
+	}
+
+
+	/**
 	 * Gets the current selected inc library obj id.
 	 *
 	 * @return the current selected inc library obj id
@@ -2463,9 +2507,9 @@ public class CQLLeftNavBarPanelView {
 		HTML html5 = new HTML("Ctrl-Alt-k: keywords");
 		HTML html6 = new HTML("Ctrl-Alt-p: parameters");
 		HTML html7 = new HTML("Ctrl-Alt-t: timings");
-		HTML html8 = new HTML("Ctrl-Alt-v: value sets & codes");
-		
-		HTML html9 = new HTML("Ctrl-Space: all");
+		HTML html8 = new HTML("Ctrl-Alt-u: units");
+		HTML html9 = new HTML("Ctrl-Alt-v: value sets & codes");
+		HTML html10 = new HTML("Ctrl-Space: all");
 
 		dialogContents.add(html1);
 		dialogContents.add(html2);
@@ -2476,6 +2520,7 @@ public class CQLLeftNavBarPanelView {
 		dialogContents.add(html7);
 		dialogContents.add(html8);
 		dialogContents.add(html9);
+		dialogContents.add(html10);
 		panel.show();
 	}
 
@@ -2502,5 +2547,37 @@ public class CQLLeftNavBarPanelView {
 
 	public void setAppliedCodeTableList(List<CQLCode> appliedCodeTableList) {
 		this.appliedCodeTableList = appliedCodeTableList;
+	}
+
+
+	/**
+	 * @return the currentSelectedCodesObjId
+	 */
+	public String getCurrentSelectedCodesObjId() {
+		return currentSelectedCodesObjId;
+	}
+
+
+	/**
+	 * @param currentSelectedCodesObjId the currentSelectedCodesObjId to set
+	 */
+	public void setCurrentSelectedCodesObjId(String currentSelectedCodesObjId) {
+		this.currentSelectedCodesObjId = currentSelectedCodesObjId;
+	}
+
+
+	/**
+	 * @return the currentSelectedValueSetObjId
+	 */
+	public String getCurrentSelectedValueSetObjId() {
+		return currentSelectedValueSetObjId;
+	}
+
+
+	/**
+	 * @param currentSelectedValueSetObjId the currentSelectedValueSetObjId to set
+	 */
+	public void setCurrentSelectedValueSetObjId(String currentSelectedValueSetObjId) {
+		this.currentSelectedValueSetObjId = currentSelectedValueSetObjId;
 	}
 }

@@ -74,6 +74,8 @@ public class SaveUpdateCQLResult extends GenericResult{
 	
 	private static final int DUPLICATE_CODE=7;
 	
+	public static final int COMMEENT_INVALID = 8;
+	
 	/** The cql applied QDM list. */
 	List<CQLQualityDataSetDTO> cqlAppliedQDMList ;
 	
@@ -87,6 +89,8 @@ public class SaveUpdateCQLResult extends GenericResult{
 	private String elmString = "";
 	
 	private boolean isDatatypeUsedCorrectly = true;
+	
+	private boolean isValidCQLWhileSavingExpression = true;
 	
 	/**
 	 * Gets the cql string.
@@ -360,6 +364,14 @@ public class SaveUpdateCQLResult extends GenericResult{
 
 	public int getDuplicateCode() {
 		return DUPLICATE_CODE;
+	}
+
+	public boolean isValidCQLWhileSavingExpression() {
+		return isValidCQLWhileSavingExpression;
+	}
+
+	public void setValidCQLWhileSavingExpression(boolean isValidCQLWhileSavingExpression) {
+		this.isValidCQLWhileSavingExpression = isValidCQLWhileSavingExpression;
 	}
 	
 }
