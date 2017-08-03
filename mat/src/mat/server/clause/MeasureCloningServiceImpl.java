@@ -307,6 +307,8 @@ implements MeasureCloningService {
 				//create the default 4 CMS supplemental definitions
 				appendSupplementalDefinitions(xmlProcessor, false);
 				xmlProcessor.updateCQLLibraryName();
+				// Always set latest QDM Version.
+				xmlProcessor.updateLatestQDMVersion();
 			}
 			
 			clonedXml.setMeasureXMLAsByteArray(xmlProcessor
@@ -451,6 +453,11 @@ implements MeasureCloningService {
 					isClonable = false;
 				}
 				if(isClonable){
+					//MAT-8729 : Drafting of non-CQL to CQL measures - force version to be 1.0 if its value is 1.
+					String qdmAppliedVersion = qdmNode.getAttributes().getNamedItem("version").getNodeValue();
+					if(qdmAppliedVersion.equalsIgnoreCase("1")){
+						qdmNode.getAttributes().getNamedItem("version").setNodeValue("1.0");
+					}
 					Node clonedqdmNode = qdmNode.cloneNode(true);
 					xmlProcessor.getOriginalDoc().renameNode(clonedqdmNode, null, "valueset");
 					cqlValuesetsNode.appendChild(clonedqdmNode);

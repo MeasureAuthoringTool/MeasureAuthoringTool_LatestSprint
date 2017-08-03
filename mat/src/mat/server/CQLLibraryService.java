@@ -210,6 +210,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	 */
 	@Override
 	public void save(CQLLibrary library) {
+		library.setQdmVersion(MATPropertiesService.get().getQmdVersion());
 		this.cqlLibraryDAO.save(library);
 		
 		
@@ -339,7 +340,19 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 			newLibraryObject.setOwnerId(existingLibrary.getOwnerId());
 			newLibraryObject.setReleaseVersion(MATPropertiesService.get().getCurrentReleaseVersion());
 			newLibraryObject.setQdmVersion(MATPropertiesService.get().getQmdVersion());
-			newLibraryObject.setCQLByteArray(existingLibrary.getCQLByteArray());
+		// Update QDM Version to latest QDM Version.
+			String versionLibraryXml = getCQLLibraryXml(existingLibrary);
+			if(versionLibraryXml != null){
+				XmlProcessor processor = new XmlProcessor(getCQLLibraryXml(existingLibrary));
+				try {
+					processor.updateLatestQDMVersion();
+					versionLibraryXml = processor.transform(processor.getOriginalDoc());
+				} catch (XPathExpressionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			newLibraryObject.setCQLByteArray(versionLibraryXml.getBytes());
 			newLibraryObject.setVersion(existingLibrary.getVersion());
 			newLibraryObject.setRevisionNumber("000");
 			save(newLibraryObject);
@@ -748,7 +761,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		
 		if(str != null) {
 			cqlResult = cqlService.getCQLData(str);
-			cqlResult.setExpIdentifier(cqlService.getDefaultExpansionIdentifier(str));
+			//cqlResult.setExpIdentifier(cqlService.getDefaultExpansionIdentifier(str));
 			cqlResult.setSetId(cqlLibrary.getSet_id());
 			cqlResult.setSuccess(true);
 		}
@@ -1579,8 +1592,8 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	}
 
 
-	@Override
-	public void updateCQLLibraryXMLForExpansionProfile(List<CQLQualityDataSetDTO> modifyWithDTO, String libraryId,
+	//@Override
+	/*public void updateCQLLibraryXMLForExpansionProfile(List<CQLQualityDataSetDTO> modifyWithDTO, String libraryId,
 			String expansionProfile) {
 		logger.debug(" CQLLibraryService: updateLibraryXMLForExpansionIdentifier Start : Library Id :: "
 				+ libraryId);
@@ -1621,9 +1634,9 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 			cqlLibraryDAO.save(cqlLibrary);
 		}
 	}
+*/
 
-
-	private void updateCQLLibraryXmlForQDM(CQLQualityDataSetDTO dto, XmlProcessor processor, String expansionProfile) {
+	/*private void updateCQLLibraryXmlForQDM(CQLQualityDataSetDTO dto, XmlProcessor processor, String expansionProfile) {
 			String XPATH_EXPRESSION_ELEMENTLOOKUP = "/cqlLookUp/valuesets/valueset[@uuid='"
 					+ dto.getUuid() + "']";
 			NodeList nodesElementLookUp;
@@ -1652,7 +1665,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 			} catch (XPathExpressionException e) {
 				e.printStackTrace();
 			}
-		}
+		}*/
 
 
 	public void updateCQLLookUpTagWithModifiedValueSet(CQLQualityDataSetDTO modifyWithDTO, CQLQualityDataSetDTO modifyDTO,

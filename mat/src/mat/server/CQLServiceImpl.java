@@ -1439,8 +1439,8 @@ public class CQLServiceImpl implements CQLService {
 
 	}
 
-	@Override
-	public String getDefaultExpansionIdentifier(String xml) {
+	//@Override
+	/*public String getDefaultExpansionIdentifier(String xml) {
 		String defaultExpId = null;
 		if (xml != null) {
 			XmlProcessor processor = new XmlProcessor(xml);
@@ -1462,7 +1462,7 @@ public class CQLServiceImpl implements CQLService {
 		} else {
 			return "";
 		}
-	}
+	}*/
 
 	/*
 	 * (non-Javadoc)
@@ -1853,13 +1853,16 @@ public class CQLServiceImpl implements CQLService {
 		String XPATH_DATATYPES = "/cqlTemplate/datatypes/datatype";
 		String XPATH_TIMINGS = "/cqlTemplate/timings/timing";
 		String XPATH_FUNCTIONS = "/cqlTemplate/functions/function";
+		String XPATH_KEYWORDS = "/cqlTemplate/keywords/keyword";
 		List<String> cqlDataTypeList = new ArrayList<String>();
 		List<String> cqlTimingList = new ArrayList<String>();
 		List<String> cqlFunctionList = new ArrayList<String>();
+		List<String> cqlKeywordsList = new ArrayList<String>();
 		try {
 			NodeList dataTypeNodeList = cqlXMLProcessor.findNodeList(cqlXMLProcessor.getOriginalDoc(), XPATH_DATATYPES);
 			NodeList timingNodeList = cqlXMLProcessor.findNodeList(cqlXMLProcessor.getOriginalDoc(), XPATH_TIMINGS);
 			NodeList functionNodeList = cqlXMLProcessor.findNodeList(cqlXMLProcessor.getOriginalDoc(), XPATH_FUNCTIONS);
+			NodeList keywordNodeList = cqlXMLProcessor.findNodeList(cqlXMLProcessor.getOriginalDoc(), XPATH_KEYWORDS);
 			if (dataTypeNodeList != null) {
 				for (int i = 0; i < dataTypeNodeList.getLength(); i++) {
 					Node node = dataTypeNodeList.item(i);
@@ -1878,12 +1881,19 @@ public class CQLServiceImpl implements CQLService {
 					cqlFunctionList.add(node.getTextContent());
 				}
 			}
+			if (keywordNodeList != null) {
+				for (int i = 0; i < keywordNodeList.getLength(); i++) {
+					Node node = keywordNodeList.item(i);
+					cqlKeywordsList.add(node.getTextContent());
+				}
+			}
 		} catch (XPathExpressionException e) {
 			e.printStackTrace();
 		}
 		cqlKeywords.setCqlDataTypeList(cqlDataTypeList);
 		cqlKeywords.setCqlTimingList(cqlTimingList);
 		cqlKeywords.setCqlFunctionsList(cqlFunctionList);
+		cqlKeywords.setCqlKeywordsList(cqlKeywordsList);
 		return cqlKeywords;
 	}
 
@@ -2520,9 +2530,9 @@ public class CQLServiceImpl implements CQLService {
 		} else {
 			qds.setVersion("1.0");
 		}
-		if (valueSetTransferObject.isExpansionProfile()) {
-			qds.setExpansionIdentifier(valueSetTransferObject.getMatValueSet().getExpansionProfile());
-		}
+		/*if (valueSetTransferObject.isExpansionProfile()) {
+			//qds.setExpansionIdentifier(valueSetTransferObject.getMatValueSet().getExpansionProfile());
+		}*/
 
 		ArrayList<CQLQualityDataSetDTO> qualityDataSetDTOs = (ArrayList<CQLQualityDataSetDTO>) valueSetTransferObject
 				.getAppliedQDMList();
@@ -2806,11 +2816,11 @@ public class CQLServiceImpl implements CQLService {
 			} else {
 				qds.setVersion("1.0");
 			}
-			if (matValueSetTransferObject.isExpansionProfile()) {
-				qds.setExpansionIdentifier(matValueSetTransferObject.getMatValueSet().getExpansionProfile());
+			/*if (matValueSetTransferObject.isExpansionProfile()) {
+				//qds.setExpansionIdentifier(matValueSetTransferObject.getMatValueSet().getExpansionProfile());
 			} else {
-				qds.setExpansionIdentifier(null);
-			}
+				//qds.setExpansionIdentifier(null);
+			}*/
 			CQLQualityDataModelWrapper wrapper = modifyAppliedElementList(qds,
 					(ArrayList<CQLQualityDataSetDTO>) matValueSetTransferObject.getAppliedQDMList());
 
@@ -2839,7 +2849,7 @@ public class CQLServiceImpl implements CQLService {
 					XPATH_EXPRESSION_VALUESETS);
 			if (nodesValuesets.getLength() > 1) {
 				Node parentNode = nodesValuesets.item(0).getParentNode();
-				if (parentNode.getAttributes().getNamedItem("vsacExpIdentifier") != null) {
+				/*if (parentNode.getAttributes().getNamedItem("vsacExpIdentifier") != null) {
 					if (!StringUtils.isBlank(modifyWithDTO.getVsacExpIdentifier())) {
 						parentNode.getAttributes().getNamedItem("vsacExpIdentifier")
 								.setNodeValue(modifyWithDTO.getExpansionIdentifier());
@@ -2852,7 +2862,7 @@ public class CQLServiceImpl implements CQLService {
 						vsacExpIdentifierAttr.setNodeValue(modifyWithDTO.getVsacExpIdentifier());
 						parentNode.getAttributes().setNamedItem(vsacExpIdentifierAttr);
 					}
-				}
+				}*/
 			}
 			for (int i = 0; i < nodesValuesets.getLength(); i++) {
 				Node newNode = nodesValuesets.item(i);
@@ -2880,7 +2890,7 @@ public class CQLServiceImpl implements CQLService {
 					newNode.getAttributes().getNamedItem("suppDataElement").setNodeValue("false");
 				}
 
-				if (newNode.getAttributes().getNamedItem("expansionIdentifier") != null) {
+			/*	if (newNode.getAttributes().getNamedItem("expansionIdentifier") != null) {
 					if (!StringUtils.isBlank(modifyWithDTO.getExpansionIdentifier())) {
 						newNode.getAttributes().getNamedItem("expansionIdentifier")
 								.setNodeValue(modifyWithDTO.getExpansionIdentifier());
@@ -2894,7 +2904,7 @@ public class CQLServiceImpl implements CQLService {
 						expansionIdentifierAttr.setNodeValue(modifyWithDTO.getExpansionIdentifier());
 						newNode.getAttributes().setNamedItem(expansionIdentifierAttr);
 					}
-				}
+				}*/
 			}
 			result.setSuccess(true);
 			result.setXml(processor.transform(processor.getOriginalDoc()));
@@ -3111,7 +3121,7 @@ public class CQLServiceImpl implements CQLService {
 		oldQdm.setOid(qualityDataSetDTO.getOid());
 		oldQdm.setUuid(qualityDataSetDTO.getUuid());
 		oldQdm.setVersion(qualityDataSetDTO.getVersion());
-		oldQdm.setExpansionIdentifier(qualityDataSetDTO.getExpansionIdentifier());
+		//oldQdm.setExpansionIdentifier(qualityDataSetDTO.getExpansionIdentifier());
 	}
 
 	/*
