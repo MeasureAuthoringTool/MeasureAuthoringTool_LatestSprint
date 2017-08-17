@@ -49,7 +49,8 @@ import mat.model.ModeDetailModel;
 import mat.model.clause.QDSAttributes;
 
 public class InsertAttributeBuilderDialogBox {
-	private static final String VALUE_SETS_CODES = "Value Sets/Codes";
+	private static final String VALUE_SETS = "Value Sets";
+	private static final String CODES = "Codes";
 
 	private static final String NULLABLE = "Nullable";
 
@@ -1218,8 +1219,8 @@ private static void defaultFrmGrpValidations(){
 			sb.append(".").append(selectedAttrItem);
 		}else if(selectedMode.equalsIgnoreCase(NULLABLE)){
 			sb.append(".").append(selectedAttrItem).append(" ").append(selectedMDetailsItem);
-		}else if(selectedMode.equalsIgnoreCase(VALUE_SETS_CODES)){
-			String valueArray[] = ModeDetailslistBox.getValue().split(":");
+		}else if(selectedMode.equalsIgnoreCase(VALUE_SETS) ||selectedMode.equalsIgnoreCase(CODES) ){
+			String valueArray[] = ModeDetailslistBox.getValue().split(":", 2);
 			String type="";
 			String value = "";
 			if(valueArray.length > 0){
@@ -1228,15 +1229,15 @@ private static void defaultFrmGrpValidations(){
 				if(selectedAttrItem.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_ATTRIBUTE_RESULT)
 						|| selectedAttrItem.equalsIgnoreCase(CQLWorkSpaceConstants.CQL_ATTRIBUTE_TARGET_OUTCOME)){
 					if(type.equalsIgnoreCase("valueset")) { // For Value Set
-						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_AS_CODE_IN).append("\"").append(value).append("\"");
+						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_AS_CODE_IN).append(value);
 					} else { // For Code 
-						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_AS_CODE).append("\"").append(value).append("\"");
+						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_AS_CODE).append(value);
 					}
 				}else{
 					if(type.equalsIgnoreCase("valueset")) { // For Value Set
-						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_IN).append("\"").append(value).append("\"");
+						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_INSERT_IN).append(value);
 					} else { // For Code
-						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_EQUALS).append("\"").append(value).append("\"");
+						sb.append(".").append(selectedAttrItem).append(CQLWorkSpaceConstants.CQL_EQUALS).append(value);
 					}
 				}
 			}

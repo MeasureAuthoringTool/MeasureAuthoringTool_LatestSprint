@@ -31,7 +31,7 @@ import com.google.gwt.user.client.ui.Widget;
 
 import mat.DTO.AuditLogDTO;
 import mat.DTO.SearchHistoryDTO;
-import mat.client.clause.cqlworkspace.DeleteCQLLibraryConfirmDialogBox;
+import mat.client.shared.ui.DeleteConfirmDialogBox;
 import mat.client.cql.CQLLibraryDetailView;
 import mat.client.cql.CQLLibraryHistoryView;
 import mat.client.cql.CQLLibrarySearchView;
@@ -606,16 +606,14 @@ public class CqlLibraryPresenter implements MatPresenter {
 			@Override
 			public void onDeleteClicked(CQLLibraryDataSetObject object) {
 				final String cqlLibraryId = object.getId();
-				
-				DeleteCQLLibraryConfirmDialogBox.showDeletionConfimationDialog(MatContext.get().getMessageDelegate()
+				final DeleteConfirmDialogBox dialogBox = new DeleteConfirmDialogBox();
+				dialogBox.showDeletionConfimationDialog(MatContext.get().getMessageDelegate()
 						.getWARNING_DELETION_CQL_LIBRARY());
-				
-				DeleteCQLLibraryConfirmDialogBox.getConfirmbutton().addClickHandler(new ClickHandler() {
-					
+				dialogBox.getConfirmbutton().addClickHandler(new ClickHandler() {
 					@Override
 					public void onClick(ClickEvent event) {
 						
-						checkPasswordForCQLLibraryDeletion(DeleteCQLLibraryConfirmDialogBox.getPasswordEntered(), 
+						checkPasswordForCQLLibraryDeletion(dialogBox.getPasswordEntered(), 
 								cqlLibraryId);
 						
 					}

@@ -471,9 +471,8 @@ public class MessageDelegate {
 			+ "Initial Population, Measure Population,and at least one Measure Observation.";
 	
 	/** The delete measure warning message. */
-	private final String DELETE_MEASURE_WARNING_MESSAGE = "Deleting a draft or version of a measure will"
-			+ "permanently remove the designated measure draft or "
-			+ "version from  the Measure Authoring Tool. Deleted measures cannot <br> be recovered.";
+	private final String DELETE_MEASURE_WARNING_MESSAGE = "Deleting a draft or version of a measure will permanently remove the designated measure draft or "
+			+ "version from  the Measure Authoring Tool. Deleted measures cannot be recovered.";
 	
 	/** The description required. */
 	private final String DESCRIPTION_REQUIRED = "Description is required.";
@@ -860,12 +859,6 @@ public class MessageDelegate {
 	
 	/** The delete confirmation include. */
 	private final String DELETE_CONFIRMATION_INCLUDE = "You have selected to delete this expression. Do you want to permanently delete this Library Alias?";
-	
-	/** The delete confirmation valueset. */
-	private final String DELETE_CONFIRMATION_VALUESET = "You have selected to delete this Value Set. Please confirm that you want to remove this Value Set.";
-	
-	/** The delete confirmation codes. */
-	private final String DELETE_CONFIRMATION_CODES = "You have selected to delete this Code. Please confirm that you want to remove this Code.";
 	
 	/** The error library version. */
 	private final String ERROR_LIBRARY_VERSION ="Please select version type Major or Minor.";
@@ -2581,8 +2574,8 @@ public class MessageDelegate {
 	 *
 	 * @return the welcome message
 	 */
-	public static String getWelcomeMessage() {
-		return WELCOME_MESSAGE;
+	public static String getWelcomeMessage(String userFristName) {
+		return "Welcome "+ userFristName+"! " +WELCOME_MESSAGE;
 	}
 	
 	
@@ -2668,6 +2661,24 @@ public class MessageDelegate {
 	 */
 	public String getSUCCESSFUL_QDM_REMOVE_MSG() {
 		return SUCCESSFUL_QDM_REMOVE_MSG;
+	}
+	
+	/**
+	 * Gets the successful qdm remove msg.
+	 *
+	 * @return the 508 Complaint message for successful qdm remove msg
+	 */
+	public String getSUCCESSFUL_QDM_REMOVE_MSG(String codeListName) {
+		return "Value set " + codeListName.substring(0, 59) + " has been removed successfully.";
+	}
+	
+	/**
+	 * Gets the successful qdm remove msg.
+	 *
+	 * @return the 508 Complaint message for successful Code Remove msg
+	 */
+	public String getSUCCESSFUL_CODE_REMOVE_MSG(String codeOID) {
+		return "Code " + codeOID + " has been removed successfully.";
 	}
 	
 	/**
@@ -3344,17 +3355,17 @@ public class MessageDelegate {
 	}
 
 	/**
-	 * @return the dELETE_CONFIRMATION_CODES
+	 * @return the 508 Complaint message for deleting the Code
 	 */
-	public String getDELETE_CONFIRMATION_CODES() {
-		return DELETE_CONFIRMATION_CODES;
+	public String getDELETE_CONFIRMATION_CODES(String codeOID) {
+		return "You have selected to delete code " + codeOID + ". Please confirm that you want to remove this Code.";
 	}
 
 	/**
-	 * @return the dELETE_CONFIRMATION_VALUESET
+	 * @return the 508 Complaint message for deleting the Value Set
 	 */
-	public String getDELETE_CONFIRMATION_VALUESET() {
-		return DELETE_CONFIRMATION_VALUESET;
+	public String getDELETE_CONFIRMATION_VALUESET(String codeListName) {
+		return "You have selected to delete value set " + codeListName.substring(0, 59) + ". Please confirm that you want to remove this value set.";
 	}
 
 	/**
@@ -3371,6 +3382,12 @@ public class MessageDelegate {
 		return PACKAGER_CQL_ERROR;
 	}
 	
+	public String getSUCESS_FUNCTION_ARG_MODIFY(String ArgName){
+		return "Function Argument "+ ArgName +" successfully modified.";
+	}
+	 public String getSUCESS_FUNCTION_ARG_ADD(String ArgName){
+		 return "Function Argument "+ ArgName +" successfully saved.";
+	 }
 	/**
 	 * Gets the valueset success message.
 	 *
