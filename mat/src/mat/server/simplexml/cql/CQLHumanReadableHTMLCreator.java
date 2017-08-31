@@ -180,6 +180,7 @@ public class CQLHumanReadableHTMLCreator {
 		
 		Element mainDivElement = bodyElement.appendElement("div"); 
 		Element mainListElement = mainDivElement.appendElement(HTML_UL); 
+		mainListElement.attr("style","padding-left: 50px;");
 		NodeList elements = simpleXMLProcessor.findNodeList(simpleXMLProcessor.getOriginalDoc(), "/measure/elementLookUp/qdm"); 	
 		if(elements.getLength() > 0) {
 			generateTerminologyCodeAndCodesystem(mainListElement, simpleXMLProcessor);
@@ -287,11 +288,11 @@ public class CQLHumanReadableHTMLCreator {
 		definitionsOrFunctionsAlreadyDisplayed.clear();
 		Element bodyElement = humanReadableHTMLDocument.body();
 		bodyElement
-		.append("<h3><a name=\"d1e879\" href=\"#toc\">Supplemental Data Elements</a></h3>");
+		.append("<h3><a name=\"d1e767\" href=\"#toc\">Supplemental Data Elements</a></h3>");
 		
 		Element mainDivElement = bodyElement.appendElement("div");
 		Element mainListElement = mainDivElement.appendElement(HTML_UL);
-		mainListElement.attr("style", "list-style:none;padding-left:0px;");
+		mainListElement.attr("style", "list-style:none;padding-left: 25px;");
 				
 		List<String> supplementalDefinitionList = getSupplementalDefinitions(simpleXMLProcessor);
 		
@@ -318,7 +319,7 @@ public class CQLHumanReadableHTMLCreator {
 		
 		Element mainDivElement = bodyElement.appendElement("div");
 		Element mainListElement = mainDivElement.appendElement(HTML_UL);
-		mainListElement.attr("style", "list-style:none;padding-left:0px;");
+		mainListElement.attr("style", "list-style:none;padding-left: 25px;");
 				
 		List<String> riskAdjDefinitionList = getRiskAdjustmentDefinitions(simpleXMLProcessor);
 		
@@ -373,6 +374,7 @@ public class CQLHumanReadableHTMLCreator {
 		
 		bodyElement.append("<h2><a name=\"toc\">Table of Contents</a></h2>");
 		Element tocULElement = bodyElement.appendElement(HTML_UL);
+		tocULElement.attr("style","padding-left: 50px;");
 		
 		Element populationCriteriaLI = tocULElement.appendElement(HTML_LI);
 		populationCriteriaLI
@@ -415,7 +417,7 @@ public class CQLHumanReadableHTMLCreator {
 		
 		Element mainDivElement = bodyElement.appendElement("div");
 		Element mainListElement = mainDivElement.appendElement(HTML_UL);
-		mainListElement.attr("style","list-style:none;padding-left:0;");
+		mainListElement.attr("style","list-style:none;padding-left: 10px;");
 		
 		List<String> usedDefinitions = cqlResult.getUsedCQLArtifacts().getUsedCQLDefinitions();
 		
@@ -451,7 +453,7 @@ public class CQLHumanReadableHTMLCreator {
 		
 		Element mainDivElement = bodyElement.appendElement("div");
 		Element mainListElement = mainDivElement.appendElement(HTML_UL);
-		mainListElement.attr("style","list-style:none;padding-left:0;");
+		mainListElement.attr("style","list-style:none;padding-left: 10px;");
 		
 		List<String> usedFunctions = cqlResult.getUsedCQLArtifacts().getUsedCQLFunctions();
 		
@@ -500,7 +502,7 @@ public class CQLHumanReadableHTMLCreator {
 		
 		Element mainDivElement = bodyElement.appendElement("div");
 		Element mainListElement = mainDivElement.appendElement(HTML_UL);
-		mainListElement.attr("style","list-style:none;padding-left:0;");
+		
 				
 		NodeList groupNodeList = simpleXMLProcessor.findNodeList(
 				simpleXMLProcessor.getOriginalDoc(),
@@ -513,13 +515,21 @@ public class CQLHumanReadableHTMLCreator {
 			String key = measureGroupingNode.getAttributes().getNamedItem("sequence").getNodeValue();
 			groupMap.put(Integer.parseInt(key), measureGroupingNode);
 		}
-	
+		
+		int j=0;
 		for (Integer key : groupMap.keySet()) {
 			if (groupMap.size() > 1) {
 				
+				mainListElement.attr("style","list-style:none;");
+				
 				Element mainElement = mainListElement.appendElement("li");
 				mainElement.attr("class", "list-unstyled");
-				mainElement.attr("style","list-style:none;padding-left:0;");
+								
+				if(j > 0){
+					mainElement.attr("style","list-style:none;padding-left:0;padding-top:15px;");
+				}else{
+					mainElement.attr("style","list-style:none;padding-left:0;");
+				}
 				
 				Element divElement = mainElement.appendElement("div");
 				divElement.attr("class", "treeview hover p-l-10");
@@ -534,17 +544,20 @@ public class CQLHumanReadableHTMLCreator {
 				labelElement.attr("for", id);
 				labelElement.attr("class", "list-header");
 				labelElement.append("<b>Population Criteria "
-						+ (key.toString()) + "</b> (click to expand/collapse)");
+						+ (key.toString()) );
 								
 				NodeList clauseNodeList = groupMap.get(key).getChildNodes();
 				generatePopulationNodes(clauseNodeList, divElement.appendElement(HTML_UL),
 						groupNodeList.getLength(),key, simpleXMLProcessor, cqlModel, cqlResult);
 								
 			}else{
+				mainListElement.attr("style","list-style:none;padding-left:10px;");
+				
 				NodeList clauseNodeList = groupMap.get(key).getChildNodes();
 				generatePopulationNodes(clauseNodeList, mainListElement,
 						groupNodeList.getLength(),key, simpleXMLProcessor, cqlModel, cqlResult);
 			}
+			j++;
 		}
 	}
 	
@@ -560,6 +573,7 @@ public class CQLHumanReadableHTMLCreator {
 		bodyElement.append("<h3><a name=\"d1e647\" href=\"#toc\">Data Criteria (QDM Data Elements)</a></h3>");
 		
 		Element qdmElementUL = bodyElement.appendElement(HTML_UL);
+		qdmElementUL.attr("style","padding-left: 50px;");
 		
 		try {
 			
@@ -1036,7 +1050,6 @@ public class CQLHumanReadableHTMLCreator {
 		Element strongElement = definitionLabelElement.appendElement("strong");
 		strongElement.appendText(populationDisplayName);
 		
-		definitionLabelElement.appendText(" (click to expand/collapse)");
 		System.out.println(mainDefinitionName);
 
 		generateHTMLToDsiplayNone(mainliElement);
@@ -1071,8 +1084,7 @@ public class CQLHumanReadableHTMLCreator {
 
 		Element strongElement = definitionLabelElement.appendElement("strong");
 		strongElement.appendText(populationDisplayName);
-		
-		definitionLabelElement.appendText(" (click to expand/collapse)");
+				
 		System.out.println("Main Defintion Name: " + mainDefinitionName);
 		generateHTMLForCQLPopulation(cqlModel, cqlResult, populationOrSubtreeXMLProcessor, mainDefinitionName, mainliElement, true,additionalLabel,cqlNodeType);
 	}
@@ -1160,7 +1172,7 @@ public class CQLHumanReadableHTMLCreator {
 				spanElemDefBody.append(codeLineList.get(i));
 			}
 		}			
-		subDivElement.appendElement("br");
+		//subDivElement.appendElement("br");
 	}
 	
 	/**
@@ -1209,7 +1221,7 @@ public class CQLHumanReadableHTMLCreator {
 		}
 		strongElement.appendText(strongText);
 		
-		Element mainULElement = mainliElement;
+		Element mainULElement = mainDivElement;//assign the <div> element to start with
 		if (isTopExpression) {
 			mainULElement = mainULElement.appendElement(HTML_UL);
 			mainULElement.attr("class", "code");

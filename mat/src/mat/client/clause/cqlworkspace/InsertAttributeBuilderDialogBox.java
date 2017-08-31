@@ -49,6 +49,9 @@ import mat.model.ModeDetailModel;
 import mat.model.clause.QDSAttributes;
 
 public class InsertAttributeBuilderDialogBox {
+	private static final String FACILITY_LOCATIONS = "facilityLocations";
+	private static final String DIAGNOSES = "diagnoses";
+	private static final String COMPONENTS = "components";
 	private static final String VALUE_SETS = "Value Sets";
 	private static final String CODES = "Codes";
 
@@ -450,25 +453,12 @@ public class InsertAttributeBuilderDialogBox {
 		}
 	
 	private static boolean isModeDisabledEntry(String attrSelected) {
-		int selectedIndex = DtAttriblistBox.getSelectedIndex();
-		if (selectedIndex != 0) {
-			String dataTypeSelected = DtAttriblistBox.getItemText(selectedIndex);
-			System.out.println("DataType selected : "+dataTypeSelected);
-			System.out.println("Attribute selected : "+attrSelected);
-			if(attrSelected.equalsIgnoreCase("component")){
-				//MAT-8727 if "component" is chosen as an attribute, the Mode and Mode Details drop-down menus are disabled.
-				return true;
-			}else if(dataTypeSelected.equalsIgnoreCase("Encounter, Performed") && attrSelected.equalsIgnoreCase("facilityLocation")){
-				//MAT-8726 if Encounter, Performed & facilityLocation - Disable mode & mode details
-				return true;
-			}
-		} else{//If selecting only Attribute without dataType selection
-			System.out.println("Attribute selected : "+attrSelected);
-			if(attrSelected.equalsIgnoreCase("component")){
-				//MAT-8727 if "component" is chosen as an attribute, the Mode and Mode Details drop-down menus are disabled.
-				return true;
-			}
+		
+		if(attrSelected.equalsIgnoreCase(COMPONENTS) || attrSelected.equalsIgnoreCase(DIAGNOSES) 
+				|| attrSelected.equalsIgnoreCase(FACILITY_LOCATIONS)) {
+			return true; 
 		}
+		
 		return false;
 	}
 	
