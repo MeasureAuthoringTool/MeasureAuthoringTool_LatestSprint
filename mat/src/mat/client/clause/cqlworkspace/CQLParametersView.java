@@ -173,7 +173,13 @@ public class CQLParametersView {
 		parameterVP.add(addNewButtonBar);
 		parameterVP.add(paramNameGroup);
 		parameterVP.add(paramCommentGroup);
-		parameterVP.add(parameterButtonBar);
+		
+		HorizontalPanel buttonPanel = new HorizontalPanel();
+		buttonPanel.add(parameterButtonBar.getInfoButtonGroup());
+		buttonPanel.add(parameterButtonBar);
+		parameterVP.add(buttonPanel);
+		
+		//parameterVP.add(parameterButtonBar);
 		parameterVP.add(aceEditorPanel);
 		parameterVP.add(new SpacerWidget());
 		parameterVP.add(collapsibleCQLPanelWidget.buildViewCQLCollapsiblePanel());
@@ -197,7 +203,7 @@ public class CQLParametersView {
 	 * 
 	 */
 	public void setMarginInButtonBar() {
-		parameterButtonBar.getElement().setAttribute("style", "margin-top:-10px;margin-left:400px;");
+		parameterButtonBar.getElement().setAttribute("style", "margin-top:-10px;margin-left:350px;");
 		//parameterButtonBar.getSaveButton().setMarginRight(-15.00);
 		parameterButtonBar.getDeleteButton().setMarginLeft(-5.00);
 	}

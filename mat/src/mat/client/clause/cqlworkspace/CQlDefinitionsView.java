@@ -218,7 +218,10 @@ public class CQlDefinitionsView {
 		
 		definitionVP.add(new SpacerWidget());
 		definitionVP.add(returnTypeAndButtonPanelGroup);
-		definitionVP.add(defineButtonBar);
+		HorizontalPanel buttonPanel = new HorizontalPanel();
+		buttonPanel.add(defineButtonBar.getInfoButtonGroup());
+		buttonPanel.add(defineButtonBar);
+		definitionVP.add(buttonPanel);
 	//	definitionVP.add(new SpacerWidget());
 		definitionVP.add(aceEditorPanel);
 		definitionVP.add(new SpacerWidget());
@@ -242,11 +245,11 @@ public class CQlDefinitionsView {
 	 * 
 	 */
 	public void setMarginInButtonBar() {
-		defineButtonBar.getElement().setAttribute("style", "margin-top:-10px;margin-left:330px;");
+		defineButtonBar.getElement().setAttribute("style", "margin-top:-10px;margin-left:280px;");
 		/*defineButtonBar.getSaveButton().setMarginRight(-15.00);*/
 		defineButtonBar.getEraseButton().setMarginRight(5.00);
 		defineButtonBar.getInsertButton().setMarginRight(10.00);
-		defineButtonBar.getInfoButton().setMarginLeft(-10.00);
+		/*defineButtonBar.getInfoButton().setMarginLeft(-10.00);*/
 		defineButtonBar.getDeleteButton().setMarginLeft(-10.00);
 		
 	}

@@ -26,30 +26,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.exolab.castor.mapping.Mapping;
-import org.exolab.castor.mapping.MappingException;
-import org.exolab.castor.xml.MarshalException;
-import org.exolab.castor.xml.Marshaller;
-import org.exolab.castor.xml.Unmarshaller;
-import org.exolab.castor.xml.ValidationException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
 import mat.DTO.MeasureNoteDTO;
 import mat.DTO.MeasureTypeDTO;
 import mat.DTO.OperatorDTO;
@@ -141,6 +117,30 @@ import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
 import mat.shared.UUIDUtilClient;
 import mat.shared.model.util.MeasureDetailsUtil;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.exolab.castor.mapping.Mapping;
+import org.exolab.castor.mapping.MappingException;
+import org.exolab.castor.xml.MarshalException;
+import org.exolab.castor.xml.Marshaller;
+import org.exolab.castor.xml.Unmarshaller;
+import org.exolab.castor.xml.ValidationException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -5952,11 +5952,83 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				result = getCqlService().deleteDefinition(xmlModel.getXml(), toBeDeletedObj, definitionList);
 				if(result.isSuccess()){
 					xmlModel.setXml(result.getXml());
+					cleanPopulationsAndGroups(toBeDeletedObj, xmlModel);
 					getService().saveMeasureXml(xmlModel);
 				}
 			}
 		}
 		return result;
+	}
+	
+	private void cleanPopulationsAndGroups(CQLDefinition toBeDeletedObj, MeasureXmlModel xmlModel) {
+		
+		List<String> deletedClauseUUIDs = new ArrayList<String>();
+		
+		XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
+		try {
+			
+			//find all <populations with this definition
+			String populationXPath = "/measure/populations//cqldefinition[@uuid='" + toBeDeletedObj.getId() + "']";
+			NodeList cqlDefinitionNodeList = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), populationXPath);
+			
+			for(int i=0;i<cqlDefinitionNodeList.getLength();i++){
+				Node node = cqlDefinitionNodeList.item(i);
+				Node parentClauseNode = node.getParentNode();
+				String clauseUUID = parentClauseNode.getAttributes().getNamedItem("uuid").getNodeValue();
+				
+				parentClauseNode.removeChild(node);				
+				deletedClauseUUIDs.add(clauseUUID);
+			}
+			
+			//find all <stratification with this definition
+			String stratificationXPath = "/measure/strata/stratification/clause[cqldefinition/@uuid='" + toBeDeletedObj.getId() +  "']";
+			NodeList stratiClauseNodeList = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), stratificationXPath);
+			
+			for(int i=0;i<stratiClauseNodeList.getLength();i++){
+				Node clauseNode = stratiClauseNodeList.item(i);
+				Node stratiNode = clauseNode.getParentNode();
+				
+				clauseNode.removeChild(clauseNode.getFirstChild());
+				
+				String stratiUUID = stratiNode.getAttributes().getNamedItem("uuid").getNodeValue();
+				deletedClauseUUIDs.add(stratiUUID);
+			}
+			
+			String supplementalXPath = "/measure/supplementalDataElements/cqldefinition[@uuid='" + toBeDeletedObj.getId() +  "']";
+			String riskAdjXPath = "/measure/riskAdjustmentVariables/cqldefinition[@uuid='" + toBeDeletedObj.getId() +  "']";
+			
+			Node suppDefNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), supplementalXPath);
+			if(suppDefNode != null){
+				suppDefNode.getParentNode().removeChild(suppDefNode);
+			}
+			
+			Node riskDefNode = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), riskAdjXPath);
+			if(riskDefNode != null){
+				riskDefNode.getParentNode().removeChild(riskDefNode);
+			}
+			
+			//remove groupings if they contain deleted populations/strtifications
+			if(deletedClauseUUIDs.size() > 0){
+				for(String clauseUUID:deletedClauseUUIDs){
+					String groupingXPath = "/measure/measureGrouping/group[packageClause/@uuid='" + clauseUUID + "']";
+					
+					NodeList groupNodeList = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), groupingXPath);
+					
+					for(int i=0;i<groupNodeList.getLength();i++){
+						Node groupNode = groupNodeList.item(i);
+						groupNode.getParentNode().removeChild(groupNode);
+					}
+				}
+			}
+			
+			if((deletedClauseUUIDs.size() > 0) || (suppDefNode != null) || (riskDefNode != null)){
+				xmlModel.setXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
+			}
+					
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -5971,12 +6043,67 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				result = getCqlService().deleteFunctions(xmlModel.getXml(), toBeDeletedObj, functionsList);
 				if(result.isSuccess()){
 					xmlModel.setXml(result.getXml());
+					cleanMsrObservationsAndGroups(toBeDeletedObj, xmlModel);
 					getService().saveMeasureXml(xmlModel);
 				}
 			}
 		}
 		return result;
 	}
+	
+	private void cleanMsrObservationsAndGroups(CQLFunctions toBeDeletedObj,
+			MeasureXmlModel xmlModel) {
+		
+		List<String> deletedClauseUUIDs = new ArrayList<String>();
+		
+		XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
+		boolean isUpdated = false;
+		
+		try{
+			
+			//find all <measureObservations with this function
+			String msrObsFuncXPath = "/measure/measureObservations/clause//cqlfunction[@uuid='" + toBeDeletedObj.getId() +  "']";
+			NodeList msrObsFuncNodeList = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), msrObsFuncXPath);
+			
+			for(int i=0;i<msrObsFuncNodeList.getLength();i++){
+				Node funcNode = msrObsFuncNodeList.item(i);
+				
+				Node parentNode = funcNode.getParentNode();
+				
+				if(parentNode.getNodeName().equals("clause")){
+					String uuid = parentNode.getAttributes().getNamedItem("uuid").getNodeValue();
+					deletedClauseUUIDs.add(uuid);
+				}else{
+					String uuid = parentNode.getParentNode().getAttributes().getNamedItem("uuid").getNodeValue();
+					deletedClauseUUIDs.add(uuid);
+				}
+													
+				parentNode.removeChild(funcNode);
+				isUpdated = true;
+			}
+			
+			//remove groupings if they contain deleted measureObservations
+			if(isUpdated){
+				for(String clauseUUID:deletedClauseUUIDs){
+					String groupingXPath = "/measure/measureGrouping/group[packageClause/@uuid='" + clauseUUID + "']";
+					
+					NodeList groupNodeList = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), groupingXPath);
+					
+					for(int i=0;i<groupNodeList.getLength();i++){
+						Node groupNode = groupNodeList.item(i);
+						groupNode.getParentNode().removeChild(groupNode);
+					}
+				}
+								
+				xmlModel.setXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
+			}
+			
+		}catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
+	}
+
 
 	@Override
 	public SaveUpdateCQLResult deleteParameter(String measureId, CQLParameter toBeDeletedObj, 
@@ -6147,7 +6274,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	
 	@Override
 	public SaveUpdateCQLResult saveCQLCodestoMeasure(MatCodeTransferObject transferObject) {
-		
+
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		if (MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, transferObject.getId())) {
 			MeasureXmlModel xmlModel = getService().getMeasureXmlForMeasure(transferObject.getId());
@@ -6155,22 +6282,20 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				result = getCqlService().saveCQLCodes(xmlModel.getXml(), transferObject);
 				if (result != null && result.isSuccess()) {
 					String newSavedXml = saveCQLCodesInMeasureXml(result, transferObject.getId());
-					if(!newSavedXml.isEmpty()){
-						CQLCodeWrapper wrapper = getCqlService().getCQLCodes(newSavedXml);
-						if(wrapper!= null && !wrapper.getCqlCodeList().isEmpty()){
-							result.setCqlCodeList(wrapper.getCqlCodeList());
-						}
+					if (!newSavedXml.isEmpty()) {
+
 						CQLCodeSystem codeSystem = new CQLCodeSystem();
 						codeSystem.setCodeSystem(transferObject.getCqlCode().getCodeSystemOID());
 						codeSystem.setCodeSystemName(transferObject.getCqlCode().getCodeSystemName());
 						codeSystem.setCodeSystemVersion(transferObject.getCqlCode().getCodeSystemVersion());
 						SaveUpdateCQLResult updatedResult = getCqlService().saveCQLCodeSystem(newSavedXml, codeSystem);
-						if(updatedResult.isSuccess()) {
-							 saveCQLCodeSystemInMeasureXml(updatedResult, transferObject.getId());
+						if (updatedResult.isSuccess()) {
+							newSavedXml = saveCQLCodeSystemInMeasureXml(updatedResult, transferObject.getId());
 						}
-						
-						
-						
+						CQLCodeWrapper wrapper = getCqlService().getCQLCodes(newSavedXml);
+						if (wrapper != null && !wrapper.getCqlCodeList().isEmpty()) {
+							result.setCqlCodeList(wrapper.getCqlCodeList());
+						}
 					}
 				}
 

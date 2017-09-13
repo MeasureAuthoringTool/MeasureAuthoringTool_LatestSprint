@@ -4,16 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.event.dom.client.HasClickHandlers;
-import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.rpc.AsyncCallback;
-import com.google.gwt.user.client.ui.Button;
-import com.google.gwt.user.client.ui.SimplePanel;
-import com.google.gwt.user.client.ui.Widget;
-
 import mat.client.Mat;
 import mat.client.MatPresenter;
 import mat.client.MeasureComposerPresenter;
@@ -39,6 +29,16 @@ import mat.model.RiskAdjustmentDTO;
 import mat.model.cql.CQLDefinition;
 import mat.shared.MeasurePackageClauseValidator;
 import mat.shared.SaveUpdateCQLResult;
+
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.HasClickHandlers;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.SimplePanel;
+import com.google.gwt.user.client.ui.Widget;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -431,6 +431,8 @@ public class MeasurePackagePresenter implements MatPresenter {
 		void setRiskAdjustLabel(boolean isCQLMeasure);
 		
 		void setQdmElementsLabel(boolean isCQLMeasure);
+		WarningConfirmationMessageAlert getSaveErrorMessageDisplayOnEdit();
+		void setSaveErrorMessageDisplayOnEdit(WarningConfirmationMessageAlert saveErrorMessageDisplayOnEdit);
 	}
 	
 	/** The vsacapi service async. */
@@ -451,6 +453,8 @@ public class MeasurePackagePresenter implements MatPresenter {
 	 * Adds the all handlers.
 	 */
 	private void addAllHandlers() {
+		
+		
 		
 		view.getCreateNewButton().addClickHandler(new ClickHandler() {
 			@Override
@@ -574,21 +578,27 @@ public class MeasurePackagePresenter implements MatPresenter {
 				clearMessages();
 				((Button) view.getPackageMeasureButton()).setEnabled(true);
 				view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
-				updateDetailsFromView(currentDetail);
+				
+				final MeasurePackageDetail tempMeasurePackageDetails = new MeasurePackageDetail(currentDetail);
+				updateDetailsFromView(tempMeasurePackageDetails);
+				
 				if (isValid()) {
 					MatContext.get().getPackageService()
-					.save(currentDetail, new AsyncCallback<MeasurePackageSaveResult>() {
+					.save(tempMeasurePackageDetails, new AsyncCallback<MeasurePackageSaveResult>() {
 						@Override
 						public void onFailure(final Throwable caught) {
+							Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
 						}
 						@Override
 						public void onSuccess(final MeasurePackageSaveResult result) {
 							if (result.isSuccess()) {
+								updateDetailsFromView(currentDetail);
 								getMeasurePackageOverview(MatContext.get()
 										.getCurrentMeasureId());
 								view.getPackageSuccessMessageDisplay().createAlert(
 										MatContext.get().getMessageDelegate().
 										getGroupingSavedMessage());
+								
 							} else {
 								if (result.getMessages().size() > 0) {
 									view.getPackageErrorMessageDisplay().
@@ -688,6 +698,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.getMeasurePackageWarningMsg().clearAlert();
 		view.getMeasureErrorMessageDisplay().clearAlert();
 		view.getSaveErrorMessageDisplay().clearAlert();
+		view.getSaveErrorMessageDisplayOnEdit().clearAlert();
 		view.getRiskAdjSuccessMessageDisplay().clearAlert();
 		
 	}
@@ -738,6 +749,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 								view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
 							}else{
 								panel.clear();
+								panel.getElement().setId("MeasurePackagerContentFlowPanel");
 								ErrorMessageAlert errorMessageAlert = new ErrorMessageAlert();
 								panel.add(errorMessageAlert);
 																
@@ -753,7 +765,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 		} else {
 			displayEmpty();
 		}
-		MeasureComposerPresenter.setSubSkipEmbeddedLink("MeasurePackage");
+		MeasureComposerPresenter.setSubSkipEmbeddedLink("MeasurePackagerContentFlowPanel");
 		Mat.focusSkipLists("MeasureComposer");
 	}
 	/* (non-Javadoc)
@@ -805,19 +817,22 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.setObserver(new MeasurePackagerView.Observer() {
 			@Override
 			public void onEditClicked(MeasurePackageDetail detail) {
-				
+				clearMessages();
 				if(!currentDetail.isEqual(view.getPackageGroupingWidget().getGroupingPopulationList(),
 						dbPackageClauses)){
+					
 					view.getSaveErrorMessageDisplay().clearAlert();
+					view.getSaveErrorMessageDisplayOnEdit().clearAlert();
 					//showErrorMessage(view.getSaveErrorMessageDisplay());
-					view.getSaveErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getSaveErrorMsg());
-					view.getSaveErrorMessageDisplay().getWarningConfirmationYesButton().setFocus(true);
-					handleClickEventsOnUnsavedErrorMsg(detail, view.getSaveErrorMessageDisplay(), null);
+					view.getSaveErrorMessageDisplayOnEdit().createAlert();
+					view.getSaveErrorMessageDisplayOnEdit().getWarningConfirmationYesButton().setFocus(true);
+					handleClickEventsOnUnsavedErrorMsg(detail, view.getSaveErrorMessageDisplayOnEdit(), null);
+					
 				} else {
 					currentDetail = new MeasurePackageDetail();
 					currentDetail = detail;
-					clearMessages();
 					setMeasurePackageDetailsOnView();
+					getAssociationListFromView(currentDetail.getPackageClauses());
 				}
 			}
 			@Override

@@ -986,7 +986,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 										}
 									});
 							isCqlLibraryVersioned = true;
-							fireSuccessfullVersionEvent(isCqlLibraryVersioned,cqlLibName,MatContext.get().getMessageDelegate().getVersionSuccessfulMessage(cqlLibName));
+							fireSuccessfullVersionEvent(isCqlLibraryVersioned,cqlLibName,MatContext.get().getMessageDelegate().getVersionSuccessfulMessage(cqlLibName, versionStr));
 						} else {
 							isCqlLibraryVersioned = false;
 							if(result.getFailureReason() == ConstantMessages.INVALID_CQL_DATA){
@@ -1219,6 +1219,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 			public void onClick(ClickEvent event) {
 				int startIndex = 1;
 				cqlLibraryDeletion = false;
+				isCqlLibraryVersioned = false;
 				cqlLibraryView.getErrorMessageAlert().clearAlert();
 				cqlLibraryView.getSuccessMessageAlert().clearAlert();
 				int filter = cqlLibraryView.getSelectedFilter();
@@ -1271,12 +1272,12 @@ public class CqlLibraryPresenter implements MatPresenter {
 		int pageSize = Integer.MAX_VALUE;
 		String heading = "My CQL Library > History";
 		panel.getButtonPanel().clear();
-		panel.setHeading(heading, "CQL Library");
+		panel.setHeading(heading, "CQLLibrary");
 		searchHistory(cqlLibraryId, startIndex, pageSize);
 		historyDisplay.setCQLLibraryId(cqlLibraryId);
 		historyDisplay.setCQLLibraryName(cqlLibraryName);
 		panel.setContent(historyDisplay.asWidget());
-		Mat.focusSkipLists("MeasureLibrary");
+		Mat.focusSkipLists("CQLLibrary");
 	}
 
 	/**

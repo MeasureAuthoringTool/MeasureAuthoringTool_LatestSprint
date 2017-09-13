@@ -49,6 +49,11 @@ import mat.model.ModeDetailModel;
 import mat.model.clause.QDSAttributes;
 
 public class InsertAttributeBuilderDialogBox {
+	private static final String MODE_DETAILS_ALERT = "Mode Details dropdown is now enabled.";
+	private static final String MODE_ALERT = "Mode dropdown is now enabled.";
+	private static final String DATE_TIME_ALERT = "Date/Time fields are now enabled.";
+	private static final String QUANTITY_UNIT_DATE_TIME_ALERT = "Date/Time fields are now enabled. Quantity field is now enabled. Units dropdown is now enabled.";
+	private static final String QUANTITY_UNIT_ALERT = "Quantity field is now enabled. Units dropdown is now enabled.";
 	private static final String FACILITY_LOCATIONS = "facilityLocations";
 	private static final String DIAGNOSES = "diagnoses";
 	private static final String COMPONENTS = "components";
@@ -125,6 +130,9 @@ public class InsertAttributeBuilderDialogBox {
     final static CustomQuantityTextBox QuantityTextBox = new CustomQuantityTextBox(30);
 	final static ListBoxMVP UnitslistBox = new ListBoxMVP();
 	
+	static FormGroup helpMessageFormGroup = new FormGroup(); 
+	static HelpBlock messageHelpBlock = new HelpBlock(); 
+	
 	/**
 	 * Show attributes dialog box.
 	 *
@@ -133,6 +141,7 @@ public class InsertAttributeBuilderDialogBox {
 	 */
 	public static void showAttributesDialogBox(final CQLLeftNavBarPanelView cqlNavBarView, final AceEditor editor) {
 		final Modal dialogModal = new Modal();
+		dialogModal.getElement().setAttribute("role", "dialog");
 		dialogModal.setTitle("Insert Options for Attributes");
 		dialogModal.setClosable(true);
 		dialogModal.setFade(true);
@@ -146,7 +155,16 @@ public class InsertAttributeBuilderDialogBox {
 		final HelpBlock helpBlock = new HelpBlock();
 		messageFormgroup.add(helpBlock);
 		messageFormgroup.getElement().setAttribute("role", "alert");
-
+		
+		
+		helpMessageFormGroup = new FormGroup(); 
+		messageHelpBlock = new HelpBlock(); 
+		helpMessageFormGroup.add(messageHelpBlock);
+		helpMessageFormGroup.getElement().setAttribute("role", "alert");
+		messageHelpBlock.setColor("transparent");
+		messageHelpBlock.setHeight("0px");
+		helpMessageFormGroup.setHeight("0px");
+		
 		curEditor = editor;
 		
 		clearAllFormGroups();
@@ -191,6 +209,7 @@ public class InsertAttributeBuilderDialogBox {
 		queryGrid.setStyleName("attr-grid");
 		
 		modalBody.add(messageFormgroup);
+		modalBody.add(helpMessageFormGroup);
 		modalBody.add(queryGrid);
 		
 
@@ -261,6 +280,7 @@ public class InsertAttributeBuilderDialogBox {
 				int selectedIndex = AttriblistBox.getSelectedIndex();
 				if (selectedIndex != 0) {
 					String attrSelected = AttriblistBox.getItemText(selectedIndex);
+					messageHelpBlock.setText(MODE_ALERT);
 					ModelistBox.setEnabled(true);
 					addModelist(ModelistBox,JSONAttributeModeUtility.getAttrModeList(attrSelected));
 					ModelistBox.setSelectedIndex(0);
@@ -290,6 +310,7 @@ public class InsertAttributeBuilderDialogBox {
 				int selectedIndex = ModelistBox.getSelectedIndex();
 				if (selectedIndex != 0) {
 					String modeSelected = ModelistBox.getItemText(selectedIndex);
+					messageHelpBlock.setText(MODE_DETAILS_ALERT);
 					ModeDetailslistBox.setEnabled(true);
 					
 					addModeDetailslist(ModeDetailslistBox,JSONAttributeModeUtility.getModeDetailsList(modeSelected)); 
@@ -499,7 +520,7 @@ private static void clearAllFormGroups() {
 		UnitsLabel.setText("Units");
 		UnitsLabel.setTitle("Select Units");
 		UnitsLabel.setStyleName("attr-Label");
-		UnitsLabel.setFor("Units");
+		UnitsLabel.setFor("Units_listBox");
 		
 		unitFormGroup.clear();
 		unitFormGroup.add(UnitsLabel);
@@ -554,7 +575,7 @@ private static void clearAllFormGroups() {
 		AttrDataTypeLabel.setText("Attributes By DataType");
 		AttrDataTypeLabel.setTitle("Select Attributes By DataType");
 		AttrDataTypeLabel.setStyleName("attr-Label");
-		AttrDataTypeLabel.setFor("ListAttributesByDataType");
+		AttrDataTypeLabel.setFor("DataTypeBtAtrr_listBox");
 
 		dtFormGroup.clear();
 		dtFormGroup.add(AttrDataTypeLabel);
@@ -584,7 +605,7 @@ private static void clearAllFormGroups() {
 		AttributeLabel.setText("Attributes");
 		AttributeLabel.setTitle("Select Attributes");
 		AttributeLabel.setStyleName("attr-Label");
-		AttributeLabel.setFor("SelectAttributes");
+		AttributeLabel.setFor("Atrr_listBox");
 
 		attrFormGroup.clear();
 		attrFormGroup.add(AttributeLabel);
@@ -617,7 +638,7 @@ private static void clearAllFormGroups() {
 		ModeLabel.setText("Mode");
 		ModeLabel.setTitle("Select Mode");
 		ModeLabel.setStyleName("attr-Label");
-		ModeLabel.setFor("SelectMode");
+		ModeLabel.setFor("Mode_listBox");
 		
 		modeFormGroup.clear();
 		modeFormGroup.add(ModeLabel);
@@ -650,7 +671,7 @@ private static void clearAllFormGroups() {
 		ModeDetailsLabel.setText("Mode Details");
 		ModeDetailsLabel.setTitle("Select Mode Details");
 		ModeDetailsLabel.setStyleName("attr-Label");
-		ModeDetailsLabel.setFor("SelectModeDetails");
+		ModeDetailsLabel.setFor("ModeDetails_listBox");
 		
 		modeDetailsFormGroup.clear();
 		modeDetailsFormGroup.add(ModeDetailsLabel);
@@ -1067,7 +1088,7 @@ private static void clearAllFormGroups() {
 		msTxtBox.clear();
 	}
 	
-	private static void setDateTimeEnabled(boolean enabled){
+	private static void setDateTimeEnabled(boolean enabled){	
 		yyyyTxtBox.setEnabled(enabled);
 		mmTxtBox.setEnabled(enabled);
 		ddTxtBox.setEnabled(enabled);
@@ -1084,10 +1105,20 @@ private static void clearAllFormGroups() {
 		attributeName = attributeName.toLowerCase();
 		modeName = modeName.toLowerCase(); 
 		
+		
 		if (modeName.equalsIgnoreCase("comparison") 
 				|| modeName.equalsIgnoreCase("computative")) {
 
 			if (attributeName.contains("datetime") && modeName.equalsIgnoreCase("comparison")) {
+				
+				// the date time field is about to be enabled. If the it is currently disabled, 
+				// alert the user about the change.
+				if(!yyyyTxtBox.isEnabled() && !mmTxtBox.isEnabled() && !ddTxtBox.isEnabled() 
+						&& !hhTextBox.isEnabled() && !minTxtBox.isEnabled() && !ssTxtBox.isEnabled()
+						&& !msTxtBox.isEnabled()) {
+					messageHelpBlock.setText(DATE_TIME_ALERT);
+				}
+				
 				setDateTimeEnabled(true);
 				QuantityTextBox.setEnabled(false);
 				UnitslistBox.setEnabled(false);
@@ -1095,6 +1126,13 @@ private static void clearAllFormGroups() {
 				setEnabled(true);
 			} else {
 				setDateTimeEnabled(false);
+				
+				// the quantity field and units dropdown is about to be enabled. If it is currently disabled, 
+				// alert the user about the change. 
+				if(!QuantityTextBox.isEnabled() && !UnitslistBox.isEnabled()) {
+					messageHelpBlock.setText(QUANTITY_UNIT_ALERT);
+				}
+				
 				QuantityTextBox.setEnabled(true);
 				UnitslistBox.setEnabled(true);
 			}
@@ -1124,6 +1162,27 @@ private static void defaultFrmGrpValidations(){
 	
 	private static void setEnabled(boolean enabled){
 		
+		// if all of them are currently disabled and are becoming enabled, alert the user that all of them are changing 
+		if(!QuantityTextBox.isEnabled() && !UnitslistBox.isEnabled() 
+				&& !yyyyTxtBox.isEnabled() && !mmTxtBox.isEnabled() && !ddTxtBox.isEnabled() 
+				&& !hhTextBox.isEnabled() && !minTxtBox.isEnabled() && !ssTxtBox.isEnabled()
+				&& !msTxtBox.isEnabled() && enabled) {
+			messageHelpBlock.setText(QUANTITY_UNIT_DATE_TIME_ALERT);
+		}
+
+		// if only the quantity text boxes are currently disabled and are becoming enabled, alert the user that the quantity/units
+		// are changing
+		else if(!QuantityTextBox.isEnabled() && !UnitslistBox.isEnabled() && enabled) {
+			messageHelpBlock.setText(QUANTITY_UNIT_ALERT); 
+		}
+		
+		// if only the date time fields are becoming enabled, alerrt the user that the date time field are changing. 
+		else if(!QuantityTextBox.isEnabled() && !UnitslistBox.isEnabled() 
+				&& !yyyyTxtBox.isEnabled() && !mmTxtBox.isEnabled() && !ddTxtBox.isEnabled() 
+				&& !hhTextBox.isEnabled() && !minTxtBox.isEnabled() && !ssTxtBox.isEnabled() && enabled) {
+			messageHelpBlock.setText(DATE_TIME_ALERT);
+		}
+
 		QuantityTextBox.setEnabled(enabled);
 		UnitslistBox.setEnabled(enabled);
 		setDateTimeEnabled(enabled);
