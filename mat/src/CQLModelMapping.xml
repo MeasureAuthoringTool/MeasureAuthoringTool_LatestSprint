@@ -59,6 +59,12 @@
 					<field name="codeListName" type="java.lang.String">
 						<bind-xml name="name" node="attribute" />
 					</field>
+					<field name="suffix" type="java.lang.String">
+						<bind-xml name="suffix" node="attribute" />
+					</field>
+					<field name="originalCodeListName" type="java.lang.String">
+						<bind-xml name="originalName" node="attribute" />
+					</field>
 					<field name="oid" type="java.lang.String">
 						<bind-xml name="oid" node="attribute" />
 					</field>
@@ -106,6 +112,9 @@
 					</field>
 					<field name="codeOID" type="java.lang.String">
 						<bind-xml name="codeOID" node="attribute" />
+					</field>
+					<field name="suffix" type="java.lang.String">
+						<bind-xml name="suffix" node="attribute" />
 					</field>
 				</class>
 			</bind-xml>

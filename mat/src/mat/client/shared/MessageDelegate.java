@@ -1159,8 +1159,12 @@ public class MessageDelegate {
 	 * 
 	 * @return String
 	 */
-	public String getDuplicateAppliedValueSetMsg() {
+/*	public String getDuplicateAppliedValueSetMsg() {
 		return DUPLICATE_APPLIED_VALUE_SET;
+	}*/
+	
+	public String getDuplicateAppliedValueSetMsg(String name) {
+		return name + " already exists. Please add a unique suffix.";
 	}
 	
 	/**
@@ -3514,6 +3518,12 @@ public class MessageDelegate {
 
 	public String getINVALID_QDM_VERSION_IN_INCLUDES() {
 		return INVALID_QDM_VERSION_IN_INCLUDES;
+	}
+	
+	public String generateDuplicateErrorMessage(String name){
+		String message = (name.length()>60 ? name.substring(0, 59) : name) +" already exists. Please add a unique suffix.";
+		return  message;
+		
 	}
 
 }

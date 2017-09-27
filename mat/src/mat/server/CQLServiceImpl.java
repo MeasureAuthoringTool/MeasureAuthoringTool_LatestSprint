@@ -1,11 +1,9 @@
 package mat.server;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.OutputStreamWriter;
@@ -1203,6 +1201,8 @@ public class CQLServiceImpl implements CQLService {
 		return builder.toString();
 	}
 
+	
+	
 	/*
 	 * (non-Javadoc)
 	 *
@@ -1212,7 +1212,7 @@ public class CQLServiceImpl implements CQLService {
 	 * mat.model.cql.CQLIncludeLibrary, java.util.List)
 	 */
 	@Override
-	public SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String xml, CQLIncludeLibrary toBeModifiedObj,
+	public SaveUpdateCQLResult saveAndModifyIncludeLibrayInCQLLookUp(String xml, CQLIncludeLibrary toBeModifiedObj,
 			CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList) {
 
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
@@ -1230,8 +1230,35 @@ public class CQLServiceImpl implements CQLService {
 			checkAndAppendIncludeLibraryParentNode(processor);
 
 			if (toBeModifiedObj != null) { // this is a part of Modify
-											// functionality
+				currentObj.setId(toBeModifiedObj.getId());
+				currentObj.setAliasName(toBeModifiedObj.getAliasName());
+				String XPATH_EXPRESSION_INCLUDES = "//includeLibrary[@cqlLibRefId='" + toBeModifiedObj.getCqlLibraryId()
+						+ "']";
+				try {
+					Node nodeIncludes = processor.findNode(processor.getOriginalDoc(), XPATH_EXPRESSION_INCLUDES);
 
+					if (nodeIncludes != null) {
+						currentObj.setId(toBeModifiedObj.getId());
+						String cqlString = createIncludeLibraryXML(currentObj);
+						String XPATH_EXPRESSION_INCLUDELIBRARYS = "//cqlLookUp/includeLibrarys";
+						processor.removeFromParent(nodeIncludes);
+						processor.appendNode(cqlString, "includeLibrary", XPATH_EXPRESSION_INCLUDELIBRARYS);
+						processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
+
+						String finalUpdatedXml = processor.transform(processor.getOriginalDoc());
+						result.setXml(finalUpdatedXml);
+						result.setSuccess(true);
+						result.setIncludeLibrary(currentObj);
+						wrapper.setCqlIncludeLibrary(modifyIncludesList(toBeModifiedObj, currentObj, incLibraryList));
+					} else {
+						result.setSuccess(false);
+						result.setFailureReason(SaveUpdateCQLResult.NODE_NOT_FOUND);
+					}
+				} catch (XPathExpressionException | SAXException | IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} 
+				
 			} else { // this is part of save functionality
 				currentObj.setId(UUID.randomUUID().toString());
 				isDuplicate = validator.validateForAliasNameSpecialChar(currentObj.getAliasName());
@@ -1879,7 +1906,8 @@ public class CQLServiceImpl implements CQLService {
 		List<String> usedCodes = parsedCQL.getUsedCQLArtifacts().getUsedCQLcodes();
 		System.out.println("used codes:" + usedCodes);
 		for (CQLCode cqlCode : cqlModel.getCodeList()) {
-			boolean isUsed = usedCodes.contains(cqlCode.getCodeName());
+			//boolean isUsed = usedCodes.contains(cqlCode.getCodeName());
+			boolean isUsed = usedCodes.contains(cqlCode.getDisplayName());
 			cqlCode.setUsed(isUsed);
 		}
 
@@ -2286,31 +2314,20 @@ public class CQLServiceImpl implements CQLService {
 		return false;
 	}
 
-	/**
-	 * Check if keyword for func arguments.
-	 *
-	 * @param toBeModifiedObj
-	 *            the to be modified obj
-	 * @param currentObj
-	 *            the current obj
-	 * @param parameterList
-	 *            the parameter list
-	 * @return the save update cql result
-	 */
-	/*
-	 * private SaveUpdateCQLResult checkIfKeywordForFuncArguments(
-	 * SaveUpdateCQLResult result, CQLFunctions currentObj) {
-	 *
-	 * List<CQLFunctionArgument> argList = currentObj.getArgumentList(); for
-	 * (int i = 0; i < argList.size(); i++) { if
-	 * (checkForCQLKeywords(argList.get(i).getArgumentName())) {
-	 * argList.get(i).setValid(true); result.setSuccess(true); } else {
-	 * argList.get(i).setValid(false); } }
-	 *
-	 * if (argList.size() > 0) { currentObj.setArgumentList(argList); } else {
-	 * currentObj.setArgumentList(new ArrayList<CQLFunctionArgument>()); }
-	 * result.setFunction(currentObj); return result; }
-	 */
+	private List<CQLIncludeLibrary> modifyIncludesList(CQLIncludeLibrary toBeModified , CQLIncludeLibrary currentObj , List<CQLIncludeLibrary> incLibraryList ){
+		Iterator<CQLIncludeLibrary> iterator = incLibraryList.iterator();
+		while (iterator.hasNext()) {
+			CQLIncludeLibrary cqlParam = iterator.next();
+			if (cqlParam.getId().equals(toBeModified.getId())) {
+				// CQLDefinition definition = cqlDefinition;
+
+				iterator.remove();
+				break;
+			}
+		}
+		incLibraryList.add(currentObj);
+		return incLibraryList;
+	}
 
 	/**
 	 * Modfiy cql Parameter List list.
@@ -2827,7 +2844,9 @@ public class CQLServiceImpl implements CQLService {
 		MatValueSet matValueSet = valueSetTransferObject.getMatValueSet();
 		qds.setOid(matValueSet.getID());
 		qds.setId(UUID.randomUUID().toString().replaceAll("-", ""));
-		qds.setCodeListName(matValueSet.getDisplayName());
+		qds.setCodeListName(valueSetTransferObject.getCqlQualityDataSetDTO().getCodeListName());
+		qds.setSuffix(valueSetTransferObject.getCqlQualityDataSetDTO().getSuffix());
+		qds.setOriginalCodeListName(valueSetTransferObject.getCqlQualityDataSetDTO().getCodeListName());
 		if (matValueSet.isGrouping()) {
 			qds.setTaxonomy(ConstantMessages.GROUPING_CODE_SYSTEM);
 		} else {
@@ -2916,7 +2935,7 @@ public class CQLServiceImpl implements CQLService {
 			boolean isQDSExist = false;
 			for (CQLQualityDataSetDTO dataSetDTO : existingQDSList) {
 				if (dataSetDTO.getOid().equalsIgnoreCase(ConstantMessages.USER_DEFINED_QDM_OID) && dataSetDTO
-						.getCodeListName().equalsIgnoreCase(matValueSetTransferObject.getUserDefinedText())) {
+						.getCodeListName().equalsIgnoreCase(matValueSetTransferObject.getCqlQualityDataSetDTO().getCodeListName())) {
 					isQDSExist = true;
 					break;
 				}
@@ -2926,7 +2945,9 @@ public class CQLServiceImpl implements CQLService {
 				CQLQualityDataSetDTO qds = new CQLQualityDataSetDTO();
 				qds.setOid(ConstantMessages.USER_DEFINED_QDM_OID);
 				qds.setId(UUID.randomUUID().toString());
-				qds.setCodeListName(matValueSetTransferObject.getUserDefinedText());
+				qds.setCodeListName(matValueSetTransferObject.getCqlQualityDataSetDTO().getCodeListName());
+				qds.setSuffix(matValueSetTransferObject.getCqlQualityDataSetDTO().getSuffix());
+				qds.setOriginalCodeListName(matValueSetTransferObject.getCqlQualityDataSetDTO().getOriginalCodeListName());
 				qds.setTaxonomy(ConstantMessages.USER_DEFINED_QDM_NAME);
 				qds.setUuid(UUID.randomUUID().toString());
 				qds.setVersion("1.0");
@@ -2963,8 +2984,10 @@ public class CQLServiceImpl implements CQLService {
 			 * "' and @codeSystemVersion ='"+ appliedCode.getCodeSystemVersion()
 			 * +"' and @displayName = '" + appliedCode.getDisplayName()+"' ]");
 			 */
+			/*Node existingCodeList = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(),
+					"//cqlLookUp/codes/code[@codeOID='" + appliedCode.getCodeOID() + "' ]");*/
 			Node existingCodeList = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(),
-					"//cqlLookUp/codes/code[@codeOID='" + appliedCode.getCodeOID() + "' ]");
+					"//cqlLookUp/codes/code[@displayName=\"" + appliedCode.getDisplayName() + "\" ]");
 			if (existingCodeList != null) {
 				logger.info("::: Duplicate Code :::");
 				result.setSuccess(false);
@@ -3014,7 +3037,6 @@ public class CQLServiceImpl implements CQLService {
 				CQLCodeSystemWrapper wrapper = new CQLCodeSystemWrapper();
 				ArrayList<CQLCodeSystem> codeSystemList = new ArrayList<CQLCodeSystem>();
 				wrapper.setCqlCodeSystemList(codeSystemList);
-				;
 				wrapper.getCqlCodeSystemList().add(codeSystem);
 				String codeSystemXMLString = generateXmlForAppliedCodeSystem(wrapper);
 				result.setSuccess(true);
@@ -3040,19 +3062,13 @@ public class CQLServiceImpl implements CQLService {
 	private boolean isDuplicate(CQLValueSetTransferObject matValueSetTransferObject, boolean isVSACValueSet) {
 		logger.info(" checkForDuplicates Method Call Start.");
 		boolean isQDSExist = false;
-		String qdmCompareName = "";
-
-		if (isVSACValueSet) {
-			qdmCompareName = matValueSetTransferObject.getMatValueSet().getDisplayName();
-		} else {
-			qdmCompareName = matValueSetTransferObject.getCodeListSearchDTO().getName();
-		}
+		
+		String qdmCompareName = matValueSetTransferObject.getCqlQualityDataSetDTO().getCodeListName();
 
 		List<CQLQualityDataSetDTO> existingQDSList = matValueSetTransferObject.getAppliedQDMList();
 		for (CQLQualityDataSetDTO dataSetDTO : existingQDSList) {
 
-			String codeListName = "";
-			codeListName = dataSetDTO.getCodeListName();
+			String codeListName =  dataSetDTO.getCodeListName();
 
 			if (codeListName.equalsIgnoreCase(qdmCompareName)) {
 				isQDSExist = true;
@@ -3198,6 +3214,8 @@ public class CQLServiceImpl implements CQLService {
 				} else {
 					newNode.getAttributes().getNamedItem("suppDataElement").setNodeValue("false");
 				}
+				
+				newNode.getAttributes().getNamedItem("suffix").setNodeValue(modifyDTO.getSuffix());
 
 			/*	if (newNode.getAttributes().getNamedItem("expansionIdentifier") != null) {
 					if (!StringUtils.isBlank(modifyWithDTO.getExpansionIdentifier())) {
@@ -3427,6 +3445,8 @@ public class CQLServiceImpl implements CQLService {
 	 */
 	private void populatedOldQDM(CQLQualityDataSetDTO oldQdm, CQLQualityDataSetDTO qualityDataSetDTO) {
 		oldQdm.setCodeListName(qualityDataSetDTO.getCodeListName());
+		oldQdm.setSuffix(qualityDataSetDTO.getSuffix());
+		oldQdm.setOriginalCodeListName(qualityDataSetDTO.getOriginalCodeListName());
 		oldQdm.setOid(qualityDataSetDTO.getOid());
 		oldQdm.setUuid(qualityDataSetDTO.getUuid());
 		oldQdm.setVersion(qualityDataSetDTO.getVersion());
@@ -3462,7 +3482,8 @@ public class CQLServiceImpl implements CQLService {
 				GetUsedCQLArtifactsResult artifactsResult = parsedResult.getUsedCQLArtifacts();
 				List<String> usedCodes = artifactsResult.getUsedCQLcodes();
 				for (CQLCode code : allCodes) {
-					if (usedCodes.contains(code.getCodeName())) {
+					//if (usedCodes.contains(code.getCodeName())) {
+					if (usedCodes.contains(code.getDisplayName())) {
 						code.setUsed(true);
 					}
 				}
