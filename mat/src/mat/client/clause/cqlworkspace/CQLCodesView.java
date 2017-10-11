@@ -49,6 +49,7 @@ import mat.client.shared.LabelBuilder;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatSimplePager;
 import mat.client.shared.SearchWidgetBootStrap;
+import mat.client.shared.SkipListBuilder;
 import mat.client.shared.SpacerWidget;
 import mat.client.umls.service.VSACAPIServiceAsync;
 import mat.client.umls.service.VsacApiResult;
@@ -79,9 +80,9 @@ public class CQLCodesView {
 		void onDeleteClicked(CQLCode result, int index);
 		
 	}
-	private static final String BIRTHDATE = "21112-8";
+	private static final String BIRTHDATE = "Birthdate";
 
-	public static final String DEAD = "419099009";
+	public static final String DEAD = "Dead";
 
 	
 	
@@ -156,6 +157,8 @@ public class CQLCodesView {
 	
 	private static final int TABLE_ROW_COUNT = 10;
 	
+	HTML heading = new HTML();
+	
 	
 	/**
 	 * Instantiates a new VSAC profile selection view.
@@ -173,6 +176,9 @@ public class CQLCodesView {
 		hp.getElement().setId("hp_HorizontalPanel");
 		hp.add(buildElementWithCodesWidget());
 		hp.add(simplePanel);
+		
+		heading.addStyleName("leftAligned");
+		verticalPanel.add(heading);
 		
 		verticalPanel.getElement().setId("vPanel_VerticalPanel");
 		verticalPanel.add(new SpacerWidget());
@@ -1004,7 +1010,7 @@ public class CQLCodesView {
 				String cssClass = "btn btn-link";
 				String iconCss = "fa fa-trash fa-lg";
 				// Delete button is not created for default codes - Dead and Birthdate.
-				if(object.getCodeOID().equals(DEAD) || object.getCodeOID().equals(BIRTHDATE)){
+				if(object.getCodeName().equals(DEAD) || object.getCodeName().equals(BIRTHDATE)){
 					sb.appendHtmlConstant("<span></span>");
 				}else if (object.isUsed()) {
 					sb.appendHtmlConstant("<button type=\"button\" title='"
@@ -1035,6 +1041,11 @@ public class CQLCodesView {
 
 	public void setSuffixTextBox(CustomQuantityTextBox suffixTextBox) {
 		this.suffixTextBox = suffixTextBox;
+	}
+	
+	public void setHeading(String text,String linkName) {
+		String linkStr = SkipListBuilder.buildEmbeddedString(linkName);
+		heading.setHTML(linkStr +"<h4><b>" + text + "</b></h4>");
 	}
 	
 }

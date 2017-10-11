@@ -440,6 +440,7 @@ public class MessageDelegate {
 	
 	private final String INVALID_QDM_VERSION_IN_INCLUDES ="The current QDM version and the QDM version of one or more of the included libraries are not the same. Please navigate to the Includes section to replace or remove the conflicting libraries.";
 	
+	private final String NO_LIBRARY_TO_REPLACE ="Please select a library to replace.";
 	/**
 	 * Gets the population work space validation error.
 	 *
@@ -492,6 +493,8 @@ public class MessageDelegate {
 	
 	/** The duplicate codes msg. */
 	private final String DUPLICATE_CODES_MSG = "All code(s) were identified as duplicates to code(s) already in the value set and were ignored upon import.";
+	
+	private final String BIRTHDATE_OR_DEAD_MSG = "Birthdate and Dead may only be applied once, duplicate Birthdate and Dead codes are not allowed.";
 	
 	/** The duplicate error. */
 	private final String DUPLICATE_ERROR = "Import failed. One or more duplicate codes exist in file. Please remove then try again.";
@@ -1176,6 +1179,12 @@ public class MessageDelegate {
 		return DUPLICATE_CODES_MSG;
 	}
 	
+	
+	
+	public String getBirthdateOrDeadMessage() {
+		return BIRTHDATE_OR_DEAD_MSG;
+	}
+
 	/**
 	 * Gets the duplicate error message.
 	 * 
@@ -3524,6 +3533,10 @@ public class MessageDelegate {
 		String message = (name.length()>60 ? name.substring(0, 59) : name) +" already exists. Please add a unique suffix.";
 		return  message;
 		
+	}
+
+	public String getNO_LIBRARY_TO_REPLACE() {
+		return NO_LIBRARY_TO_REPLACE;
 	}
 
 }
