@@ -233,11 +233,6 @@ public class MatContext implements IsSerializable {
 	/** The removed relationship types. */
 	public Map<String, String> removedRelationshipTypes = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER);
 		
-	/** The profile list. */
-	private List<String> expProfileList = new ArrayList<String>();
-	
-	/** The vsac exp Profile list. */
-	private List<VSACExpansionProfile> vsacExpProfileList = new ArrayList<VSACExpansionProfile>();
 	
 	/** The global copy paste. */
 	private GlobalCopyPasteObject globalCopyPaste;
@@ -1667,7 +1662,7 @@ public class MatContext implements IsSerializable {
 	 *
 	 * @return the all profile list
 	 */
-	public void getAllExpProfileList(){
+	/*public void getAllExpProfileList(){
 		vsacapiServiceAsync
 		.getAllExpProfileList(new AsyncCallback<VsacApiResult>() {
 			
@@ -1685,16 +1680,8 @@ public class MatContext implements IsSerializable {
 				// TODO Auto-generated method stub
 			}
 		});
-	}
+	}*/
 	
-	/**
-	 * Gets the vsac exp Profile list.
-	 *
-	 * @return the vsac exp Profile list
-	 */
-	public List<VSACExpansionProfile> getVsacExpProfileList() {
-		return vsacExpProfileList;
-	}
 	
 	
 	/**
@@ -1803,24 +1790,6 @@ public class MatContext implements IsSerializable {
 	}
 	
 	
-	/**
-	 * Gets the profile list.
-	 *
-	 * @return the profile list
-	 */
-	public List<String> getExpProfileList() {
-		return expProfileList;
-	}
-	
-	
-	/**
-	 * Sets the profile list.
-	 *
-	 * @param profileList the new profile list
-	 */
-	public void setExpProfileList(List<String> profileList) {
-		expProfileList = profileList;
-	}
 	
 	/**
 	 * Gets the global copy paste.
@@ -1872,9 +1841,9 @@ public class MatContext implements IsSerializable {
 		for(int i = 0; i < valuesets.size(); i++) {
 			CQLIdentifierObject valuesetIdentifier = null;
 			if(valuesets.get(i).getType() != null){
-				valuesetIdentifier  = new CQLIdentifierObject(null, valuesets.get(i).getDisplayName());
+				valuesetIdentifier  = new CQLIdentifierObject(null, valuesets.get(i).getDisplayName(),valuesets.get(i).getId());
 			} else{
-				valuesetIdentifier  = new CQLIdentifierObject(null, valuesets.get(i).getCodeListName());
+				valuesetIdentifier  = new CQLIdentifierObject(null, valuesets.get(i).getCodeListName(),valuesets.get(i).getId());
 			}
 			
 			valuesetIdentifiers.add(valuesetIdentifier);

@@ -1,6 +1,7 @@
 package mat.client.clause.cqlworkspace;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.gwtbootstrap3.client.ui.Button;
@@ -17,9 +18,13 @@ import org.gwtbootstrap3.client.ui.constants.IconSize;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.constants.Pull;
 
+import com.google.gwt.cell.client.Cell;
+import com.google.gwt.cell.client.CompositeCell;
 import com.google.gwt.cell.client.FieldUpdater;
+import com.google.gwt.cell.client.HasCell;
 import com.google.gwt.cell.client.SafeHtmlCell;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.OptionElement;
 import com.google.gwt.dom.client.SelectElement;
 import com.google.gwt.dom.client.Style.Unit;
@@ -37,7 +42,6 @@ import com.google.gwt.user.cellview.client.CellTable;
 import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.ColumnSortEvent.ListHandler;
 import com.google.gwt.user.cellview.client.HasKeyboardSelectionPolicy.KeyboardSelectionPolicy;
-import com.google.gwt.user.client.ui.FlexTable;
 import com.google.gwt.user.client.ui.Grid;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
@@ -46,13 +50,15 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 import com.google.gwt.view.client.ListDataProvider;
+import com.google.gwt.view.client.MultiSelectionModel;
 
 import mat.client.CustomPager;
-import mat.client.Mat;
 import mat.client.codelist.HasListBox;
+import mat.client.shared.CQLCopyPasteClearButtonToolBar;
 import mat.client.shared.CustomQuantityTextBox;
 import mat.client.shared.LabelBuilder;
 import mat.client.shared.ListBoxMVP;
+import mat.client.shared.MatCheckBoxCell;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatSimplePager;
 import mat.client.shared.SearchWidgetBootStrap;
@@ -78,7 +84,8 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	
 	/** The Constant EXTENSIONAL_QDM. */
 	static final String EXTENSIONAL_QDM = " (E)";
-	
+	/** The Loading flag for page. */
+	private Boolean isLoading = false;
 	/**
 	 * The Interface Observer.
 	 */
@@ -105,11 +112,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	/** The observer. */
 	private Observer observer;
 	
-	/** The default exp Profile sel. */
-	//private CheckBox defaultExpProfileSel = new CheckBox();
-	/** The vsac profile list box. */
-	//private ListBox defaultExpProfileListBox = new ListBox();
-	
 	/** The container panel. */
 	private SimplePanel containerPanel = new SimplePanel();
 	
@@ -128,27 +130,28 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	/** The table. */
 	private CellTable<CQLQualityDataSetDTO> table;
 	
+	/** The qdm selected list. */
+	private List<CQLQualityDataSetDTO> qdmSelectedList;
+	
+
+	/** The selection model. */
+	private MultiSelectionModel<CQLQualityDataSetDTO> selectionModel;
+	
+	
 	/** The sort provider. */
 	private ListDataProvider<CQLQualityDataSetDTO> listDataProvider;
 	
 	/** The update button. */
 	private Button updateVSACButton = new Button("Update From VSAC ");
 	
-	/** The apply button. */
-	//private Button applyDefaultExpansionIdButton = new Button("Apply");
 	
 	/** The version list. */
 	private List<String> versionList = new ArrayList<String>();
 	
-	/** The profile list. */
-//	private List<String> expProfileList = new ArrayList<String>();
 	
 	
 	/** The last selected object. */
 	private CQLQualityDataSetDTO lastSelectedObject;
-	
-	/** The expansion pro list box. */
-	//private ListBox qdmExpProfileListBox = new ListBox();
 	
 	/** The version list box. */
 	private ListBox versionListBox = new ListBox();
@@ -193,6 +196,7 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	
 	HTML heading = new HTML();
 	
+	CQLCopyPasteClearButtonToolBar copyPasteClearButtonToolBar = new CQLCopyPasteClearButtonToolBar("valueset");
 	
 	/**
 	 * Instantiates a new VSAC profile selection view.
@@ -210,7 +214,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		hp.getElement().setId("hp_HorizontalPanel");
 		hp.add(buildElementWithVSACValueSetWidget());
 		hp.add(simplePanel);
-		//hp.add(buildElementWithVSACExpansionProfile());
 		
 		verticalPanel.getElement().setId("vPanel_VerticalPanel");
 		heading.addStyleName("leftAligned");
@@ -253,91 +256,12 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		updateVSACButton.setPull(Pull.RIGHT);
 		vPanel.add(updateVSACButton);
 		vPanel.add(new SpacerWidget());
+		vPanel.add(copyPasteClearButtonToolBar.getButtonToolBar());
 		vPanel.add(cellTablePanel);
 
 		cellTableMainPanel.add(vPanel);
 		return cellTableMainPanel;
 	}
-	
-	/**
-	 * Builds the element with vsac expansion profile.
-	 *
-	 * @return the widget
-	 */
-	/*private Widget buildElementWithVSACExpansionProfile() {
-		VerticalPanel mainPanel = new VerticalPanel();
-		mainPanel.getElement().setId("mainPanel_VerticalPanel");
-		mainPanel.setWidth("95%");
-	//	mainPanel.add(buildDefaultExpProfilePanel());
-		mainPanel.add(new SpacerWidget());
-		mainPanel.add(new SpacerWidget());
-		return mainPanel;
-	}*/
-	/**
-	 * Builds the vsac exp Profile panel.
-	 *
-	 * @return the widget
-	 */
-	/*private Widget buildDefaultExpProfilePanel() {
-		defaultExpProfileSel.getElement().setId("ExpansionProfileSelection_ChkBox");
-		defaultExpProfileListBox.setWidth("250px");
-		defaultExpProfileListBox.getElement().setId("DefaultExpansionProfile_ListBox");
-		defaultExpProfileListBox.getElement().setTitle("Expansion Profile Selection List");
-		applyDefaultExpansionIdButton.setTitle("Apply Expansion Profile to all the Value Set(s).");
-		applyDefaultExpansionIdButton.setType(ButtonType.PRIMARY);
-		applyDefaultExpansionIdButton.getElement().setId("applyToQDM_button");
-		defaultExpProfileListBox.addItem("--Select--");
-		Panel searchPanel = new Panel();
-		searchPanel.setWidth("330px");
-		searchPanel.setHeight("300px");
-		searchPanel.getElement().setId("searchPanel_VerticalPanel");
-		searchPanel.setStyleName("cqlvalueSetSearchPanel");
-		
-		
-		PanelHeader expProfileHeader = new PanelHeader();//new Label("QDM Elements");
-		expProfileHeader.getElement().setId("searchHeader_Label");
-		expProfileHeader.setStyleName("CqlWorkSpaceTableHeader");
-		expProfileHeader.getElement().setAttribute("tabIndex", "0");
-		
-		HTML searchHeaderText = new HTML("<strong>Apply Expansion Profile</strong>");
-		expProfileHeader.setTitle("Apply VSAC Expansion Profile to Measure");
-		expProfileHeader.add(searchHeaderText);
-		
-		searchPanel.add(expProfileHeader);
-		
-		PanelBody applyExpansionIdPanelBody = new PanelBody();
-		applyExpansionIdPanelBody.setPull(Pull.LEFT);
-		
-		defaultExpProfileHeader.getElement().setId("searchHeader_Label");
-		defaultExpProfileHeader.setStyleName("valueSetHeader");
-		defaultExpProfileHeader.getElement().setAttribute("tabIndex", "0");
-		defaultExpProfileHeader.getElement().setTitle("Apply VSAC Expansion Profile to Measure.");
-		
-		Grid queryGrid = new Grid(5, 1);
-		HorizontalPanel qdmHorizontalPanel = new HorizontalPanel();
-		qdmHorizontalPanel.setVerticalAlignment(HasVerticalAlignment.ALIGN_MIDDLE);
-		qdmHorizontalPanel.getElement().setId("horizontalPanel_HorizontalPanel");
-		InlineLabel defaultExpProfileLabel = new InlineLabel("Add Default Expansion Profile");
-		
-		defaultExpProfileLabel.setStyleName("qdmLabel");
-		defaultExpProfileLabel.setTitle("Add Default Expansion Profile");
-		defaultExpProfileSel.setStyleName("gwt-CheckBox");
-		defaultExpProfileSel.getElement().setTitle("Select an Expansion Profile");
-		qdmHorizontalPanel.add(defaultExpProfileLabel);
-		qdmHorizontalPanel.add(defaultExpProfileSel);
-		qdmHorizontalPanel.setStyleName("horizontalPanel");
-		queryGrid.setWidget(0, 0, qdmHorizontalPanel);
-		queryGrid.setWidget(1, 0, new SpacerWidget());
-		queryGrid.setWidget(2, 0, defaultExpProfileListBox);
-		queryGrid.setWidget(3, 0, new SpacerWidget());
-		queryGrid.setWidget(4, 0, applyDefaultExpansionIdButton);
-		queryGrid.setStyleName("secondLabel");
-		applyExpansionIdPanelBody.add(queryGrid);
-		
-		searchPanel.add(expProfileHeader);
-		searchPanel.add(applyExpansionIdPanelBody);
-		return searchPanel;
-	}*/
 	
 	/**
 	 * Builds the element with vsac value set widget.
@@ -392,11 +316,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		suffixInput.setWidth("150px");
 		suffixInput.setHeight("30px");
 
-		
-		/*qdmExpProfileListBox.getElement().setId("QDMExpansionProfile_ListBox");
-		qdmExpProfileListBox.getElement().setTitle("Expansion Profile Selection List");
-		qdmExpProfileListBox.setEnabled(false);
-		qdmExpProfileListBox.setWidth("250px");*/
 		versionListBox.getElement().setId("Version_ListBox");
 		versionListBox.getElement().setTitle("Version Selection List");
 		versionListBox.setEnabled(false);
@@ -441,14 +360,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		suffixPanel.add(suffixInput);
 		suffixPanel.add(new SpacerWidget());
 
-		/*VerticalPanel expansionIdFormGroup = new VerticalPanel();
-		FormLabel expLabelPanel = new FormLabel();
-		expLabelPanel.setText("Expansion Profile");
-		expLabelPanel.setTitle("Expansion Profile");
-		expansionIdFormGroup.add(expLabelPanel);
-		expansionIdFormGroup.add(qdmExpProfileListBox);
-		expansionIdFormGroup.add(new SpacerWidget());*/
-
 		VerticalPanel versionFormGroup = new VerticalPanel();
 		FormLabel verLabel = new FormLabel();
 		verLabel.setText("Version");
@@ -461,16 +372,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		buttonFormGroup.add(buttonToolBar);
 		buttonFormGroup.add(new SpacerWidget());
 
-
-		/*Grid queryGrid = new Grid(7, 2);
-		queryGrid.setWidget(0, 0, searchWidgetFormGroup);
-		queryGrid.setWidget(1, 0, namePanel);
-		queryGrid.setWidget(1, 1, suffixPanel);
-		//queryGrid.setWidget(2, 0, expansionIdFormGroup);
-		queryGrid.setWidget(2, 0, versionFormGroup);
-		queryGrid.setWidget(3, 0, buttonFormGroup);
-		queryGrid.setStyleName("secondLabel");*/
-		
 		Grid oidGrid = new Grid(1, 1);
 		oidGrid.setWidget(0, 0, searchWidgetFormGroup);
 		Grid nameGrid = new Grid(1, 2);
@@ -483,9 +384,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		searchPanelBody.add(oidGrid);
 		searchPanelBody.add(nameGrid);
 		searchPanelBody.add(versionGrid);
-
-
-		//searchPanelBody.add(queryGrid);
 
 		searchPanel.add(searchPanelBody);
 		return searchPanel;
@@ -512,10 +410,11 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		if ((appliedValueSetList != null)
 				&& (appliedValueSetList.size() > 0)) {
 			table = new CellTable<CQLQualityDataSetDTO>();
+			
 			setEditable(isEditable);
 			table.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
 			listDataProvider = new ListDataProvider<CQLQualityDataSetDTO>();
-			/*qdmSelectedList = new ArrayList<CQLQualityDataSetDTO>();*/
+			qdmSelectedList = new ArrayList<CQLQualityDataSetDTO>();
 			table.setPageSize(TABLE_ROW_COUNT);
 			table.redraw();
 			listDataProvider.refresh();
@@ -585,8 +484,8 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 			TableCaptionElement caption = elem.createCaption();
 			searchHeader.setVisible(false);
 			caption.appendChild(searchHeader.getElement());
-			
-			//table.setSelectionModel(selectionModel);
+			selectionModel = new MultiSelectionModel<CQLQualityDataSetDTO>();
+			table.setSelectionModel(selectionModel);
 			
 			// Name Column
 			Column<CQLQualityDataSetDTO, SafeHtml> nameColumn = new Column<CQLQualityDataSetDTO, SafeHtml>(
@@ -641,28 +540,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 			table.addColumn(oidColumn, SafeHtmlUtils
 					.fromSafeConstant("<span title=\"OID\">" + "OID"
 							+ "</span>"));
-			
-			
-			// Expansion Profile Column
-			/*Column<CQLQualityDataSetDTO, SafeHtml> expansionColumn = new Column<CQLQualityDataSetDTO, SafeHtml>(
-					new SafeHtmlCell()) {
-				@Override
-				public SafeHtml getValue(CQLQualityDataSetDTO object) {
-					if (object.getExpansionIdentifier() != null) {
-						StringBuilder title = new StringBuilder();
-						title = title.append("Expansion Profile : ").append(
-								object.getExpansionIdentifier());
-						return CellTableUtility.getColumnToolTip(
-								object.getExpansionIdentifier(), title.toString());
-					}
-					
-					return null;
-				}
-			};
-			table.addColumn(expansionColumn, SafeHtmlUtils
-					.fromSafeConstant("<span title=\"Expansion Profile\">"
-							+ "Expansion Profile" + "</span>"));*/
-			
 			// Version Column
 			Column<CQLQualityDataSetDTO, SafeHtml> versionColumn = new Column<CQLQualityDataSetDTO, SafeHtml>(
 					new SafeHtmlCell()) {
@@ -696,84 +573,238 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 			table.addColumn(versionColumn, SafeHtmlUtils
 					.fromSafeConstant("<span title=\"Version\">" + "Version"
 							+ "</span>"));
-			
-			
-			
-			if(isEditable){
-				
-				//Edit
-				Column<CQLQualityDataSetDTO, SafeHtml> editColumn =
-						new Column<CQLQualityDataSetDTO, SafeHtml>(
-								new ClickableSafeHtmlCell()) {
-					@Override
-					public SafeHtml getValue(CQLQualityDataSetDTO object) {
-						SafeHtmlBuilder sb = new SafeHtmlBuilder();
-						String title = "Click to modify value set";
-						String cssClass = "btn btn-link";
-						String iconCss = "fa fa-pencil fa-lg";
-						if(isEditable){
-							sb.appendHtmlConstant("<button type=\"button\" title='"
-									+ title + "' tabindex=\"0\" class=\" " + cssClass + "\" style=\"color: darkgoldenrod;\" > <i class=\" " + iconCss + "\"></i><span style=\"font-size:0;\">Edit</button>");
-						} else {
-							sb.appendHtmlConstant("<button type=\"button\" title='"
-									+ title + "' tabindex=\"0\" class=\" " + cssClass + "\" disabled style=\"color: black;\"><i class=\" "+iconCss + "\"></i> <span style=\"font-size:0;\">Edit</span></button>");
-						}
-						
-						return sb.toSafeHtml();
-					}
-				};
-				editColumn.setFieldUpdater(new FieldUpdater<CQLQualityDataSetDTO, SafeHtml>() {
-					@Override
-					public void update(int index, CQLQualityDataSetDTO object, SafeHtml value) {
-						if ((object != null)) {
-							observer.onModifyClicked(object);
-						}
-					}
-				});
-				table.addColumn(editColumn, SafeHtmlUtils.fromSafeConstant("<span title='Modify'>" + "Modify" + "</span>"));
-				
-				//Delete
-				Column<CQLQualityDataSetDTO, SafeHtml> deleteColumn =
-						new Column<CQLQualityDataSetDTO, SafeHtml>(
-								new ClickableSafeHtmlCell()) {
-					@Override
-					public SafeHtml getValue(CQLQualityDataSetDTO object) {
-						SafeHtmlBuilder sb = new SafeHtmlBuilder();
-						String title = "Click to delete value set";
-						String cssClass = "btn btn-link";
-						String iconCss = "fa fa-trash fa-lg";
-						if (object.isUsed()) {
-							sb.appendHtmlConstant("<button type=\"button\" title='"
-									+ title + "' tabindex=\"0\" class=\" " + cssClass + "\" disabled style=\"margin-left: 0px;\"><i class=\" "+iconCss + "\"></i> <span style=\"font-size:0;\">Delete</span></button>");
-						} else {
-							sb.appendHtmlConstant("<button type=\"button\" title='"
-									+ title + "' tabindex=\"0\" class=\" " + cssClass + "\" style=\"margin-left: 0px;\" > <i class=\" " + iconCss + "\"></i><span style=\"font-size:0;\">Delete</button>");
-						}
-						return sb.toSafeHtml();
-					}
-				};
-				deleteColumn.setFieldUpdater(new FieldUpdater<CQLQualityDataSetDTO, SafeHtml>() {
-					@Override
-					public void update(int index, CQLQualityDataSetDTO object, SafeHtml value) {
-						if ((object != null) && !object.isUsed()) {
-							lastSelectedObject = object;
-							observer.onDeleteClicked(object, index);
-						}
-					}
-				});
-				table.addColumn(deleteColumn, SafeHtmlUtils.fromSafeConstant("<span title='Delete'>" + "" + "</span>"));
-				
-				
+			String colName = "Modify";
+			if(!isEditable){
+				colName = "Select";
 			}
+		
+		// Modify by Delete Column
+		table.addColumn(new Column<CQLQualityDataSetDTO, CQLQualityDataSetDTO>(
+				getCompositeCell(isEditable)) {
+			
+			@Override
+			public CQLQualityDataSetDTO getValue(CQLQualityDataSetDTO object) {
+				return object;
+			}
+		}, SafeHtmlUtils.fromSafeConstant("<span title='"+colName+"'>  "
+				+ colName + "</span>"));
 			
 			table.setColumnWidth(0, 25.0, Unit.PCT);
 			table.setColumnWidth(1, 25.0, Unit.PCT);
 			table.setColumnWidth(2, 14.0, Unit.PCT);
 			table.setColumnWidth(3, 8.0, Unit.PCT);
-			table.setColumnWidth(4, 8.0, Unit.PCT);
+			/*table.setColumnWidth(4, 8.0, Unit.PCT);*/
 		}
 		
 		return table;
+	}
+	
+	
+	private CompositeCell<CQLQualityDataSetDTO> getCompositeCell(final boolean isEditable) {
+		final List<HasCell<CQLQualityDataSetDTO, ?>> cells = new LinkedList<HasCell<CQLQualityDataSetDTO, ?>>();
+		if(isEditable){
+			cells.add(getModifyButtonCell());
+			cells.add(getDeleteButtonCell());
+		}
+		cells.add(getCheckBoxCell());
+		CompositeCell<CQLQualityDataSetDTO> cell = new CompositeCell<CQLQualityDataSetDTO>(
+				cells) {
+			@Override
+			public void render(Context context, CQLQualityDataSetDTO object,
+					SafeHtmlBuilder sb) {
+				sb.appendHtmlConstant("<table tabindex=\"-1\"><tbody><tr tabindex=\"-1\">");
+				for (HasCell<CQLQualityDataSetDTO, ?> hasCell : cells) {
+					render(context, object, sb, hasCell);
+				}
+				sb.appendHtmlConstant("</tr></tbody></table>");
+			}
+			
+			@Override
+			protected <X> void render(Context context,
+					CQLQualityDataSetDTO object, SafeHtmlBuilder sb,
+					HasCell<CQLQualityDataSetDTO, X> hasCell) {
+				Cell<X> cell = hasCell.getCell();
+				sb.appendHtmlConstant("<td class='emptySpaces' tabindex=\"0\">");
+				if ((object != null)) {
+					cell.render(context, hasCell.getValue(object), sb);
+				} else {
+					sb.appendHtmlConstant("<span tabindex=\"-1\"></span>");
+				}
+				sb.appendHtmlConstant("</td>");
+			}
+			
+			@Override
+			protected Element getContainerElement(Element parent) {
+				return parent.getFirstChildElement().getFirstChildElement()
+						.getFirstChildElement();
+			}
+		};
+		return cell;
+	}
+	
+	/**
+	 * Gets the modify qdm button cell.
+	 * 
+	 * @return the modify qdm button cell
+	 */
+	private HasCell<CQLQualityDataSetDTO, SafeHtml> getModifyButtonCell() {
+		
+		HasCell<CQLQualityDataSetDTO, SafeHtml> hasCell = new HasCell<CQLQualityDataSetDTO, SafeHtml>() {
+			
+			ClickableSafeHtmlCell modifyButonCell = new ClickableSafeHtmlCell();
+			
+			@Override
+			public Cell<SafeHtml> getCell() {
+				return modifyButonCell;
+			}
+			
+			@Override
+			public FieldUpdater<CQLQualityDataSetDTO, SafeHtml> getFieldUpdater() {
+				
+				return new FieldUpdater<CQLQualityDataSetDTO, SafeHtml>() {
+					@Override
+					public void update(int index, CQLQualityDataSetDTO object,
+							SafeHtml value) {
+						if ((object != null)) {
+							observer.onModifyClicked(object);
+						}
+					}
+				};
+			}
+			
+			@Override
+			public SafeHtml getValue(CQLQualityDataSetDTO object) {
+				SafeHtmlBuilder sb = new SafeHtmlBuilder();
+				String title = "Click to modify value set";
+				String cssClass = "btn btn-link";
+				String iconCss = "fa fa-pencil fa-lg";
+				if(isEditable){
+					sb.appendHtmlConstant("<button type=\"button\" title='"
+							+ title + "' tabindex=\"0\" class=\" " + cssClass + "\" style=\"color: darkgoldenrod;\" > <i class=\" " + iconCss + "\"></i><span style=\"font-size:0;\">Edit</button>");
+				} else {
+					sb.appendHtmlConstant("<button type=\"button\" title='"
+							+ title + "' tabindex=\"0\" class=\" " + cssClass + "\" disabled style=\"color: black;\"><i class=\" "+iconCss + "\"></i> <span style=\"font-size:0;\">Edit</span></button>");
+				}
+				
+				return sb.toSafeHtml();
+			}
+		};
+		
+		return hasCell;
+	}
+	
+	/**
+	 * Gets the delete qdm button cell.
+	 * 
+	 * @return the delete qdm button cell
+	 */
+	private HasCell<CQLQualityDataSetDTO, SafeHtml> getDeleteButtonCell() {
+		
+		HasCell<CQLQualityDataSetDTO, SafeHtml> hasCell = new HasCell<CQLQualityDataSetDTO, SafeHtml>() {
+			
+			ClickableSafeHtmlCell deleteButonCell = new ClickableSafeHtmlCell();
+			
+			@Override
+			public Cell<SafeHtml> getCell() {
+				return deleteButonCell;
+			}
+			
+			@Override
+			public FieldUpdater<CQLQualityDataSetDTO, SafeHtml> getFieldUpdater() {
+				
+				return new FieldUpdater<CQLQualityDataSetDTO, SafeHtml>() {
+					@Override
+					public void update(int index, CQLQualityDataSetDTO object,
+							SafeHtml value) {
+						if ((object != null) && !object.isUsed()) {
+							lastSelectedObject = object;
+							observer.onDeleteClicked(object, index);
+						}
+					}
+				};
+			}
+			
+			@Override
+			public SafeHtml getValue(CQLQualityDataSetDTO object) {
+				SafeHtmlBuilder sb = new SafeHtmlBuilder();
+				String title = "Click to delete value set";
+				String cssClass = "btn btn-link";
+				String iconCss = "fa fa-trash fa-lg";
+				if (object.isUsed()) {
+					sb.appendHtmlConstant("<button type=\"button\" title='"
+							+ title + "' tabindex=\"0\" class=\" " + cssClass + "\" disabled style=\"margin-left: 0px;margin-right: 10px;\"><i class=\" "+iconCss + "\"></i> <span style=\"font-size:0;\">Delete</span></button>");
+				} else {
+					sb.appendHtmlConstant("<button type=\"button\" title='"
+							+ title + "' tabindex=\"0\" class=\" " + cssClass + "\" style=\"margin-left: 0px;margin-right: 10px;\" > <i class=\" " + iconCss + "\"></i><span style=\"font-size:0;\">Delete</button>");
+				}
+				return sb.toSafeHtml();
+			}
+			
+			
+			
+		};
+		
+		return hasCell;
+	}
+	
+	
+	/**
+	 * Gets the QDM check box cell.
+	 *
+	 * @return the QDM check box cell
+	 */
+	private HasCell<CQLQualityDataSetDTO, Boolean> getCheckBoxCell(){
+		HasCell<CQLQualityDataSetDTO, Boolean> hasCell = new HasCell<CQLQualityDataSetDTO, Boolean>() {
+			
+			private MatCheckBoxCell cell = new MatCheckBoxCell(false, true);
+			@Override
+			public Cell<Boolean> getCell() {
+				return cell;
+			}
+			@Override
+			public Boolean getValue(CQLQualityDataSetDTO object) {
+				boolean isSelected = false;
+				if (qdmSelectedList.size() > 0) {
+					for (int i = 0; i < qdmSelectedList.size(); i++) {
+						if (qdmSelectedList.get(i).getId().equalsIgnoreCase(object.getId())) {
+							isSelected = true;
+							selectionModel.setSelected(object, isSelected);
+							break;
+						}
+					}
+				} else {
+					isSelected = false;
+					selectionModel.setSelected(object, isSelected);
+				}
+
+				return isSelected;
+			}
+			@Override
+			public FieldUpdater<CQLQualityDataSetDTO, Boolean> getFieldUpdater() {
+				return new FieldUpdater<CQLQualityDataSetDTO, Boolean>() {
+					@Override
+					public void update(int index, CQLQualityDataSetDTO object,
+							Boolean isCBChecked) {
+						
+						if (isCBChecked) {
+							qdmSelectedList.add(object);
+						} else {
+							for (int i = 0; i < qdmSelectedList.size(); i++) {
+								if (qdmSelectedList.get(i).getId().equalsIgnoreCase(object.getId())) {
+									qdmSelectedList.remove(i);
+									break;
+								}
+							}
+						}
+						selectionModel.setSelected(object, isCBChecked);
+					}
+
+				};
+			}
+			
+			
+		};
+		return hasCell;
 	}
 	
 	/**
@@ -785,24 +816,18 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		return containerPanel;
 	}
 	
-	/**
-	 * Gets the VSAC profile input.
-	 *
-	 * @return the VSAC profile input
-	 */
-	/*public HasValueChangeHandlers<Boolean> getDefaultExpIDInput() {
-		return defaultExpProfileSel;
-	}*/
+	public void clearSelectedCheckBoxes(){
+		if(table!=null){
+			List<CQLQualityDataSetDTO> displayedItems = new ArrayList<CQLQualityDataSetDTO>();
+			displayedItems.addAll(qdmSelectedList);
+			qdmSelectedList = new  ArrayList<CQLQualityDataSetDTO>();
+			for (CQLQualityDataSetDTO dto : displayedItems) {
+				selectionModel.setSelected(dto, false);
+			}
+			table.redraw();
+		}
+	}
 	
-	/**
-	 * Gets the default exp Profile sel.
-	 *
-	 * @return the default exp Profile sel
-	 */
-	//@Override
-	/*public CheckBox getDefaultExpProfileSel(){
-		return defaultExpProfileSel;
-	}*/
 	/**
 	 * Gets the specific occ chk box.
 	 *
@@ -867,14 +892,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 			return "";
 		}
 	}
-	/**
-	 * Gets the VSAC expansion Profile list box.
-	 *
-	 * @return the VSAC expansion Profile list box
-	 */
-	/*public ListBox getVSACExpansionProfileListBox() {
-		return defaultExpProfileListBox;
-	}*/
 	
 	/**
 	 * Check for enable.
@@ -885,53 +902,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		return MatContext.get().getMeasureLockService()
 				.checkForEditPermission();
 	}
-	/**
-	 * Sets the vsac expansion Profile list box.
-	 */
-	/*public void setDefaultExpansionProfileListBox() {
-		defaultExpProfileListBox.clear();
-		defaultExpProfileListBox.addItem("--Select--");
-		for (int i = 0; (i < getExpProfileList().size())
-				&& (getExpProfileList() != null); i++) {
-			defaultExpProfileListBox.addItem(getExpProfileList().get(i));
-		}
-		
-	}*/
-	/**
-	 * Sets the VSAC profile list box.
-	 *
-	 * @param texts the new VSAC profile list box
-	 */
-	/*public void setQDMExpProfileListBox(List<? extends HasListBox> texts){
-		setQDMExpProfileListBoxItems(qdmExpProfileListBox, texts, MatContext.PLEASE_SELECT);
-	}*/
-	
-	
-	/**
-	 * Sets the profile list box items.
-	 *
-	 * @param dataTypeListBox the data type list box
-	 * @param itemList the item list
-	 * @param defaultOption the default option
-	 */
-	/*private void setQDMExpProfileListBoxItems(ListBox dataTypeListBox,
-			List<? extends HasListBox> itemList, String defaultOption) {
-		dataTypeListBox.clear();
-		dataTypeListBox.addItem(defaultOption, "");
-		if (itemList != null) {
-			for (HasListBox listBoxContent : itemList) {
-				dataTypeListBox.addItem(listBoxContent.getItem(),""+listBoxContent.getValue());
-			}
-			
-			SelectElement selectElement = SelectElement.as(dataTypeListBox.getElement());
-			com.google.gwt.dom.client.NodeList<OptionElement> options = selectElement
-					.getOptions();
-			for (int i = 0; i < options.getLength(); i++) {
-				OptionElement optionElement = options.getItem(i);
-				optionElement.setTitle(optionElement.getText());
-			}
-		}
-	}*/
 	/**
 	 * Sets the VSAC version list box options.
 	 *
@@ -969,13 +939,8 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	 * Reset vsac value set widget.
 	 */
 	public void resetVSACValueSetWidget() {
-	/*	defaultExpProfileSel.setValue(false);
-		defaultExpProfileListBox.clear();
-		defaultExpProfileListBox.setEnabled(false);
-		defaultExpProfileListBox.addItem("--Select--");*/
-		
+	
 		if(checkForEnable()){
-			//qdmExpProfileListBox.setEnabled(false);;
 			versionListBox.setEnabled(false);
 			sWidget.getSearchBox().setTitle("Enter OID");
 			nameInput.setTitle("Enter Name");
@@ -1145,23 +1110,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	public Button getUpdateFromVSACButton(){
 		return updateVSACButton;
 	}
-	/**
-	 * Gets the profile list.
-	 *
-	 * @return the profile list
-	 */
-	/*public List<String> getExpProfileList() {
-		return expProfileList;
-	}*/
-	/**
-	 * Sets the profile list.
-	 *
-	 * @param expProfileList the new profile list
-	 */
-	/*public void setExpProfileList(List<String> expProfileList) {
-		this.expProfileList = expProfileList;
-	}*/
-	
 	
 	/**
 	 * Gets the selected element to remove.
@@ -1180,15 +1128,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		return versionListBox;
 	}
 	
-	/**
-	 * Gets the VSAC profile list box.
-	 *
-	 * @return the VSAC profile list box
-	 */
-	/*public ListBox getQDMExpProfileListBox() {
-		return qdmExpProfileListBox;
-	}
-	*/
 	/**
 	 * Gets the OID input.
 	 *
@@ -1301,14 +1240,10 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		
 		getOIDInput().setEnabled(editable);
 		getUserDefinedInput().setEnabled(editable);
-		//getApplyDefaultExpansionIdButton().setEnabled(editable);
-		
 		getCancelQDMButton().setEnabled(editable);
 		getRetrieveFromVSACButton().setEnabled(editable);
 		getUpdateFromVSACButton().setEnabled(editable);
-		//getDefaultExpProfileSel().setEnabled(editable);
 		getSaveButton().setEnabled(false);
-		//getQDMExpProfileListBox().setEnabled(false);
 		getVersionListBox().setEnabled(false);
 		
 	}
@@ -1318,7 +1253,6 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	 */
 	public void setWidgetToDefault() {
 		getVersionListBox().clear();
-	//	getQDMExpProfileListBox().clear();
 		getOIDInput().setValue("");
 		getUserDefinedInput().setValue("");
 		getSaveButton().setEnabled(false);
@@ -1330,7 +1264,7 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	 *
 	 * @param busy the busy
 	 */
-	public void showSearchingBusyOnQDM(final boolean busy) {
+	/*public void showSearchingBusyOnQDM(final boolean busy) {
 		if (busy) {
 			Mat.showLoadingMessage();
 		} else {
@@ -1338,7 +1272,7 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		}
 		getUpdateFromVSACButton().setEnabled(!busy);
 		getRetrieveFromVSACButton().setEnabled(!busy);
-	}
+	}*/
 	
 	/**
 	 * Gets the cell table main panel.
@@ -1367,7 +1301,7 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 			getOIDInput().setEnabled(true);
 			getUserDefinedInput()
 					.setTitle(getUserDefinedInput().getValue());
-		//	getQDMExpProfileListBox().setEnabled(false);
+		
 			getVersionListBox().setEnabled(false);
 
 			getRetrieveFromVSACButton().setEnabled(false);
@@ -1429,6 +1363,7 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	}
 	
 	
+	
 	/**
 	 * Reset QDM search panel.
 	 */
@@ -1449,15 +1384,12 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		getSuffixInput().setValue("");
 		getSuffixInput().setTitle("Suffix must be an integer between 1-4 characters");
 		
-		//getQDMExpProfileListBox().clear();
 		getVersionListBox().clear();
 		
-		//getQDMExpProfileListBox().setEnabled(false);
 		getVersionListBox().setEnabled(false);
 		
 		getSaveButton().setEnabled(false);
 		
-	//	getApplyDefaultExpansionIdButton().setEnabled(true);
 		getUpdateFromVSACButton().setEnabled(true);
 	}
 	
@@ -1465,5 +1397,36 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		String linkStr = SkipListBuilder.buildEmbeddedString(linkName);
 		heading.setHTML(linkStr +"<h4><b>" + text + "</b></h4>");
 	}
+
+	public Boolean getIsLoading() {
+		return isLoading;
+	}
+
+	public void setIsLoading(Boolean isLoading) {
+		this.isLoading = isLoading;
+	}
 	
+	
+	public Button getClearButton(){
+		return copyPasteClearButtonToolBar.getClearButton();
+	}
+	
+	public Button getCopyButton(){
+		return copyPasteClearButtonToolBar.getCopyButton();
+	}
+	
+	public Button getPasteButton(){
+		return copyPasteClearButtonToolBar.getPasteButton();
+	}
+	
+	/**
+	 * Added this method as part of MAT-8882.
+	 * @param isEditable
+	 */
+	public void setReadOnly(boolean isEditable) {		
+		getCancelQDMButton().setEnabled(isEditable);
+		getUpdateFromVSACButton().setEnabled(isEditable);
+		getRetrieveFromVSACButton().setEnabled(isEditable);
+		this.setIsLoading(!isEditable);
+	}
 }

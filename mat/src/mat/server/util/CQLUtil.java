@@ -519,6 +519,7 @@ public class CQLUtil {
 		// set the elm string
 		if(generateELM) {
 			parsedCQL.setElmString(cqlToELM.getElmString());
+			parsedCQL.setJsonString(cqlToELM.getParentJsonString());
 		}
 
 		// add in the errors, if any
@@ -602,7 +603,7 @@ public class CQLUtil {
 	 *
 	 * @param cqlModel the new included CQL expressions
 	 */
-	private static void setIncludedCQLExpressions(CQLModel cqlModel) {
+	public static void setIncludedCQLExpressions(CQLModel cqlModel) {
 
 		List<CQLIncludeLibrary> cqlIncludeLibraries = cqlModel.getCqlIncludeLibrarys();
 		if (cqlIncludeLibraries == null) {

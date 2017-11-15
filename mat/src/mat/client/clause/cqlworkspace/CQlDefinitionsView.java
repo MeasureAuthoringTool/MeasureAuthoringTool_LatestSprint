@@ -493,9 +493,9 @@ public class CQlDefinitionsView {
 		getDefineAceEditor().setReadOnly(!isEditable);
 		getContextDefinePATRadioBtn().setEnabled(isEditable);
 		getContextDefinePOPRadioBtn().setEnabled(isEditable);
-		getAddNewButtonBar().getaddNewButton().setEnabled(isEditable);
+		/*getAddNewButtonBar().getaddNewButton().setEnabled(isEditable);
 		System.out.println(
-				"in setDefinitionWidgetReadOnly: setting Ace Editor read only flag. read only = " + !isEditable);
+				"in setDefinitionWidgetReadOnly: setting Ace Editor read only flag. read only = " + !isEditable);*/
 		getDefineButtonBar().getSaveButton().setEnabled(isEditable);
 		getDefineButtonBar().getDeleteButton().setEnabled(isEditable);
 		getDefineButtonBar().getInsertButton().setEnabled(isEditable);
@@ -605,5 +605,18 @@ public class CQlDefinitionsView {
 		String linkStr = SkipListBuilder.buildEmbeddedString(linkName);
 		heading.setHTML(linkStr +"<h4><b>" + text + "</b></h4>");
 	}
+
+	/**
+	 * Added this method as part of MAT-8882.
+	 * @param isEditable
+	 */
+	public void setReadOnly(boolean isEditable) {		
+		getAddNewButtonBar().getaddNewButton().setEnabled(isEditable);
+		getDefineButtonBar().getSaveButton().setEnabled(isEditable);
+		getDefineButtonBar().getEraseButton().setEnabled(isEditable);
+		getDefineButtonBar().getDeleteButton().setEnabled(isEditable);
+		getDefineButtonBar().getInsertButton().setEnabled(isEditable);
+		getDefineButtonBar().getInfoButton().setEnabled(isEditable);
+	}	
 	
 }
