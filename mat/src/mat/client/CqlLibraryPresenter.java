@@ -13,6 +13,8 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
 import com.google.gwt.event.dom.client.KeyCodes;
+import com.google.gwt.event.dom.client.KeyDownEvent;
+import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.event.dom.client.KeyUpEvent;
 import com.google.gwt.event.dom.client.KeyUpHandler;
 import com.google.gwt.event.logical.shared.HasSelectionHandlers;
@@ -23,6 +25,7 @@ import com.google.gwt.user.client.DeferredCommand;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.HasValue;
 import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.TextBox;
@@ -31,7 +34,6 @@ import com.google.gwt.user.client.ui.Widget;
 
 import mat.DTO.AuditLogDTO;
 import mat.DTO.SearchHistoryDTO;
-import mat.client.shared.ui.DeleteConfirmDialogBox;
 import mat.client.clause.cqlworkspace.EditConfirmationDialogBox;
 import mat.client.cql.CQLLibraryDetailView;
 import mat.client.cql.CQLLibraryHistoryView;
@@ -50,11 +52,12 @@ import mat.client.shared.FocusableWidget;
 import mat.client.shared.MatContext;
 import mat.client.shared.MessageAlert;
 import mat.client.shared.MostRecentCQLLibraryWidget;
-import mat.client.shared.SearchWidget;
+import mat.client.shared.SearchWidgetBootStrap;
 import mat.client.shared.SearchWidgetWithFilter;
 import mat.client.shared.SkipListBuilder;
 import mat.client.shared.SynchronizationDelegate;
 import mat.client.shared.search.SearchResultUpdate;
+import mat.client.shared.ui.DeleteConfirmDialogBox;
 import mat.model.cql.CQLLibraryDataSetObject;
 import mat.model.cql.CQLLibraryShareDTO;
 import mat.model.cql.CQLModel;
@@ -432,21 +435,18 @@ public class CqlLibraryPresenter implements MatPresenter {
 		 * @param name the new CQ library name
 		 */
 		void setCQLibraryName(String name);
-
 		/**
-		 * Gets the zoom button.
-		 *
-		 * @return the zoom button
+		 * Gets the search button.
+		 * 
+		 * @return the search button
 		 */
-		CustomButton getZoomButton();
-
+		SearchWidgetBootStrap getSearchWidgetBootStrap();
 		/**
-		 * Gets the search widget.
-		 *
-		 * @return the search widget
+		 * Gets the focus panel.
+		 * 
+		 * @return the focus panel
 		 */
-		SearchWidget getSearchWidget();
-		
+		FocusPanel getSearchWidgetFocusPanel();
 	}
 	
 	/**
@@ -656,36 +656,6 @@ public class CqlLibraryPresenter implements MatPresenter {
 	 * Adds the share display view handlers.
 	 */
 	private void addShareDisplayViewHandlers() {
-		shareDisplay.getZoomButton().addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				cqlLibraryView.getErrorMessageAlert().clearAlert();
-				cqlLibraryView.getSuccessMessageAlert().clearAlert();
-				shareDisplay.getErrorMessageDisplay().clearAlert();
-				isSearchVisibleOnVersion = !isSearchVisibleOnVersion;
-				shareDisplay.getSearchWidget().setVisible(isSearchVisibleOnVersion);
-			}
-		});
-		
-		
-		shareDisplay.getSearchWidget().getSearchButton().addClickHandler(new ClickHandler() {
-			@Override
-			public void onClick(ClickEvent event) {
-				searchUsersForSharing();
-			}
-		});
-		
-		
-		shareDisplay.getSearchWidget().getSearchInputFocusPanel().addKeyUpHandler(new KeyUpHandler() {
-			
-			@Override
-			public void onKeyUp(KeyUpEvent event) {
-				if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
-					shareDisplay.getSearchWidget().getSearchButton().click();
-				}
-			}
-		});
 		
 		shareDisplay.getSaveButton().addClickHandler(new ClickHandler() {
 			
@@ -717,7 +687,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 
 					@Override
 					public void onSuccess(Void result) {
-						shareDisplay.getSearchWidget().getSearchInput().setText(""); 
+						shareDisplay.getSearchWidgetBootStrap().getSearchBox().setValue(""); 
 						displaySearch();
 					}
 				});
@@ -731,10 +701,28 @@ public class CqlLibraryPresenter implements MatPresenter {
 			@Override
 			public void onClick(ClickEvent event) {
 				/*cqlSharedDataSetObject = null;*/
-				shareDisplay.getSearchWidget().getSearchInput().setText(""); 
+				shareDisplay.getSearchWidgetBootStrap().getSearchBox().setValue(""); 
 				displaySearch();
 			}
 		});
+		
+		shareDisplay.getSearchWidgetBootStrap().getGo().addClickHandler(new ClickHandler() {			
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				searchUsersForSharing();				
+			}
+		});
+
+		shareDisplay.getSearchWidgetFocusPanel().addKeyDownHandler(new KeyDownHandler() {
+			
+			@Override
+			public void onKeyDown(KeyDownEvent event) {
+				if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
+					((Button) shareDisplay.getSearchWidgetBootStrap().getGo()).click();
+				}
+			}
+		}); 
 		
 	}
 
@@ -1252,10 +1240,8 @@ public class CqlLibraryPresenter implements MatPresenter {
 	private void displayShare() {
 		searchUsersForSharing();
 		shareDisplay.setCQLibraryName(cqlSharedDataSetObject.getCqlName());
+		shareDisplay.getSearchWidgetBootStrap().getSearchBox().setValue("");
 		panel.getButtonPanel().clear();
-		panel.setButtonPanel(null, null,shareDisplay.getZoomButton(),"searchButton_cqlShare");
-		shareDisplay.getSearchWidget().setVisible(false);
-		isSearchVisibleOnVersion = false;
 		panel.setHeading("My CQL Libraries > CQL Library Sharing", "CQLLibrary");
 		panel.setContent(shareDisplay.asWidget());
 		Mat.focusSkipLists("CQLLibrary");
@@ -1323,11 +1309,10 @@ public class CqlLibraryPresenter implements MatPresenter {
 	 * Search users for sharing.
 	 */
 	private void searchUsersForSharing(){
-		String searchText = shareDisplay.getSearchWidget().getSearchInput().getText();
+		String searchText = shareDisplay.getSearchWidgetBootStrap().getSearchBox().getValue();
 	    final String lastSearchText = (searchText != null) ? searchText.trim() : null;
 		shareDisplay.getErrorMessageDisplay().clearAlert();
-		showSearchingBusy(true);
-		shareDisplay.getZoomButton().setEnabled(false);
+		showSearchingBusy(true);		
 		((Button)shareDisplay.getSaveButton()).setEnabled(false);
 		((Button)shareDisplay.getCancelButton()).setEnabled(false);
 		
@@ -1342,10 +1327,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 					shareDisplay.getErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getNoUsersReturned());
 				} 
 				saveCQLLibraryResult = result;
-				SearchResultUpdate sru = new SearchResultUpdate();
-				sru.update(result, shareDisplay.getSearchWidget().getSearchInput(), lastSearchText);
-				shareDisplay.buildCQLLibraryShareTable(result.getCqlLibraryShareDTOs());
-				shareDisplay.getZoomButton().setEnabled(true);
+				shareDisplay.buildCQLLibraryShareTable(result.getCqlLibraryShareDTOs());				
 				((Button)shareDisplay.getSaveButton()).setEnabled(true);
 				((Button)shareDisplay.getCancelButton()).setEnabled(true);
 				showSearchingBusy(false);
@@ -1353,8 +1335,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 			
 			@Override
 			public void onFailure(Throwable caught) {
-				showSearchingBusy(false);
-				shareDisplay.getZoomButton().setEnabled(true);
+				showSearchingBusy(false);				
 				((Button)shareDisplay.getSaveButton()).setEnabled(true);
 				((Button)shareDisplay.getCancelButton()).setEnabled(true);
 				Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
@@ -1540,7 +1521,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 	public void beforeClosingDisplay() {
 		cqlLibraryView.getErrorMessageAlert().clearAlert();
 		cqlLibraryView.getSuccessMessageAlert().clearAlert();
-		shareDisplay.getSearchWidget().getSearchInput().setText("");
+		shareDisplay.getSearchWidgetBootStrap().getSearchBox().setValue("");
 		isLoading = false;
 		isCqlLibraryDeleted = false;
 		cqlLibraryDeletion = false;

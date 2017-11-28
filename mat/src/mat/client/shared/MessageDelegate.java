@@ -196,14 +196,19 @@ public class MessageDelegate {
 	public final String  SUCCESSFUL_OID_RETREIVAL_FROM_VSAC = "Value set successfully retrieved from VSAC.";
 	
 	/** The warning pasting in applied qdm elements. */
-	public final String WARNING_PASTING_IN_APPLIED_QDM_ELEMENTS = "You are trying to paste QDM elements in this measure." +
-			"If you want to continue say Yes or No to cancel.";
+	public final String WARNING_PASTING_IN_VALUESET = "The clipboard does not contain any value sets to be pasted at this time.";
 	
 	/** The successfully pasted qdm elements in measure. */
-	public final String SUCCESSFULLY_PASTED_QDM_ELEMENTS_IN_MEASURE = "Selected QDM elements have been pasted successfully.";
+	public final String SUCCESSFULLY_VALUESET_PASTE = "Selected value sets have been pasted successfully.";
+	
+	public final String SUCCESSFULLY_PASTED_CODES_IN_MEASURE = "Selected Codes have been pasted successfully.";
+	
+	public final String CLIPBOARD_DOES_NOT_CONTAIN_CODES = "The clipboard does not contain any codes to be pasted at this time.";
 	
 	/** The copy qdm select atleast one. */
-	public final String COPY_QDM_SELECT_ATLEAST_ONE  = "Please select at least one applied QDM element to copy.";
+	public final String COPY_QDM_SELECT_ATLEAST_ONE  = "Please select at least one applied Value set element to copy.";
+	
+	public final String COPY_CODE_SELECT_ATLEAST_ONE  = "Please select at least one applied code to copy.";
 	
 	/** The successful qdm remove msg. */
 	public final String SUCCESSFUL_QDM_REMOVE_MSG  = "Selected value set has been removed successfully.";
@@ -2622,8 +2627,8 @@ public class MessageDelegate {
 	 *
 	 * @return the warning pasting in applied qdm elements
 	 */
-	public String getWARNING_PASTING_IN_APPLIED_QDM_ELEMENTS() {
-		return WARNING_PASTING_IN_APPLIED_QDM_ELEMENTS;
+	public String getWARNING_PASTING_IN_VALUESET() {
+		return WARNING_PASTING_IN_VALUESET;
 	}
 	
 	/**
@@ -2640,8 +2645,8 @@ public class MessageDelegate {
 	 *
 	 * @return the successfully pasted qdm elements in measure
 	 */
-	public String getSUCCESSFULLY_PASTED_QDM_ELEMENTS_IN_MEASURE() {
-		return SUCCESSFULLY_PASTED_QDM_ELEMENTS_IN_MEASURE;
+	public String getSUCCESSFULLY_VALUESET_PASTE() {
+		return SUCCESSFULLY_VALUESET_PASTE;
 	}
 	
 	/**
@@ -3535,6 +3540,10 @@ public class MessageDelegate {
 
 	public String getNO_LIBRARY_TO_REPLACE() {
 		return NO_LIBRARY_TO_REPLACE;
+	}
+
+	public String getCOPY_CODE_SELECT_ATLEAST_ONE() {
+		return COPY_CODE_SELECT_ATLEAST_ONE;
 	}
 
 }

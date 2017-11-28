@@ -14,7 +14,6 @@ import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.TransferOwnerShipModel;
-import mat.client.measure.service.SaveMeasureNotesResult;
 import mat.client.measure.service.SaveMeasureResult;
 import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.shared.MatException;
@@ -28,6 +27,7 @@ import mat.model.Organization;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
+import mat.model.cql.CQLCode;
 import mat.model.cql.CQLCodeWrapper;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
@@ -160,6 +160,8 @@ public interface MeasureLibraryService {
 	/**
 	 * Gets the users for share.
 	 * 
+	 * @param userName
+	 *            the user name
 	 * @param measureId
 	 *            the measure id
 	 * @param startIndex
@@ -168,7 +170,7 @@ public interface MeasureLibraryService {
 	 *            the page size
 	 * @return the users for share
 	 */
-	ManageMeasureShareModel getUsersForShare(String measureId,
+	ManageMeasureShareModel getUsersForShare(String userName, String measureId,
 			int startIndex, int pageSize);
 	
 	/**
@@ -718,6 +720,8 @@ public interface MeasureLibraryService {
 	VsacApiResult updateCQLVSACValueSets(String currentMeasureId, String expansionId, String sessionId);
 
 	SaveUpdateCQLResult saveCQLCodestoMeasure(MatCodeTransferObject transferObject);
+	
+	SaveUpdateCQLResult saveCQLCodeListToMeasure(List<CQLCode> codeList, String measureId);
 
 	CQLCodeWrapper getCQLCodes(String measureID);
 
@@ -726,5 +730,8 @@ public interface MeasureLibraryService {
 	SaveUpdateCQLResult getMeasureCQLLibraryData(String measureId);
 
 	SaveUpdateCQLResult getMeasureCQLDataForLoad(String measureId);
+
+	CQLQualityDataModelWrapper saveValueSetList(List<CQLValueSetTransferObject> transferObjectList,
+			List<CQLQualityDataSetDTO> appliedValueSetList, String measureId);
 
 }

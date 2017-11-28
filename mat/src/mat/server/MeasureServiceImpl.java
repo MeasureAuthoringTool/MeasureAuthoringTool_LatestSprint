@@ -12,7 +12,6 @@ import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.TransferOwnerShipModel;
 import mat.client.measure.service.MeasureService;
-import mat.client.measure.service.SaveMeasureNotesResult;
 import mat.client.measure.service.SaveMeasureResult;
 import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.shared.MatException;
@@ -25,6 +24,7 @@ import mat.model.Organization;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
+import mat.model.cql.CQLCode;
 import mat.model.cql.CQLCodeWrapper;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
@@ -166,12 +166,12 @@ MeasureService {
 	}
 	
 	/* (non-Javadoc)
-	 * @see mat.client.measure.service.MeasureService#getUsersForShare(java.lang.String, int, int)
+	 * @see mat.client.measure.service.MeasureService#getUsersForShare(String, java.lang.String, int, int)
 	 */
 	@Override
-	public ManageMeasureShareModel getUsersForShare(String measureId,
+	public ManageMeasureShareModel getUsersForShare(String userName, String measureId,
 			int startIndex, int pageSize) {
-		return this.getMeasureLibraryService().getUsersForShare(measureId, startIndex, pageSize);
+		return this.getMeasureLibraryService().getUsersForShare(userName, measureId, startIndex, pageSize);
 	}
 	
 	/* (non-Javadoc)
@@ -683,10 +683,18 @@ MeasureService {
 	}
 	
 	@Override
+	public SaveUpdateCQLResult saveCQLCodeListToMeasure(List<CQLCode> codeList, String measureId){
+		return this.getMeasureLibraryService().saveCQLCodeListToMeasure(codeList, measureId);
+	}
+	
+	@Override
 	public CQLCodeWrapper getCQLCodes(String measureID){
 		return this.getMeasureLibraryService().getCQLCodes(measureID);
 	}
-
-
+	@Override
+	public CQLQualityDataModelWrapper saveValueSetList(List<CQLValueSetTransferObject> transferObjectList,
+			List<CQLQualityDataSetDTO> appliedValueSetList, String measureId) {
+		 return this.getMeasureLibraryService().saveValueSetList(transferObjectList, appliedValueSetList, measureId);
+	}
 
 }

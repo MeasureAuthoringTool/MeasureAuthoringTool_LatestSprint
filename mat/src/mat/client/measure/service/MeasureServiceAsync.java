@@ -20,6 +20,7 @@ import mat.model.Organization;
 import mat.model.QualityDataModelWrapper;
 import mat.model.QualityDataSetDTO;
 import mat.model.RecentMSRActivityLog;
+import mat.model.cql.CQLCode;
 import mat.model.cql.CQLCodeWrapper;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
@@ -173,6 +174,8 @@ public interface MeasureServiceAsync {
 	/**
 	 * Gets the users for share.
 	 * 
+	 * @param userName
+	 *            the user name entered for search 
 	 * @param measureId
 	 *            the measure id
 	 * @param startIndex
@@ -183,7 +186,7 @@ public interface MeasureServiceAsync {
 	 *            the callback
 	 * @return the users for share
 	 */
-	void getUsersForShare(String measureId, int startIndex, int pageSize, AsyncCallback<ManageMeasureShareModel> callback);
+	void getUsersForShare(String userName, String measureId, int startIndex, int pageSize, AsyncCallback<ManageMeasureShareModel> callback);
 	
 	/**
 	 * Checks if is measure locked.
@@ -717,6 +720,8 @@ public interface MeasureServiceAsync {
 
 	void saveCQLCodestoMeasure(MatCodeTransferObject transferObject, AsyncCallback<SaveUpdateCQLResult> callback);
 
+	void saveCQLCodeListToMeasure(List<CQLCode> codeList, String measureId, AsyncCallback<SaveUpdateCQLResult> callback);
+	
 	void getCQLCodes(String measureID, AsyncCallback<CQLCodeWrapper> callback);
 
 	void deleteCode(String toBeDeletedId, String measureID, AsyncCallback<SaveUpdateCQLResult> callback);
@@ -724,5 +729,9 @@ public interface MeasureServiceAsync {
 	void getMeasureCQLLibraryData(String measureId, AsyncCallback<SaveUpdateCQLResult> callback);
 	
 	void getMeasureCQLDataForLoad(String measureId, AsyncCallback<SaveUpdateCQLResult> callback);
+
+	void saveValueSetList(List<CQLValueSetTransferObject> transferObjectList,
+			List<CQLQualityDataSetDTO> appliedValueSetList, String measureId,
+			AsyncCallback<CQLQualityDataModelWrapper> callback);
 
 }

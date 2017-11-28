@@ -3,6 +3,47 @@ package mat.client.measure;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.gwtbootstrap3.client.ui.Button;
+import org.gwtbootstrap3.client.ui.FormGroup;
+import org.gwtbootstrap3.client.ui.HelpBlock;
+import org.gwtbootstrap3.client.ui.constants.ButtonType;
+import org.gwtbootstrap3.client.ui.constants.IconSize;
+import org.gwtbootstrap3.client.ui.constants.IconType;
+import org.gwtbootstrap3.client.ui.constants.ValidationState;
+
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.event.dom.client.ChangeEvent;
+import com.google.gwt.event.dom.client.ChangeHandler;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.HasClickHandlers;
+import com.google.gwt.event.dom.client.KeyCodes;
+import com.google.gwt.event.dom.client.KeyDownEvent;
+import com.google.gwt.event.dom.client.KeyDownHandler;
+import com.google.gwt.event.dom.client.KeyUpEvent;
+import com.google.gwt.event.dom.client.KeyUpHandler;
+import com.google.gwt.event.logical.shared.HasSelectionHandlers;
+import com.google.gwt.event.logical.shared.HasValueChangeHandlers;
+import com.google.gwt.event.logical.shared.SelectionEvent;
+import com.google.gwt.event.logical.shared.SelectionHandler;
+import com.google.gwt.event.logical.shared.ValueChangeEvent;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.event.shared.HandlerManager;
+import com.google.gwt.user.client.Command;
+import com.google.gwt.user.client.DeferredCommand;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.FocusPanel;
+import com.google.gwt.user.client.ui.FormPanel;
+import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
+import com.google.gwt.user.client.ui.HasValue;
+import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.RadioButton;
+import com.google.gwt.user.client.ui.TextBox;
+import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.user.client.ui.Widget;
+
 import mat.DTO.AuditLogDTO;
 import mat.DTO.SearchHistoryDTO;
 import mat.client.Mat;
@@ -32,6 +73,7 @@ import mat.client.shared.MessageAlert;
 import mat.client.shared.MessageDelegate;
 import mat.client.shared.MostRecentMeasureWidget;
 import mat.client.shared.PrimaryButton;
+import mat.client.shared.SearchWidgetBootStrap;
 import mat.client.shared.SearchWidgetWithFilter;
 import mat.client.shared.SkipListBuilder;
 import mat.client.shared.SynchronizationDelegate;
@@ -39,45 +81,6 @@ import mat.client.shared.search.SearchResultUpdate;
 import mat.client.util.ClientConstants;
 import mat.shared.ConstantMessages;
 import mat.shared.MatConstants;
-
-import org.gwtbootstrap3.client.ui.Button;
-import org.gwtbootstrap3.client.ui.FormGroup;
-import org.gwtbootstrap3.client.ui.HelpBlock;
-import org.gwtbootstrap3.client.ui.constants.ButtonType;
-import org.gwtbootstrap3.client.ui.constants.IconSize;
-import org.gwtbootstrap3.client.ui.constants.IconType;
-import org.gwtbootstrap3.client.ui.constants.ValidationState;
-
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.event.dom.client.ChangeEvent;
-import com.google.gwt.event.dom.client.ChangeHandler;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.event.dom.client.HasClickHandlers;
-import com.google.gwt.event.dom.client.KeyCodes;
-import com.google.gwt.event.dom.client.KeyUpEvent;
-import com.google.gwt.event.dom.client.KeyUpHandler;
-import com.google.gwt.event.logical.shared.HasSelectionHandlers;
-import com.google.gwt.event.logical.shared.HasValueChangeHandlers;
-import com.google.gwt.event.logical.shared.SelectionEvent;
-import com.google.gwt.event.logical.shared.SelectionHandler;
-import com.google.gwt.event.logical.shared.ValueChangeEvent;
-import com.google.gwt.event.logical.shared.ValueChangeHandler;
-import com.google.gwt.event.shared.HandlerManager;
-import com.google.gwt.user.client.Command;
-import com.google.gwt.user.client.DeferredCommand;
-import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.rpc.AsyncCallback;
-//import com.google.gwt.user.client.ui.Button;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.FormPanel;
-import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
-import com.google.gwt.user.client.ui.HasValue;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.RadioButton;
-import com.google.gwt.user.client.ui.TextBox;
-import com.google.gwt.user.client.ui.VerticalPanel;
-import com.google.gwt.user.client.ui.Widget;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -641,6 +644,18 @@ public class ManageMeasurePresenter implements MatPresenter {
 		 *            the new private
 		 */
 		public void setPrivate(boolean isPrivate);
+		/**
+		 * Gets the search button.
+		 * 
+		 * @return the search button
+		 */
+		SearchWidgetBootStrap getSearchWidgetBootStrap();
+		/**
+		 * Gets the focus panel.
+		 * 
+		 * @return the focus panel
+		 */
+		FocusPanel getSearchWidgetFocusPanel();
 	}
 
 	/**
@@ -1353,15 +1368,31 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 	/**
 	 * Display share.
-	 * 
+	 *
+	 * @param userName
+	 *            the user name 
 	 * @param id
 	 *            the id
 	 * @param name
 	 *            the name
 	 */
-	private void displayShare(String id, String name) {
-		getShareDetails(id, 1);
+	private void displayShare(String userName, String id, String name) {
+		//Setting this value so that visiting this page every time from share link, any previously entered value is reset
+		shareDisplay.getSearchWidgetBootStrap().getSearchBox().setValue("");
 		shareDisplay.setMeasureName(name);
+		displayShare(userName, id);
+	}
+	
+	/**
+	 * Display share.
+	 *
+	 * @param id
+	 *            the id
+	 * @param name
+	 *            the name
+	 */	
+	private void displayShare(String userName, String id) {
+		getShareDetails(userName, id, 1);
 		panel.getButtonPanel().clear();
 		panel.setHeading("My Measures > Measure Sharing", "MeasureLibrary");
 		panel.setContent(shareDisplay.asWidget());
@@ -1582,11 +1613,11 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 *            the start index
 	 * @return the share details
 	 */
-	private void getShareDetails(String id, int startIndex) {
+	private void getShareDetails(String userName, String id, int startIndex) {
 		shareStartIndex = startIndex;
 		searchDisplay.getSuccessMeasureDeletion().clearAlert();
 		searchDisplay.getErrorMeasureDeletion().clearAlert();
-		MatContext.get().getMeasureService().getUsersForShare(id, startIndex, Integer.MAX_VALUE,
+		MatContext.get().getMeasureService().getUsersForShare(userName, id, startIndex, Integer.MAX_VALUE,
 				new AsyncCallback<ManageMeasureShareModel>() {
 					@Override
 					public void onFailure(Throwable caught) {
@@ -1946,7 +1977,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 									isMeasureVersioned = false;
 									searchDisplay.getSuccessMeasureDeletion().clearAlert();
 									searchDisplay.getErrorMeasureDeletion().clearAlert();
-									displayShare(result.getId(), result.getName());
+									displayShare(null, result.getId(), result.getName());
 								}
 
 								@Override
@@ -2445,6 +2476,22 @@ public class ManageMeasurePresenter implements MatPresenter {
 			}
 		});
 
+		shareDisplay.getSearchWidgetBootStrap().getGo().addClickHandler(new ClickHandler() {			
+			@Override
+			public void onClick(ClickEvent event) {
+				displayShare(shareDisplay.getSearchWidgetBootStrap().getSearchBox().getValue(), currentShareDetails.getMeasureId());				
+			}
+		});
+		
+		shareDisplay.getSearchWidgetFocusPanel().addKeyDownHandler(new KeyDownHandler() {
+			
+			@Override
+			public void onKeyDown(KeyDownEvent event) {
+				if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
+					((Button) shareDisplay.getSearchWidgetBootStrap().getGo()).click();
+				}
+			}
+		}); 
 	}
 
 	/**

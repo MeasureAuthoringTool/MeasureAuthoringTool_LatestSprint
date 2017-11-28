@@ -7,12 +7,15 @@ import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.CQLValueSetTransferObject;
 import mat.model.MatCodeTransferObject;
+import mat.model.cql.CQLCode;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLKeywords;
 import mat.model.cql.CQLLibraryDataSetObject;
 import mat.model.cql.CQLParameter;
+import mat.model.cql.CQLQualityDataModelWrapper;
+import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.service.CQLLibraryServiceInterface;
 import mat.server.util.XmlProcessor;
 import mat.shared.GetUsedCQLArtifactsResult;
@@ -225,8 +228,19 @@ public class CQLLibraryServiceImpl extends SpringRemoteServiceServlet implements
 	}
 	
 	@Override
+	public SaveUpdateCQLResult saveCQLCodeListToCQLLibrary(
+			List<CQLCode> codeList, String libraryId) {
+		return this.getCQLLibraryService().saveCQLCodeListToCQLLibrary(codeList, libraryId);
+	}
+	
+	@Override
 	public final void deleteCQLLibrary(final String cqllibId, String loginUserId) {
 		 this.getCQLLibraryService().deleteCQLLibrary(cqllibId, loginUserId);
+	}
+	@Override
+	public CQLQualityDataModelWrapper saveValueSetList(List<CQLValueSetTransferObject> transferObjectList,
+			List<CQLQualityDataSetDTO> appliedValueSetList, String cqlLibraryId) {
+		return this.getCQLLibraryService().saveValueSetList(transferObjectList, appliedValueSetList, cqlLibraryId);
 	}
 	
 	/*@Override

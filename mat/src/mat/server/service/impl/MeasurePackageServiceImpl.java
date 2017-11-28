@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.service.ValidateMeasureResult;
@@ -50,10 +54,6 @@ import mat.server.util.ExportSimpleXML;
 import mat.server.util.MATPropertiesService;
 import mat.shared.ValidationUtility;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 // TODO: Auto-generated Javadoc
 /**
  * The Class MeasurePackageServiceImpl.
@@ -86,10 +86,6 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	/** The measure export dao. */
 	@Autowired
 	private MeasureExportDAO measureExportDAO;
-	
-	/** The measure package dao. */
-	@Autowired
-	private MeasureDAO measurePackageDAO;
 	
 	/** The measure set dao. */
 	@Autowired
@@ -140,7 +136,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	
 	//	@Override
 	//	public void clone(Measure measurePackage, String newCloneName) {
-	//		measurePackageDAO.clone(measurePackage, newCloneName);
+	//		measureDAO.clone(measurePackage, newCloneName);
 	//	}
 	
 	/** The validator. */
@@ -152,7 +148,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	@Override
 	public long count() {
 		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
-		return measurePackageDAO.countMeasureShareInfoForUser(user);
+		return measureDAO.countMeasureShareInfoForUser(user);
 	}
 	
 	/* (non-Javadoc)
@@ -161,7 +157,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	@Override
 	public long count(final int filter) {
 		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
-		return measurePackageDAO.countMeasureShareInfoForUser(filter, user);
+		return measureDAO.countMeasureShareInfoForUser(filter, user);
 	}
 	
 	/* (non-Javadoc)
@@ -170,7 +166,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	@Override
 	public long count(final String searchText) {
 		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
-		return measurePackageDAO.countMeasureShareInfoForUser(searchText, user);
+		return measureDAO.countMeasureShareInfoForUser(searchText, user);
 	}
 	
 		
@@ -179,7 +175,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	 */
 	@Override
 	public int countUsersForMeasureShare() {
-		return measurePackageDAO.countUsersForMeasureShare();
+		return measureDAO.countUsersForMeasureShare();
 	}
 	
 	/* (non-Javadoc)
@@ -284,7 +280,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	 */
 	@Override
 	public Measure getById(final String id) {
-		return measurePackageDAO.find(id);
+		return measureDAO.find(id);
 	}
 	
 	/* (non-Javadoc)
@@ -320,11 +316,11 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	}
 	
 	/* (non-Javadoc)
-	 * @see mat.server.service.MeasurePackageService#getUsersForShare(java.lang.String, int, int)
+	 * @see mat.server.service.MeasurePackageService#getUsersForShare(String, java.lang.String, int, int)
 	 */
 	@Override
-	public List<MeasureShareDTO> getUsersForShare(final String measureId, final int startIndex, final int pageSize) {
-		return measurePackageDAO.getMeasureShareInfoForMeasure(measureId, startIndex - 1, pageSize);
+	public List<MeasureShareDTO> getUsersForShare(final String userName, final String measureId, final int startIndex, final int pageSize) {
+		return measureDAO.getMeasureShareInfoForMeasure(userName, measureId, startIndex - 1, pageSize);
 	}
 	
 	/**
@@ -375,7 +371,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 				measurePackage.setOwner(currentUser);
 			}
 		}
-		measurePackageDAO.save(measurePackage);
+		measureDAO.save(measurePackage);
 	}
 	
 	/* (non-Javadoc)
@@ -427,7 +423,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	public List<MeasureShareDTO> search(final int startIndex,
 			final int numResults) {
 		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
-		return measurePackageDAO.getMeasureShareInfoForUser(user, startIndex - 1, numResults);
+		return measureDAO.getMeasureShareInfoForUser(user, startIndex - 1, numResults);
 	}
 	
 	/* (non-Javadoc)
@@ -436,7 +432,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	@Override
 	public List<MeasureShareDTO> search(final String searchText, final int startIndex, final int numResults) {
 		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
-		return measurePackageDAO.getMeasureShareInfoForUser(searchText,  user, startIndex - 1, numResults);
+		return measureDAO.getMeasureShareInfoForUser(searchText,  user, startIndex - 1, numResults);
 	}
 	
 	/* (non-Javadoc)
@@ -446,7 +442,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	public List<MeasureShareDTO> searchForAdminWithFilter(String searchText,
 			int startIndex, int numResults, int filter) {
 		//User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
-		return measurePackageDAO.getMeasureShareInfoForUserWithFilter(searchText, startIndex - 1, numResults, filter);
+		return measureDAO.getMeasureShareInfoForUserWithFilter(searchText, startIndex - 1, numResults, filter);
 	}
 	
 	
@@ -457,7 +453,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	public List<MeasureShareDTO> searchWithFilter(final String searchText, final int startIndex,
 			final int numResults, final int filter) {
 		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
-		return measurePackageDAO.getMeasureShareInfoForUserWithFilter(searchText,  user, startIndex - 1, numResults, filter);
+		return measureDAO.getMeasureShareInfoForUserWithFilter(searchText,  user, startIndex - 1, numResults, filter);
 	}
 	
 	/* (non-Javadoc)
@@ -465,7 +461,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	 */
 	@Override
 	public List<Measure> getComponentMeasuresInfo(List<String> measureIds){
-		return measurePackageDAO.getComponentMeasureInfoForMeasures(measureIds);
+		return measureDAO.getComponentMeasureInfoForMeasures(measureIds);
 	}
 	/**
 	 * Sets the validator.
@@ -543,7 +539,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	 */
 	@Override
 	public void updateLockedOutDate(final Measure m) {
-		measurePackageDAO.resetLockDate(m);
+		measureDAO.resetLockDate(m);
 	}
 	
 	/* (non-Javadoc)
@@ -584,7 +580,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 				if ((measureShare == null) && ShareLevel.MODIFY_ID.equals(dto.getShareLevel())) {
 					recordShareEvent = true;
 					measureShare = new MeasureShare();
-					measureShare.setMeasure(measurePackageDAO.find(model.getMeasureId()));
+					measureShare.setMeasure(measureDAO.find(model.getMeasureId()));
 					measureShare.setShareUser(user);
 					User currentUser = userDAO.find(LoggedInUserUtil.getLoggedInUser());
 					measureShare.setOwner(currentUser);
@@ -664,7 +660,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	 */
 	@Override
 	public boolean getMeasure(String measureId) {
-		return measurePackageDAO.getMeasure(measureId);
+		return measureDAO.getMeasure(measureId);
 	}
 
 	/**
