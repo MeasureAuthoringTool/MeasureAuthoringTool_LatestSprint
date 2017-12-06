@@ -17,3 +17,4 @@ mat/src/mat/server/twofactorauth/vip/
 mat/src/mat/server/twofactorauth/Credential.java
 mat/src/mat/server/twofactorauth/VipUserServicesQueryClient.java
 mat/war/WEB-INF/classes/
+mat/.gitignore

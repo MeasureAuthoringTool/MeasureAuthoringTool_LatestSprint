@@ -320,7 +320,11 @@
 	<bean id="cqlLibraryShareDAO"
 		class="mat.dao.impl.clause.CQLLibraryShareDAO" parent="baseDAO">
 	</bean>
-
+	
+	<bean id="emailAuditLogDAO" 
+		class="mat.dao.impl.EmailAuditLogDAO" parent="baseDAO">
+	</bean>
+	
 	<bean id="daoService" class="mat.dao.service.DAOService" >
 		<property name="auditLogDAO" ref="auditLogDAO"/>
 		<property name="securityRoleDAO" ref="securityRoleDAO"/>
@@ -374,6 +378,7 @@
 		<property name="cqlLibrarySetDAO" ref="cqlLibrarySetDAO"/>
 		<property name="cqlLibraryAuditLogDAO" ref="cqlLibraryAuditLogDAO"/>
 		<property name="cqlLibraryShareDAO" ref="cqlLibraryShareDAO"/>
+		<property name="emailAuditLogDAO" ref="emailAuditLogDAO" />
 	</bean>
      
 </beans>
