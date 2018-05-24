@@ -18,6 +18,7 @@ import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.event.shared.HandlerManager;
+import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.CheckBox;
@@ -63,6 +64,8 @@ import mat.model.MeasureSteward;
 import mat.model.MeasureType;
 import mat.model.QualityDataSetDTO;
 import mat.shared.ConstantMessages;
+import mat.shared.MatConstants;
+import mat.shared.StringUtility;
 
 /**
  * The Class MetaDataPresenter.
@@ -849,6 +852,8 @@ public class MetaDataPresenter  implements MatPresenter {
 	/** The meta data display. */
 	private MetaDataDetailDisplay metaDataDisplay;
 	
+	private HandlerRegistration nqfHandlerRegistration;
+	
 	/** The add edit component measures display. */
 	private AddEditComponentMeasuresDisplay addEditComponentMeasuresDisplay;
 	
@@ -1448,9 +1453,17 @@ public class MetaDataPresenter  implements MatPresenter {
 		panel.clear();
 		metaDataDisplay.setMeasureScoringType(currentMeasureDetail.getMeasScoring());
 		metaDataDisplay.setPatientBasedMeasure(currentMeasureDetail.isPatientBased());
-		
 		metaDataDisplay.buildForm();
 		prepopulateFields();
+		if(nqfHandlerRegistration == null) {
+			nqfHandlerRegistration = metaDataDisplay.getEndorsedByListBox().addChangeHandler(new ChangeHandler() {
+				@Override
+				public void onChange(ChangeEvent event) {
+					setNQFTitle();
+				}
+			});
+		}
+
 		if (editable) {
 			if ("0".equals(metaDataDisplay.getEmeasureId().getValue())) {
 				metaDataDisplay.setGenerateEmeasureIdButtonEnabled(true);
@@ -1466,6 +1479,27 @@ public class MetaDataPresenter  implements MatPresenter {
 		}
 		
 		panel.add(metaDataDisplay.asWidget());
+	}
+	
+	private void setNQFTitle() {
+		if(metaDataDisplay.getEndorsedByListBox().getSelectedIndex() == 0) {
+			metaDataDisplay.getNQFIDInput().setPlaceholder(MatConstants.NOT_APPLICABLE);
+			metaDataDisplay.getNQFIDInput().setTitle(MatConstants.NOT_APPLICABLE);
+			metaDataDisplay.getNQFIDInput().setText("");
+			metaDataDisplay.getNQFIDInput().setEnabled(false);
+			metaDataDisplay.getNQFIDInput().setReadOnly(true);
+		} else {
+			if(!StringUtility.isEmptyOrNull(metaDataDisplay.getNQFIDInput().getText())) {
+				String placeHolderText = metaDataDisplay.getNQFIDInput().getText();
+				metaDataDisplay.getNQFIDInput().setPlaceholder(placeHolderText);
+				metaDataDisplay.getNQFIDInput().setTitle(placeHolderText);
+			} else {
+				metaDataDisplay.getNQFIDInput().setPlaceholder(MatConstants.ENTER_NQF_NUMBER);
+				metaDataDisplay.getNQFIDInput().setTitle(MatConstants.ENTER_NQF_NUMBER);
+			}
+			metaDataDisplay.getNQFIDInput().setReadOnly(false);
+			metaDataDisplay.getNQFIDInput().setEnabled(true);
+		}
 	}
 	
 	/**
@@ -1504,8 +1538,6 @@ public class MetaDataPresenter  implements MatPresenter {
 			metaDataDisplay.getPatientBasedInput().setTitle("No");		
 		}
 		
-		
-		
 		metaDataDisplay.getClinicalRecommendation().setValue(currentMeasureDetail.getClinicalRecomms());
 		metaDataDisplay.getDefinitions().setValue(currentMeasureDetail.getDefinitions());
 		metaDataDisplay.getDescription().setValue(currentMeasureDetail.getDescription());
@@ -1529,6 +1561,8 @@ public class MetaDataPresenter  implements MatPresenter {
 		} else {
 			metaDataDisplay.getEndorsedByListBox().setSelectedIndex(0);
 		}
+		
+		setNQFTitle();
 		
 		metaDataDisplay.getCopyright().setValue(currentMeasureDetail.getCopyright());
 		
@@ -1728,14 +1762,20 @@ public class MetaDataPresenter  implements MatPresenter {
 					} else {
 						Mat.hideLoadingMessage();
 						MatContext.get().getSynchronizationDelegate().setSavingMeasureDetails(false);
+						String alertMessage = MessageDelegate
+								.getMeasureSaveServerErrorMessage(result.getFailureReason());
+						for(String errorMessage: result.getMessages()) {
+							if(errorMessage.equals(MessageDelegate.NQF_NUMBER_REQUIRED_ERROR)) {
+								alertMessage = errorMessage;
+								break;
+							}
+						}
 						if(fromButton.equalsIgnoreCase("bottomButton")){
-							metaDataDisplay.getErrorMessageDisplay().createAlert(MessageDelegate
-									.getMeasureSaveServerErrorMessage(result.getFailureReason()));
+							metaDataDisplay.getErrorMessageDisplay().createAlert(alertMessage);
 							metaDataDisplay.getSaveBtn().setFocus(true);
 						} else {
-						metaDataDisplay.getErrorMessageDisplay2().createAlert(MessageDelegate
-								.getMeasureSaveServerErrorMessage(result.getFailureReason()));
-						metaDataDisplay.getSaveButton2().setFocus(true);
+							metaDataDisplay.getErrorMessageDisplay2().createAlert(alertMessage);
+							metaDataDisplay.getSaveButton2().setFocus(true);
 						}
 					}
 				}
@@ -1748,6 +1788,13 @@ public class MetaDataPresenter  implements MatPresenter {
 				}
 			});
 		}
+	}
+	
+	/**
+	 * Update model details from view.
+	 */
+	private void updateModelDetailsFromView() {
+		updateModelDetailsFromView(currentMeasureDetail, metaDataDisplay);
 	}
 	
 	/**
@@ -1820,14 +1867,6 @@ public class MetaDataPresenter  implements MatPresenter {
 	}
 	
 	
-	
-	/**
-	 * Update model details from view.
-	 */
-	private void updateModelDetailsFromView() {
-		updateModelDetailsFromView(currentMeasureDetail, metaDataDisplay);
-	}
-	
 	/**
 	 * Update model details from view.
 	 * 
@@ -1899,8 +1938,10 @@ public class MetaDataPresenter  implements MatPresenter {
 		currentMeasureDetail.setCopyright(metaDataDisplay.getCopyright().getValue());
 		if(metaDataDisplay.getEndorsedByListBox().getItemText(metaDataDisplay.getEndorsedByListBox().getSelectedIndex()).equalsIgnoreCase("Yes")){
 			currentMeasureDetail.setEndorseByNQF(true);
+			currentMeasureDetail.setNqfId(metaDataDisplay.getNqfId().getValue());
 		} else {
 			currentMeasureDetail.setEndorseByNQF(false);
+			currentMeasureDetail.setNqfId("");
 		}
 
 		currentMeasureDetail.setGuidance(metaDataDisplay.getGuidance().getValue());
@@ -1937,7 +1978,6 @@ public class MetaDataPresenter  implements MatPresenter {
 		currentMeasureDetail.setToCompareAuthor(dbAuthorList);
 		currentMeasureDetail.setToCompareMeasure(dbMeasureTypeList);
 		currentMeasureDetail.setToCompareComponentMeasures(dbComponentMeasuresSelectedList);
-		currentMeasureDetail.setNqfId(metaDataDisplay.getNqfId().getValue());
 		
 		if ((metaDataDisplay.getEmeasureId().getValue() != null) && !metaDataDisplay.getEmeasureId().getValue().equals("")) {
 			currentMeasureDetail.seteMeasureId(new Integer(metaDataDisplay.getEmeasureId().getValue()));
@@ -2195,17 +2235,6 @@ public class MetaDataPresenter  implements MatPresenter {
 	}
 	
 	/**
-	 * Sets the current measure detail.
-	 * 
-	 * @param currentMeasureDetail
-	 *            the currentMeasureDetail to set
-	 */
-	public void setCurrentMeasureDetail(
-			ManageMeasureDetailModel currentMeasureDetail) {
-		this.currentMeasureDetail = currentMeasureDetail;
-	}
-	
-	/**
 	 * Gets the current authors list.
 	 * 
 	 * @return the currentAuthorsList
@@ -2372,9 +2401,14 @@ public class MetaDataPresenter  implements MatPresenter {
 			dbData.setToCompareAuthor(getDbAuthorList());
 			dbData.setToCompareMeasure(getDbMeasureTypeList());
 			dbData.setToCompareComponentMeasures(getDbComponentMeasuresSelectedList());
-			return pageData.equals(dbData);
+			return pageData.equals(dbData) && isNQFIDExists(pageData.getEndorseByNQF(), pageData.getNqfId());
 		}
 	}
+
+	private boolean isNQFIDExists(boolean endorseByNQF, String nqfId) {
+		return ((endorseByNQF && !StringUtility.isEmptyOrNull(nqfId)) || !endorseByNQF);
+	}
+
 	
 	public boolean isMeasureDetailsValid() {
 		if ((MatContext.get().getCurrentMeasureId() != null) && !MatContext.get().getCurrentMeasureId().equals("")

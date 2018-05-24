@@ -2346,6 +2346,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		} else {
 			SaveMeasureResult result = new SaveMeasureResult();
 			result.setSuccess(false);
+			result.setMessages(message);
 			logger.info("Saving of Measure Details Failed. Invalid Data issue.");
 			return result;
 		}
@@ -2621,7 +2622,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		result.setData(detailList);
 		result.setStartIndex(startIndex);
-		result.setResultsTotal(getUserService().countSearchResultsNonAdmin(""));
+		result.setResultsTotal(getUserService().countSearchResultsNonAdmin(searchText));
 
 		return result;
 

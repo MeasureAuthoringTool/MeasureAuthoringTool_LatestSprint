@@ -289,7 +289,14 @@
                         <xsl:with-param name="textString" select="nqfid/@extension" />
                     </xsl:call-template>
                 </xsl:variable>
-                <value xsi:type="ED" mediaType="text/plain" value="{$NQFText}" />
+                <xsl:choose>
+                <xsl:when test="$NQFText = '' ">
+                		<value xsi:type="ED" mediaType="text/plain" value="Not Applicable"/>
+                </xsl:when>
+                <xsl:otherwise>
+                		<value xsi:type="ED" mediaType="text/plain" value="{$NQFText}"/>
+                </xsl:otherwise>
+                </xsl:choose>
             </measureAttribute>
         </subjectOf>
 
@@ -337,7 +344,7 @@
                 <code code="MSRSCORE" codeSystem="2.16.840.1.113883.5.4">
                     <displayName value="Measure Scoring" />
                 </code>
-                <value xsi:type="CD" code="{$scoring_id}" codeSystem="2.16.840.1.113883.1.11.20367">
+                <value xsi:type="CD" code="{$scoring_id}" codeSystem="2.16.840.1.113883.5.1063">
                     <displayName value="{normalize-space($scoring_value)}" />
                 </value>
             </measureAttribute>
@@ -353,7 +360,7 @@
                                 <displayName value="Measure Type" />
                             </code>
                             <xsl:variable name="nameVar" select="@id" />
-                            <value xsi:type="CD" code="{$nameVar}" codeSystem="2.16.840.1.113883.1.11.20368">
+                            <value xsi:type="CD" code="{$nameVar}" codeSystem="2.16.840.1.113883.5.1063">
                                 <displayName value="{$nameVar}" />
                             </value>
                         </measureAttribute>
