@@ -4,15 +4,10 @@
        xmlns:task="http://www.springframework.org/schema/task"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans 
-       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd 
+       http://www.springframework.org/schema/beans/spring-beans-4.3.xsd 
        http://www.springframework.org/schema/task
-       http://www.springframework.org/schema/task/spring-task-3.0.xsd"
->
-	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-	    <property name="systemPropertiesMode" value="2"/> <!-- SYSTEM_PROPERTIES_MODE_OVERRIDE -->
-		<property name="location" value="classpath:MAT.properties"/>
-	</bean>
-	
+       http://www.springframework.org/schema/task/spring-task-4.3.xsd">
+       
 	<bean id="loginService" class="mat.server.service.impl.LoginCredentialServiceImpl">	    
 	</bean>
 	

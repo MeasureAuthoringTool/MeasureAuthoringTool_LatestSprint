@@ -45,8 +45,8 @@ public class CQLLibraryServiceImpl extends SpringRemoteServiceServlet implements
 	}
 	
 	@Override
-	public SaveCQLLibraryResult saveFinalizedVersion(String libraryId, boolean isMajor, String version){
-		return this.getCQLLibraryService().saveFinalizedVersion(libraryId, isMajor, version);
+	public SaveCQLLibraryResult saveFinalizedVersion(String libraryId, boolean isMajor, String version, boolean ignoreUnusedLibraries){
+		return this.getCQLLibraryService().saveFinalizedVersion(libraryId, isMajor, version, ignoreUnusedLibraries);
 	}
 	/**
 	 * Gets the measure library service.
@@ -192,11 +192,6 @@ public class CQLLibraryServiceImpl extends SpringRemoteServiceServlet implements
 			List<CQLParameter> parameterList) {
 		return this.getCQLLibraryService().deleteParameter(libraryId, toBeDeletedObj, parameterList);
 	}
-	//@Override
-	/*public void updateCQLLibraryXMLForExpansionProfile(List<CQLQualityDataSetDTO> modifyWithDTO, String measureId,
-			String expansionProfile) {
-		this.getCQLLibraryService().updateCQLLibraryXMLForExpansionProfile(modifyWithDTO, measureId, expansionProfile);
-	}*/
 	@Override
 	public SaveUpdateCQLResult saveCQLUserDefinedValueset(CQLValueSetTransferObject matValueSetTransferObject) {
 		return this.getCQLLibraryService().saveCQLUserDefinedValueset(matValueSetTransferObject);
@@ -246,11 +241,4 @@ public class CQLLibraryServiceImpl extends SpringRemoteServiceServlet implements
 			List<CQLQualityDataSetDTO> appliedValueSetList, String cqlLibraryId) {
 		return this.getCQLLibraryService().saveValueSetList(transferObjectList, appliedValueSetList, cqlLibraryId);
 	}
-
-	
-	/*@Override
-	public SaveCQLLibraryResult searchForStandaloneIncludes(String setId, String searchText) {
-		return this.getCQLLibraryService().searchForStandaloneIncludes(setId, searchText);
-	}*/
-	
 }

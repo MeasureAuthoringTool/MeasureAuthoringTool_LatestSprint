@@ -28,7 +28,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.exolab.castor.mapping.Mapping;
@@ -121,6 +121,7 @@ import mat.server.service.MeasureLibraryService;
 import mat.server.service.MeasurePackageService;
 import mat.server.service.UserService;
 import mat.server.service.impl.MatContextServiceUtil;
+import mat.server.service.impl.MeasureAuditServiceImpl;
 import mat.server.service.impl.PatientBasedValidator;
 import mat.server.util.CQLUtil;
 import mat.server.util.ExportSimpleXML;
@@ -222,12 +223,14 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	@Autowired
 	private MeasureExportDAO measureExportDAO; 
 
-
 	/** The x path. */
 	javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
 
 	/** The cql service. */
 	private CQLService cqlService;
+	
+	@Autowired
+	private MeasureAuditServiceImpl auditService; 
 
 	/*
 	 * (non-Javadoc)
@@ -670,8 +673,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		CQLParameter parameter = new CQLParameter();
 
 		parameter.setId(UUID.randomUUID().toString());
-		parameter.setParameterName(CQLWorkSpaceConstants.CQL_DEFAULT_MEASUREMENTPERIOD_PARAMETER_NAME);
-		parameter.setParameterLogic(CQLWorkSpaceConstants.CQL_DEFAULT_MEASUREMENTPERIOD_PARAMETER_LOGIC);
+		parameter.setName(CQLWorkSpaceConstants.CQL_DEFAULT_MEASUREMENTPERIOD_PARAMETER_NAME);
+		parameter.setLogic(CQLWorkSpaceConstants.CQL_DEFAULT_MEASUREMENTPERIOD_PARAMETER_LOGIC);
 		parameter.setReadOnly(true);
 		String parStr = getCqlService().createParametersXML(parameter);
 
@@ -1389,7 +1392,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			if ((details.getQualityDataDTO() != null) && (details.getQualityDataDTO().size() != 0)) {
 				logger.info(" details.getQualityDataDTO().size() :" + details.getQualityDataDTO().size());
 				for (CQLQualityDataSetDTO dataSetDTO : details.getQualityDataDTO()) {
-					if (dataSetDTO.getCodeListName() != null) {
+					if (dataSetDTO.getName() != null) {
 						if ((dataSetDTO.isSuppDataElement())) {
 							finalList.add(dataSetDTO);
 						}
@@ -1421,7 +1424,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				unmar.setClass(CQLQualityDataModelWrapper.class);
 				unmar.setWhitespacePreserve(true);
 				details = (CQLQualityDataModelWrapper) unmar.unmarshal(new InputSource(new StringReader(xml)));
-				logger.info("unmarshalling complete..valuesets" + details.getQualityDataDTO().get(0).getCodeListName());
+				logger.info("unmarshalling complete..valuesets" + details.getQualityDataDTO().get(0).getName());
 			}
 
 		} catch (Exception e) {
@@ -1859,7 +1862,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		if (mVersion.remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) == 0) {
 			versionStr = versionStr.concat(".0");
 		}
+		
+		versionStr = versionStr.concat(".000");
 
+		
 		// This code is added to update version value for both measureDetails
 		// version tag and cqlLookUp version tag.
 		setVersionInMeasureDetailsAndCQLLookUp(meas, versionStr);
@@ -2151,8 +2157,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * String, boolean, java.lang.String)
 	 */
 	@Override
-	public final SaveMeasureResult saveFinalizedVersion(final String measureId, final boolean isMajor,
-			final String version) {
+	public final SaveMeasureResult saveFinalizedVersion(final String measureId, final boolean isMajor, final String version, boolean shouldPackage) {
 
 		logger.info("In MeasureLibraryServiceImpl.saveFinalizedVersion() method..");
 		Measure m = getService().getById(measureId);
@@ -2165,9 +2170,17 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 
 		SaveUpdateCQLResult cqlResult =  getMeasureCQLFileData(measureId);
-		if(cqlResult.getCqlErrors().size() >0 || !cqlResult.isDatatypeUsedCorrectly()){
+		if(cqlResult.getCqlErrors().size() > 0 || !cqlResult.isDatatypeUsedCorrectly()){
 			SaveMeasureResult saveMeasureResult = new SaveMeasureResult();
 			return returnFailureReason(saveMeasureResult, SaveMeasureResult.INVALID_CQL_DATA);
+		}
+
+		if(shouldPackage) {
+			SaveMeasureResult validatePackageResult = validateAndPackage(getMeasure(measureId));
+			if(!validatePackageResult.isSuccess()) {
+				SaveMeasureResult saveMeasureResult = new SaveMeasureResult(); 
+				return returnFailureReason(saveMeasureResult, SaveMeasureResult.PACKAGE_FAIL);
+			}
 		}
 
 		String versionNumber = null;
@@ -3361,8 +3374,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * lang.String, java.util.ArrayList)
 	 */
 	@Override
-	public final ValidateMeasureResult validateMeasureForExport(final String key,
-			final List<MatValueSet> matValueSetList) throws MatException {
+	public final ValidateMeasureResult validateMeasureForExport(final String key, final List<MatValueSet> matValueSetList) throws MatException {
 		try {
 			return getService().validateMeasureForExport(key, matValueSetList);
 		} catch (Exception exc) {
@@ -3676,86 +3688,45 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	private boolean parseCQLFile(String measureXML, String measureId) {
 		boolean isInvalid = false;
 		MeasureXML newXml = getMeasureXMLDAO().findForMeasure(measureId);
-		CQLModel cqlModel = CQLUtilityClass.getCQLStringFromXML(measureXML);
+
+		CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(measureXML);
+
 		List<String> message = new ArrayList<String>();
 		
 		SaveUpdateCQLResult cqlResult = CQLUtil.parseCQLLibraryForErrors(cqlModel, cqlLibraryDAO, null);
 		
 		if(cqlResult.getCqlErrors() != null && cqlResult.getCqlErrors().isEmpty()) {
 			String exportedXML = ExportSimpleXML.export(newXml, message, measureDAO, organizationDAO, cqlLibraryDAO, cqlModel);
-			CQLModel model = CQLUtilityClass.getCQLStringFromXML(exportedXML);
-			SaveUpdateCQLResult result = CQLUtil.parseCQLLibraryForErrors(model, cqlLibraryDAO, null);
+
+			CQLModel model = CQLUtilityClass.getCQLModelFromXML(exportedXML);
+
+			SaveUpdateCQLResult result = CQLUtil.parseCQLLibraryForErrors(model, cqlLibraryDAO, getExpressionListFromCqlModel(model));
+
 			if(result.getCqlErrors() != null && result.getCqlErrors().size() > 0){
 				isInvalid = true;
 			} else {
-				if(exportedXML != null &&  !exportedXML.isEmpty()) {
-					XmlProcessor processor = new XmlProcessor(exportedXML);
-					String xPathForValueSetBirthDate = "//qdm[@oid='21112-8' and @codeSystemOID='2.16.840.1.113883.6.1']";
-					try {
-						isInvalid = validateDataTypeAndValueSet(xPathForValueSetBirthDate,processor,"datatype",CQLUtil.PATIENT_CHARACTERISTIC_BIRTHDATE);
-						if(!isInvalid){
-							String xPathForValueSetDead = "//qdm[@oid='419099009' and @codeSystemOID='2.16.840.1.113883.6.96']";
-							isInvalid = validateDataTypeAndValueSet(xPathForValueSetDead,processor,"datatype",CQLUtil.PATIENT_CHARACTERSTICS_EXPIRED);
-						}
-						
-						if(!isInvalid) {
-							isInvalid = validateOIDandCodeSystemOIDForDataType(processor, CQLUtil.PATIENT_CHARACTERSTICS_EXPIRED, CQLUtil.DEAD_OID, CQLUtil.DEAD_CODESYSTEM_OID);
-						}
-						if(!isInvalid) {
-							isInvalid = validateOIDandCodeSystemOIDForDataType(processor, CQLUtil.PATIENT_CHARACTERISTIC_BIRTHDATE, CQLUtil.BIRTHDATE_OID, CQLUtil.BIRTHDATE_CODESYTEM_OID);
-						}
-					} catch (XPathExpressionException e) {
-						logger.info("Issue in parseCQLFile while packaging. ExportSimpleXml is null or blank or Xpath breaking");
-						e.printStackTrace();
-					}
-				}
+				isInvalid = !CQLUtil.validateDatatypeCombinations(model, result.getUsedCQLArtifacts().getValueSetDataTypeMap(), result.getUsedCQLArtifacts().getCodeDataTypeMap());				
 			}
 		} else {
 			isInvalid = true;
 		}
 		return isInvalid;
 	}
+	
 
 	
-	private boolean validateOIDandCodeSystemOIDForDataType(XmlProcessor processor, String dataType, String oid,
-			String codeSystemOID) throws XPathExpressionException {
-		boolean isInvalid = false;
-		
-		String xPathToEval = "//qdm[@datatype='" + dataType + "']";
-		NodeList nodeList = (NodeList) xPath.evaluate(xPathToEval,
-				processor.getOriginalDoc(), XPathConstants.NODESET);
-		for(int i=0; i<nodeList.getLength();i++){
-			Node node = nodeList.item(i);
-			if(node.getAttributes().getNamedItem("codeSystemOID") != null) {
-				if(!node.getAttributes().getNamedItem("codeSystemOID").getNodeValue().equalsIgnoreCase(codeSystemOID)) {
-					isInvalid = true;
-				}
-			}
-			if(!isInvalid && node.getAttributes().getNamedItem("oid") != null) {
-				if(!node.getAttributes().getNamedItem("oid").getNodeValue().equalsIgnoreCase(oid)) {
-					isInvalid = true;
-				}
-			}
-		}
-		return isInvalid;
-	}
+	private List<String> getExpressionListFromCqlModel(CQLModel cqlModel) {
+		List<String> expressionList = new ArrayList<>();
 
-	private boolean validateDataTypeAndValueSet(String xPathToEval, XmlProcessor processor, String namedItem, String compareTo) throws XPathExpressionException{
-		boolean isInvalid = false;
-		NodeList valueSetNodeList = (NodeList) xPath.evaluate(xPathToEval,
-				processor.getOriginalDoc(), XPathConstants.NODESET);
-		for(int i=0; i<valueSetNodeList.getLength();i++){
-			Node node = valueSetNodeList.item(i);
-			if(node.getAttributes().getNamedItem(namedItem)!=null ){
-				if(!node.getAttributes().getNamedItem(namedItem).getNodeValue().equalsIgnoreCase(compareTo)){
-					isInvalid = true;
-					break;
-				}
-			}
+		for (CQLDefinition cqlDefinition : cqlModel.getDefinitionList()) {
+			expressionList.add(cqlDefinition.getName());
 		}
-		
-		
-		return isInvalid;
+
+		for (CQLFunctions cqlFunction : cqlModel.getCqlFunctions()) {
+			expressionList.add(cqlFunction.getName());
+		}
+
+		return expressionList;
 	}
 
 	/**
@@ -6046,5 +6017,43 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			logger.info("Successfully updated Measure XML for  : " + entrySet.getKey().getOid());
 		}
 		logger.info("End VSACAPIServiceImpl updateAllInMeasureXml :");
+	}
+
+	@Override
+	public SaveMeasureResult validateAndPackage(ManageMeasureDetailModel model) {
+		SaveMeasureResult result = new SaveMeasureResult();
+		String measureId = model.getId();
+		try {
+			
+			ValidateMeasureResult validateGroupResult = validateForGroup(model);
+			if(!validateGroupResult.isValid()) {
+				result.setSuccess(false);
+				result.setValidateResult(validateGroupResult);
+				result.setFailureReason(SaveMeasureResult.PACKAGE_VALIDATION_FAIL);
+				return result;
+			}
+			
+			ValidateMeasureResult validatePackageGroupingResult = validatePackageGrouping(model);
+			if(!validatePackageGroupingResult.isValid()) {
+				result.setSuccess(false);
+				result.setValidateResult(validateGroupResult);
+				result.setFailureReason(SaveMeasureResult.PACKAGE_VALIDATION_FAIL);
+				return result;
+			}
+			
+			result = saveMeasureAtPackage(model);
+			if(!result.isSuccess()) {
+				return result; 
+			}
+			
+			updateMeasureXmlForDeletedComponentMeasureAndOrg(measureId);
+			validateMeasureForExport(measureId, null);
+			auditService.recordMeasureEvent(measureId, "Measure Pacakge Created", "", false);
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.setSuccess(false);
+			return result;
+		}		
 	}
 }

@@ -38,7 +38,7 @@ import mat.shared.SaveUpdateCQLResult;
 import mat.shared.UUIDUtilClient;
 import net.sf.saxon.TransformerFactoryImpl;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.w3c.dom.Attr;
@@ -394,7 +394,7 @@ public class ExportSimpleXML {
 
 		CQLUtil.removeUnusedIncludes(originalDoc, result.getUsedCQLArtifacts().getUsedCQLLibraries(), cqlModel);
 		CQLUtil.addUsedCQLLibstoSimpleXML(originalDoc, result.getUsedCQLArtifacts().getIncludeLibMap());
-		CQLUtil.addUnUsedGrandChildrentoSimpleXML(originalDoc, result, cqlModel);
+		CQLUtil.addUnUsedGrandChildrentoSimpleXML(originalDoc, result, cqlModel, cqlLibraryDAO);
 
 		System.out.println("All included libs:" + cqlModel.getIncludedCQLLibXMLMap().keySet());
 	}

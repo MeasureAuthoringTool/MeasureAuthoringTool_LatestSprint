@@ -15,7 +15,7 @@ import mat.server.util.XmlProcessor;
 import mat.shared.ConstantMessages;
 import mat.shared.MatConstants;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -66,8 +66,8 @@ public class HQMFHumanReadableGenerator implements MatConstants{
 	private static final String[] POPULATION_NAME_ARRAY = {"initialPopulation",
 		"denominator", "denominatorExclusions", "numerator",
 		"numeratorExclusions", "denominatorExceptions",
-		"measurePopulation", "measurePopulationExclusions",
-		"measureObservation", "stratum" };
+		"measurePopulation", "measurePopulationExclusions", "stratum" ,
+		"measureObservation"};
 	
 	/** The Constant subsetFunctions */
 	private static List<String> subSetFunctionsList = new ArrayList<String>();

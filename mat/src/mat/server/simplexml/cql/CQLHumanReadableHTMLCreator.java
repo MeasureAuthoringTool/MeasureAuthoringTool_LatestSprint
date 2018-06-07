@@ -69,8 +69,8 @@ public class CQLHumanReadableHTMLCreator {
 	private static final String[] POPULATION_NAME_ARRAY = {"initialPopulation",
 		"denominator", "denominatorExclusions", "numerator",
 		"numeratorExclusions", "denominatorExceptions",
-		"measurePopulation", "measurePopulationExclusions",
-		"measureObservation", "stratum" };
+		"measurePopulation", "measurePopulationExclusions", "stratum" ,
+		"measureObservation"};
 	
 	/**
 	 * Generate cql human readable for measure.
@@ -1404,12 +1404,12 @@ public class CQLHumanReadableHTMLCreator {
 		
 		List<CQLDefinition> cqlDefinition = cqlModel.getDefinitionList();
 		for(CQLDefinition cqlDef:cqlDefinition){
-			cqlObjects.add(cqlDef.getDefinitionName());
+			cqlObjects.add(cqlDef.getName());
 		}
 		
 		List<CQLFunctions> cqlFunctions = cqlModel.getCqlFunctions();
 		for(CQLFunctions cqlFunc:cqlFunctions){
-			cqlObjects.add(cqlFunc.getFunctionName());
+			cqlObjects.add(cqlFunc.getName());
 		}
 	}
 

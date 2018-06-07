@@ -14,7 +14,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.exolab.castor.mapping.Mapping;
@@ -930,8 +930,8 @@ public class PackagerServiceImpl implements PackagerService {
 				CQLDefinition cqlDef = new CQLDefinition();
 
 				cqlDef.setId(newNode.getAttributes().getNamedItem("id").getNodeValue());
-				cqlDef.setDefinitionName(newNode.getAttributes().getNamedItem("name").getNodeValue());
-				cqlDef.setDefinitionLogic(newNode.getFirstChild().getTextContent());
+				cqlDef.setName(newNode.getAttributes().getNamedItem("name").getNodeValue());
+				cqlDef.setLogic(newNode.getFirstChild().getTextContent());
 
 				cqlDef.setContext(newNode.getAttributes().getNamedItem("context").getNodeValue());
 				// if(newNode.getAttributes().getNamedItem("supplDataElement")

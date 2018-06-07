@@ -67,6 +67,7 @@ import mat.model.VSACExpansionProfile;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.shared.CQLIdentifierObject;
 import mat.shared.ConstantMessages;
+import mat.shared.SaveUpdateCQLResult;
 
 /**
  * The Class MatContext.
@@ -1688,7 +1689,7 @@ public class MatContext implements IsSerializable {
 			if(valuesets.get(i).getType() != null){
 				valuesetIdentifier  = new CQLIdentifierObject(null, valuesets.get(i).getDisplayName(),valuesets.get(i).getId());
 			} else{
-				valuesetIdentifier  = new CQLIdentifierObject(null, valuesets.get(i).getCodeListName(),valuesets.get(i).getId());
+				valuesetIdentifier  = new CQLIdentifierObject(null, valuesets.get(i).getName(),valuesets.get(i).getId());
 			}
 			
 			valuesetIdentifiers.add(valuesetIdentifier);
@@ -2027,6 +2028,14 @@ public class MatContext implements IsSerializable {
 	 */
 	public void setIncludedCodeNames(List<CQLIdentifierObject> includedCodeNames) {
 		this.includedCodeNames = includedCodeNames;
+	}
+	
+	public void setIncludedValues(SaveUpdateCQLResult result) {
+		includedValueSetNames = result.getCqlModel().getCQLIdentifierValueSet();
+		includedCodeNames = result.getCqlModel().getCQLIdentifierCode();
+		includedParamNames = result.getCqlModel().getCQLIdentifierParam();
+		includedDefNames= result.getCqlModel().getCQLIdentifierDefinitions();
+		includedFuncNames = result.getCqlModel().getCQLIdentifierFunctions();
 	}
 	
 	/**
