@@ -73,6 +73,7 @@ import mat.server.model.MatUserDetails;
 import mat.server.service.CQLLibraryServiceInterface;
 import mat.server.service.UserService;
 import mat.server.service.impl.MatContextServiceUtil;
+import mat.server.util.CQLUtil;
 import mat.server.util.MATPropertiesService;
 import mat.server.util.MeasureUtility;
 import mat.server.util.ResourceLoader;
@@ -397,7 +398,6 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		}
 		
 		SaveUpdateCQLResult cqlResult  = getCQLData(libraryId);
-
 		if(cqlResult.getCqlErrors().size() >0 || !cqlResult.isDatatypeUsedCorrectly()){
 			result.setSuccess(false);
 			result.setFailureReason(ConstantMessages.INVALID_CQL_DATA);
@@ -405,13 +405,15 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		}
 		
 		List<String> usedLibraries = cqlResult.getUsedCQLArtifacts().getUsedCQLLibraries();
-		if(cqlLibraryContainsUnusedCQLLibraries(libraryId, usedLibraries)){
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		String cqlLibraryXml = getCQLLibraryXml(cqlLibrary);
+		if(CQLUtil.checkForUnusedIncludes(cqlLibraryXml, usedLibraries)){
 			if(!ignoreUnusedLibraries) {
 			    result.setSuccess(false);
 			    result.setFailureReason(ConstantMessages.INVALID_CQL_LIBRARIES);
 			    return result;
 			} else {
-		    	removeUnusedLibraries(libraryId, usedLibraries);
+		    	removeUnusedLibraries(cqlLibrary, cqlResult);
 			}
 	    }
 		
@@ -472,81 +474,20 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		}	
 	}
 	
-	
-	private boolean cqlLibraryContainsUnusedCQLLibraries(String libraryId, List<String> usedLibraries) {
-		boolean containsUnusedLibraries = false;
-		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+	private void removeUnusedLibraries(CQLLibrary cqlLibrary, SaveUpdateCQLResult cqlResult) {
 		String cqlLibraryXml = getCQLLibraryXml(cqlLibrary);
 		XmlProcessor xmlProcessor = new XmlProcessor(cqlLibraryXml);
-		String includeLibrariesXPath = "//cqlLookUp/includeLibrarys";
-		try {
-			Node node = (Node) xPath.evaluate(includeLibrariesXPath, xmlProcessor.getOriginalDoc().getDocumentElement(), XPathConstants.NODE);
-			if (node != null) {
-				NodeList childNodes = node.getChildNodes();
-				for(int i = 0; i<childNodes.getLength(); i++) {
-					String refName = null;
-					String alias = null;
-					String version = null;
-					if(childNodes.item(i).getAttributes().getNamedItem("cqlLibRefName") != null) {
-						refName = childNodes.item(i).getAttributes().getNamedItem("cqlLibRefName").getNodeValue();
-					}
-					if(childNodes.item(i).getAttributes().getNamedItem("name") != null) {
-						alias = childNodes.item(i).getAttributes().getNamedItem("name").getNodeValue();
-					}
-					if(childNodes.item(i).getAttributes().getNamedItem("cqlVersion") != null) {
-						version = childNodes.item(i).getAttributes().getNamedItem("cqlVersion").getNodeValue();
-					}
-					String libraryKey = refName + "-" + version + "|" + alias;
-					if(!usedLibraries.contains(libraryKey)) {
-						containsUnusedLibraries = true;
-						break;
-					}
-				}
-			}
-		} catch (XPathExpressionException e) {
-			logger.error(e.getMessage());
-		}
-		
-		return containsUnusedLibraries;
-	}
-	
-	private void removeUnusedLibraries(String libraryId, List<String> usedLibraries) {
-		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
-		String cqlLibraryXml = getCQLLibraryXml(cqlLibrary);
-		XmlProcessor xmlProcessor = new XmlProcessor(cqlLibraryXml);
-		String includeLibrariesXPath = "//cqlLookUp/includeLibrarys";
-		try {
-			Node node = (Node) xPath.evaluate(includeLibrariesXPath, xmlProcessor.getOriginalDoc().getDocumentElement(), XPathConstants.NODE);
-			if (node != null) {
-				NodeList childNodes = node.getChildNodes();
-				for(int i = 0; i<childNodes.getLength(); i++) {
-					String refName = null;
-					String alias = null;
-					String version = null;
-					Node childNode = childNodes.item(i);
-					if(childNode.getAttributes().getNamedItem("cqlLibRefName") != null) {
-						refName = childNodes.item(i).getAttributes().getNamedItem("cqlLibRefName").getNodeValue();
-					}
-					if(childNode.getAttributes().getNamedItem("name") != null) {
-						alias = childNodes.item(i).getAttributes().getNamedItem("name").getNodeValue();
-					}
-					if(childNode.getAttributes().getNamedItem("cqlVersion") != null) {
-						version = childNodes.item(i).getAttributes().getNamedItem("cqlVersion").getNodeValue();
-					}
-					String libraryKey = refName + "-" + version + "|" + alias;
-					if(!usedLibraries.contains(libraryKey)) {
-						Node parentNode = childNode.getParentNode();
-						parentNode.removeChild(childNode);
-					}
-				}
 
-				cqlLibrary.setCQLByteArray(xmlProcessor.transform(xmlProcessor.getOriginalDoc()).getBytes());
-				save(cqlLibrary);
-				cqlLibraryDAO.refresh(cqlLibrary);
-			}
+		try {
+			CQLUtil.removeUnusedIncludes(xmlProcessor.getOriginalDoc(),
+					cqlResult.getUsedCQLArtifacts().getUsedCQLLibraries(), cqlResult.getCqlModel());
 		} catch (XPathExpressionException e) {
-			logger.error(e.getMessage());
+			logger.error(e.getStackTrace());
 		}
+
+		cqlLibrary.setCQLByteArray(xmlProcessor.transform(xmlProcessor.getOriginalDoc()).getBytes());
+		save(cqlLibrary);
+		cqlLibraryDAO.refresh(cqlLibrary);
 	}
 
 	/**
@@ -1624,7 +1565,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 				appendAndSaveNode(library, nodeName, finalResult.getXml(), parentNode);
 				cqlLibraryDAO.refresh(library);
 				List<CQLQualityDataSetDTO> cqlQualityDataSetDTOs = CQLUtilityClass
-						.sortCQLQualityDataSetDto(getCQLData(cqlLibraryId).getCqlModel().getAllValueSetList());
+						.sortCQLQualityDataSetDto(getCQLData(cqlLibraryId).getCqlModel().getAllValueSetAndCodeList());
 				wrapper.setQualityDataDTO(cqlQualityDataSetDTOs);
 				
 			}
@@ -1883,7 +1824,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		
 	@Override
 	public VsacApiResult updateCQLVSACValueSets(String cqlLibraryId, String expansionId, String sessionId) {
-		List<CQLQualityDataSetDTO> appliedQDMList = getCQLData(cqlLibraryId).getCqlModel().getAllValueSetList();
+		List<CQLQualityDataSetDTO> appliedQDMList = getCQLData(cqlLibraryId).getCqlModel().getAllValueSetAndCodeList();
 		VsacApiResult result = getVsacService().updateCQLVSACValueSets(appliedQDMList, expansionId, sessionId);
 		if(result.isSuccess()){
 			updateAllCQLInLibraryXml(result.getCqlQualityDataSetMap(), cqlLibraryId);

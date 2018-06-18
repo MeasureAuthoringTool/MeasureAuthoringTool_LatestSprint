@@ -25,7 +25,6 @@ import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.measurepackage.MeasurePackagerView.Observer;
 import mat.client.measurepackage.service.MeasurePackageSaveResult;
 import mat.client.shared.ErrorMessageAlert;
-import mat.client.shared.InProgressMessageDisplay;
 import mat.client.shared.MatContext;
 import mat.client.shared.MeasurePackageClauseCellListWidget;
 import mat.client.shared.MessageAlert;
@@ -75,7 +74,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 	private List<RiskAdjustmentDTO> dbRiskAdjVars = new ArrayList<RiskAdjustmentDTO>();
 	
 	/** The is measure package success. */
-	private boolean isMeasurePackageExportSuccess = false;
+	private boolean isMeasurePackageAndExport = false;
 	
 	/**
 	 * Gets the db cql supp data elements.
@@ -359,7 +358,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 		 * 
 		 * @return the include vsac data
 		 */
-		//CheckBox getIncludeVSACData();
+
 		/**
 		 * Gets the measure error message display.
 		 *
@@ -415,7 +414,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 		 *
 		 * @return the in progress message display
 		 */
-		InProgressMessageDisplay getInProgressMessageDisplay();
+		MessageAlert getInProgressMessageDisplay();
 		
 		/**
 		 * Sets the CQL measure.
@@ -462,7 +461,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 			public void onClick(final ClickEvent event) {
 				if(MatContext.get().getMeasureLockService().checkForEditPermission()){
 					clearMessages();
-					view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
+					view.getPackageGroupingWidget().getAddAssociationsPanel().setVisible(false);
 					setNewMeasurePackage();
 				}
 			}
@@ -476,9 +475,10 @@ public class MeasurePackagePresenter implements MatPresenter {
 					clearMessages();
 					((Button) view.getPackageMeasureButton()).setEnabled(false);
 					((Button) view.getPackageMeasureAndExportButton()).setEnabled(false);
-					isMeasurePackageExportSuccess = false;
-					view.getInProgressMessageDisplay().setMessage(" Loading Please Wait...");
+					isMeasurePackageAndExport = false;
+					view.getInProgressMessageDisplay().createAlert("Loading Please Wait...");
 					validateGroup();
+					clearMessages(); 
 				}
 			}
 		});
@@ -488,11 +488,12 @@ public class MeasurePackagePresenter implements MatPresenter {
 			@Override
 			public void onClick(ClickEvent event) {
 				clearMessages();
-				view.getInProgressMessageDisplay().clear();
 				((Button) view.getPackageMeasureButton()).setEnabled(false);
 				((Button) view.getPackageMeasureAndExportButton()).setEnabled(false);
-				isMeasurePackageExportSuccess = true;
+				isMeasurePackageAndExport = true;
+				view.getInProgressMessageDisplay().createAlert("Loading Please Wait...");
 				validateGroup();
+				clearMessages(); 
 			}
 		});
 		
@@ -557,7 +558,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 			public void onClick(final ClickEvent event) {
 				clearMessages();
 				((Button) view.getPackageMeasureButton()).setEnabled(true);
-				view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
+				view.getPackageGroupingWidget().getAddAssociationsPanel().setVisible(false);
 				final MeasurePackageDetail tempMeasurePackageDetails = new MeasurePackageDetail(currentDetail);
 				updateDetailsFromView(tempMeasurePackageDetails);
 			
@@ -615,7 +616,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 				((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
 				view.getPackageErrorMessageDisplay().createAlert(
 						MatContext.get().getMessageDelegate().getUnableToProcessMessage());
-				view.getInProgressMessageDisplay().clear();
+				view.getInProgressMessageDisplay().clearAlert();
 			}
 			
 			@Override
@@ -625,17 +626,14 @@ public class MeasurePackagePresenter implements MatPresenter {
 					validatePackageGrouping();
 				}else {
 					Mat.hideLoadingMessage();
-					view.getInProgressMessageDisplay().clear();
-					view.getMeasureErrorMessageDisplay()
-					.createAlert(result.getValidationMessages());
+					view.getInProgressMessageDisplay().clearAlert();
+					view.getMeasureErrorMessageDisplay().createAlert(result.getValidationMessages());
 					((Button) view.getPackageMeasureButton()).setEnabled(true);
 					((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
 				}
 			}
 			
 		});
-		
-		
 	}
 	
 	/**
@@ -643,19 +641,19 @@ public class MeasurePackagePresenter implements MatPresenter {
 	 * @return boolean.
 	 */
 	private boolean isValid() {
-		
 		List<MeasurePackageClauseDetail> detailList = view
 				.getPackageGroupingWidget().getGroupingPopulationList();
 		List<String> messages = new ArrayList<String>();
 		MeasurePackageClauseValidator clauseValidator = new MeasurePackageClauseValidator();
 		MeasurePackageClauseCellListWidget measurePackageClauseCellListWidget = new MeasurePackageClauseCellListWidget();
 		messages = clauseValidator.isValidMeasurePackage(detailList);
-		measurePackageClauseCellListWidget.CheckForNumberOfStratification((ArrayList<MeasurePackageClauseDetail>) detailList, messages);
+		measurePackageClauseCellListWidget.checkForNumberOfStratification((ArrayList<MeasurePackageClauseDetail>) detailList, messages);
 		if (messages.size() > 0) {
 			view.getPackageErrorMessageDisplay().createAlert(messages);
 		} else {
 			view.getPackageErrorMessageDisplay().clearAlert();
 		}
+		
 		return messages.size() == 0;
 	}
 	
@@ -687,7 +685,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 		view.getSaveErrorMessageDisplay().clearAlert();
 		view.getSaveErrorMessageDisplayOnEdit().clearAlert();
 		view.getRiskAdjSuccessMessageDisplay().clearAlert();
-		
+		view.getInProgressMessageDisplay().clearAlert();
 	}
 	/**
 	 * Display Empty.
@@ -695,27 +693,20 @@ public class MeasurePackagePresenter implements MatPresenter {
 	private void displayEmpty() {
 		panel.clear();
 		panel.add(view.asWidget());
-		view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
-		//view.getIncludeVSACData().setValue(false);
+		view.getPackageGroupingWidget().getAddAssociationsPanel().setVisible(false);
 	}
-	/* (non-Javadoc)
-	 * @see mat.client.MatPresenter#beforeClosingDisplay()
-	 */
+
 	@Override
 	public void beforeClosingDisplay() {
 		currentDetail = null;
 		packageOverview = null;
-		view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
-		//view.getIncludeVSACData().setValue(false);
+		view.getPackageGroupingWidget().getAddAssociationsPanel().setVisible(false);
 	}
-	/* (non-Javadoc)
-	 * @see mat.client.MatPresenter#beforeDisplay()
-	 */
+
 	@Override
 	public void beforeDisplay() {
 		showMeasurePackagerBusy(true);
 		clearMessages();
-		//panel.clear();
 		if ((MatContext.get().getCurrentMeasureId() != null)
 				&& !MatContext.get().getCurrentMeasureId().equals("")) {
 			
@@ -732,9 +723,8 @@ public class MeasurePackagePresenter implements MatPresenter {
 						public void onSuccess(SaveUpdateCQLResult result) {
 														
 							if(result.getCqlErrors().size() == 0){
-								//panel.add(view.asWidget());
 								getMeasure(MatContext.get().getCurrentMeasureId());
-								view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
+								view.getPackageGroupingWidget().getAddAssociationsPanel().setVisible(false);
 							}else{
 								panel.clear();
 								panel.getElement().setId("MeasurePackagerContentFlowPanel");
@@ -744,7 +734,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 								MatContext.get().getMessageDelegate();
 								errorMessageAlert.createAlert(MessageDelegate.getPACKAGER_CQL_ERROR());
 																								
-								view.getPackageGroupingWidget().getDisclosurePanelAssociations().setVisible(false);
+								view.getPackageGroupingWidget().getAddAssociationsPanel().setVisible(false);
 							}		
 							
 							showMeasurePackagerBusy(false);
@@ -760,9 +750,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 		MeasureComposerPresenter.setSubSkipEmbeddedLink("MeasurePackagerContentFlowPanel");
 		Mat.focusSkipLists("MeasureComposer");
 	}
-	/* (non-Javadoc)
-	 * @see mat.client.MatPresenter#getWidget()
-	 */
+
 	@Override
 	public Widget getWidget() {
 		panel.clear();
@@ -815,7 +803,6 @@ public class MeasurePackagePresenter implements MatPresenter {
 					
 					view.getSaveErrorMessageDisplay().clearAlert();
 					view.getSaveErrorMessageDisplayOnEdit().clearAlert();
-					//showErrorMessage(view.getSaveErrorMessageDisplay());
 					view.getSaveErrorMessageDisplayOnEdit().createAlert();
 					view.getSaveErrorMessageDisplayOnEdit().getWarningConfirmationYesButton().setFocus(true);
 					handleClickEventsOnUnsavedErrorMsg(detail, view.getSaveErrorMessageDisplayOnEdit(), null);
@@ -915,8 +902,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 					MeasurePackageDetail mpDetail = result.getPackages().get(i);
 					if (mpDetail.getSequence().equalsIgnoreCase(
 							currentDetail.getSequence())) {
-						setMeasurePackage(result.getPackages().get(i)
-								.getSequence());
+						setMeasurePackage(result.getPackages().get(i).getSequence());
 					}
 				}
 			} else {
@@ -996,17 +982,12 @@ public class MeasurePackagePresenter implements MatPresenter {
 	private void setNewMeasurePackage() {
 		currentDetail = new MeasurePackageDetail();
 		currentDetail.setMeasureId(MatContext.get().getCurrentMeasureId());
-		currentDetail.setSequence(Integer
-				.toString(getMaxSequence(packageOverview) + 1));
+		currentDetail.setSequence(Integer.toString(getMaxSequence(packageOverview) + 1));
 		List<MeasurePackageDetail> packageList = new ArrayList<MeasurePackageDetail>(packageOverview.getPackages());
 		view.buildCellTable(packageList);
 		setMeasurePackageDetailsOnView();
 	}
-	/**
-	 * Sets the measure package.
-	 *
-	 * @param measurePackageId the new measure package
-	 */
+
 	private void setMeasurePackage(final String measurePackageId) {
 		for (MeasurePackageDetail detail : packageOverview.getPackages()) {
 			if (detail.getSequence().equals(measurePackageId)) {
@@ -1018,31 +999,19 @@ public class MeasurePackagePresenter implements MatPresenter {
 		}
 	}
 	
-	/**
-	 * Gets the association list from view.
-	 *
-	 * @param packageClauses the package clauses
-	 * @return the association list from view
-	 */
 	public void getAssociationListFromView(List<MeasurePackageClauseDetail> packageClauses){
 		for(int i=0; i<dbPackageClauses.size(); i++){
 			dbPackageClauses.get(i).setDbAssociatedPopulationUUID(packageClauses.get(i).getAssociatedPopulationUUID());
 		}
-		
 	}
-	/**
-	 * setMeasurePackageDetailsOnView.
-	 */
+
 	private void setMeasurePackageDetailsOnView() {
-		List<MeasurePackageClauseDetail> packageClauses = new ArrayList<MeasurePackageClauseDetail>(currentDetail
-				.getPackageClauses());
-		List<MeasurePackageClauseDetail> remainingClauses = removeClauses(
-				packageOverview.getClauses(), packageClauses);
+		List<MeasurePackageClauseDetail> packageClauses = new ArrayList<MeasurePackageClauseDetail>(currentDetail.getPackageClauses());
+		List<MeasurePackageClauseDetail> remainingClauses = removeClauses(packageOverview.getClauses(), packageClauses);
 		view.setPackageName(currentDetail.getPackageName());
 		view.setClausesInPackage(packageClauses);
 		view.setClauses(remainingClauses);
-		if(packageOverview.getReleaseVersion() != null 
-				&& MatContext.get().isCQLMeasure(packageOverview.getReleaseVersion())){
+		if(packageOverview.getReleaseVersion() != null && MatContext.get().isCQLMeasure(packageOverview.getReleaseVersion())){
 			view.setCQLMeasure(true);
 			view.setRiskAdjustLabel(true);
 			view.setQdmElementsLabel(true);
@@ -1052,7 +1021,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 			view.setCQLElementsInSuppElements(packageOverview.getCqlSuppDataElements());
 			view.setCQLQDMElements(packageOverview.getCqlQdmElements());
 		}
-		else{
+		else {
 			view.setCQLMeasure(false);
 			view.setRiskAdjustLabel(false);
 			view.setQdmElementsLabel(false);
@@ -1061,11 +1030,9 @@ public class MeasurePackagePresenter implements MatPresenter {
 			view.setCQLQDMElements(Collections.<CQLDefinition>emptyList());
 			//Set QDM and Supplemental Data Elements.
 			view.setQDMElementsInSuppElements(packageOverview.getSuppDataElements());
-			view.setQDMElements(packageOverview.getQdmElements());
-			
-			
+			view.setQDMElements(packageOverview.getQdmElements());	
 		}
-		//view.setQDMElements(packageOverview.getQdmElements());
+
 		view.setSubTreeInRiskAdjVarList(packageOverview.getRiskAdjList());
 		view.setSubTreeClauseList(packageOverview.getSubTreeClauseList());
 		dbPackageClauses.clear();
@@ -1086,9 +1053,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 	 * @param toRemove - List from where to Remove.
 	 * @return List.
 	 */
-	private List<MeasurePackageClauseDetail> removeClauses(
-			final List<MeasurePackageClauseDetail> master,
-			final List<MeasurePackageClauseDetail> toRemove) {
+	private List<MeasurePackageClauseDetail> removeClauses(final List<MeasurePackageClauseDetail> master, final List<MeasurePackageClauseDetail> toRemove) {
 		List<MeasurePackageClauseDetail> newList = new ArrayList<MeasurePackageClauseDetail>();
 		newList.addAll(master);
 		for (MeasurePackageClauseDetail remove : toRemove) {
@@ -1155,20 +1120,19 @@ public class MeasurePackagePresenter implements MatPresenter {
 				Mat.hideLoadingMessage();
 				((Button) view.getPackageMeasureButton()).setEnabled(true);
 				((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
-				view.getInProgressMessageDisplay().clear();
+				view.getInProgressMessageDisplay().clearAlert();
 			}
 			
 			@Override
 			public void onSuccess(ValidateMeasureResult result) {
 				if (result.isValid()) {
 					saveMeasureAtPackage();
-					
 				} else {
 					Mat.hideLoadingMessage();
 					if (result.getValidationMessages() != null) {
 						view.getMeasurePackageWarningMsg().createWarningMultiLineAlert(result.getValidationMessages());
 					}
-					view.getInProgressMessageDisplay().clear();
+					view.getInProgressMessageDisplay().clearAlert();
 					((Button) view.getPackageMeasureButton()).setEnabled(true);
 					((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
 				}
@@ -1215,7 +1179,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 								.getValueSetDateInvalidMessage();
 						view.getErrorMessageDisplay().createAlert(message);
 						((Button) view.getPackageMeasureButton()).setEnabled(true);
-						view.getInProgressMessageDisplay().clear();
+						view.getInProgressMessageDisplay().clearAlert();
 					}
 				}
 			}
@@ -1236,7 +1200,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 				((Button) view.getPackageMeasureButton()).setEnabled(true);
 				((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
 				Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-				view.getInProgressMessageDisplay().clear();
+				view.getInProgressMessageDisplay().clearAlert();
 			}
 			
 			@Override
@@ -1263,7 +1227,7 @@ public class MeasurePackagePresenter implements MatPresenter {
 			public void onFailure(final Throwable caught) {
 				Mat.hideLoadingMessage();
 				((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
-				view.getInProgressMessageDisplay().clear();
+				view.getInProgressMessageDisplay().clearAlert();
 				((Button) view.getPackageMeasureButton()).setEnabled(true);
 				view.getPackageErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getUnableToProcessMessage());
 			}
@@ -1274,88 +1238,90 @@ public class MeasurePackagePresenter implements MatPresenter {
 				if (updateVsacResult != null) {
 					if (result.isValid() && updateVsacResult.isSuccess()) {
 						if (updateVsacResult.getRetrievalFailedOIDs().size() > 0) {
-							if (isMeasurePackageExportSuccess) {
-								((Button) view.getPackageMeasureButton()).setEnabled(true);
-								saveExport();
+							if (isMeasurePackageAndExport) {
+								handleSuccessfulPackageAndExport();
 							} else {
 								view.getMeasurePackageSuccessMsg().createAlert(MatContext.get().getMessageDelegate().getPackageSuccessAmberMessage());
-								((Button) view.getPackageMeasureButton()).setEnabled(true);
-								view.getInProgressMessageDisplay().clear();
-								((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
+								resetPackageButtonsAndMessages();
 							}
 						} else {
-							if (isMeasurePackageExportSuccess) {
-								((Button) view.getPackageMeasureButton()).setEnabled(true);
-								saveExport();
+							if (isMeasurePackageAndExport) {
+								handleSuccessfulPackageAndExport();
 							} else {
-								view.getMeasurePackageSuccessMsg().createAlert(MatContext.get().getMessageDelegate().getPackageSuccessMessage());
-								((Button) view.getPackageMeasureButton()).setEnabled(true);
-								((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
-								view.getInProgressMessageDisplay().clear();
+								handleSuccessfulPackage();
 							}
 						}
 						
 					} else if (result.isValid() && !updateVsacResult.isSuccess()) {
 						if (updateVsacResult.getFailureReason() == VsacApiResult.UMLS_NOT_LOGGEDIN) {
-							if (isMeasurePackageExportSuccess) {
-								((Button) view.getPackageMeasureButton()).setEnabled(true);
-								saveExport();
+							if (isMeasurePackageAndExport) {
+								handleSuccessfulPackageAndExport();
 							} else {
 								view.getMeasurePackageWarningMsg().createAlert(MatContext.get().getMessageDelegate().getMEASURE_PACKAGE_UMLS_NOT_LOGGED_IN());
-								((Button) view.getPackageMeasureButton()).setEnabled(true);
-								((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
-								view.getInProgressMessageDisplay().clear();
+								resetPackageButtonsAndMessages();
 							}
 						}else if(VsacApiResult.VSAC_REQUEST_TIMEOUT == updateVsacResult.getFailureReason()){
 							view.getMeasureErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getMEASURE_PACKAGE_VSAC_TIMEOUT());
-							((Button) view.getPackageMeasureButton()).setEnabled(true);
-							((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
-							view.getInProgressMessageDisplay().clear();
+							resetPackageButtonsAndMessages();
 						}
 					} else {
-						view.getMeasureErrorMessageDisplay().createAlert(result.getValidationMessages());
-						((Button) view.getPackageMeasureButton()).setEnabled(true);
-						((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
-						view.getInProgressMessageDisplay().clear();
+						handleUnsuccessfulPackage(result);
 					}
 				} else {
 					if (result.isValid()) {
 						//to Export the Measure.
-						if (isMeasurePackageExportSuccess) {
-							((Button) view.getPackageMeasureButton()).setEnabled(true);
-							saveExport();
+						if (isMeasurePackageAndExport) {
+							handleSuccessfulPackageAndExport();
 						} else {
-							view.getMeasurePackageSuccessMsg().createAlert(MatContext.get().getMessageDelegate().getPackageSuccessMessage());
-							((Button) view.getPackageMeasureButton()).setEnabled(true);
-							((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
-							view.getInProgressMessageDisplay().clear();
+							handleSuccessfulPackage();
 						}
 					} else {
-						view.getMeasureErrorMessageDisplay().createAlert(result.getValidationMessages());
-						((Button) view.getPackageMeasureButton()).setEnabled(true);
-						((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
-						view.getInProgressMessageDisplay().clear();
+						handleUnsuccessfulPackage(result);
 					}
 				}
 				
-				//record Package created Audit event
 				if (result.isValid()) {	
-					MatContext.get().getAuditService().recordMeasureEvent(measureId, "Measure Package Created",
-							"", false, new AsyncCallback<Boolean>() {
-	
-								@Override
-								public void onFailure(Throwable caught) {
-	
-								}
-	
-								@Override
-								public void onSuccess(Boolean result) {
-	
-								}
-							});
+					recordMeasurePackageEvent(measureId);
 				}
 			}
+
+
 		});
+	}
+	
+	private void recordMeasurePackageEvent(final String measureId) {
+		MatContext.get().getAuditService().recordMeasureEvent(measureId, "Measure Package Created", "", false, new AsyncCallback<Boolean>() {
+			@Override
+			public void onFailure(Throwable caught) {
+
+			}
+
+			@Override
+			public void onSuccess(Boolean result) {
+
+			}
+		});
+	}
+	
+	private void handleUnsuccessfulPackage(final ValidateMeasureResult result) {
+		view.getMeasureErrorMessageDisplay().createAlert(result.getValidationMessages());
+		resetPackageButtonsAndMessages();
+	}
+
+	private void handleSuccessfulPackage() {
+		view.getMeasurePackageSuccessMsg().createAlert(MatContext.get().getMessageDelegate().getPackageSuccessMessage());
+		resetPackageButtonsAndMessages();
+	}
+
+	private void resetPackageButtonsAndMessages() {
+		((Button) view.getPackageMeasureButton()).setEnabled(true);
+		((Button) view.getPackageMeasureAndExportButton()).setEnabled(true);
+		view.getInProgressMessageDisplay().clearAlert();
+	}
+
+	private void handleSuccessfulPackageAndExport() {
+		resetPackageButtonsAndMessages();
+		saveExport();
 	}
 	
 	private void showMeasurePackagerBusy(boolean isBusy) {
@@ -1413,7 +1379,3 @@ public class MeasurePackagePresenter implements MatPresenter {
 	}
 	
 }
-
-
-
-

@@ -2064,7 +2064,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			model.scrubForMarkUp();
 		}
 		ManageMeasureModelValidator manageMeasureModelValidator = new ManageMeasureModelValidator();
-		List<String> message = manageMeasureModelValidator.isValidMeasure(model);
+		List<String> message = manageMeasureModelValidator.validateMeasure(model);
 		if (message.size() == 0) {
 			Measure pkg = null;
 			MeasureSet measureSet = null;
@@ -2149,6 +2149,21 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		logger.info("MeasureLibraryServiceImpl: saveAndDeleteMeasure End : measureId:: " + measureID);
 	}
 
+	private void removeUnusedLibraries(MeasureXmlModel measureXmlModel, SaveUpdateCQLResult cqlResult) {
+		String measureXml = measureXmlModel.getXml();
+		XmlProcessor processor = new XmlProcessor(measureXml);
+		try {
+			CQLUtil.removeUnusedIncludes(processor.getOriginalDoc(), 
+					cqlResult.getUsedCQLArtifacts().getUsedCQLLibraries(), cqlResult.getCqlModel());
+		} catch (XPathExpressionException e) {
+			logger.error(e.getStackTrace());
+		}
+		
+		String updatedMeasureXml = new String(processor.transform(processor.getOriginalDoc()).getBytes());
+		measureXmlModel.setXml(updatedMeasureXml);
+		getService().saveMeasureXml(measureXmlModel);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -2157,7 +2172,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * String, boolean, java.lang.String)
 	 */
 	@Override
-	public final SaveMeasureResult saveFinalizedVersion(final String measureId, final boolean isMajor, final String version, boolean shouldPackage) {
+	public final SaveMeasureResult saveFinalizedVersion(final String measureId, final boolean isMajor, final String version, boolean shouldPackage, boolean ignoreUnusedLibraries) {
 
 		logger.info("In MeasureLibraryServiceImpl.saveFinalizedVersion() method..");
 		Measure m = getService().getById(measureId);
@@ -2169,12 +2184,26 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			return returnFailureReason(saveMeasureResult, SaveMeasureResult.INVALID_DATA);
 		}
 
-		SaveUpdateCQLResult cqlResult =  getMeasureCQLFileData(measureId);
+		SaveUpdateCQLResult cqlResult = getMeasureCQLFileData(measureId);
 		if(cqlResult.getCqlErrors().size() > 0 || !cqlResult.isDatatypeUsedCorrectly()){
 			SaveMeasureResult saveMeasureResult = new SaveMeasureResult();
 			return returnFailureReason(saveMeasureResult, SaveMeasureResult.INVALID_CQL_DATA);
 		}
 
+		// return error if there are unused libraries in the measure
+		MeasureXmlModel measureXmlModel = getService().getMeasureXmlForMeasure(measureId);
+		String measureXml = measureXmlModel.getXml();
+		if(!ignoreUnusedLibraries) {
+			if(CQLUtil.checkForUnusedIncludes(measureXml, cqlResult.getUsedCQLArtifacts().getUsedCQLLibraries())) {
+				SaveMeasureResult saveMeasureResult = new SaveMeasureResult(); 
+				saveMeasureResult.setFailureReason(SaveMeasureResult.UNUSED_LIBRARY_FAIL);
+				logger.info("Measure Package and Version Failed for measure with id " + measureId + " because there are libraries that are unused.");
+				return saveMeasureResult;
+			}
+		}
+		
+		removeUnusedLibraries(measureXmlModel, cqlResult);
+		
 		if(shouldPackage) {
 			SaveMeasureResult validatePackageResult = validateAndPackage(getMeasure(measureId));
 			if(!validatePackageResult.isSuccess()) {
@@ -2182,6 +2211,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				return returnFailureReason(saveMeasureResult, SaveMeasureResult.PACKAGE_FAIL);
 			}
 		}
+		
+
 
 		String versionNumber = null;
 		if (isMajor) {
@@ -2342,7 +2373,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		Measure measure = null;
 		model.scrubForMarkUp();
 		ManageMeasureModelValidator manageMeasureModelValidator = new ManageMeasureModelValidator();
-		List<String> message = manageMeasureModelValidator.isValidMeasure(model);
+		List<String> message = manageMeasureModelValidator.validateMeasure(model);
 		if (message.size() == 0) {
 			if (model.getId() != null) {
 				setMeasureCreated(true);
@@ -2751,6 +2782,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		measure.setaBBRName(model.getShortName());
 		// US 421. Scoring choice is not part of core measure.
 		measure.setMeasureScoring(model.getMeasScoring());
+		measure.setPatientBased(model.isPatientBased());
 		measure.setVersion(model.getVersionNumber());
 		measure.setDraft(model.isDraft());
 		measure.setRevisionNumber(model.getRevisionNumber());
@@ -6048,7 +6080,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			
 			updateMeasureXmlForDeletedComponentMeasureAndOrg(measureId);
 			validateMeasureForExport(measureId, null);
-			auditService.recordMeasureEvent(measureId, "Measure Pacakge Created", "", false);
+			auditService.recordMeasureEvent(measureId, "Measure Package Created", "", false);
 			return result;
 		} catch (Exception e) {
 			e.printStackTrace();

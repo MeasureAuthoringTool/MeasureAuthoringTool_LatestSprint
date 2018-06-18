@@ -781,7 +781,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 
 				@Override
 				public void onSuccess(SaveUpdateCQLResult result) {
-					setAppliedValueSetListInTable(result.getCqlModel().getAllValueSetList());
+					setAppliedValueSetListInTable(result.getCqlModel().getAllValueSetAndCodeList());
 					showSearchingBusy(false);
 				}
 			});
@@ -2087,6 +2087,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 														searchDisplay.getCqlLeftNavBarPanelView().udpateIncludeLibraryMap();
 														MatContext.get().setIncludes(getIncludesList(result.getCqlModel().getCqlIncludeLibrarys()));
 														MatContext.get().setIncludedValues(result);
+														MatContext.get().setCQLModel(result.getCqlModel());
 														editIncludedLibraryDialogBox.getDialogModal().hide();
 														DomEvent.fireNativeEvent(
 																Document.get()
@@ -2636,6 +2637,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 												.setViewParameterList(result.getCqlModel().getCqlParameters());
 										MatContext.get().setParameters(
 												getParamaterList(result.getCqlModel().getCqlParameters()));
+										MatContext.get().setCQLModel(result.getCqlModel());
 										searchDisplay.getCqlLeftNavBarPanelView()
 												.setCurrentSelectedParamerterObjId(result.getParameter().getId());
 										searchDisplay.getCqlLeftNavBarPanelView().clearAndAddParameterNamesToListBox();
@@ -2962,6 +2964,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 													result.getCqlModel().getCqlIncludeLibrarys());
 											MatContext.get().setIncludes(
 													getIncludesList(result.getCqlModel().getCqlIncludeLibrarys()));
+											MatContext.get().setCQLModel(result.getCqlModel());
 											searchDisplay.getCqlLeftNavBarPanelView().clearAndAddAliasNamesToListBox();
 											searchDisplay.getCqlLeftNavBarPanelView().udpateIncludeLibraryMap();
 											searchDisplay.getIncludeView()
@@ -2975,7 +2978,6 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 											clearAlias();
 
 											MatContext.get().setIncludedValues(result);
-
 											if (searchDisplay.getCqlLeftNavBarPanelView().getIncludesNameListbox()
 													.getItemCount() >= CQLWorkSpaceConstants.VALID_INCLUDE_COUNT) {
 												searchDisplay.getCqlLeftNavBarPanelView().getWarningMessageAlert()
@@ -3395,6 +3397,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 								
 								MatContext.get().setIncludedValues(result);
 
+
 								searchDisplay.getCqlLeftNavBarPanelView().clearAndAddAliasNamesToListBox();
 								searchDisplay.getCqlLeftNavBarPanelView().udpateIncludeLibraryMap();
 								searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().clearAlert();
@@ -3467,6 +3470,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 					searchDisplay.getCodesView().resetCQLCodesSearchPanel();
 					appliedCodeTableList.clear();
 					appliedCodeTableList.addAll(result.getCqlCodeList());
+					MatContext.get().getCQLModel().setCodeList(appliedCodeTableList);
 					searchDisplay.getCqlLeftNavBarPanelView().setCodeBadgeValue(appliedCodeTableList);
 					//searchDisplay.buildCodes();
 					searchDisplay.getCodesView().buildCodesCellTable(
@@ -3494,8 +3498,8 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 					public void onSuccess(final SaveUpdateCQLResult result) {
 						searchDisplay.getCqlLeftNavBarPanelView().setCurrentSelectedValueSetObjId(null);
 						appliedValueSetTableList.clear();
-						if (result.getCqlModel().getAllValueSetList() != null) {
-							for (CQLQualityDataSetDTO dto : result.getCqlModel().getAllValueSetList()) {
+						if (result.getCqlModel().getAllValueSetAndCodeList() != null) {
+							for (CQLQualityDataSetDTO dto : result.getCqlModel().getAllValueSetAndCodeList()) {
 								if(dto.isSuppDataElement() || 
 										dto.getOid().equals("419099009") || dto.getOid().equals("21112-8") 
 												|| (dto.getType() !=null && dto.getType().equalsIgnoreCase("code")))
@@ -3721,14 +3725,14 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 				}
 
 				List<CQLQualityDataSetDTO> appliedAllValueSetList = new ArrayList<CQLQualityDataSetDTO>();
-				List<CQLQualityDataSetDTO> appliedValueSetListInXML = result.getCqlModel().getAllValueSetList();
+				List<CQLQualityDataSetDTO> appliedValueSetListInXML = result.getCqlModel().getAllValueSetAndCodeList();
 
 				for (CQLQualityDataSetDTO dto : appliedValueSetListInXML) {
 					if (dto.isSuppDataElement())
 						continue;
 					appliedAllValueSetList.add(dto);
 				}
-
+				MatContext.get().setCQLModel(result.getCqlModel());
 				MatContext.get().setValuesets(appliedAllValueSetList);
 				appliedValueSetTableList.clear();
 				appliedCodeTableList.clear();
@@ -3745,6 +3749,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 				}
 				searchDisplay.getCqlLeftNavBarPanelView().setCodeBadgeValue(appliedCodeTableList);
 				searchDisplay.getCqlLeftNavBarPanelView().setAppliedCodeTableList(appliedCodeTableList);
+				MatContext.get().getCQLModel().setCodeList(appliedCodeTableList);
 
 				if ((result.getCqlModel().getDefinitionList() != null)
 						&& (result.getCqlModel().getDefinitionList().size() > 0)) {
@@ -3783,6 +3788,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 					searchDisplay.getCqlLeftNavBarPanelView().udpateIncludeLibraryMap();
 					MatContext.get().setIncludes(getIncludesList(result.getCqlModel().getCqlIncludeLibrarys()));
 					MatContext.get().setIncludedValues(result);
+
 
 				} else {
 					searchDisplay.getCqlLeftNavBarPanelView().getIncludesBadge().setText("00");
@@ -4410,10 +4416,11 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 						searchDisplay.getCodesView().resetCQLCodesSearchPanel();
 						appliedCodeTableList.clear();
 						appliedCodeTableList.addAll(result.getCqlCodeList());
+						MatContext.get().getCQLModel().setCodeList(appliedCodeTableList);
 						searchDisplay.getCodesView().buildCodesCellTable(appliedCodeTableList, MatContext.get().getLibraryLockService().checkForEditPermission());
 						searchDisplay.getCqlLeftNavBarPanelView().setCodeBadgeValue(appliedCodeTableList);
-						if (result != null && result.getCqlModel().getAllValueSetList() != null) {
-							setAppliedValueSetListInTable(result.getCqlModel().getAllValueSetList());
+						if (result != null && result.getCqlModel().getAllValueSetAndCodeList() != null) {
+							setAppliedValueSetListInTable(result.getCqlModel().getAllValueSetAndCodeList());
 						}
 						showSearchingBusy(false);
 					}
@@ -4591,9 +4598,10 @@ private void addCodeSearchPanelHandlers() {
 						searchDisplay.getCodesView().resetCQLCodesSearchPanel();
 						appliedCodeTableList.clear();
 						appliedCodeTableList.addAll(result.getCqlCodeList());
+						MatContext.get().getCQLModel().setCodeList(appliedCodeTableList);
 						searchDisplay.getCqlLeftNavBarPanelView().setCodeBadgeValue(appliedCodeTableList);
-						if (result.getCqlModel().getAllValueSetList() != null) {
-							setAppliedValueSetListInTable(result.getCqlModel().getAllValueSetList());
+						if (result.getCqlModel().getAllValueSetAndCodeList() != null) {
+							setAppliedValueSetListInTable(result.getCqlModel().getAllValueSetAndCodeList());
 						}
 						searchDisplay.getCodesView().buildCodesCellTable(appliedCodeTableList, MatContext.get().getLibraryLockService().checkForEditPermission());
 						//Temporary fix to update codes for insert Icon.
@@ -4722,7 +4730,7 @@ private void addCodeSearchPanelHandlers() {
 						
 							List<CQLQualityDataSetDTO> appliedListModel = new ArrayList<CQLQualityDataSetDTO>();
 							for (CQLQualityDataSetDTO cqlQDMDTO : result.getUpdatedCQLQualityDataDTOLIst()) {
-								if (!ConstantMessages.EXPIRED_OID.equals(cqlQDMDTO
+								if (!ConstantMessages.DEAD_OID.equals(cqlQDMDTO
 										.getDataType()) && !ConstantMessages.BIRTHDATE_OID.equals(cqlQDMDTO
 												.getDataType())
 										&& (cqlQDMDTO.getType() == null))  {

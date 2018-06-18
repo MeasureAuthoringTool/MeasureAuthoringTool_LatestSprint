@@ -799,7 +799,7 @@ public class MessageDelegate {
 			+ "Please copy the complete URL for the code directly from VSAC and try again.";
 	
 	/** The umls successfull login. */
-	private final String UMLS_SUCCESSFULL_LOGIN = "Successfully logged into UMLS";
+	private final String UMLS_SUCCESSFULL_LOGIN = "Successfully logged in to UMLS";
 	
 	/** The unable to process. */
 	private final String UNABLE_TO_PROCESS = "System error.  Unable to process information.";
@@ -3547,6 +3547,10 @@ public class MessageDelegate {
 	
 	public String getVersionAndPackageSuccessfulMessage(String name, String version){
 		return name + " has been successfully packaged and v" + (version.length()>60 ? version.substring(0, 59) : version) + " has been successfully created."; 
+	}
+	
+	public String getUnusedIncludedLibraryWarning(String name) {
+		return "You have included libraries that are unused. In order to version " + name + ", these must be removed. Select Continue to have the MAT remove these included libraries or Cancel to stop the version process.";
 	}
 
 	public String getINVALID_QDM_VERSION_IN_INCLUDES() {

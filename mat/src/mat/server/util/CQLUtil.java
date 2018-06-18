@@ -32,21 +32,19 @@ import mat.dao.clause.CQLLibraryDAO;
 import mat.model.clause.CQLLibrary;
 import mat.model.cql.CQLCode;
 import mat.model.cql.CQLDefinition;
-import mat.model.cql.CQLExpression;
 import mat.model.cql.CQLFunctions;
 import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
-import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.CQLUtilityClass;
 import mat.shared.CQLErrors;
 import mat.shared.CQLExpressionObject;
 import mat.shared.CQLExpressionOprandObject;
-import mat.shared.CQLIdentifierObject;
 import mat.shared.CQLObject;
 import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.LibHolderObject;
 import mat.shared.SaveUpdateCQLResult;
+import mat.shared.ConstantMessages;
 
 /**
  * The Class CQLUtil.
@@ -58,20 +56,7 @@ public class CQLUtil {
 
 	/** The Constant logger. */
 	private static final Log logger = LogFactory.getLog(CQLUtil.class);
-	
-    public static final String PATIENT_CHARACTERSTICS_EXPIRED = "Patient Characteristic Expired";
 
-    public static final String DEAD = "Dead";
-
-    public static final String PATIENT_CHARACTERISTIC_BIRTHDATE = "Patient Characteristic Birthdate";
-    
-    public static final String BIRTHDATE_OID = "21112-8";
-    
-    public static final String BIRTHDATE_CODESYTEM_OID = "2.16.840.1.113883.6.1";
-    
-    public static final String DEAD_OID = "419099009";
-    
-    public static final String DEAD_CODESYSTEM_OID = "2.16.840.1.113883.6.96";
 
 
 	/**
@@ -112,7 +97,6 @@ public class CQLUtil {
 			}
 
 		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -127,33 +111,36 @@ public class CQLUtil {
 	 * @return true if all combinations are valid, false otherwise
 	 */
 	public static boolean validateDatatypeCombinations(CQLModel model, Map<String, List<String>> valuesetDatatypeMap, Map<String, List<String>> codeDatatypeMap) {
-	
-		boolean isValidValuesetDatatypeComboUsed = true; 
-		Iterator<Entry<String, List<String>>> iterator = valuesetDatatypeMap.entrySet().iterator();
-		while(iterator.hasNext()) {
-			Map.Entry<String, List<String>> pair = (Map.Entry<String, List<String>>) iterator.next();
-			List<String> datatypes = pair.getValue();
-			isValidValuesetDatatypeComboUsed = isValidDataTypeCombination(datatypes);
-			
-			if(!isValidValuesetDatatypeComboUsed) {
-				return false; 
+		Iterator<Entry<String, List<String>>> iterator = null;
+		if(valuesetDatatypeMap != null && !valuesetDatatypeMap.isEmpty()) {
+			boolean isValidValuesetDatatypeComboUsed = true; 
+			iterator = valuesetDatatypeMap.entrySet().iterator();
+			while(iterator.hasNext()) {
+				Map.Entry<String, List<String>> pair = (Map.Entry<String, List<String>>) iterator.next();
+				List<String> datatypes = pair.getValue();
+				isValidValuesetDatatypeComboUsed = isValidDataTypeCombination(datatypes);
+				
+				if(!isValidValuesetDatatypeComboUsed) {
+					return false; 
+				}
 			}
 		}
-		
-		boolean isValidCodeDatatypeComboUsed = true; 
-		iterator = codeDatatypeMap.entrySet().iterator();
-		while(iterator.hasNext()) {
-			Map.Entry<String, List<String>> pair = (Map.Entry<String, List<String>>) iterator.next();
-			String codeName = pair.getKey();
-			List<String> datatypes = pair.getValue();
-			CQLCode code = model.getCodeByName(codeName);
-			isValidCodeDatatypeComboUsed = isValidDataTypeCombination(code.getCodeOID(), code.getCodeSystemOID(), datatypes);
-			
-			if(!isValidCodeDatatypeComboUsed) {
-				return false; 
+		if(codeDatatypeMap != null && !codeDatatypeMap.isEmpty()) {
+			boolean isValidCodeDatatypeComboUsed = true; 
+			iterator = codeDatatypeMap.entrySet().iterator();
+			while(iterator.hasNext()) {
+				Map.Entry<String, List<String>> pair = (Map.Entry<String, List<String>>) iterator.next();
+				String codeName = pair.getKey();
+				List<String> datatypes = pair.getValue();
+				CQLCode code = model.getCodeByName(codeName);
+				if(code != null) {
+					isValidCodeDatatypeComboUsed = isValidDataTypeCombination(code.getCodeOID(), code.getCodeSystemOID(), datatypes);
+				}
+				if(!isValidCodeDatatypeComboUsed) {
+					return false; 
+				}
 			}
 		}
-		
 		return true; 
 	}
 	
@@ -166,7 +153,7 @@ public class CQLUtil {
 	 * @return
 	 */
 	private static boolean isValidDataTypeCombination(List<String> dataTypeList) {
-		return !(dataTypeList.contains(PATIENT_CHARACTERISTIC_BIRTHDATE) || dataTypeList.contains(PATIENT_CHARACTERSTICS_EXPIRED));
+		return !(dataTypeList.contains(ConstantMessages.PATIENT_CHARACTERISTIC_BIRTHDATE) || dataTypeList.contains(ConstantMessages.PATIENT_CHARACTERISTIC_EXPIRED));
 	}
 	
 
@@ -178,9 +165,9 @@ public class CQLUtil {
 	public static boolean isValidDataTypeCombination(String codeOID, String codesystemOID, List<String> dataTypeList) {
 		// check if the birthdate valueset is being used with something other
 		// than then Patient Characteristic Birthdate datatype
-		if (codeOID.equals(BIRTHDATE_OID) && codesystemOID.equals(BIRTHDATE_CODESYTEM_OID)) {
+		if (codeOID.equals(ConstantMessages.BIRTHDATE_OID) && codesystemOID.equals(ConstantMessages.BIRTHDATE_CODE_SYSTEM_OID)) {
 			for (String dataType : dataTypeList) {
-				if (!dataType.equalsIgnoreCase(PATIENT_CHARACTERISTIC_BIRTHDATE)) {
+				if (!dataType.equalsIgnoreCase(ConstantMessages.PATIENT_CHARACTERISTIC_BIRTHDATE)) {
 					return false;
 				}
 			}
@@ -188,9 +175,9 @@ public class CQLUtil {
 
 		// check if the dead valueset is being used with something other than
 		// the Patient Characteristic Expired datatype
-		else if (codeOID.equals(DEAD_OID) && codesystemOID.equals(DEAD_CODESYSTEM_OID)) {
+		else if (codeOID.equals(ConstantMessages.DEAD_OID) && codesystemOID.equals(ConstantMessages.DEAD_CODE_SYSTEM_OID)) {
 			for (String dataType : dataTypeList) {
-				if (!dataType.equalsIgnoreCase(PATIENT_CHARACTERSTICS_EXPIRED)) {
+				if (!dataType.equalsIgnoreCase(ConstantMessages.PATIENT_CHARACTERISTIC_EXPIRED)) {
 					return false;
 				}
 			}
@@ -384,6 +371,43 @@ public class CQLUtil {
 			parent.removeChild(current);
 		}
 	}
+	
+	public static boolean checkForUnusedIncludes(String xml, List<String> usedLibraries) {
+		XmlProcessor processor = new XmlProcessor(xml);
+		Document originalDoc = processor.getOriginalDoc();
+		String includeLibrariesXPath = "//cqlLookUp/includeLibrarys";
+
+		try {
+			Node node = (Node) xPath.evaluate(includeLibrariesXPath, originalDoc.getDocumentElement(), XPathConstants.NODE);
+			if (node != null) {
+				NodeList childNodes = node.getChildNodes();
+				for (int i = 0; i < childNodes.getLength(); i++) {
+					String refName = null;
+					String alias = null;
+					String version = null;
+					if (childNodes.item(i).getAttributes().getNamedItem("cqlLibRefName") != null) {
+						refName = childNodes.item(i).getAttributes().getNamedItem("cqlLibRefName").getNodeValue();
+					}
+					if (childNodes.item(i).getAttributes().getNamedItem("name") != null) {
+						alias = childNodes.item(i).getAttributes().getNamedItem("name").getNodeValue();
+					}
+					if (childNodes.item(i).getAttributes().getNamedItem("cqlVersion") != null) {
+						version = childNodes.item(i).getAttributes().getNamedItem("cqlVersion").getNodeValue();
+					}
+					String libraryKey = refName + "-" + version + "|" + alias;
+					if (!usedLibraries.contains(libraryKey)) {
+						return true;
+					}
+				}
+			}
+		} catch (XPathExpressionException e) {
+			logger.error(e.getMessage());
+			logger.error(e.getStackTrace());
+		}
+
+		return false;
+	}
+	
 
 	/**
 	 * Removes all unused cql includes from the simple xml file. Iterates
@@ -690,46 +714,8 @@ public class CQLUtil {
 
 			String xml = libHolderObject.getMeasureXML();
 			XmlProcessor xmlProcessor = new XmlProcessor(xml);
-			
-			
-		/*	addNamesToList(alias, xmlProcessor, "//cqlLookUp/definitions/definition[@supplDataElement=\"false\"]/@name", cqlModel.getIncludedDef());
-			addNamesToList(alias, xmlProcessor, "//cqlLookUp/functions/function/@name", cqlModel.getIncludedFunc());
-			addNamesToList(alias, xmlProcessor, "//cqlLookUp/valuesets/valueset[@suppDataElement=\"false\"]/@name", cqlModel.getIncludedValueSet());
-			addNamesToList(alias, xmlProcessor, "//cqlLookUp/parameters/parameter[@readOnly=\"false\"]/@name", cqlModel.getIncludedParam());
-			addNamesToList(alias, xmlProcessor, "//cqlLookUp/codes/code/@displayName", cqlModel.getIncludedCode());*/
-
-		}
-
-	}
-
-	/**
-	 * Adds the names to list.
-	 *
-	 * @param alias the alias
-	 * @param xmlProcessor the xml processor
-	 * @param xPathForFetch the x path for fetch
-	 * @param listToAddTo the list to add to
-	 */
-	private static void addNamesToList(String alias,
-			XmlProcessor xmlProcessor, String xPathForFetch, List<CQLExpression> listToAddTo) {
-		try {
-
-			NodeList exprList = (NodeList) xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(), xPathForFetch);
-
-			if(exprList != null){
-
-				for(int i=0; i < exprList.getLength(); i++){
-					CQLIdentifierObject identifier = new CQLIdentifierObject(alias, exprList.item(i).getNodeValue());
-					//listToAddTo.add(identifier);
-					
-				}			
-			}                    
-
-		} catch (XPathExpressionException e) {
-			e.printStackTrace();
 		}
 	}
-
 
 	/**
 	 * The Class CQLArtifactHolder.
@@ -946,7 +932,7 @@ public class CQLUtil {
 			this.cqlFuncFromPopSet = cqlFuncFromPopSet;
 		}
 	}
-
+	
 	/**
 	 * Adds the used CQL libsto simple XML.
 	 *
@@ -970,7 +956,6 @@ public class CQLUtil {
 
 			allUsedLibsNode.appendChild(libNode);
 		}
-
 	}
 
 	/**

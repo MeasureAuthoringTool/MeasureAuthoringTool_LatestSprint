@@ -3,7 +3,6 @@ package mat.client.measure;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.aspectj.weaver.tools.MatchingContext;
 import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.FormGroup;
 import org.gwtbootstrap3.client.ui.HelpBlock;
@@ -34,6 +33,7 @@ import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.DeferredCommand;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.FormPanel;
@@ -80,6 +80,8 @@ import mat.client.shared.SearchWidgetWithFilter;
 import mat.client.shared.SkipListBuilder;
 import mat.client.shared.SynchronizationDelegate;
 import mat.client.shared.search.SearchResultUpdate;
+import mat.client.umls.ManageUmlsPresenter;
+import mat.client.umls.UmlsLoginDialogBox;
 import mat.client.util.ClientConstants;
 import mat.client.util.MatTextBox;
 import mat.shared.ConstantMessages;
@@ -416,6 +418,10 @@ public class ManageMeasurePresenter implements MatPresenter {
 		 * @return the transfer button
 		 */
 		public HasClickHandlers getTransferButton();
+		
+		public Anchor getAdvancedSearch();
+		
+		public AdvancedSearchModel getAdvancedSearchModal();
 
 		/**
 		 * Sets the admin observer.
@@ -1144,7 +1150,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			public void onClick(ClickEvent event) {
 				
 				updateDetailsFromView();
-				if(!isValid(currentDetails)){
+				if(!isValid(currentDetails, isClone)){
 					return;
 				}
 				
@@ -1700,9 +1706,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 *            the model
 	 * @return true, if is valid
 	 */
-	public boolean isValid(ManageMeasureDetailModel model) {
+	public boolean isValid(ManageMeasureDetailModel model, boolean isClone) {
 		ManageMeasureModelValidator manageMeasureModelValidator = new ManageMeasureModelValidator();
-		List<String> message = manageMeasureModelValidator.isValidMeasure(model);
+		List<String> message = manageMeasureModelValidator.validateMeasureWithClone(model, isClone);
 		boolean valid = message.size() == 0;
 		if (!valid) {
 			String errorMessage = "";
@@ -1732,22 +1738,66 @@ public class ManageMeasurePresenter implements MatPresenter {
 		Window.open(buildExportURL() + "&type=save", "_self", "");
 	}
 	
+	private void getUnusedLibraryDialog(String measureId, String measureName, boolean isMajor, String version, boolean shouldPackage) {
+		ConfirmationDialogBox confirmationDialogBox = new ConfirmationDialogBox(
+				MatContext.get().getMessageDelegate().getUnusedIncludedLibraryWarning(measureName), "Continue",
+				"Cancel", null);
+		confirmationDialogBox.setObserver(new ConfirmationObserver() {
+
+			@Override
+			public void onYesButtonClicked() {
+				saveFinalizedVersion(measureId, measureName, isMajor, version, shouldPackage, true);
+			}
+
+			@Override
+			public void onNoButtonClicked() {
+				displaySearch(); 
+			}
+			
+			@Override
+			public void onClose() {
+				displaySearch();
+			}
+		});
+
+		confirmationDialogBox.show();
+	} 
+	
 	private ConfirmationDialogBox getVersionWithoutPackageDialog(String measureId, String measureName, boolean isMajor, String version, boolean shouldPackage) {
-		ConfirmationObserver observer = new ConfirmationObserver() {
+		ConfirmationDialogBox dialogBox = new ConfirmationDialogBox(MatContext.get().getMessageDelegate().getVersionAndPackageUnsuccessfulMessage(), "Continue", "Cancel", null);
+		dialogBox.setObserver(new ConfirmationObserver() {
 			
 			@Override
 			public void onYesButtonClicked() {
-				saveFinalizedVersion(measureId, measureName, isMajor, version, shouldPackage);
+				saveFinalizedVersion(measureId, measureName, isMajor, version, shouldPackage, true);
 			}
 			
 			@Override
 			public void onNoButtonClicked() {
-				// dialog box will automatically close even if nothing is in the click handler				
 			}
-		};
 			
-		ConfirmationDialogBox dialogBox = new ConfirmationDialogBox(MatContext.get().getMessageDelegate().getVersionAndPackageUnsuccessfulMessage(), "Continue", "Cancel", observer);
+			@Override
+			public void onClose() {
+			}
+		});
+			
 		return dialogBox;
+	}
+	
+	private void recordMeasureAuditEvent(String measureId, String versionString) {
+		MatContext.get().getAuditService().recordMeasureEvent(measureId, "Measure Versioned",
+				"Measure Version " + versionString + " created", false, new AsyncCallback<Boolean>() {
+
+					@Override
+					public void onFailure(Throwable caught) {
+
+					}
+
+					@Override
+					public void onSuccess(Boolean result) {
+
+					}
+				});
 	}
 
 	/**
@@ -1761,9 +1811,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 	 * @param version
 	 *            the version
 	 */
-	private void saveFinalizedVersion(final String measureId, final String measureName, final boolean isMajor, final String version, boolean shouldPackage) {
+	private void saveFinalizedVersion(final String measureId, final String measureName, final boolean isMajor, final String version, boolean shouldPackage, boolean ignoreUnusedLibraries) {
 		showSearchingBusy(true);
-		MatContext.get().getMeasureService().saveFinalizedVersion(measureId, isMajor, version, shouldPackage, new AsyncCallback<SaveMeasureResult>() {
+		MatContext.get().getMeasureService().saveFinalizedVersion(measureId, isMajor, version, shouldPackage, ignoreUnusedLibraries, new AsyncCallback<SaveMeasureResult>() {
 					@Override
 					public void onFailure(Throwable caught) {
 						showSearchingBusy(false);
@@ -1779,19 +1829,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 						if (result.isSuccess()) {
 							displaySearch();
 							String versionStr = result.getVersionStr();
-							MatContext.get().getAuditService().recordMeasureEvent(measureId, "Measure Versioned",
-									"Measure Version " + versionStr + " created", false, new AsyncCallback<Boolean>() {
-
-										@Override
-										public void onFailure(Throwable caught) {
-
-										}
-
-										@Override
-										public void onSuccess(Boolean result) {
-
-										}
-									});
+							recordMeasureAuditEvent(measureId, versionStr);
 							isMeasureVersioned = true;
 							
 							if(shouldPackage) {
@@ -1803,8 +1841,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 						} else {
 							isMeasureVersioned = false;
 							if (result.getFailureReason() == ConstantMessages.INVALID_CQL_DATA) {
-								versionDisplay.getErrorMessageDisplay()
-										.createAlert(MatContext.get().getMessageDelegate().getNoVersionCreated());
+								versionDisplay.getErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getNoVersionCreated());
+							} else if (result.getFailureReason() == SaveMeasureResult.UNUSED_LIBRARY_FAIL) {
+								getUnusedLibraryDialog(measureId, measureName, isMajor, version, shouldPackage);
 							} else if(result.getFailureReason() == SaveMeasureResult.PACKAGE_FAIL) {
 								getVersionWithoutPackageDialog(measureId, measureName, isMajor, version, false).show();
 							}
@@ -2338,7 +2377,16 @@ public class ManageMeasurePresenter implements MatPresenter {
 				search(searchDisplay.getAdminSearchString().getValue(), 1, Integer.MAX_VALUE, filter);
 			}
 		});
-
+		
+		if(searchDisplay.getAdvancedSearch() != null) {
+			searchDisplay.getAdvancedSearch().addClickHandler(new ClickHandler() {
+				
+				@Override
+				public void onClick(ClickEvent event) {
+					searchDisplay.getAdvancedSearchModal().showAdvanceSearch();
+				}
+			});
+		}
 	}
 
 	/**
@@ -2643,9 +2691,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 		showSearchingBusy(true);
 		updateDetailsFromView();
 
-		if (isClone && isValid(currentDetails)) {
+		if (isClone && isValid(currentDetails, isClone)) {
 			cloneMeasure(currentDetails, false);
-		} else if (isValid(currentDetails)) {
+		} else if (isValid(currentDetails, false)) {
 			final boolean isInsert = currentDetails.getId() == null;
 			final String name = currentDetails.getName();
 			final String shortName = currentDetails.getShortName();
@@ -2769,7 +2817,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 		}
 	}
-
+	
+	
 	/**
 	 * Version display handlers.
 	 * 
@@ -2809,21 +2858,17 @@ public class ManageMeasurePresenter implements MatPresenter {
 				if (((selectedMeasure != null) && (selectedMeasure.getId() != null))
 						&& (versionDisplay.getMajorRadioButton().getValue()
 								|| versionDisplay.getMinorRadioButton().getValue())) {
-					saveFinalizedVersion(selectedMeasure.getId(), selectedMeasure.getName(),versionDisplay.getMajorRadioButton().getValue(),
-							selectedMeasure.getVersion(), true);
 					
-					// TODO load dialog box
-					// diplay message "Your measure could not be packaged. Select Cancel and return to the measure composer to correct any issues or select Continue to create a version without a measure package."
-				
+					boolean shouldPackage = true; 
+					boolean ignoreUnusedIncludedLibraries = false; 
+					saveFinalizedVersion(selectedMeasure.getId(), selectedMeasure.getName(),versionDisplay.getMajorRadioButton().getValue(), selectedMeasure.getVersion(), shouldPackage, ignoreUnusedIncludedLibraries);		
 				} else {
-					versionDisplay.getErrorMessageDisplay()
-							.createAlert(MatContext.get().getMessageDelegate().getERROR_LIBRARY_VERSION());
+					versionDisplay.getErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getERROR_LIBRARY_VERSION());
 				}
 			}
 		});
 
 		versionDisplay.getCancelButton().addClickHandler(cancelClickHandler);
-
 	}
 
 }

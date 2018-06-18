@@ -18,7 +18,7 @@ public class CQLModel implements IsSerializable{
 	private String usingName;
 	private String context;
 	private List<CQLQualityDataSetDTO> valueSetList = new ArrayList<CQLQualityDataSetDTO>();
-	private List<CQLQualityDataSetDTO> allValueSetList = new ArrayList<CQLQualityDataSetDTO>();
+	private List<CQLQualityDataSetDTO> allValueSetAndCodeList = new ArrayList<CQLQualityDataSetDTO>();
 	private List<CQLParameter> cqlParameters = new ArrayList<CQLParameter>();
 	private List<CQLDefinition> cqlDefinitions = new ArrayList<CQLDefinition>();
 	private List<CQLFunctions> cqlFunctions = new ArrayList<CQLFunctions>();
@@ -96,11 +96,11 @@ public class CQLModel implements IsSerializable{
 	public void setCodeList(List<CQLCode> codeList) {
 		this.codeList = codeList;
 	}
-	public List<CQLQualityDataSetDTO> getAllValueSetList() {
-		return allValueSetList;
+	public List<CQLQualityDataSetDTO> getAllValueSetAndCodeList() {
+		return allValueSetAndCodeList;
 	}
-	public void setAllValueSetList(List<CQLQualityDataSetDTO> allValueSetList) {
-		this.allValueSetList = allValueSetList;
+	public void setAllValueSetAndCodeList(List<CQLQualityDataSetDTO> allValueSetAndCodeList) {
+		this.allValueSetAndCodeList = allValueSetAndCodeList;
 	}
 	public List<CQLIncludeLibrary> getCqlIncludeLibrarys() {
 		return cqlIncludeLibrarys;
@@ -190,7 +190,7 @@ public class CQLModel implements IsSerializable{
 		List<CQLIdentifierObject> includedValueSetCQLIdentifierObject = new ArrayList<CQLIdentifierObject>();
 		for(CQLIncludeLibrary lib : includedLibrarys.keySet()) {
 			CQLModel model = includedLibrarys.get(lib);
-			for(CQLQualityDataSetDTO value : model.getAllValueSetList()) {
+			for(CQLQualityDataSetDTO value : model.getValueSetList()) {
 				includedValueSetCQLIdentifierObject.add(new CQLIdentifierObject(lib.getAliasName(), value.getName()));
 			}
 		}
@@ -226,10 +226,10 @@ public class CQLModel implements IsSerializable{
 	}
 	
 	public List<CQLIdentifierObject> getCQLIdentifierCode(){
-		List<CQLIdentifierObject> includedCodeCQLIdentifierObject = new ArrayList<CQLIdentifierObject>();
+		List<CQLIdentifierObject> includedCodeCQLIdentifierObject = new ArrayList<>();
 		for(CQLIncludeLibrary lib : includedLibrarys.keySet()) {
 			CQLModel model = includedLibrarys.get(lib);
-			for(CQLCode code : model.getIncludedCode()) {
+			for(CQLCode code : model.getCodeList()) {
 				includedCodeCQLIdentifierObject.add(new CQLIdentifierObject(lib.getAliasName(), code.getDisplayName()));
 			}
 		}
@@ -245,7 +245,7 @@ public class CQLModel implements IsSerializable{
 	
 	/**
 	 * Gets a valueset by name from the parent or any children
-	 * @param formattedCodeName the name in the format libraryname-x.x.xxx|alias|code identifier
+	 * @param formattedCodeName the name in the format libraryname-x.x.xxx|alias|code identifier if from child, otherwise just code identifer
 	 * @return the code found
 	 */
 	public CQLCode getCodeByName(String formattedCodeName) {
@@ -260,17 +260,19 @@ public class CQLModel implements IsSerializable{
 		// if the library name version is null, then the code is in the parent
 		if(libraryNameVersion == null) {
 			for(CQLCode code : codeList) {
-				if(code.getCodeName().equals(codeName)) {
+				if(code.getDisplayName()==null ? code.getCodeName().equals(codeName) : code.getDisplayName().equals(codeName)) {
 					return code; 
 				}
 			}
 		} else {
 			final String nameVersion = libraryNameVersion;
-			List<CQLIncludeLibrary> CQLIncludeLibrary =  includedLibrarys.keySet().stream().filter(lib -> createNameVersionString(lib.getCqlLibraryName(), lib.getVersion()).equals(nameVersion)).collect(Collectors.toList());
-			for(CQLCode code : includedLibrarys.get(CQLIncludeLibrary.get(0)).getCodeList()) {
-				if(code.getCodeName().equals(codeName)) {
-					return code; 
-				}			
+			List<CQLIncludeLibrary> cqlIncludeLibrary =  includedLibrarys.keySet().stream().filter(lib -> createNameVersionString(lib.getCqlLibraryName(), lib.getVersion()).equals(nameVersion)).collect(Collectors.toList());
+			if(cqlIncludeLibrary != null && !cqlIncludeLibrary.isEmpty()) {
+				for(CQLCode code : includedLibrarys.get(cqlIncludeLibrary.get(0)).getCodeList()) {
+					if(code.getDisplayName().equals(codeName)) {
+						return code; 
+					}			
+				}
 			}
  		}
 		
@@ -304,11 +306,13 @@ public class CQLModel implements IsSerializable{
 			}
 		} else {
 			final String nameVersion = libraryNameVersion;
-			List<CQLIncludeLibrary> CQLIncludeLibrary =  includedLibrarys.keySet().stream().filter(lib -> createNameVersionString(lib.getCqlLibraryName(), lib.getVersion()).equals(nameVersion)).collect(Collectors.toList());
-			for(CQLQualityDataSetDTO valueset : includedLibrarys.get(CQLIncludeLibrary.get(0)).getValueSetList()) {
-				if(valueset.getName() == valuesetName) {
-					return valueset; 
-				}			
+			List<CQLIncludeLibrary> cqlIncludeLibrary =  includedLibrarys.keySet().stream().filter(lib -> createNameVersionString(lib.getCqlLibraryName(), lib.getVersion()).equals(nameVersion)).collect(Collectors.toList());
+			if(cqlIncludeLibrary != null && !cqlIncludeLibrary.isEmpty()) {
+				for(CQLQualityDataSetDTO valueset : includedLibrarys.get(cqlIncludeLibrary.get(0)).getValueSetList()) {
+					if(valueset.getName() == valuesetName) {
+						return valueset; 
+					}			
+				}
 			}
  		}
 		

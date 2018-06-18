@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
 
+import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -55,6 +56,7 @@ import mat.model.CQLValueSetTransferObject;
 import mat.model.MatCodeTransferObject;
 import mat.model.MatValueSet;
 import mat.model.clause.CQLData;
+import mat.model.clause.CQLLibrary;
 import mat.model.cql.CQLCode;
 import mat.model.cql.CQLCodeSystem;
 import mat.model.cql.CQLCodeSystemWrapper;
@@ -96,7 +98,7 @@ import mat.shared.SaveUpdateCQLResult;
 public class CQLServiceImpl implements CQLService {
 
 	private static final Log logger = LogFactory.getLog(CQLServiceImpl.class);
-	
+		
 	@Autowired private CQLDAO cqlDAO;
 	@Autowired private CQLLibraryDAO cqlLibraryDAO;
 	@Autowired private CQLLibraryAssociationDAO cqlLibraryAssociationDAO;
@@ -1756,7 +1758,7 @@ public class CQLServiceImpl implements CQLService {
 
 		List<String> usedValuesets = parsedCQL.getUsedCQLArtifacts().getUsedCQLValueSets();
 
-		for (CQLQualityDataSetDTO valueset : cqlModel.getAllValueSetList()) {
+		for (CQLQualityDataSetDTO valueset : cqlModel.getAllValueSetAndCodeList()) {
 			boolean isUsed = usedValuesets.contains(valueset.getName());
 			valueset.setUsed(isUsed);
 		}
@@ -3142,7 +3144,7 @@ public class CQLServiceImpl implements CQLService {
 	public CQLQualityDataModelWrapper getCQLValusets(String measureId, CQLQualityDataModelWrapper cqlQualityDataModelWrapper) {
 		MeasureXmlModel model = measurePackageService.getMeasureXmlForMeasure(measureId);
 		String xmlString = model.getXml();
-		List<CQLQualityDataSetDTO> cqlQualityDataSetDTOs = CQLUtilityClass.sortCQLQualityDataSetDto(getCQLData(xmlString).getCqlModel().getAllValueSetList());
+		List<CQLQualityDataSetDTO> cqlQualityDataSetDTOs = CQLUtilityClass.sortCQLQualityDataSetDto(getCQLData(xmlString).getCqlModel().getAllValueSetAndCodeList());
 		cqlQualityDataModelWrapper.setQualityDataDTO(cqlQualityDataSetDTOs);
 
 		return cqlQualityDataModelWrapper;
@@ -3391,5 +3393,5 @@ public class CQLServiceImpl implements CQLService {
 	public CQLModel parseCQL(String cqlBuilder) {
 		CQLModel cqlModel = new CQLModel();
 		return cqlModel;
-	}	
+	}
 }

@@ -34,7 +34,11 @@ public class SaveMeasureResult extends GenericResult {
 	
 	public static final int PACKAGE_VALIDATION_FAIL = 1;
 	
+	public static final int UNUSED_LIBRARY_FAIL = 2;
+	
 	public static final int PACKAGE_FAIL = -1;
+	
+	public static final int VALIDATE_MEASURE_AT_PACKAGE_FAIL = -3;
 	
 	/** The id. */
 	private String id;
