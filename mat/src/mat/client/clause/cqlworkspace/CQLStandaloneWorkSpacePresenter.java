@@ -91,81 +91,60 @@ import mat.shared.ConstantMessages;
 import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
 import mat.shared.StringUtility;
-/**
- * The Class CQLStandaloneWorkSpacePresenter.
- */
-public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 
-	/** The panel. */
+public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
+	
+	private static final String CODES_SELECTED_SUCCESSFULLY = "All codes successfully selected.";
+	
+	private static final String VALUE_SETS_SELECTED_SUCCESSFULLY = "All value sets successfully selected.";
+
 	private SimplePanel panel = new SimplePanel();
 
-	/** The search display. */
 	private static ViewDisplay searchDisplay;
 
-	/** The empty widget. */
 	private SimplePanel emptyWidget = new SimplePanel();
 
-	/** The is measure details loaded. */
 	private boolean isCQLWorkSpaceLoaded = false;
 
-	/** The current section. */
 	private String currentSection = "general";
-	/** The next clicked menu. */
+
 	private String nextSection = "general";
 
-	/** The applied QDM list. */
 	private List<CQLQualityDataSetDTO> appliedValueSetTableList = new ArrayList<CQLQualityDataSetDTO>();
 
-	/** The validator. */
 	CQLModelValidator validator = new CQLModelValidator();
 
-	/** The cql library name. */
 	private String cqlLibraryName;
+	
+	private String cqlLibraryComment;
 
-	/** The setId for the current library. */
 	private String setId = null;
 	
-	/**
-	 * The set id of the currently selected 
-	 */
 	private String currentIncludeLibrarySetId = null;
 	
-	/**
-	 * The id of the currently selected included library
-	 */
 	private String currentIncludeLibraryId = null; 
 
-	/** The is modified. */
 	private boolean isModified = false;
 	
 	private boolean isCodeModified = false;
 	
-	/** The is u ser defined. */
 	private boolean isUserDefined = false;
 
-	/** The modify value set dto. */
 	private CQLQualityDataSetDTO modifyValueSetDTO;
 	
-	/** The modify code */
 	private CQLCode modifyCQLCode;
 
-	/** QDSAttributesServiceAsync instance. */
 	private QDSAttributesServiceAsync attributeService = (QDSAttributesServiceAsync) GWT
 			.create(QDSAttributesService.class);
 
-	/** The cur ace editor. */
 	private AceEditor curAceEditor;
 
-	/** The vsacapi service. */
 	private final VSACAPIServiceAsync vsacapiService = MatContext.get().getVsacapiServiceAsync();
 
-	/** The cql service. */
 	private final CQLLibraryServiceAsync cqlService = MatContext.get().getCQLLibraryService();
 
-	/** The current mat value set. */
 	private MatValueSet currentMatValueSet= null;
 	
-	/** The applied code table list. */
 	private List<CQLCode> appliedCodeTableList = new ArrayList<CQLCode>();
 	
 	/**
@@ -186,343 +165,108 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 	private boolean previousIsVersionListBoxEnabled = false; 
 	private boolean previousIsApplyButtonEnabled = false; 
 
-	/**
-	 * The Interface ViewDisplay.
-	 */
 	public static interface ViewDisplay {
 
-		/**
-		 * Top Main panel of CQL Workspace Tab.
-		 * 
-		 * @return HorizontalPanel
-		 */
 		VerticalPanel getMainPanel();
 
-		/**
-		 * Gets the main v panel.
-		 *
-		 * @return the main v panel
-		 */
 		Widget asWidget();
 
-		/**
-		 * Gets the main h panel.
-		 *
-		 * @return the main h panel
-		 */
 		HorizontalPanel getMainHPanel();
 
-		/**
-		 * Gets the main flow panel.
-		 *
-		 * @return the main flow panel
-		 */
 		FlowPanel getMainFlowPanel();
 
-		/**
-		 * Generates View for CQLWorkSpace tab.
-		 */
 		void buildView();
 
-		/**
-		 * Gets the clicked menu.
-		 *
-		 * @return the clicked menu
-		 */
 		String getClickedMenu();
 
-		/**
-		 * Sets the clicked menu.
-		 *
-		 * @param clickedMenu the new clicked menu
-		 */
 		void setClickedMenu(String clickedMenu);
 
-		/**
-		 * Gets the next clicked menu.
-		 *
-		 * @return the next clicked menu
-		 */
 		String getNextClickedMenu();
 
-		/**
-		 * Sets the next clicked menu.
-		 *
-		 * @param nextClickedMenu the new next clicked menu
-		 */
 		void setNextClickedMenu(String nextClickedMenu);
 
-		/**
-		 * Gets the cql left nav bar panel view.
-		 *
-		 * @return the cql left nav bar panel view
-		 */
 		CQLLeftNavBarPanelView getCqlLeftNavBarPanelView();
 
-		/**
-		 * Reset message display.
-		 */
 		void resetMessageDisplay();
 
-		/**
-		 * Hide ace editor auto complete pop up.
-		 */
 		void hideAceEditorAutoCompletePopUp();
 
-		/**
-		 * Gets the CQL parameters view.
-		 *
-		 * @return the CQL parameters view
-		 */
 		CQLParametersView getCQLParametersView();
 
-		/**
-		 * Gets the CQL definitions view.
-		 *
-		 * @return the CQL definitions view
-		 */
 		CQlDefinitionsView getCQLDefinitionsView();
 
-		/**
-		 * Gets the CQL functions view.
-		 *
-		 * @return the CQL functions view
-		 */
 		CQLFunctionsView getCQLFunctionsView();
 
-		/**
-		 * Gets the cql include library view.
-		 *
-		 * @return the cql include library view
-		 */
 		CQLIncludeLibraryView getCqlIncludeLibraryView();
 
-		/**
-		 * Builds the CQL file view.
-		 */
 		void buildCQLFileView(boolean isEditable);
 
-		/**
-		 * Gets the cql ace editor.
-		 *
-		 * @return the cql ace editor
-		 */
 		AceEditor getCqlAceEditor();
 
-		/**
-		 * Builds the general information.
-		 */
 		void buildGeneralInformation();
 
-		/**
-		 * Gets the cql general information view.
-		 *
-		 * @return the cql general information view
-		 */
 		CQLGeneralInformationView getCqlGeneralInformationView();
 
-		/**
-		 * Gets the include view.
-		 *
-		 * @return the include view
-		 */
 		CQLIncludeLibraryView getIncludeView();
 
-		/**
-		 * Gets the alias name txt area.
-		 *
-		 * @return the alias name txt area
-		 */
 		TextBox getAliasNameTxtArea();
 
-		/**
-		 * Gets the view CQL editor.
-		 *
-		 * @return the view CQL editor
-		 */
 		AceEditor getViewCQLEditor();
 
-		/**
-		 * Gets the owner name text box.
-		 *
-		 * @return the owner name text box
-		 */
 		TextBox getOwnerNameTextBox();
 
-		/**
-		 * Builds the includes view.
-		 */
 		void buildIncludesView();
 
-		/**
-		 * Reset all.
-		 */
 		void resetAll();
 
-		/**
-		 * Builds the parameter library view.
-		 */
 		void buildParameterLibraryView();
 
-		/**
-		 * Builds the definition library view.
-		 */
 		void buildDefinitionLibraryView();
 
-		/**
-		 * Builds the function library view.
-		 */
 		void buildFunctionLibraryView();
 
-		/**
-		 * Creates the add argument view for functions.
-		 *
-		 * @param argumentList the argument list
-		 */
 		void createAddArgumentViewForFunctions(List<CQLFunctionArgument> argumentList);
 
-		/**
-		 * Gets the parameter button bar.
-		 *
-		 * @return the parameter button bar
-		 */
 		CQLButtonToolBar getParameterButtonBar();
 
-		/**
-		 * Gets the define button bar.
-		 *
-		 * @return the define button bar
-		 */
 		CQLButtonToolBar getDefineButtonBar();
 
-		/**
-		 * Gets the function button bar.
-		 *
-		 * @return the function button bar
-		 */
 		CQLButtonToolBar getFunctionButtonBar();
 
-		/**
-		 * Gets the define name txt area.
-		 *
-		 * @return the define name txt area
-		 */
 		TextBox getDefineNameTxtArea();
 
-		/**
-		 * Gets the define ace editor.
-		 *
-		 * @return the define ace editor
-		 */
 		AceEditor getDefineAceEditor();
 
-		/**
-		 * Gets the context define PAT radio btn.
-		 *
-		 * @return the context define PAT radio btn
-		 */
 		InlineRadio getContextDefinePATRadioBtn();
 
-		/**
-		 * Gets the context define POP radio btn.
-		 *
-		 * @return the context define POP radio btn
-		 */
 		InlineRadio getContextDefinePOPRadioBtn();
 
-		/**
-		 * Gets the func name txt area.
-		 *
-		 * @return the func name txt area
-		 */
 		TextBox getFuncNameTxtArea();
 
-		/**
-		 * Gets the function body ace editor.
-		 *
-		 * @return the function body ace editor
-		 */
 		AceEditor getFunctionBodyAceEditor();
 
-		/**
-		 * Gets the context func PAT radio btn.
-		 *
-		 * @return the context func PAT radio btn
-		 */
 		InlineRadio getContextFuncPATRadioBtn();
 
-		/**
-		 * Gets the context func POP radio btn.
-		 *
-		 * @return the context func POP radio btn
-		 */
 		InlineRadio getContextFuncPOPRadioBtn();
 
-		/**
-		 * Gets the function argument list.
-		 *
-		 * @return the function argument list
-		 */
 		List<CQLFunctionArgument> getFunctionArgumentList();
 
-		/**
-		 * Gets the parameter name txt area.
-		 *
-		 * @return the parameter name txt area
-		 */
 		TextBox getParameterNameTxtArea();
 
-		/**
-		 * Gets the parameter ace editor.
-		 *
-		 * @return the parameter ace editor
-		 */
 		AceEditor getParameterAceEditor();
 
-		/**
-		 * Gets the function arg name map.
-		 *
-		 * @return the function arg name map
-		 */
 		Map<String, CQLFunctionArgument> getFunctionArgNameMap();
 
-		/**
-		 * Creates the add argument view for functions.
-		 *
-		 * @param argumentList the argument list
-		 * @param isEditable the is editable
-		 */
 		void createAddArgumentViewForFunctions(List<CQLFunctionArgument> argumentList, boolean isEditable);
 
-		/**
-		 * Gets the value set view.
-		 *
-		 * @return the value set view
-		 */
 		CQLAppliedValueSetView getValueSetView();
-		
-		/**
-		 * Gets the codes view.
-		 *
-		 * @return the codes view
-		 */
+
 		CQLCodesView getCodesView();
 
-		/**
-		 * Builds the applied QDM.
-		 */
 		void buildAppliedQDM();
 
-		/**
-		 * Builds the codes.
-		 */
 		void buildCodes();
 
-		/**
-		 * Gets the locked button V panel.
-		 *
-		 * @return the locked button V panel
-		 */
 		HorizontalPanel getLockedButtonVPanel();
 
 		void hideInformationDropDown();
@@ -534,11 +278,6 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		HelpBlock getHelpBlock();
 	}
 
-	/**
-	 * Instantiates a new CQL presenter.
-	 *
-	 * @param srchDisplay the srch display
-	 */
 	public CQLStandaloneWorkSpacePresenter(final ViewDisplay srchDisplay) {
 		searchDisplay = srchDisplay;
 		emptyWidget.add(new Label("No CQL Library Selected"));
@@ -558,9 +297,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		});
 		
 	}
-	/**
-	 * Adds the event handlers.
-	 */
+
 	private void addEventHandlers() {
 		MatContext.get().getEventBus().addHandler(CQLLibrarySelectedEvent.TYPE, new CQLLibrarySelectedEvent.Handler() {
 
@@ -1887,52 +1624,48 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 	 * Adds the general info event handlers.
 	 */
 	private void addGeneralInfoEventHandlers() {
-
-		searchDisplay.getCqlGeneralInformationView().getSaveButton().addClickHandler(new ClickHandler() {
-
-			@Override
-			public void onClick(ClickEvent event) {
-				searchDisplay.resetMessageDisplay();
-				if (searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().getText().isEmpty()) {
-					searchDisplay.getCqlGeneralInformationView().getLibNameGroup().setValidationState(ValidationState.ERROR);
-					searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert()
-							.createAlert(MatContext.get().getMessageDelegate().getLibraryNameRequired());
-				} else {
-
-					if (validator.validateForAliasNameSpecialChar(
-							searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().getText().trim())) {
-						saveCQLGeneralInformation();
-					} else {
-						searchDisplay.getCqlGeneralInformationView().getLibNameGroup().setValidationState(ValidationState.ERROR);
-						searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert()
-								.createAlert(MatContext.get().getMessageDelegate().getCqlStandAloneLibraryNameError());
-					}
-
-				}
-			}
-		});
-
-		searchDisplay.getCqlGeneralInformationView().getCancelButton().addClickHandler(new ClickHandler() {
-
-			@Override
-			public void onClick(ClickEvent event) {
-				searchDisplay.resetMessageDisplay();
-				searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().setText(cqlLibraryName);
-			}
-		});
-
-		searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().addKeyUpHandler(new KeyUpHandler() {
-
-			@Override
-			public void onKeyUp(KeyUpEvent event) {
-				if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
-					searchDisplay.resetMessageDisplay();
-					searchDisplay.getCqlLeftNavBarPanelView().setIsPageDirty(true);
-				}
-			}
-		});
+		searchDisplay.getCqlGeneralInformationView().getSaveButton().addClickHandler(event -> saveCQLGeneralInfo());
+		searchDisplay.getCqlGeneralInformationView().getCancelButton().addClickHandler(event -> cancelChangesOnGeneralInfoPage());
+		searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().addKeyUpHandler(event -> resetMessagesAndSetPageDirty(true));
+		searchDisplay.getCqlGeneralInformationView().getComments().addValueChangeHandler(event -> resetMessagesAndSetPageDirty(true));
 	}
+	
+	private void cancelChangesOnGeneralInfoPage() {
+		searchDisplay.resetMessageDisplay();
+		searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().setText(cqlLibraryName);
+		searchDisplay.getCqlGeneralInformationView().getComments().setCursorPos(0);
+	}
+	
+	private void resetMessagesAndSetPageDirty(boolean isPageDirty) {
+		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
+			searchDisplay.resetMessageDisplay();
+			searchDisplay.getCqlLeftNavBarPanelView().setIsPageDirty(isPageDirty);
+		}
+	}
+	
+	private void saveCQLGeneralInfo() {
+		
+		resetMessagesAndSetPageDirty(false);
+		
+		String libraryName = searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().getText().trim();
+		if (libraryName.isEmpty()) {
+			searchDisplay.getCqlGeneralInformationView().getLibNameGroup().setValidationState(ValidationState.ERROR);
+			searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert()
+					.createAlert(MatContext.get().getMessageDelegate().getLibraryNameRequired());
+		} else {
 
+			if (validator.validateForAliasNameSpecialChar(libraryName)) {
+				saveCQLGeneralInformation();
+			} else {
+				searchDisplay.getCqlGeneralInformationView().getLibNameGroup().setValidationState(ValidationState.ERROR);
+				searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert()
+						.createAlert(MatContext.get().getMessageDelegate().getCqlStandAloneLibraryNameError());
+			}
+
+		}
+	
+	}
+	
 	/**
 	 * Event Handlers for Ace Editors.
 	 */
@@ -3542,8 +3275,9 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 
 		String libraryId = MatContext.get().getCurrentCQLLibraryId();
 		String libraryValue = searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().getText().trim();
+		String libraryComment = searchDisplay.getCqlGeneralInformationView().getComments().getText().trim();
 		showSearchingBusy(true);
-		MatContext.get().getCQLLibraryService().saveAndModifyCQLGeneralInfo(libraryId, libraryValue,
+		MatContext.get().getCQLLibraryService().saveAndModifyCQLGeneralInfo(libraryId, libraryValue, libraryComment,
 				new AsyncCallback<SaveUpdateCQLResult>() {
 
 					@Override
@@ -3557,9 +3291,12 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 					public void onSuccess(SaveUpdateCQLResult result) {
 						if (result != null) {
 							cqlLibraryName = result.getCqlModel().getLibraryName().trim();
+							cqlLibraryComment = result.getCqlModel().getLibraryComment();
 							searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().setText(cqlLibraryName);
+							searchDisplay.getCqlGeneralInformationView().getComments().setText(result.getCqlModel().getLibraryComment());
+							searchDisplay.getCqlGeneralInformationView().getComments().setCursorPos(0);
 							searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert()
-									.createAlert(MatContext.get().getMessageDelegate().getMODIFY_CQL_LIBRARY_NAME());
+									.createAlert(cqlLibraryName + " general information successfully updated");
 							searchDisplay.getCqlLeftNavBarPanelView().setIsPageDirty(false);
 							MatContext.get().getCurrentLibraryInfo().setLibraryName(cqlLibraryName);
 							CqlComposerPresenter.setContentHeading();
@@ -3613,7 +3350,6 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 	public void beforeClosingDisplay() {
 		currentIncludeLibrarySetId = null;
 		currentIncludeLibraryId = null; 
-		searchDisplay.getCqlGeneralInformationView().clearAllGeneralInfoOfLibrary();
 		searchDisplay.getCqlLeftNavBarPanelView().clearShotcutKeyList();
 		searchDisplay.getCqlLeftNavBarPanelView().setCurrentSelectedDefinitionObjId(null);
 		searchDisplay.getCqlLeftNavBarPanelView().setCurrentSelectedParamerterObjId(null);
@@ -3713,7 +3449,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 				if (result.getCqlModel().getLibraryName() != null) {
 					cqlLibraryName = searchDisplay.getCqlGeneralInformationView()
 							.createCQLLibraryName(MatContext.get().getCurrentCQLLibraryeName());
-
+					cqlLibraryComment = result.getCqlModel().getLibraryComment();
 					String libraryVersion = MatContext.get().getCurrentCQLLibraryVersion();
 
 					libraryVersion = libraryVersion.replaceAll("Draft ", "").trim();
@@ -3721,7 +3457,7 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 						libraryVersion = libraryVersion.substring(1);
 					}
 					searchDisplay.getCqlGeneralInformationView().setGeneralInfoOfLibrary(cqlLibraryName, libraryVersion,
-							result.getCqlModel().getQdmVersion(), "QDM");
+							result.getCqlModel().getQdmVersion(), "QDM", cqlLibraryComment);
 				}
 
 				List<CQLQualityDataSetDTO> appliedAllValueSetList = new ArrayList<CQLQualityDataSetDTO>();
@@ -4176,6 +3912,14 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 				copyValueSets();
 			}
 		});
+		
+		searchDisplay.getValueSetView().getSelectAllButton().addClickHandler(new ClickHandler() {
+
+			@Override
+			public void onClick(ClickEvent event) {
+				selectAllValueSets();
+			}
+		});
 
 		searchDisplay.getValueSetView().getPasteButton().addClickHandler(new ClickHandler() {
 
@@ -4329,6 +4073,16 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		}
 	}
 	
+	private void selectAllValueSets() {
+		searchDisplay.resetMessageDisplay();
+		if(searchDisplay.getValueSetView().getAllValueSets() != null &&
+				searchDisplay.getValueSetView().getAllValueSets().size() > 0){
+			searchDisplay.getValueSetView().selectAll();
+			searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert().createAlert(VALUE_SETS_SELECTED_SUCCESSFULLY);
+			
+		}
+	}
+	
 	/**
 	 * paste Value Sets. This functionality is to paste all the Value sets elements that have been copied
 	 * from any Measure and can be pasted to any measure.
@@ -4389,6 +4143,14 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 		}
 	}
 	
+	private void selectAllCodes() {
+		searchDisplay.resetMessageDisplay();
+		if(searchDisplay.getCodesView().getAllCodes() != null) {
+			searchDisplay.getCodesView().selectAll();
+			searchDisplay.getCqlLeftNavBarPanelView().getSuccessMessageAlert().createAlert(CODES_SELECTED_SUCCESSFULLY);
+		}
+	}
+	
 	/**
 	 * paste Value Sets. This functionality is to paste all the Value sets elements that have been copied
 	 * from any Measure and can be pasted to any measure.
@@ -4436,15 +4198,21 @@ public class CQLStandaloneWorkSpacePresenter implements MatPresenter {
 					getMessageDelegate().CLIPBOARD_DOES_NOT_CONTAIN_CODES);
 		}
 	}
-/**
- * Adds the code search panel handlers.
- */
+
 private void addCodeSearchPanelHandlers() {
 		searchDisplay.getCodesView().getCopyButton().addClickHandler(new ClickHandler() {
 
 			@Override
 			public void onClick(ClickEvent event) {
 				copyCodes();
+			}
+		});
+		
+		searchDisplay.getCodesView().getSelectAllButton().addClickHandler(new ClickHandler() {
+
+			@Override
+			public void onClick(ClickEvent event) {
+				selectAllCodes();
 			}
 		});
 
@@ -5423,8 +5191,10 @@ private void addCodeSearchPanelHandlers() {
 				searchDisplay.getCqlLeftNavBarPanelView().getErrorMessageAlert().clearAlert();
 			}
 			searchDisplay.getCqlGeneralInformationView().getLibraryNameValue().setText(cqlLibraryName);
+			searchDisplay.getCqlGeneralInformationView().getComments().setText(cqlLibraryComment);
 		}
 		searchDisplay.setGeneralInfoHeading();
+		searchDisplay.getCqlGeneralInformationView().getComments().setCursorPos(0);
 	}
 
 	/**
@@ -5853,7 +5623,7 @@ private void addCodeSearchPanelHandlers() {
 		if (MatContext.get().getLibraryLockService().checkForEditPermission()) {
 			switch(currentSection.toLowerCase()) {
 			case(CQLWorkSpaceConstants.CQL_GENERAL_MENU): 
-				searchDisplay.getCqlGeneralInformationView().setWidgetReadOnly(!busy);
+				searchDisplay.getCqlGeneralInformationView().setWidgetReadOnlyForCQLLibrary(!busy);
 			break;
 			case(CQLWorkSpaceConstants.CQL_INCLUDES_MENU):
 				searchDisplay.getIncludeView().setReadOnly(!busy);				
