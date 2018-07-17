@@ -19,6 +19,8 @@ import org.gwtbootstrap3.client.ui.constants.ModalBackdrop;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 
+import mat.client.buttons.CancelButton;
+
 
 public class AdvancedSearchModal {	
 	private final String HEIGHT_OF_BOXES = "30px";
@@ -266,10 +268,7 @@ public class AdvancedSearchModal {
 	private void buildButtonSection() {
 		buttonToolBar = new ButtonToolBar();
 		
-		cancel = new Button();
-		cancel.setText("Cancel");
-		cancel.setTitle("Cancel");
-		cancel.setType(ButtonType.DANGER);
+		cancel = new CancelButton("AdvancedSearchModal");
 		cancel.setDataDismiss(ButtonDismiss.MODAL);
 		
 		search = new Button();
@@ -329,6 +328,7 @@ public class AdvancedSearchModal {
 	/*Hidden panel with info about what the modal does for 508 compliance*/
 	public void setHelpBlock (String message) {
 		helpBlock.setColor("transparent");
+		helpBlock.setVisible(false);
 		helpBlock.setHeight("0px");
 		helpBlock.setText(message);
 	}
@@ -479,6 +479,10 @@ public class AdvancedSearchModal {
 
 	public void showAdvanceSearch() {
 		panel.show();
+	}
+	
+	public void closeAdvanceSearch() {
+		panel.hide();
 	}
 	
 	public ListBox getSearchBoxList() {

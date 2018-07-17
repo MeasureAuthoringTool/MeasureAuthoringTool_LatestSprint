@@ -217,8 +217,9 @@ implements MeasureCloningService {
 			clonedMeasure.setDescription(currentDetails.getName());
 			
 			clonedMeasure.setReleaseVersion(measure.getReleaseVersion());			
-			
 			clonedMeasure.setDraft(Boolean.TRUE);
+			clonedMeasure.setPatientBased(currentDetails.isPatientBased());
+
 			if (currentDetails.getMeasScoring() != null) {
 				clonedMeasure.setMeasureScoring(currentDetails.getMeasScoring());
 			} else {
@@ -248,6 +249,7 @@ implements MeasureCloningService {
 			
 			XmlProcessor xmlProcessor = new XmlProcessor(clonedXml.getMeasureXMLAsString());
 			xmlProcessor.removeUnusedDefaultCodes(usedCodeList);
+			xmlProcessor.clearValuesetVersionAttribute();
 			
 			if (!measure.getMeasureScoring().equals(currentDetails.getMeasScoring()) 
 					|| currentDetails.isPatientBased()) {

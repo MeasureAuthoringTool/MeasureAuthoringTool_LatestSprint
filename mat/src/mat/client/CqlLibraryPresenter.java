@@ -9,7 +9,6 @@ import org.gwtbootstrap3.client.ui.constants.ButtonType;
 import org.gwtbootstrap3.client.ui.constants.IconSize;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 
-import com.google.gwt.core.shared.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
@@ -35,6 +34,7 @@ import com.google.gwt.user.client.ui.Widget;
 
 import mat.DTO.AuditLogDTO;
 import mat.DTO.SearchHistoryDTO;
+import mat.client.buttons.CustomButton;
 import mat.client.clause.cqlworkspace.ConfirmationDialogBox;
 import mat.client.clause.cqlworkspace.EditConfirmationDialogBox;
 import mat.client.cql.CQLLibraryDetailView;
@@ -49,7 +49,6 @@ import mat.client.event.CQLLibrarySelectedEvent;
 import mat.client.event.CQLVersionEvent;
 import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.shared.ContentWithHeadingWidget;
-import mat.client.shared.CustomButton;
 import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.FocusableWidget;
 import mat.client.shared.MatContext;
@@ -72,7 +71,6 @@ import mat.shared.ConstantMessages;
  * The Class CqlLibraryPresenter.
 
  */
-@SuppressWarnings("deprecation")
 public class CqlLibraryPresenter implements MatPresenter {
 
 	/** The panel. */
@@ -268,70 +266,24 @@ public class CqlLibraryPresenter implements MatPresenter {
 
 	}
 
-	/**
-	 * The Interface VersionDisplay.
-	 */
 	public static interface VersionDisplay{
 
-		/**
-		 * Builds the data table.
-		 *
-		 * @param result the result
-		 */
 		void buildDataTable(SaveCQLLibraryResult result);
 
-		/**
-		 * As widget.
-		 *
-		 * @return the widget
-		 */
 		Widget asWidget();
 
-		/**
-		 * Gets the major radio button.
-		 *
-		 * @return the major radio button
-		 */
 		RadioButton getMajorRadioButton();
 
-		/**
-		 * Gets the minor radio.
-		 *
-		 * @return the minor radio
-		 */
 		RadioButton getMinorRadio();
 
-		/**
-		 * Gets the error messages.
-		 *
-		 * @return the error messages
-		 */
 		ErrorMessageAlert getErrorMessages();
 
-		/**
-		 * Gets the save button.
-		 *
-		 * @return the save button
-		 */
 		Button getSaveButton();
 
-		/**
-		 * Gets the cancel button.
-		 *
-		 * @return the cancel button
-		 */
 		Button getCancelButton();
 
-		/**
-		 * Gets the selected library.
-		 *
-		 * @return the selected library
-		 */
 		CQLLibraryDataSetObject getSelectedLibrary();
 
-		/**
-		 * Clear radio button selection.
-		 */
 		void clearRadioButtonSelection();
 
 		void setSelectedLibraryObject(CQLLibraryDataSetObject selectedLibraryObject);
