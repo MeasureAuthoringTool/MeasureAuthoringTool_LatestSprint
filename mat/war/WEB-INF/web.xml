@@ -129,7 +129,7 @@
   </servlet>
   <servlet>
       <servlet-name>bonnieService</servlet-name>
-      <servlet-class>mat.server.BonnieServiceImpl</servlet-class>
+      <servlet-class>mat.server.bonnie.BonnieServiceImpl</servlet-class>
   </servlet>
   <servlet>
       <servlet-name>populationService</servlet-name>
@@ -166,6 +166,10 @@
   <servlet-mapping>
    <servlet-name>logoutServiceImpl</servlet-name>
    <url-pattern>/mat/loginService</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+   <servlet-name>logoutServiceImpl</servlet-name>
+   <url-pattern>/bonnie/loginService</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>codelistServiceImpl</servlet-name>
@@ -210,6 +214,10 @@
   <servlet-mapping>
       <servlet-name>bonnieService</servlet-name>
       <url-pattern>/mat/bonnieService</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+      <servlet-name>bonnieService</servlet-name>
+      <url-pattern>/bonnie/bonnieService</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
       <servlet-name>populationService</servlet-name>

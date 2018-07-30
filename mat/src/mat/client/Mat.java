@@ -16,8 +16,6 @@ import com.google.gwt.event.dom.client.KeyPressEvent;
 import com.google.gwt.event.dom.client.KeyPressHandler;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.MouseUpHandler;
-import com.google.gwt.event.logical.shared.CloseEvent;
-import com.google.gwt.event.logical.shared.CloseHandler;
 import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
@@ -49,11 +47,12 @@ import mat.client.event.LogoffEvent;
 import mat.client.event.MATClickHandler;
 import mat.client.event.MeasureEditEvent;
 import mat.client.event.TimedOutEvent;
+import mat.client.export.ManageExportView;
+import mat.client.export.bonnie.BonnieExportPresenter;
 import mat.client.login.service.SessionManagementService;
 import mat.client.measure.ComponentMeasureDisplay;
 import mat.client.measure.ManageCompositeMeasureDetailView;
 import mat.client.measure.ManageMeasureDetailView;
-import mat.client.measure.ManageMeasureExportView;
 import mat.client.measure.ManageMeasureHistoryView;
 import mat.client.measure.ManageMeasurePresenter;
 import mat.client.measure.ManageMeasureSearchView;
@@ -75,8 +74,10 @@ import mat.client.shared.ui.MATTabPanel;
 import mat.client.umls.ManageUmlsPresenter;
 import mat.client.umls.UmlsLoginDialogBox;
 import mat.client.util.ClientConstants;
-import mat.model.SecurityRole;
 import mat.shared.ConstantMessages;
+import mat.shared.bonnie.error.BonnieServerException;
+import mat.shared.bonnie.error.BonnieUnauthorizedException;
+import mat.shared.bonnie.result.BonnieUserInformationResult;
 
 
 /**
@@ -159,14 +160,9 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 						final Date lastSignOut = result.signOutDate;
 						final Date current = new Date();
 						final boolean isAlreadySignedIn = MatContext.get().isAlreadySignedIn(lastSignOut, lastSignIn, current);
-						if(isAlreadySignedIn){
-							redirectToLogin();
-						}
-						else{
-							MatContext.get().setUserSignInDate(result.userId);
-							MatContext.get().setUserInfo(result.userId, result.userEmail, result.userRole,result.loginId);
-							loadMatWidgets(result.userFirstName, isAlreadySignedIn, resultMatVersion);
-						}
+						MatContext.get().setUserSignInDate(result.userId);
+						MatContext.get().setUserInfo(result.userId, result.userEmail, result.userRole,result.loginId);
+						loadMatWidgets(result.userFirstName, isAlreadySignedIn, resultMatVersion);
 					}
 					
 				}
@@ -192,32 +188,30 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 
 	private ManageMeasurePresenter buildMeasureLibraryWidget(Boolean isAdmin) {
 		ManageMeasurePresenter measurePresenter = null;
-		if(isAdmin){
+		if (isAdmin) {
 			ManageMeasureSearchView measureSearchView = new ManageMeasureSearchView();
 			TransferOwnershipView transferOS = new TransferOwnershipView();
 			ManageMeasureHistoryView historyView = new ManageMeasureHistoryView();
-			
-			measurePresenter = new ManageMeasurePresenter(measureSearchView, null, null, null, null, null, historyView, null, transferOS);
-		}else{
+
+			measurePresenter = new ManageMeasurePresenter(measureSearchView, null, null, null, null, null, historyView,
+					null, transferOS);
+		} else {
 			ManageMeasureSearchView measureSearchView = new ManageMeasureSearchView();
 			ManageMeasureDetailView measureDetailView = new ManageMeasureDetailView();
 			ManageCompositeMeasureDetailView compositeMeasureDetailView = new ManageCompositeMeasureDetailView();
 			ManageMeasureVersionView versionView = new ManageMeasureVersionView();
 			ManageMeasureShareView measureShareView = new ManageMeasureShareView();
-			ManageMeasureHistoryView historyView = new ManageMeasureHistoryView();
-			ManageMeasureExportView measureExportView;
-			if (currentUserRole.equalsIgnoreCase(SecurityRole.SUPER_USER_ROLE)){
-				measureExportView = new ManageMeasureExportView(true);
-			}else{
-				measureExportView = new ManageMeasureExportView(false);
-			}
+			ManageMeasureHistoryView historyView = new ManageMeasureHistoryView();		
+			ManageExportView exportView = new ManageExportView();		
 			ComponentMeasureDisplay componentMeasureDisplay = new ComponentMeasureDisplay();
-			measurePresenter = new ManageMeasurePresenter(measureSearchView, measureDetailView, compositeMeasureDetailView , componentMeasureDisplay , measureShareView, measureExportView, historyView, versionView, null);
+			
+			measurePresenter = new ManageMeasurePresenter(measureSearchView, measureDetailView,
+					compositeMeasureDetailView, componentMeasureDisplay, measureShareView, exportView,
+					historyView, versionView, null);
 		}
-		
-		
+
 		return measurePresenter;
-		
+
 	}
 	
 
@@ -425,7 +419,9 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 			
 			tabIndex = presenterList.indexOf(myAccountPresenter);
 			hideUMLSActive();
-			hideBonnieActive();
+			if(resultMatVersion.equals("v5.6")) {
+				setBonnieActiveLink();
+			}
 		}
 		else if(currentUserRole.equalsIgnoreCase(ClientConstants.ADMINISTRATOR))
 		{
@@ -526,19 +522,7 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 			}
 		});
 		
-		if(resultMatVersion.equals("v5.6")) {
-			getBonnieButton().addClickHandler(new ClickHandler() {
-				
-				@Override
-				public void onClick(ClickEvent event) {
-					BonnieModal bonnieModal = new BonnieModal();
-					bonnieModal.show();
-				}
-			});
-		}
-		else {
-			removeBonnieLink();
-		}
+		
 		
 		
 		/*
@@ -572,15 +556,6 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 			}
 		});
 		
-		Window.addCloseHandler(new CloseHandler<Window>() {
-			@Override
-			public void onClose(CloseEvent<Window> arg0) {
-				if(!MatContext.get().getSynchronizationDelegate().getLogOffFlag()){
-					MatContext.get().handleSignOut("WINDOW_CLOSE_EVENT", false);
-				}
-			}
-		});
-		
 		MatContext.get().getEventBus().addHandler(TimedOutEvent.TYPE,new TimedOutEvent.Handler() {
 			@Override
 			public void onTimedOut(TimedOutEvent event) {
@@ -595,6 +570,33 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 		MatContext.get().restartTimeoutWarning();
 	}
 	
+	private void setBonnieActiveLink() {
+		String matUserId = MatContext.get().getLoggedinUserId();
+		MatContext.get().getBonnieService().getBonnieUserInformationForUser(matUserId, new AsyncCallback<BonnieUserInformationResult>() {
+			
+			@Override
+			public void onSuccess(BonnieUserInformationResult result) {
+				showBonnieActive();
+			}
+			
+			@Override
+			public void onFailure(Throwable caught) {
+				hideBonnieActive();
+				if(caught instanceof BonnieUnauthorizedException) {
+					//Place holder for any future code that would need to happen on unauthorized
+				}
+				
+				else if(caught instanceof BonnieServerException) {
+					Window.alert(BonnieExportPresenter.UNABLE_TO_CONNECT_TO_BONNIE_MESSAGE);
+				} 
+								
+				else {
+					Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+				}
+			}
+		});
+	}
+
 	/**
 	 * Redirect to login.
 	 */

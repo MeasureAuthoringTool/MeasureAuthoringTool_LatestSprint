@@ -82,6 +82,8 @@ public class MeasureSelectedEvent extends GwtEvent<MeasureSelectedEvent.Handler>
 		this.lockedUserId = lockedUserId;
 	}
 	
+	
+	
 	/* (non-Javadoc)
 	 * @see com.google.gwt.event.shared.GwtEvent#getAssociatedType()
 	 */

@@ -50,6 +50,10 @@ public class Measure {
 	private Timestamp lastModifiedOn; 
 	
 	private User lastModifiedBy;
+	
+	private String qdmVersion;
+	
+	private Boolean isCompositeMeasure = false;
 
 	public Timestamp getValueSetDate() {
 		return valueSetDate;
@@ -262,5 +266,20 @@ public class Measure {
 
 	public void setLastModifiedBy(User lastModifiedBy) {
 		this.lastModifiedBy = lastModifiedBy;
+	}
+
+	public String getQdmVersion() {
+		return qdmVersion;
+	}
+
+	public void setQdmVersion(String qdmVersion) {
+		this.qdmVersion = qdmVersion;
+	}
+	public Boolean getIsCompositeMeasure() {
+		return isCompositeMeasure;
+	}
+
+	public void setIsCompositeMeasure(Boolean isCompositeMeasure) {
+		this.isCompositeMeasure = isCompositeMeasure;
 	}
 }

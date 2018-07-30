@@ -1,31 +1,32 @@
-package mat.client.measure;
+package mat.client.export.measure;
+
+import org.gwtbootstrap3.client.ui.Button;
+import org.gwtbootstrap3.client.ui.ButtonToolBar;
+import org.gwtbootstrap3.client.ui.FormGroup;
+import org.gwtbootstrap3.client.ui.FormLabel;
+import org.gwtbootstrap3.client.ui.constants.ButtonType;
+
+import com.google.gwt.event.dom.client.HasClickHandlers;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HorizontalPanel;
+import com.google.gwt.user.client.ui.RadioButton;
+import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.buttons.CancelButton;
 import mat.client.buttons.SaveButton;
 import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.MatContext;
-import mat.client.shared.MeasureNameLabel;
 import mat.client.shared.MessageAlert;
 import mat.client.shared.SpacerWidget;
 import mat.model.SecurityRole;
-
-import org.gwtbootstrap3.client.ui.Button;
-import org.gwtbootstrap3.client.ui.ButtonToolBar;
-import org.gwtbootstrap3.client.ui.constants.ButtonType;
-
-import com.google.gwt.event.dom.client.HasClickHandlers;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.RadioButton;
-import com.google.gwt.user.client.ui.VerticalPanel;
-import com.google.gwt.user.client.ui.Widget;
 
 public class ManageMeasureExportView implements ExportDisplay {
 	
 	private FlowPanel content = new FlowPanel();
 	
-	private MeasureNameLabel measureNameLabel = new MeasureNameLabel();
-	
+	private Button measureNameLink = new Button();
+
 	private MessageAlert errorMessages = new ErrorMessageAlert();
 	
 	private RadioButton simpleXMLRadio = new RadioButton("format", "SimpleXML");
@@ -52,10 +53,14 @@ public class ManageMeasureExportView implements ExportDisplay {
 
 	public ManageMeasureExportView(boolean isTopLevelUser) {
 		
-		content.setStylePrimaryName("contentPanel");
-		content.addStyleName("leftAligned");
-		content.add(measureNameLabel);
-		content.add(new Label("Select an export option"));
+		content.add(new SpacerWidget());
+		createMeasureInformationContent();
+		content.add(new SpacerWidget());
+
+		FormLabel label = new FormLabel();
+		label.setText("Select an export option: "); 
+		label.setTitle("Select an export option: ");
+		content.add(label);
 		content.add(new SpacerWidget());
 		
 		content.add(vp);
@@ -75,6 +80,25 @@ public class ManageMeasureExportView implements ExportDisplay {
 		content.add(new SpacerWidget());
 		
 	}
+	
+	public void createMeasureInformationContent() {
+		measureNameLink.getElement().setId("measureNameLabel");
+		measureNameLink.setType(ButtonType.LINK);
+		measureNameLink.setTitle("Link to Measure Details for Measure");
+		
+		FormGroup group = new FormGroup();
+		FormLabel measureNameLabel = new FormLabel();
+		measureNameLabel.setText("Measure: ");
+		measureNameLabel.setTitle("Measure: ");
+		measureNameLabel.setFor("measureNameLabel");
+		
+		HorizontalPanel panel = new HorizontalPanel();
+		group.add(measureNameLabel);
+		group.add(measureNameLink);
+		panel.add(group);
+		
+		content.add(panel);
+	}
 
 	@Override
 	public Widget asWidget() {
@@ -82,7 +106,7 @@ public class ManageMeasureExportView implements ExportDisplay {
 	}
 	
 	@Override
-	public void setVersion_Based_ExportOptions(String releaseVersion) {
+	public void setExportOptionsBasedOnVersion(String releaseVersion) {
 		
 		vp.clear();
 		
@@ -109,11 +133,6 @@ public class ManageMeasureExportView implements ExportDisplay {
 		elmRadio.setValue(false);
 		jsonRadio.setValue(false);
 		eCQMPackageRadio.setValue(true);
-	}
-
-	@Override
-	public void setMeasureName(String name) {
-		measureNameLabel.setMeasureName(name);
 	}
 
 	@Override
@@ -165,5 +184,9 @@ public class ManageMeasureExportView implements ExportDisplay {
 	@Override
 	public boolean isCQLLibrary() {
 		return cqlLibraryRadio.getValue();
+	}
+	
+	public Button getMeasureNameLink() {
+		return measureNameLink;
 	}
 }

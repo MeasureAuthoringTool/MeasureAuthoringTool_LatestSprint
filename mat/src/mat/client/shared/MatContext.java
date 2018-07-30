@@ -72,7 +72,7 @@ import mat.shared.ConstantMessages;
 import mat.shared.SaveUpdateCQLResult;
 
 public class MatContext implements IsSerializable {
-	
+		
 	private CQLModel cqlModel;
 
 	private boolean isUMLSLoggedIn = false;
@@ -119,6 +119,8 @@ public class MatContext implements IsSerializable {
 	private QDSAttributesServiceAsync qdsAttributesServiceAsync;
 
 	private PopulationServiceAsync populationService;
+	
+	private BonnieServiceAsync bonnieService;
 
 	private HandlerManager eventBus;
 
@@ -204,6 +206,8 @@ public class MatContext implements IsSerializable {
 	
 	//VSAC Programs and Releases 
 	private HashMap<String, List<String>> programToReleases = new HashMap<>();
+	
+	private HashMap<String, String> programToLatestProfile = new HashMap<>();
 
 	public void clearDVIMessages(){
 		if(qdsView !=null){
@@ -390,6 +394,13 @@ public class MatContext implements IsSerializable {
 		return packageServiceAsync;
 	}
 
+	public BonnieServiceAsync getBonnieService(){
+		if(bonnieService == null){
+			bonnieService = (BonnieServiceAsync) GWT.create(BonnieService.class);
+		}
+		return bonnieService;
+	}
+	
 	public static MatContext get(){
 		return instance;
 	}
@@ -1025,8 +1036,7 @@ public class MatContext implements IsSerializable {
 	public void getCurrentReleaseVersion(AsyncCallback<String> currentReleaseVersionCallback){
 		getSessionService().getCurrentReleaseVersion(currentReleaseVersionCallback);
 	}
-
-
+	
 	public List<CQLIdentifierObject> getValuesets() {
 		return this.valuesets;
 	}
@@ -1330,9 +1340,17 @@ public class MatContext implements IsSerializable {
 		this.programToReleases = (HashMap<String, List<String>>) programToReleases;
 	}
 
+	public Map<String, String> getProgramToLatestProfile() {
+		return programToLatestProfile;
+	}
+
+	public void setProgramToLatestProfile(Map<String, String> programToLatestProfile) {
+		this.programToLatestProfile = (HashMap<String, String>) programToLatestProfile;
+	}
+
 	public void getProgramsAndReleasesFromVSAC() {
 		
-		MatContext.get().getVsacapiServiceAsync().getVSACProgramsAndReleases(new AsyncCallback<VsacApiResult>() {
+		MatContext.get().getVsacapiServiceAsync().getVSACProgramsReleasesAndProfiles(new AsyncCallback<VsacApiResult>() {
 
 			@Override
 			public void onFailure(Throwable caught) {
@@ -1342,7 +1360,8 @@ public class MatContext implements IsSerializable {
 			@Override
 			public void onSuccess(VsacApiResult result) {
 				if(result != null) {
-					MatContext.get().setProgramToReleases(result.getProgramToReleases());					
+					MatContext.get().setProgramToReleases(result.getProgramToReleases());
+					MatContext.get().setProgramToLatestProfile(result.getProgramToProfiles());
 				}
 				
 			}
@@ -1364,7 +1383,7 @@ public class MatContext implements IsSerializable {
 	public void buildBonnieLink() {
 		BonnieServiceAsync bonnie = (BonnieServiceAsync) GWT.create(BonnieService.class);
 
-		bonnie.getBonnieLink(new AsyncCallback<String>() {
+		bonnie.getBonnieAccessLink(new AsyncCallback<String>() {
 			
 			@Override
 			public void onFailure(Throwable caught) {
@@ -1382,4 +1401,5 @@ public class MatContext implements IsSerializable {
 	public String getBonnieLink() {
 		return bonnieLink;
 	}
+	
 }
