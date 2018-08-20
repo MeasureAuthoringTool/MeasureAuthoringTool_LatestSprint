@@ -10,6 +10,7 @@ import javax.xml.xpath.XPathExpressionException;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
+import mat.client.measure.ManageCompositeMeasureDetailModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
@@ -19,6 +20,7 @@ import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.shared.MatException;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.CQLValueSetTransferObject;
+import mat.model.ComponentMeasureTabObject;
 import mat.model.MatCodeTransferObject;
 import mat.model.MatValueSet;
 import mat.model.MeasureOwnerReportDTO;
@@ -38,9 +40,10 @@ import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.util.XmlProcessor;
-import mat.shared.MeasureSearchModel;
 import mat.shared.CQLValidationResult;
+import mat.shared.CompositeMeasureValidationResult;
 import mat.shared.GetUsedCQLArtifactsResult;
+import mat.shared.MeasureSearchModel;
 import mat.shared.SaveUpdateCQLResult;
 
 /**
@@ -118,9 +121,6 @@ public interface MeasureLibraryService {
 	 *            the check for supplement data
 	 * @return the applied qdm from measure xml
 	 */
-	//	ArrayList<QualityDataSetDTO> getAppliedQDMFromMeasureXml(String measureId,
-	//			boolean checkForSupplementData);
-	
 	QualityDataModelWrapper getAppliedQDMFromMeasureXml(String measureId,
 			boolean checkForSupplementData);
 	
@@ -139,6 +139,8 @@ public interface MeasureLibraryService {
 	 * @return the measure
 	 */
 	ManageMeasureDetailModel getMeasure(String key);
+	
+	ManageCompositeMeasureDetailModel getCompositeMeasure(String key);
 	
 	/**
 	 * Gets the measure xml for measure.
@@ -209,6 +211,8 @@ public interface MeasureLibraryService {
 	 * @return the save measure result
 	 */
 	SaveMeasureResult save(ManageMeasureDetailModel model);
+	
+	SaveMeasureResult saveCompositeMeasure(ManageCompositeMeasureDetailModel model);
 	
 	/**
 	 * Save and delete measure.
@@ -400,10 +404,10 @@ public interface MeasureLibraryService {
 	/**
 	 * Gets the component measures.
 	 *
-	 * @param measureIds the measure ids
+	 * @param measureId the measure ids
 	 * @return the component measures
 	 */
-	ManageMeasureSearchModel getComponentMeasures(List<String> measureIds);
+	ManageMeasureSearchModel getComponentMeasures(String measureId);
 	
 	
 	
@@ -738,4 +742,9 @@ public interface MeasureLibraryService {
 
 	ManageMeasureSearchModel searchComponentMeasures(MeasureSearchModel searchModel);
 
+	ManageCompositeMeasureDetailModel buildCompositeMeasure(ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel);
+
+	CompositeMeasureValidationResult validateCompositeMeasure(ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel);
+
+	List<ComponentMeasureTabObject> getCQLLibraryInformationForComponentMeasure(String measureId);
 }

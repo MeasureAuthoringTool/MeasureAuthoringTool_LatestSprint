@@ -208,7 +208,9 @@ public class ManageMeasureDetailModel implements IsSerializable, BaseModel{
 	
 	private MeasureDetailResult measureDetailResult; 
 	
+	private String qdmVersion;
 	
+
 	/**
 	 * Checks if is calender year.
 	 *
@@ -1210,12 +1212,7 @@ public class ManageMeasureDetailModel implements IsSerializable, BaseModel{
 		}
 		if (obj == null) {
 			return false;
-		}
-				
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		
+		}		
 	
 		ManageMeasureDetailModel other = (ManageMeasureDetailModel) obj;
 		if (toCompareAuthor == null) {
@@ -1395,15 +1392,6 @@ public class ManageMeasureDetailModel implements IsSerializable, BaseModel{
 				return false;
 			}
 		} else if (!isEqual(toCompareMeasure, other.toCompareMeasure)) {
-			return false;
-		}
-		
-		
-		if(toCompareComponentMeasures == null){
-			if(other.toCompareComponentMeasures != null){
-				return false;
-			}
-		} else if(!isEqual(toCompareComponentMeasures, other.toCompareComponentMeasures)){
 			return false;
 		}
 		
@@ -2047,6 +2035,14 @@ public class ManageMeasureDetailModel implements IsSerializable, BaseModel{
 	 */
 	public void setMeasureDetailResult(MeasureDetailResult measureDetailResult) {
 		this.measureDetailResult = measureDetailResult;
+	}
+	
+	public String getQdmVersion() {
+		return qdmVersion;
+	}
+
+	public void setQdmVersion(String qdmVersion) {
+		this.qdmVersion = qdmVersion;
 	}
 	
 	

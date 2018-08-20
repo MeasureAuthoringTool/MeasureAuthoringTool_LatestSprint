@@ -22,6 +22,7 @@ import mat.dao.StewardDAO;
 import mat.dao.UserDAO;
 import mat.dao.clause.CQLLibraryDAO;
 import mat.dao.clause.CQLLibraryShareDAO;
+import mat.dao.clause.ComponentMeasuresDAO;
 import mat.dao.clause.MeasureDAO;
 import mat.dao.clause.MeasureExportDAO;
 import mat.dao.clause.MeasureSetDAO;
@@ -37,6 +38,7 @@ import mat.model.MeasureSteward;
 import mat.model.QualityDataSet;
 import mat.model.User;
 import mat.model.clause.CQLLibrary;
+import mat.model.clause.ComponentMeasure;
 import mat.model.clause.Measure;
 import mat.model.clause.MeasureExport;
 import mat.model.clause.MeasureSet;
@@ -48,10 +50,10 @@ import mat.model.cql.CQLLibraryShare;
 import mat.model.cql.CQLModel;
 import mat.server.CQLUtilityClass;
 import mat.server.LoggedInUserUtil;
+import mat.server.export.ExportResult;
 import mat.server.export.MeasureArtifactGenerator;
 import mat.server.service.MeasurePackageService;
 import mat.server.service.SimpleEMeasureService;
-import mat.server.service.SimpleEMeasureService.ExportResult;
 import mat.server.util.ExportSimpleXML;
 import mat.shared.MeasureSearchModel;
 import mat.shared.ValidationUtility;
@@ -110,6 +112,9 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 
 	@Autowired
 	private CQLLibraryAuditLogDAO cqlLibraryAuditLogDAO;
+	
+	@Autowired
+	private ComponentMeasuresDAO componentMeasuresDAO;
 	
 	private String currentReleaseVersion;
 	
@@ -180,7 +185,8 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 		if (exportedXML.length() == 0) {
 			return;
 		}
-		SimpleEMeasureService.ExportResult exportResult =
+		
+		ExportResult exportResult =
 				eMeasureService.exportMeasureIntoSimpleXML(measureId, exportedXML, matValueSetList);
 		
 		//replace all @id attributes of <elementLookUp>/<qdm> with @uuid attribute value
@@ -337,8 +343,18 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	}
 
 	@Override
-	public List<Measure> getComponentMeasuresInfo(List<String> measureIds){
-		return measureDAO.getComponentMeasureInfoForMeasures(measureIds);
+	public List<Measure> getComponentMeasuresInfo(String measureId){
+		List<Measure> componentMeasures = new ArrayList<>();
+		List<ComponentMeasure> components = new ArrayList<>();
+		Measure copositeMeasure = measureDAO.find(measureId);
+		if(copositeMeasure != null) {
+			components = copositeMeasure.getComponentMeasures();
+		}
+		
+		for(ComponentMeasure cm : components) {
+			componentMeasures.add(measureDAO.find(cm.getComponentMeasureId()));
+		}
+		return componentMeasures;
 	}
 
 	public void setValidator(ValidationUtility validator) {
@@ -506,7 +522,7 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 
 	public String getCurrentReleaseVersion() {
 		return currentReleaseVersion;
-	}
+	} 
 
 	public void setCurrentReleaseVersion(String currentReleaseVersion) {
 		this.currentReleaseVersion = currentReleaseVersion;
@@ -524,5 +540,15 @@ public class MeasurePackageServiceImpl implements MeasurePackageService {
 	public List<MeasureShareDTO> searchComponentMeasuresWithFilter(MeasureSearchModel measureSearchModel) {
 		User user = userDAO.find(LoggedInUserUtil.getLoggedInUser());
 		return measureDAO.getComponentMeasureShareInfoForUserWithFilter(measureSearchModel, user);
+	}
+
+	@Override
+	public void saveComponentMeasures(List<ComponentMeasure> componentMeasuresList) {
+		componentMeasuresDAO.saveComponentMeasures(componentMeasuresList);
+	}
+
+	@Override
+	public void updateComponentMeasures(String compositeMeasureId, List<ComponentMeasure> componentMeasuresList) {
+		componentMeasuresDAO.updateComponentMeasures(compositeMeasureId, componentMeasuresList);		
 	}
 }

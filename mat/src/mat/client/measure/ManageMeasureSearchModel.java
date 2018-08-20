@@ -97,6 +97,10 @@ public class ManageMeasureSearchModel implements IsSerializable, SearchResults<M
 		
 		private Boolean isPatientBased;
 		
+		private String qdmVersion;
+		
+		private Boolean isComposite;
+
 		/**
 		 * Checks if is measure family.
 		 *
@@ -492,7 +496,7 @@ public class ManageMeasureSearchModel implements IsSerializable, SearchResults<M
 		 * 
 		 * @return the ownerfirst name
 		 */
-		public String getOwnerfirstName() {
+		public String getOwnerFirstName() {
 			return ownerfirstName;
 		}
 		
@@ -598,6 +602,22 @@ public class ManageMeasureSearchModel implements IsSerializable, SearchResults<M
 
 		public void setPatientBased(Boolean isPatientBased) {
 			this.isPatientBased = isPatientBased;
+		}
+
+		public String getQdmVersion() {
+			return qdmVersion;
+		}
+
+		public void setQdmVersion(String qdmVersion) {
+			this.qdmVersion = qdmVersion;
+		}
+		
+		public Boolean getIsComposite() {
+			return isComposite;
+		}
+
+		public void setIsComposite(Boolean isComposite) {
+			this.isComposite = isComposite;
 		}
 	}
 	

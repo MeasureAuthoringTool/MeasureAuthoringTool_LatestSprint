@@ -240,13 +240,6 @@ public interface MeasureDAO extends IDAO<Measure, String> {
 	 */
 	public void updatePrivateColumnInMeasure(String measureId, boolean isPrivate);
 	
-	/**
-	 * Gets the component measure info for measures.
-	 *
-	 * @param measureIds the measure ids
-	 * @return the component measure info for measures
-	 */
-	public List<Measure> getComponentMeasureInfoForMeasures(List<String> measureIds);
 	
 	/**
 	 * Gets the measure.

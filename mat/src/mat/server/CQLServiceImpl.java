@@ -78,6 +78,7 @@ import mat.server.service.MeasurePackageService;
 import mat.server.service.impl.MatContextServiceUtil;
 import mat.server.util.CQLUtil;
 import mat.server.util.CQLUtil.CQLArtifactHolder;
+import mat.server.util.CQLValidationUtil;
 import mat.server.util.ResourceLoader;
 import mat.server.util.XmlProcessor;
 import mat.shared.CQLErrors;
@@ -231,13 +232,13 @@ public class CQLServiceImpl implements CQLService {
 				currentObj.setId(toBeModifiedObj.getId());
 				if (!toBeModifiedObj.getName().equalsIgnoreCase(currentObj.getName())) {
 
-					isDuplicate = validator.validateForSpecialChar(currentObj.getName());
+					isDuplicate = validator.hasSpecialCharacter(currentObj.getName());
 					if (isDuplicate) {
 						result.setSuccess(false);
 						result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 						return result;
 					}
-					isDuplicate = isDuplicateIdentifierName(currentObj.getName(), xml);
+					isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
 				}
 
 				//validating function comment string
@@ -375,13 +376,13 @@ public class CQLServiceImpl implements CQLService {
 			} else {
 
 				currentObj.setId(UUID.randomUUID().toString());
-				isDuplicate = validator.validateForSpecialChar(currentObj.getName());
+				isDuplicate = validator.hasSpecialCharacter(currentObj.getName());
 				if (isDuplicate) {
 					result.setSuccess(false);
 					result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 					return result;
 				}
-				isDuplicate = isDuplicateIdentifierName(currentObj.getName(), xml);
+				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
 
 				//validating function comment string
 				isCommentInvalid = validator.validateForCommentTextArea(currentObj.getCommentString());
@@ -555,13 +556,13 @@ public class CQLServiceImpl implements CQLService {
 				currentObj.setId(toBeModifiedObj.getId());
 				if (!toBeModifiedObj.getName().equalsIgnoreCase(currentObj.getName())) {
 
-					isDuplicate = validtor.validateForSpecialChar(currentObj.getName());
+					isDuplicate = validtor.hasSpecialCharacter(currentObj.getName());
 					if (isDuplicate) {
 						result.setSuccess(false);
 						result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 						return result;
 					}
-					isDuplicate = isDuplicateIdentifierName(currentObj.getName(), xml);
+					isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
 				}
 
 				//validating parameter comment
@@ -654,13 +655,13 @@ public class CQLServiceImpl implements CQLService {
 
 				currentObj.setId(UUID.randomUUID().toString());
 
-				isDuplicate = validtor.validateForSpecialChar(currentObj.getName());
+				isDuplicate = validtor.hasSpecialCharacter(currentObj.getName());
 				if (isDuplicate) {
 					result.setSuccess(false);
 					result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 					return result;
 				}
-				isDuplicate = isDuplicateIdentifierName(currentObj.getName(), xml);
+				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
 
 				//validating parameter comment String
 				isCommentInvalid = validtor.validateForCommentTextArea(currentObj.getCommentString());
@@ -820,13 +821,13 @@ public class CQLServiceImpl implements CQLService {
 				// if the modified Name and current Name are not same
 				if (!toBeModifiedObj.getName().equalsIgnoreCase(currentObj.getName())) {
 
-					isDuplicate = validator.validateForSpecialChar(currentObj.getName());
+					isDuplicate = validator.hasSpecialCharacter(currentObj.getName());
 					if (isDuplicate) {
 						result.setSuccess(false);
 						result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 						return result;
 					}
-					isDuplicate = isDuplicateIdentifierName(currentObj.getName(), xml);
+					isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
 				}
 
 				//validate definition comment string
@@ -940,14 +941,14 @@ public class CQLServiceImpl implements CQLService {
 				currentObj.setId(UUID.randomUUID().toString());
 				String cqlExpressionName = "define" + " \"" + currentObj.getName() + "\"";
 
-				isDuplicate = validator.validateForSpecialChar(currentObj.getName());
+				isDuplicate = validator.hasSpecialCharacter(currentObj.getName());
 				if (isDuplicate) {
 					result.setSuccess(false);
 					result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 					return result;
 				}
 
-				isDuplicate = isDuplicateIdentifierName(currentObj.getName(), xml);
+				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
 
 				//validating definition Comment
 				isCommentInvalid = validator.validateForCommentTextArea(currentObj.getCommentString());
@@ -1167,7 +1168,7 @@ public class CQLServiceImpl implements CQLService {
 					return result;
 				}
 
-				isDuplicate = isDuplicateIdentifierName(currentObj.getAliasName(), xml);
+				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getAliasName(), xml);
 				if (isDuplicate) {
 					result.setSuccess(false);
 					result.setFailureReason(SaveUpdateCQLResult.NAME_NOT_UNIQUE);
@@ -1284,7 +1285,7 @@ public class CQLServiceImpl implements CQLService {
 	 *            the include library
 	 * @return the string
 	 */
-	private String createIncludeLibraryXML(CQLIncludeLibrary includeLibrary) {
+	public String createIncludeLibraryXML(CQLIncludeLibrary includeLibrary) {
 		logger.info("In CQLServiceImpl.createIncludeLibraryXML");
 		Mapping mapping = new Mapping();
 		CQLIncludeLibraryWrapper wrapper = new CQLIncludeLibraryWrapper();
@@ -2016,87 +2017,7 @@ public class CQLServiceImpl implements CQLService {
 	 */
 	@Override
 	public CQLKeywords getCQLKeyWords() {
-
-		CQLKeywords cqlKeywords = new CQLKeywords();
-		XmlProcessor cqlXMLProcessor = CQLTemplateXML.getCQLTemplateXmlProcessor();
-		String XPATH_DATATYPES = "/cqlTemplate/datatypes/datatype";
-		String XPATH_TIMINGS = "/cqlTemplate/timings/timing";
-		String XPATH_FUNCTIONS = "/cqlTemplate/functions/function";
-		String XPATH_KEYWORDS = "/cqlTemplate/keywords/keyword";
-		List<String> cqlDataTypeList = new ArrayList<String>();
-		List<String> cqlTimingList = new ArrayList<String>();
-		List<String> cqlFunctionList = new ArrayList<String>();
-		List<String> cqlKeywordsList = new ArrayList<String>();
-		try {
-			NodeList dataTypeNodeList = cqlXMLProcessor.findNodeList(cqlXMLProcessor.getOriginalDoc(), XPATH_DATATYPES);
-			NodeList timingNodeList = cqlXMLProcessor.findNodeList(cqlXMLProcessor.getOriginalDoc(), XPATH_TIMINGS);
-			NodeList functionNodeList = cqlXMLProcessor.findNodeList(cqlXMLProcessor.getOriginalDoc(), XPATH_FUNCTIONS);
-			NodeList keywordNodeList = cqlXMLProcessor.findNodeList(cqlXMLProcessor.getOriginalDoc(), XPATH_KEYWORDS);
-			if (dataTypeNodeList != null) {
-				for (int i = 0; i < dataTypeNodeList.getLength(); i++) {
-					Node node = dataTypeNodeList.item(i);
-					cqlDataTypeList.add(node.getTextContent());
-				}
-			}
-			if (timingNodeList != null) {
-				for (int i = 0; i < timingNodeList.getLength(); i++) {
-					Node node = timingNodeList.item(i);
-					cqlTimingList.add(node.getTextContent());
-				}
-			}
-			if (functionNodeList != null) {
-				for (int i = 0; i < functionNodeList.getLength(); i++) {
-					Node node = functionNodeList.item(i);
-					cqlFunctionList.add(node.getTextContent());
-				}
-			}
-			if (keywordNodeList != null) {
-				for (int i = 0; i < keywordNodeList.getLength(); i++) {
-					Node node = keywordNodeList.item(i);
-					cqlKeywordsList.add(node.getTextContent());
-				}
-			}
-		} catch (XPathExpressionException e) {
-			e.printStackTrace();
-		}
-		cqlKeywords.setCqlDataTypeList(cqlDataTypeList);
-		cqlKeywords.setCqlTimingList(cqlTimingList);
-		cqlKeywords.setCqlFunctionsList(cqlFunctionList);
-		cqlKeywords.setCqlKeywordsList(cqlKeywordsList);
-		return cqlKeywords;
-	}
-
-	/**
-	 * Checks if is duplicate identifier name.
-	 *
-	 * @param identifierName
-	 *            the identifier name
-	 * @param id
-	 *            the measure id
-	 * @return true, if is duplicate identifier name
-	 */
-	private boolean isDuplicateIdentifierName(String identifierName, String xml) {
-
-		if (xml != null) {
-
-			XmlProcessor processor = new XmlProcessor(xml);
-			String XPATH_CQLLOOKUP_IDENTIFIER_NAME = "//cqlLookUp//node()[translate(@name, "
-					+ "'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')='" + identifierName.toUpperCase()
-					+ "']";
-			try {
-				NodeList nodeList = processor.findNodeList(processor.getOriginalDoc(), XPATH_CQLLOOKUP_IDENTIFIER_NAME);
-
-				if ((nodeList != null) && (nodeList.getLength() > 0)) {
-					return true;
-				}
-
-			} catch (XPathExpressionException e) {
-				e.printStackTrace();
-			}
-
-		}
-
-		return false;
+		return CQLKeywordsUtil.getCQLKeywords();
 	}
 
 	/**

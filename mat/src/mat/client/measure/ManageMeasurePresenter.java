@@ -52,7 +52,6 @@ import mat.client.event.MeasureSelectedEvent;
 import mat.client.event.MeasureVersionEvent;
 import mat.client.export.ManageExportPresenter;
 import mat.client.export.ManageExportView;
-import mat.client.export.measure.ExportDisplay;
 import mat.client.measure.ManageMeasureSearchModel.Result;
 import mat.client.measure.metadata.CustomCheckBox;
 import mat.client.measure.service.MeasureCloningService;
@@ -72,10 +71,12 @@ import mat.client.shared.SynchronizationDelegate;
 import mat.client.shared.search.SearchResultUpdate;
 import mat.client.util.ClientConstants;
 import mat.client.util.MatTextBox;
-import mat.shared.MeasureSearchModel;
-import mat.shared.MeasureSearchModel.VersionMeasureType;
+import mat.shared.CompositeMeasureValidationResult;
 import mat.shared.ConstantMessages;
 import mat.shared.MatConstants;
+import mat.shared.MeasureSearchModel;
+import mat.shared.MeasureSearchModel.VersionMeasureType;
+import mat.shared.StringUtility;
 
 public class ManageMeasurePresenter implements MatPresenter {
 
@@ -98,7 +99,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			}
 			
 			if(componentMeasureDisplay != null) {
-				componentMeasureDisplay.clearFields();
+				componentMeasureDisplay.clearFields(false);
 			}
 			displaySearch();
 		}
@@ -109,8 +110,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 	private ManageMeasureDetailModel currentDetails;
 	
 	private ManageCompositeMeasureDetailModel currentCompositeMeasureDetails;
-
-	private String currentExportId;
 
 	private ManageMeasureShareModel currentShareDetails;
 
@@ -424,6 +423,30 @@ public class ManageMeasurePresenter implements MatPresenter {
 				displayDetailForAddComposite();
 			}
 		});
+		componentMeasureDisplay.getSaveButton().addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				setComponentBusy(true);
+				updateCompositeDetailsFromComponentMeasureDisplay();
+				
+				MatContext.get().getMeasureService().validateCompositeMeasure(currentCompositeMeasureDetails, new AsyncCallback<CompositeMeasureValidationResult>() {
+
+					@Override
+					public void onFailure(Throwable caught) {
+						setComponentBusy(false);
+					}
+
+					@Override
+					public void onSuccess(CompositeMeasureValidationResult result) {
+						currentCompositeMeasureDetails = result.getModel();
+						if(isValidCompositeMeasureForSave(result.getMessages())){
+							saveCompositeMeasure();
+						}
+					}
+				});
+			}
+		});
 	}
 
 	private void compositeDetailDisplayHandlers(final DetailDisplay compositeDetailDisplay) {
@@ -519,15 +542,28 @@ public class ManageMeasurePresenter implements MatPresenter {
 			
 			@Override
 			public void onClick(ClickEvent event) {
+				boolean isEdit = false;
 				if(componentMeasureDisplay != null) {
-					componentMeasureDisplay.clearFields();
+					if(currentCompositeMeasureDetails.getId()!=null) {
+						isEdit = true;
+					}
+					componentMeasureDisplay.clearFields(isEdit);
 				}
-				updateCompositeDetailsFromView();
+
+				String panelHeading = "";
+				if(StringUtility.isEmptyOrNull(currentCompositeMeasureDetails.getId())) {
+					panelHeading = "My Measures > Create New Composite Measure > Component Measures";					
+				} else {
+					panelHeading = "My Measures > Edit Composite Measure > Update Component Measures.";
+				}
+				
+				updateCompositeDetailsFromCompositeDetailView();
+				
 				if(!isValidCompositeMeasure(currentCompositeMeasureDetails)){
 					return;
 				}
 				
-				displayComponentDetails();
+				displayComponentDetails(panelHeading);
 			}
 		});
 
@@ -639,9 +675,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 		setCompositeDetailsToView();
 	}
 	
-	private void displayComponentDetails() {
+	private void displayComponentDetails(String panelHeading) {
 		panel.getButtonPanel().clear();
-		panel.setHeading("My Measures > Create New Composite Measure > Component Measures", "MeasureLibrary");
+		panel.setHeading(panelHeading, "MeasureLibrary");
 		panel.setContent(componentMeasureDisplay.asWidget());
 	}
 
@@ -694,6 +730,30 @@ public class ManageMeasurePresenter implements MatPresenter {
 		}
 		
 		panel.setContent(detailDisplay.asWidget());
+	}
+
+	private void displayDetailForEditComposite(String compositeScoringMethod) {
+		panel.getButtonPanel().clear();
+		resetPatientBasedInput(compositeDetailDisplay); 
+		panel.setHeading("My Measures > Edit Composite Measure", "MeasureLibrary");
+		compositeDetailDisplay.showMeasureName(false);
+		compositeDetailDisplay.showCautionMsg(true);
+			
+		setCompositeDetailsToView();
+
+		// set the patient based indicators, yes is index 1, no is index 0
+		if(currentCompositeMeasureDetails.isPatientBased()) {
+			compositeDetailDisplay.getPatientBasedInput().setSelectedIndex(1);
+		} else {
+			compositeDetailDisplay.getPatientBasedInput().setSelectedIndex(0);
+		}
+		
+		if(currentCompositeMeasureDetails.getMeasScoring().equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE)) {
+			compositeDetailDisplay.getPatientBasedInput().removeItem(1);
+		}
+		((ManageCompositeMeasureDetailView) compositeDetailDisplay).setCompositeScoringSelectedValue(compositeScoringMethod);
+		panel.setContent(compositeDetailDisplay.asWidget());
+		
 	}
 
 	private void resetPatientBasedInput(DetailDisplay currentDisplay) {
@@ -823,25 +883,46 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 	}
 
-	private void edit(String name) {
+	private void edit(String measureId, Boolean isComposite) {
 		detailDisplay.getErrorMessageDisplay().clearAlert();
 		searchDisplay.getErrorMessageDisplayForBulkExport().clearAlert();
-		MatContext.get().getMeasureService().getMeasure(name, new AsyncCallback<ManageMeasureDetailModel>() {
+		if(isComposite != null && isComposite) {
+			MatContext.get().getMeasureService().getCompositeMeasure(measureId, new AsyncCallback<ManageCompositeMeasureDetailModel>() {
 
-			@Override
-			public void onFailure(Throwable caught) {
-				detailDisplay.getErrorMessageDisplay()
-						.createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-				MatContext.get().recordTransactionEvent(null, null, null,
-						"Unhandled Exception: " + caught.getLocalizedMessage(), 0);
-			}
+				@Override
+				public void onFailure(Throwable caught) {
+					detailDisplay.getErrorMessageDisplay()
+					.createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+					MatContext.get().recordTransactionEvent(null, null, null,
+							"Unhandled Exception: " + caught.getLocalizedMessage(), 0);
+				}
 
-			@Override
-			public void onSuccess(ManageMeasureDetailModel result) {
-				currentDetails = result;
-				displayDetailForEdit();
-			}
-		});
+				@Override
+				public void onSuccess(ManageCompositeMeasureDetailModel result) {
+					currentCompositeMeasureDetails = result;
+					componentMeasureDisplay.setAppliedComponentMeasuresList(result.getComponentMeasuresSelectedList());
+					componentMeasureDisplay.setAliasMapping(result.getAliasMapping());
+					displayDetailForEditComposite(result.getCompositeScoringMethod());
+				}
+			});
+		} else {
+			MatContext.get().getMeasureService().getMeasure(measureId, new AsyncCallback<ManageMeasureDetailModel>() {
+
+				@Override
+				public void onFailure(Throwable caught) {
+					detailDisplay.getErrorMessageDisplay()
+							.createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+					MatContext.get().recordTransactionEvent(null, null, null,
+							"Unhandled Exception: " + caught.getLocalizedMessage(), 0);
+				}
+
+				@Override
+				public void onSuccess(ManageMeasureDetailModel result) {
+					currentDetails = result;
+					displayDetailForEdit();
+				}
+			});
+		}
 	}
 
 	private void editClone(String id) {
@@ -867,7 +948,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 	private void export(ManageMeasureSearchModel.Result result) {
 		String id = result.getId();
-		String name = result.getName();
 		MatContext.get().getAuditService().recordMeasureEvent(id, "Measure Exported", null, true,
 				new AsyncCallback<Boolean>() {
 					@Override
@@ -883,7 +963,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 		ManageExportPresenter exportPresenter = new ManageExportPresenter(exportView, result, this);
 
-		currentExportId = id;
 		searchDisplay.getErrorMessageDisplayForBulkExport().clearAlert();
 		panel.getButtonPanel().clear();
 		panel.setContent(exportPresenter.getWidget());
@@ -981,8 +1060,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 	}
 	
 	private boolean isValidCompositeMeasure(ManageCompositeMeasureDetailModel compositeMeasureDetails) {
-		ManageCompositeMeasureModelValidator manageMeasureModelValidator = new ManageCompositeMeasureModelValidator();
-		List<String> message = manageMeasureModelValidator.validateMeasureWithClone(compositeMeasureDetails, isClone);
+		ManageCompositeMeasureModelValidator manageCompositeMeasureModelValidator = new ManageCompositeMeasureModelValidator();
+		List<String> message = manageCompositeMeasureModelValidator.validateMeasureWithClone(compositeMeasureDetails, isClone);
 		boolean valid = message.size() == 0;
 		if(!valid) {
 			String errorMessage = "";
@@ -995,7 +1074,22 @@ public class ManageMeasurePresenter implements MatPresenter {
 		}
 		return valid;
 	}
-
+	
+	private boolean isValidCompositeMeasureForSave(List<String> message) {
+		GWT.log("message size: " + message.size());
+		boolean valid = message.size() == 0;
+		if(!valid) {
+			String errorMessage = "";
+			if(message.size() > 0) {
+				errorMessage = message.get(0);
+				setComponentBusy(false);
+			}
+			componentMeasureDisplay.getErrorMessageDisplay().createAlert(errorMessage);
+		} else {
+			componentMeasureDisplay.getErrorMessageDisplay().clearAlert();
+		}
+		return valid;
+	}
 
 	
 	private void getUnusedLibraryDialog(String measureId, String measureName, boolean isMajor, String version, boolean shouldPackage) {
@@ -1148,7 +1242,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 									searchDisplay.getErrorMessageDisplay().clearAlert();
 									searchDisplay.getErrorMessagesForTransferOS().clearAlert();
 									updateTransferIDs(result, manageMeasureSearchModel);
-
 								}
 
 								@Override
@@ -1182,7 +1275,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	}
 	
 	protected void searchComponentMeasures(String searchText, int startIndex, int pageSize, int filter) {
-		setComponentSearchingBusy(true);
+		setComponentBusy(true);
 		final String lastSearchText = (searchText != null) ? searchText.trim() : null;
 		MeasureSearchModel searchModel = new MeasureSearchModel(filter, startIndex, pageSize, lastSearchText, searchText);
 		searchModel.setQdmVersion(MatContext.get().getCurrentQDMVersion());
@@ -1195,7 +1288,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 				componentMeasureDisplay.getErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
 				MatContext.get().recordTransactionEvent(null, null, null,
 						"Unhandled Exception: " + caught.getLocalizedMessage(), 0);
-				setComponentSearchingBusy(false);
+				setComponentBusy(false);
 			}
 
 			@Override
@@ -1206,7 +1299,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 				} else {
 					componentMeasureDisplay.getErrorMessageDisplay().clearAlert();
 				}
-				setComponentSearchingBusy(false);
+				setComponentBusy(false);
 				componentMeasureDisplay.populateAvailableMeasuresTableCells(result, filter, searchModel);
 			}
 		});
@@ -1244,7 +1337,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 							@Override
 							public void onEditClicked(ManageMeasureSearchModel.Result result) {
 								resetMeasureFlags();
-								edit(result.getId());
+								edit(result.getId(), result.getIsComposite());
 							}
 
 							@Override
@@ -1606,8 +1699,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 			}
 		});
 		
-		//removing as to not block QA
-		searchDisplay.getMeasureLibraryAdvancedSearchBuilder().getModal().getSearch().addClickHandler(new ClickHandler() {
+		//TODO in MAT-9216 add this code back in!
+		/*searchDisplay.getMeasureLibraryAdvancedSearchBuilder().getModal().getSearch().addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				MeasureSearchModel model = searchDisplay.getMeasureLibraryAdvancedSearchBuilder().generateAdvancedSearchModel();
@@ -1617,7 +1710,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 				advancedSearch(model);
 				searchDisplay.getMeasureLibraryAdvancedSearchBuilder().getModal().closeAdvanceSearch();
 			}
-		});
+		});*/
 		
 		searchDisplay.getTransferButton().addClickHandler(new ClickHandler() {
 			@Override
@@ -1688,7 +1781,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 								isMeasureDeleted = false;
 								isMeasureVersioned = false;
 								searchDisplay.resetMessageDisplay();
-								edit(result.getId());
+								edit(result.getId(), result.getIsComposite());
 
 							}
 
@@ -1793,9 +1886,12 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 	}
 	
-	private void setComponentSearchingBusy(boolean busy) {
+	private void setComponentBusy(boolean busy) {
 		toggleLoadingMessage(busy);
 		componentMeasureDisplay.getSearchButton().setEnabled(!busy);
+		componentMeasureDisplay.getSaveButton().setEnabled(!busy);
+		componentMeasureDisplay.getBackButton().setEnabled(!busy);
+		componentMeasureDisplay.getCancelButton().setEnabled(!busy);
 	}
 
 	private void setSearchingBusy(boolean busy) {
@@ -1919,25 +2015,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 				@Override
 				public void onSuccess(SaveMeasureResult result) {
-					if (result.isSuccess()) {
-						if (isInsert) {
-							fireMeasureSelectedEvent(result.getId(), version, name, shortName, scoringType, true, false,
-									null);
-							fireMeasureEditEvent();
-						} else {
-							displaySearch();
-						}
-					} else {
-						String message = null;
-						switch (result.getFailureReason()) {
-						case SaveMeasureResult.INVALID_DATA:
-							message = "Data Validation Failed.Please verify data.";
-							break;
-						default:
-							message = "Unknown Code " + result.getFailureReason();
-						}
-						detailDisplay.getErrorMessageDisplay().createAlert(message);
-					}
+					postSaveMeasureEvents(isInsert, result, detailDisplay, name, shortName, scoringType, version);
 					setSearchingBusy(false);
 				}
 			});
@@ -1968,7 +2046,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		MatContext.get().setCurrentMeasureScoringType(currentDetails.getMeasScoring());
 	}
 	
-	private void updateCompositeDetailsFromView() {
+	private void updateCompositeDetailsFromCompositeDetailView() {
 		currentCompositeMeasureDetails.setName(compositeDetailDisplay.getName().getValue().trim());
 		currentCompositeMeasureDetails.setShortName(compositeDetailDisplay.getShortName().getValue().trim());
 		currentCompositeMeasureDetails.setCompositeScoringMethod(((ManageCompositeMeasureDetailView)compositeDetailDisplay).getCompositeScoringValue());
@@ -1979,8 +2057,64 @@ public class ManageMeasurePresenter implements MatPresenter {
 		} else {
 			currentCompositeMeasureDetails.setIsPatientBased(false);
 		}
+		currentCompositeMeasureDetails.setQdmVersion(MatContext.get().getCurrentQDMVersion());
 		currentCompositeMeasureDetails.scrubForMarkUp();
 	}
+	
+	private void updateCompositeDetailsFromComponentMeasureDisplay() {
+		currentCompositeMeasureDetails.setAppliedComponentMeasures(componentMeasureDisplay.getAppliedComponentMeasuresList());
+		currentCompositeMeasureDetails.setAliasMapping(componentMeasureDisplay.getAliasMapping());
+	}
+	
+	private void postSaveMeasureEvents(boolean isInsert, SaveMeasureResult result, DetailDisplay detailDisplay,
+			String name, String shortName, String scoringType, String version) {
+		
+		if (result.isSuccess()) {
+			if (isInsert) {
+				fireMeasureSelectedEvent(result.getId(), version, name, shortName, scoringType, true, false, null);
+				fireMeasureEditEvent();
+			} else {
+				displaySearch();
+			}
+		} else {
+			String message = null;
+			if(SaveMeasureResult.INVALID_DATA == result.getFailureReason()) {
+				message = "Data Validation Failed.Please verify data.";
+			} else {
+				message = "Unknown Code " + result.getFailureReason();
+			}
+			detailDisplay.getErrorMessageDisplay().createAlert(message);
+		}	
+		
+		setComponentBusy(false);
+	}
+	
+
+	
+	private void saveCompositeMeasure() {
+		final boolean isInsert = currentCompositeMeasureDetails.getId() == null;
+		final String name = currentCompositeMeasureDetails.getName();
+		final String shortName = currentCompositeMeasureDetails.getShortName();
+		final String scoringType = currentCompositeMeasureDetails.getMeasScoring();
+		final String version = currentCompositeMeasureDetails.getVersionNumber() + "." + currentCompositeMeasureDetails.getRevisionNumber();
+		
+		MatContext.get().getMeasureService().saveCompositeMeasure(currentCompositeMeasureDetails, new AsyncCallback<SaveMeasureResult>() {
+
+			@Override
+			public void onFailure(Throwable caught) {
+				compositeDetailDisplay.getErrorMessageDisplay().createAlert(caught.getLocalizedMessage());
+				setComponentBusy(false);
+			}
+
+			@Override
+			public void onSuccess(SaveMeasureResult result) {
+				postSaveMeasureEvents(isInsert, result, compositeDetailDisplay, name, shortName, scoringType, version);
+				setComponentBusy(false);
+			}
+			
+		});
+	}
+
 
 	private void updateTransferIDs(Result result, ManageMeasureSearchModel model) {
 		if (result.isTransferable()) {

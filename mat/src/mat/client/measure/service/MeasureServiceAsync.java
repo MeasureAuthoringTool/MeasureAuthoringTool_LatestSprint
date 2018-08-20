@@ -9,12 +9,15 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
+import mat.shared.CompositeMeasureValidationResult;
+import mat.client.measure.ManageCompositeMeasureDetailModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.TransferOwnerShipModel;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.CQLValueSetTransferObject;
+import mat.model.ComponentMeasureTabObject;
 import mat.model.MatCodeTransferObject;
 import mat.model.MatValueSet;
 import mat.model.MeasureType;
@@ -134,6 +137,8 @@ public interface MeasureServiceAsync {
 	 */
 	void getMeasure(String key, AsyncCallback<ManageMeasureDetailModel> callback);
 	
+	void getCompositeMeasure(String measureId, AsyncCallback<ManageCompositeMeasureDetailModel> callback);
+	
 	/**
 	 * Gets the measure and logs in this measure as recently used measure in recent measure activity log.
 	 *
@@ -213,6 +218,8 @@ public interface MeasureServiceAsync {
 	 *            the callback
 	 */
 	void save(ManageMeasureDetailModel model, AsyncCallback<SaveMeasureResult> callback);
+	
+	void saveCompositeMeasure(ManageCompositeMeasureDetailModel model, AsyncCallback<SaveMeasureResult> callback);
 	
 	/**
 	 * Save and delete measure.
@@ -413,7 +420,7 @@ public interface MeasureServiceAsync {
 	 * @param callback the callback
 	 * @return the component measures
 	 */
-	void getComponentMeasures(List<String> measureIds, AsyncCallback<ManageMeasureSearchModel> callback);
+	void getComponentMeasures(String measureId, AsyncCallback<ManageMeasureSearchModel> callback);
 	
 	/**
 	 * Validate package grouping.
@@ -720,5 +727,11 @@ public interface MeasureServiceAsync {
 			AsyncCallback<SaveUpdateCQLResult> asyncCallback);
 
 	void searchComponentMeasures(MeasureSearchModel searchModel, AsyncCallback<ManageMeasureSearchModel> asyncCallback);
+	
+	void buildCompositeMeasure(ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel, AsyncCallback<ManageCompositeMeasureDetailModel> callback);
 
+	void validateCompositeMeasure(ManageCompositeMeasureDetailModel currentCompositeMeasureDetails,
+			AsyncCallback<CompositeMeasureValidationResult> asyncCallback);
+	
+	void getCQLLibraryInformationForComponentMeasure(String compositeMeasureId, AsyncCallback<List<ComponentMeasureTabObject>> callback);
 }

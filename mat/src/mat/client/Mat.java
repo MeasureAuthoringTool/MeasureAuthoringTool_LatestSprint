@@ -34,7 +34,6 @@ import mat.client.admin.ManageCQLLibraryAdminPresenter;
 import mat.client.admin.ManageCQLLibraryAdminView;
 import mat.client.admin.reports.ManageAdminReportingPresenter;
 import mat.client.admin.reports.ManageAdminReportingView;
-import mat.client.bonnie.BonnieModal;
 import mat.client.codelist.ListBoxCodeProvider;
 import mat.client.cql.CQLLibraryDetailView;
 import mat.client.cql.CQLLibraryHistoryView;
@@ -43,13 +42,14 @@ import mat.client.cql.CQLLibraryVersionView;
 import mat.client.event.BackToLoginPageEvent;
 import mat.client.event.BackToMeasureLibraryPage;
 import mat.client.event.CQLLibraryEditEvent;
+import mat.client.event.EditCompositeMeasureEvent;
 import mat.client.event.LogoffEvent;
 import mat.client.event.MATClickHandler;
 import mat.client.event.MeasureEditEvent;
 import mat.client.event.TimedOutEvent;
 import mat.client.export.ManageExportView;
-import mat.client.export.bonnie.BonnieExportPresenter;
 import mat.client.login.service.SessionManagementService;
+import mat.client.login.service.SessionManagementService.Result;
 import mat.client.measure.ComponentMeasureDisplay;
 import mat.client.measure.ManageCompositeMeasureDetailView;
 import mat.client.measure.ManageMeasureDetailView;
@@ -75,8 +75,6 @@ import mat.client.umls.ManageUmlsPresenter;
 import mat.client.umls.UmlsLoginDialogBox;
 import mat.client.util.ClientConstants;
 import mat.shared.ConstantMessages;
-import mat.shared.bonnie.error.BonnieServerException;
-import mat.shared.bonnie.error.BonnieUnauthorizedException;
 import mat.shared.bonnie.result.BonnieUserInformationResult;
 
 
@@ -134,6 +132,7 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 	private CqlLibraryPresenter cqlLibrary;
 	private ManageAdminReportingPresenter reportingPresenter;
 	private int tabIndex;
+	//TODO add instance var: private *composite screen type* compositeMeasureEdit;
 	
 	private  final AsyncCallback<SessionManagementService.Result> userRoleCallback = new AsyncCallback<SessionManagementService.Result>(){
 		
@@ -153,7 +152,7 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 
 				@Override
 				public void onSuccess(String resultMatVersion) {
-					if(result == null){
+                    if(result == null || (checkIfResultIsNotNull(result) && !result.activeSessionId.equals(result.currentSessionId))){
 						redirectToLogin();
 					}else{
 						final Date lastSignIn = result.signInDate;
@@ -164,8 +163,12 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 						MatContext.get().setUserInfo(result.userId, result.userEmail, result.userRole,result.loginId);
 						loadMatWidgets(result.userFirstName, isAlreadySignedIn, resultMatVersion);
 					}
-					
 				}
+
+				private boolean checkIfResultIsNotNull(Result result) {
+                    return result != null && result.activeSessionId != null && result.currentSessionId != null;
+
+				}   
 			});
 			}
 	};
@@ -347,6 +350,15 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 			}
 		});
 		
+		MatContext.get().getEventBus().addHandler(EditCompositeMeasureEvent.TYPE, new EditCompositeMeasureEvent.Handler() {
+			
+			@Override
+			public void onFire(EditCompositeMeasureEvent event) {
+				//TODO switch to edit screen:
+				//mainTabLayout.selectTab(presenterList.indexOf(*insert edit screen object*));
+			}
+		});
+
 		GWT.setUncaughtExceptionHandler(new GWT.UncaughtExceptionHandler() {
 			@Override
 			public void onUncaughtException(Throwable arg0) {
@@ -394,29 +406,36 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 			
 			measureLibrary = buildMeasureLibraryWidget(false);
 			title = ClientConstants.TITLE_MEASURE_LIB;
-			mainTabLayout.add(measureLibrary.getWidget(), title);
+			mainTabLayout.add(measureLibrary.getWidget(), title, true);
 			presenterList.add(measureLibrary);
 			
 			measureComposer= buildMeasureComposer();
 			title = ClientConstants.TITLE_MEASURE_COMPOSER;
-			mainTabLayout.add(measureComposer.getWidget(), title);
+			mainTabLayout.add(measureComposer.getWidget(), title, true);
 			presenterList.add(measureComposer);
 			
 			cqlLibrary = buildCqlLibraryWidget();
 			title = ClientConstants.TITLE_CQL_LIB;
-			mainTabLayout.add(cqlLibrary.getWidget(), title);
+			mainTabLayout.add(cqlLibrary.getWidget(), title, true);
 			presenterList.add(cqlLibrary);
 			
 			cqlComposer= buildCqlComposer();
 			title = ClientConstants.TITLE_CQL_COMPOSER;
-			mainTabLayout.add(cqlComposer.getWidget(), title);
+			mainTabLayout.add(cqlComposer.getWidget(), title, true);
 			presenterList.add(cqlComposer);
 			
 			title = ClientConstants.TITLE_MY_ACCOUNT;
 			MatPresenter myAccountPresenter = buildMyAccountWidget();
-			mainTabLayout.add(myAccountPresenter.getWidget(), title);
+			mainTabLayout.add(myAccountPresenter.getWidget(), title, true);
 			presenterList.add(myAccountPresenter);
 			
+			//TODO add edit screen page in hidden tab;
+			title = ClientConstants.COMPOSITE_MEASURE_EDIT;
+			//TODO - instantiate object: compositeMeasureEdit = new CompositeMeasureEdit();
+			//TODO: add object to tab: mainTabLayout.add(compositeMeasureEdit.getWidget(), title, false);
+			//TODO add object to list: presenterList.add(compositeMeasureEdit);
+			
+			//TODO set tabIndex of last object tabIndex = presenterList.indexOf(compositeMeasureEdit);
 			tabIndex = presenterList.indexOf(myAccountPresenter);
 			hideUMLSActive();
 			if(resultMatVersion.equals("v5.6")) {
@@ -427,31 +446,31 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 		{
 			adminPresenter = buildAdminPresenter();
 			title = ClientConstants.TITLE_ADMIN;
-			mainTabLayout.add(adminPresenter.getWidget(), title);
+			mainTabLayout.add(adminPresenter.getWidget(), title, true);
 			presenterList.add(adminPresenter);
 			
 			measureLibrary = buildMeasureLibraryWidget(true);
 			title = ClientConstants.TITLE_MEASURE_LIB_CHANGE_OWNERSHIP;
-			mainTabLayout.add(measureLibrary.getWidget(), title);
+			mainTabLayout.add(measureLibrary.getWidget(), title, true);
 			presenterList.add(measureLibrary);
 			
 			ManageCQLLibraryAdminView cqlLibraryAdminView = new ManageCQLLibraryAdminView();
 			CQLLibraryHistoryView historyView = new CQLLibraryHistoryView();
 			TransferOwnershipView transferOS = new TransferOwnershipView();
 			cqlLibraryAdminPresenter = new ManageCQLLibraryAdminPresenter(cqlLibraryAdminView,historyView,transferOS);
-			title = "CQL Library Ownership";
-			mainTabLayout.add(cqlLibraryAdminPresenter.getWidget(), title);
+			title = ClientConstants.CQL_LIBRARY_OWNERSHIP;
+			mainTabLayout.add(cqlLibraryAdminPresenter.getWidget(), title, true);
 			presenterList.add(cqlLibraryAdminPresenter);
 			
 			ManageAdminReportingView adminReportingView = new ManageAdminReportingView();
 			reportingPresenter = new ManageAdminReportingPresenter(adminReportingView);
-			title = "Administrator Reports";
-			mainTabLayout.add(reportingPresenter.getWidget(), title);
+			title = ClientConstants.ADMIN_REPORTS;
+			mainTabLayout.add(reportingPresenter.getWidget(), title, true);
 			presenterList.add(reportingPresenter);
 			
 			title = ClientConstants.TITLE_ADMIN_ACCOUNT;
 			MatPresenter myAccountPresenter = buildMyAccountWidget();
-			mainTabLayout.add(myAccountPresenter.getWidget(), title);
+			mainTabLayout.add(myAccountPresenter.getWidget(), title, true);
 			presenterList.add(myAccountPresenter);
 			tabIndex = presenterList.indexOf(myAccountPresenter);
 		}
@@ -582,17 +601,6 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 			@Override
 			public void onFailure(Throwable caught) {
 				hideBonnieActive();
-				if(caught instanceof BonnieUnauthorizedException) {
-					//Place holder for any future code that would need to happen on unauthorized
-				}
-				
-				else if(caught instanceof BonnieServerException) {
-					Window.alert(BonnieExportPresenter.UNABLE_TO_CONNECT_TO_BONNIE_MESSAGE);
-				} 
-								
-				else {
-					Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-				}
 			}
 		});
 	}

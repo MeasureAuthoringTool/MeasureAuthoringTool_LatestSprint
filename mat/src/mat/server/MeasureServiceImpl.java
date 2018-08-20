@@ -7,6 +7,7 @@ import java.util.List;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
+import mat.client.measure.ManageCompositeMeasureDetailModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
@@ -17,6 +18,7 @@ import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.shared.MatException;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.CQLValueSetTransferObject;
+import mat.model.ComponentMeasureTabObject;
 import mat.model.MatCodeTransferObject;
 import mat.model.MatValueSet;
 import mat.model.MeasureType;
@@ -36,6 +38,7 @@ import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.service.MeasureLibraryService;
 import mat.shared.MeasureSearchModel;
+import mat.shared.CompositeMeasureValidationResult;
 import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
 
@@ -101,6 +104,11 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	}
 	
 	@Override
+	public ManageCompositeMeasureDetailModel getCompositeMeasure(String measureId) {
+		return this.getMeasureLibraryService().getCompositeMeasure(measureId);
+	}
+	
+	@Override
 	public ManageMeasureDetailModel getMeasureAndLogRecentMeasure(String measureId, String userId) {
 		ManageMeasureDetailModel manageMeasureDetailModel = getMeasure(measureId);
 		if(manageMeasureDetailModel != null){
@@ -147,6 +155,11 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	@Override
 	public SaveMeasureResult save(ManageMeasureDetailModel model) {
 		return this.getMeasureLibraryService().save(model);
+	}
+	
+	@Override
+	public SaveMeasureResult saveCompositeMeasure(ManageCompositeMeasureDetailModel model) {
+		return this.getMeasureLibraryService().saveCompositeMeasure(model);
 	}
 	
 	@Override
@@ -241,8 +254,8 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	}
 	
 	@Override
-	public ManageMeasureSearchModel getComponentMeasures(List<String> measureIds){
-		return getMeasureLibraryService().getComponentMeasures(measureIds);
+	public ManageMeasureSearchModel getComponentMeasures(String measureId){
+		return getMeasureLibraryService().getComponentMeasures(measureId);
 	}
 	
 	@Override
@@ -515,4 +528,19 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 		return this.getMeasureLibraryService().searchComponentMeasures(searchModel);
 	}
 
+	@Override
+	public ManageCompositeMeasureDetailModel buildCompositeMeasure(ManageCompositeMeasureDetailModel compositeMeasure) {
+		return this.getMeasureLibraryService().buildCompositeMeasure(compositeMeasure);
+	}
+
+	@Override
+	public CompositeMeasureValidationResult validateCompositeMeasure(
+			ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel) {
+		return this.getMeasureLibraryService().validateCompositeMeasure(manageCompositeMeasureDetailModel);
+	}
+	
+	@Override
+	public List<ComponentMeasureTabObject> getCQLLibraryInformationForComponentMeasure(String compositeMeasureId) {
+		return this.getMeasureLibraryService().getCQLLibraryInformationForComponentMeasure(compositeMeasureId);
+	}
 }

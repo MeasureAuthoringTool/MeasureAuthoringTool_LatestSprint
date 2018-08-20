@@ -10,6 +10,7 @@ import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
+import mat.client.measure.ManageCompositeMeasureDetailModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
@@ -17,6 +18,7 @@ import mat.client.measure.TransferOwnerShipModel;
 import mat.client.shared.MatException;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.CQLValueSetTransferObject;
+import mat.model.ComponentMeasureTabObject;
 import mat.model.MatCodeTransferObject;
 import mat.model.MatValueSet;
 import mat.model.MeasureType;
@@ -35,6 +37,7 @@ import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.shared.MeasureSearchModel;
+import mat.shared.CompositeMeasureValidationResult;
 import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.SaveUpdateCQLResult;
 
@@ -130,6 +133,8 @@ public interface MeasureService extends RemoteService {
 	 */
 	ManageMeasureDetailModel getMeasure(String key);
 	
+	ManageCompositeMeasureDetailModel getCompositeMeasure(String measureId);
+	
 	/**
 	 * Gets the measure and logs in this measure as recently used measure in recent measure activity log.
 	 *
@@ -199,6 +204,8 @@ public interface MeasureService extends RemoteService {
 	 * @return the save measure result
 	 */
 	SaveMeasureResult save(ManageMeasureDetailModel model);
+	
+	SaveMeasureResult saveCompositeMeasure(ManageCompositeMeasureDetailModel model);
 	
 	/**
 	 * Save Called To update Revision Number at Create New Package button Click.
@@ -389,7 +396,7 @@ public interface MeasureService extends RemoteService {
 	 * @param measureIds the measure ids
 	 * @return the component measures
 	 */
-	ManageMeasureSearchModel getComponentMeasures(List<String> measureIds);
+	ManageMeasureSearchModel getComponentMeasures(String measureId);
 	
 	/**
 	 * Validate package grouping.
@@ -684,6 +691,11 @@ public interface MeasureService extends RemoteService {
 
 	SaveUpdateCQLResult getMeasureCQLDataForLoad(String measureId);
 
-	CQLQualityDataModelWrapper saveValueSetList(List<CQLValueSetTransferObject> transferObjectList,
-			List<CQLQualityDataSetDTO> appliedValueSetList, String measureId);
+	CQLQualityDataModelWrapper saveValueSetList(List<CQLValueSetTransferObject> transferObjectList, List<CQLQualityDataSetDTO> appliedValueSetList, String measureId);
+	
+	public ManageCompositeMeasureDetailModel buildCompositeMeasure(ManageCompositeMeasureDetailModel compositeMeasure);
+	
+	public CompositeMeasureValidationResult validateCompositeMeasure(ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel);
+
+	List<ComponentMeasureTabObject> getCQLLibraryInformationForComponentMeasure(String compositeMeasureId);
 }

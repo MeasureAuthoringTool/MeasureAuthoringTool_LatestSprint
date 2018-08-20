@@ -65,9 +65,10 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 	private Panel availableMeasuresPanel = new Panel();
 	private Panel appliedComponentMeasuresPanel = new Panel();
 	
-	private List<ManageMeasureSearchModel.Result> availableMeasuresList = new ArrayList<ManageMeasureSearchModel.Result>();
-	private List<ManageMeasureSearchModel.Result> appliedComponentMeasuresList = new ArrayList<ManageMeasureSearchModel.Result>();
-	private Map<String, String> aliasMapping = new HashMap<String, String>();
+	private List<ManageMeasureSearchModel.Result> availableMeasuresList = new ArrayList<>();
+	private List<ManageMeasureSearchModel.Result> appliedComponentMeasuresList = new ArrayList<>();
+
+	private Map<String, String> aliasMapping = new HashMap<>();
 	
 	private PanelHeader availableMeasureHeader = new PanelHeader();
 	private PanelHeader appliedComponentMeasureHeader = new PanelHeader();
@@ -77,6 +78,8 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 	private CellTable<ManageMeasureSearchModel.Result> availableMeasuresTable;
 	private CellTable<ManageMeasureSearchModel.Result> appliedComponentTable;
 	private BackSaveCancelButtonBar buttonBar = new BackSaveCancelButtonBar("componentMeasures");
+	private CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
+	private MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true,"componentMeasureDisplay");
 	
 	public ComponentMeasureDisplay() {
 		buildMainPanel();
@@ -92,10 +95,12 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 		return errorMessages;
 	}
 	
-	public void clearFields() {
-		aliasMapping.clear();
-		availableMeasuresList.clear();
-		appliedComponentMeasuresList.clear();
+	public void clearFields(boolean isEdit) {
+		if(!isEdit) {
+			aliasMapping.clear();
+			appliedComponentMeasuresList = new ArrayList<>();	
+		}
+		availableMeasuresList = new ArrayList<>();
 		buildAppliedComponentMeasuresTable();
 		buildAvailableMeasuresTable();
 		searchWidgetBootStrap.getSearchBox().setText("");
@@ -141,6 +146,10 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 		messageFormGroup.add(helpBlock);
 		messageFormGroup.getElement().setAttribute("role", "alert");
 		componentMeasureForm.add(messageFormGroup);
+		
+		errorMessages.getElement().setId("errorMessages_ErrorMessageDisplay");
+		flowPanel.add(errorMessages);
+		
 		flowPanel.add(componentMeasureForm);
 		flowPanel.add(contentPanel);
 		mainPanel.add(flowPanel);
@@ -191,6 +200,7 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 						+ " Version in second column, Measure Scoring in third column,"
 						+ "Patient-based Indicator in fourth column, Owner in fifth column, Select in sixth column.");
     	availableMeasuresPanel.add(invisibleLabel);
+    	setPagination();
 		return availableMeasuresPanel;
 	}
 	
@@ -198,7 +208,7 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 		appliedComponentTable.setPageSize(PAGE_SIZE);
 		appliedComponentTable.redraw();
 		appliedComponentTable.setRowData(appliedComponentMeasuresList);
-		
+		appliedComponentTable.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.DISABLED);
 		Column<ManageMeasureSearchModel.Result, SafeHtml> measureName = new Column<ManageMeasureSearchModel.Result, SafeHtml>(
 				new ClickableSafeHtmlCell()) {
 			@Override
@@ -247,6 +257,7 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 			@Override
 			public void update(int index, Result object, String value) {
 				aliasMapping.put(object.getId(), value);
+				errorMessages.clearAlert();
 			}
 		});
 		
@@ -254,15 +265,10 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 				.fromSafeConstant("<span title='Assign Alias'>" + "Assign Alias"
 						+ "</span>"));
 		
-		Column<ManageMeasureSearchModel.Result, SafeHtml> emptyColumn = new Column<ManageMeasureSearchModel.Result, SafeHtml>(
-				new MatSafeHTMLCell()) {
-			@Override
-			public SafeHtml getValue(ManageMeasureSearchModel.Result object) {
-				return CellTableUtility.getColumnToolTip("");
-			}
-		};
-		appliedComponentTable.addColumn(emptyColumn, SafeHtmlUtils
-				.fromSafeConstant(""));
+		Column<ManageMeasureSearchModel.Result, SafeHtml> replaceColumn = buildReplaceColumnn();
+		appliedComponentTable.addColumn(replaceColumn, SafeHtmlUtils
+				.fromSafeConstant("<span title='Replace'>" + "Replace"
+						+ "</span>"));
 		
 		Column<ManageMeasureSearchModel.Result, SafeHtml> deleteColumn = buildDeleteColumn();
 		appliedComponentTable.addColumn(deleteColumn, SafeHtmlUtils
@@ -322,14 +328,6 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 
 
 		provider.addDataDisplay(availableMeasuresTable);
-		
-		CustomPager.Resources pagerResources = GWT.create(CustomPager.Resources.class);
-		MatSimplePager spager = new MatSimplePager(CustomPager.TextLocation.CENTER, pagerResources, false, 0, true,"componentMeasureDisplay");
-		spager.setPageStart(0);
-		spager.setDisplay(availableMeasuresTable);
-		spager.setPageSize(PAGE_SIZE);
-		availableMeasuresPanel.add(new SpacerWidget());
-		availableMeasuresPanel.add(spager);
 		availableMeasuresTable.redraw();
 	}
 	
@@ -384,8 +382,8 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 				ManageMeasureSearchModel.Result, SafeHtml>(new MatSafeHTMLCell()) {
 			@Override
 			public SafeHtml getValue(ManageMeasureSearchModel.Result object) {
-				return CellTableUtility.getColumnToolTip(object.getOwnerfirstName()
-						+ "  " + object.getOwnerLastName(),object.getOwnerfirstName()
+				return CellTableUtility.getColumnToolTip(object.getOwnerFirstName()
+						+ "  " + object.getOwnerLastName(),object.getOwnerFirstName()
 						+ "  " + object.getOwnerLastName());
 			}
 		};
@@ -413,6 +411,7 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 
 					@Override
 					public void update(int index, Result object, Boolean value) {
+						errorMessages.clearAlert();
 						selectionModel.setSelected(object, value);
 						if (value) {
 							if(appliedComponentMeasuresList.stream().filter(o -> o.getId().equals(object.getId())).collect(Collectors.toList()).size() == 0) {
@@ -439,6 +438,57 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 		availableMeasuresTable.redraw();
 	}
 	
+	private Column<ManageMeasureSearchModel.Result, SafeHtml> buildReplaceColumnn() {
+		Cell<SafeHtml> replaceButtonCell = new ClickableSafeHtmlCell();
+		
+		Column<ManageMeasureSearchModel.Result, SafeHtml> replaceColumn = new Column<ManageMeasureSearchModel.Result, SafeHtml>(replaceButtonCell) {
+			@Override
+			public SafeHtml getValue(Result object) {
+				SafeHtmlBuilder sb = new SafeHtmlBuilder();
+				String title = "Click to Replace " + object.getName();
+				String cssClass = "btn btn-link";
+				String iconCss = "fa fa-retweet fa-lg";
+					sb.appendHtmlConstant("<button type=\"button\" title='" + title + "' tabindex=\"0\" class=\" " + cssClass + "\" style=\"margin-left: 0px;margin-right: 10px;\"><i class=\" "+iconCss + "\"></i> <span style=\"font-size:0;\">Delete</span></button>");
+			
+				return sb.toSafeHtml();
+			}
+		};
+		
+		replaceColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, SafeHtml>() {
+			@Override
+			public void update(int index, Result object, SafeHtml value) {
+				errorMessages.clearAlert();
+				String measureId = object.getId();
+				EditIncludedComponentMeasureDialogBox editIncludedComponentMeasureDialogBox = new EditIncludedComponentMeasureDialogBox("Replace Component Measure");
+				editIncludedComponentMeasureDialogBox.findAvailableMeasures(object.getMeasureSetId(), measureId, false);
+				editIncludedComponentMeasureDialogBox.getApplyButton().addClickHandler(event -> replaceComponentMeasure(measureId, editIncludedComponentMeasureDialogBox));
+			}
+		});
+		
+		return replaceColumn;
+	}
+	
+	private void replaceComponentMeasure(String measureId, EditIncludedComponentMeasureDialogBox editIncludedComponentMeasureDialogBox) {
+
+		if (null != editIncludedComponentMeasureDialogBox.getSelectedList() && !editIncludedComponentMeasureDialogBox.getSelectedList().isEmpty()) {
+			for(ManageMeasureSearchModel.Result currentComponentMeasure: appliedComponentMeasuresList) {
+				if(currentComponentMeasure.getId().equals(measureId)) {
+					appliedComponentMeasuresList.remove(currentComponentMeasure);
+				}
+			}
+			appliedComponentMeasuresList.addAll(editIncludedComponentMeasureDialogBox.getSelectedList());
+			if(aliasMapping.containsKey(measureId)) {
+				aliasMapping.remove(measureId);
+			}
+			buildAppliedComponentMeasuresTable();
+			buildAvailableMeasuresTable();
+			editIncludedComponentMeasureDialogBox.getDialogModal().hide();	
+		} else {
+			editIncludedComponentMeasureDialogBox.getErrorMessageAlert().createAlert("Please select a Component Measure to replace.");
+		}
+	
+	}
+	
 	private Column<ManageMeasureSearchModel.Result, SafeHtml> buildDeleteColumn() {
 		Cell<SafeHtml> deleteButtonCell = new ClickableSafeHtmlCell();
 		
@@ -458,6 +508,7 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 		deleteColumn.setFieldUpdater(new FieldUpdater<ManageMeasureSearchModel.Result, SafeHtml>() {
 			@Override
 			public void update(int index, ManageMeasureSearchModel.Result object, SafeHtml value) {
+				errorMessages.clearAlert();
 				List<Result> matchingList = appliedComponentMeasuresList.stream().filter(o -> o.getId().equals(object.getId())).collect(Collectors.toList());
 				helpBlock.setText(object.getName() + " has been deselected and removed from the applied component measures list");
 
@@ -473,6 +524,16 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 		});
 		
 		return deleteColumn; 
+	}
+	
+	private void setPagination() {
+		spager.setPageStart(0);
+		spager.setDisplay(availableMeasuresTable);
+		spager.setPageSize(PAGE_SIZE);
+		if(availableMeasuresTable.getRowCount() > 0) {
+			availableMeasuresPanel.add(new SpacerWidget());
+			availableMeasuresPanel.add(spager);
+		}
 	}
 	
 	public Button getSaveButton() {
@@ -493,5 +554,20 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 	
 	public HasValue<String> getSearchString() {
 		return searchWidgetBootStrap.getSearchBox();
+	}
+	public List<ManageMeasureSearchModel.Result> getAppliedComponentMeasuresList() {
+		return appliedComponentMeasuresList;
+	}
+	
+	public void setAppliedComponentMeasuresList(List<ManageMeasureSearchModel.Result> appliedComponentMeasures) {
+		this.appliedComponentMeasuresList = appliedComponentMeasures;
+	}
+	
+	public Map<String, String> getAliasMapping() {
+		return aliasMapping;
+	}
+
+	public void setAliasMapping(Map<String, String> aliasMapping) {
+		this.aliasMapping = aliasMapping;
 	}
 }

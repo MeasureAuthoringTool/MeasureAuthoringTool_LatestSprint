@@ -788,7 +788,7 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 			measureSearchHeader.getElement().setId("measureSearchHeader_Label");
 			measureSearchHeader.setStyleName("recentSearchHeader");
 			measureSearchHeader.getElement().setAttribute("tabIndex", "0");
-			HTML desc = new HTML("<p> No "+ getMeasureListLabel()+".</p>");
+			HTML desc = new HTML("<p> No measures returned. Please search again.</p>");
 			cellTablePanel.add(measureSearchHeader);
 			cellTablePanel.add(new SpacerWidget());
 			cellTablePanel.add(desc);
@@ -839,10 +839,10 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 			Column<ManageMeasureSearchModel.Result, SafeHtml> ownerName = new Column<
 					ManageMeasureSearchModel.Result, SafeHtml>(new MatSafeHTMLCell()) {
 				@Override
-				public SafeHtml getValue(ManageMeasureSearchModel.Result object) {
-					return CellTableUtility.getColumnToolTip(object.getOwnerfirstName()
-							+ "  " + object.getOwnerLastName(),object.getOwnerfirstName()
-							+ "  " + object.getOwnerLastName());
+				public SafeHtml getValue(ManageMeasureSearchModel.Result manageMeasureSearchModelResult) {
+					return CellTableUtility.getColumnToolTip(manageMeasureSearchModelResult.getOwnerFirstName()
+							+ "  " + manageMeasureSearchModelResult.getOwnerLastName(),manageMeasureSearchModelResult.getOwnerFirstName()
+							+ "  " + manageMeasureSearchModelResult.getOwnerLastName());
 				}
 			};
 			ownerName.setSortable(true);
@@ -854,7 +854,7 @@ public class MeasureSearchView  implements HasSelectionHandlers<ManageMeasureSea
 					}
 					// Compare the name columns.
 					if (o1 != null) {
-						return (o2 != null) ? o1.getOwnerfirstName().compareTo(o2.getOwnerfirstName()) : 1;
+						return (o2 != null) ? o1.getOwnerFirstName().compareTo(o2.getOwnerFirstName()) : 1;
 					}
 					return -1;
 				}

@@ -2,7 +2,6 @@ package mat.dao.impl.clause;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -41,7 +40,6 @@ import mat.model.clause.MeasureShareDTO;
 import mat.model.clause.ShareLevel;
 import mat.server.LoggedInUserUtil;
 import mat.shared.MeasureSearchModel;
-import mat.shared.MeasureSearchModel.VersionMeasureType;
 import mat.shared.StringUtility;
 
 public class MeasureDAO extends GenericDAO<Measure, String> implements mat.dao.clause.MeasureDAO {
@@ -132,20 +130,6 @@ public class MeasureDAO extends GenericDAO<Measure, String> implements mat.dao.c
 		mCriteria.add(Restrictions.eq("owner.id", user.getId()));
 		List<Measure> measureList = mCriteria.list();
 		return sortMeasureListForMeasureOwner(measureList);
-	}
-
-	@Override
-	public List<Measure> getComponentMeasureInfoForMeasures(List<String> measureIds) {
-		Criteria mCriteria = buildComponentMeasureShareForUserCriteria(measureIds);
-		List<Measure> measure = mCriteria.list();
-		return measure;
-	}
-
-	private Criteria buildComponentMeasureShareForUserCriteria(List<String> listComponentMeasureIds) {
-		Criteria mCriteria = getSessionFactory().getCurrentSession().createCriteria(Measure.class);
-		mCriteria.add(Restrictions.in("id", listComponentMeasureIds));
-		mCriteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
-		return mCriteria;
 	}
 
 	@Override
@@ -682,7 +666,7 @@ public class MeasureDAO extends GenericDAO<Measure, String> implements mat.dao.c
 
 	private List<Measure> fetchMeasureResultListForCritera(Criteria mCriteria, MeasureSearchModel measureSearchModel, User user) {
 		mCriteria.addOrder(Order.desc("measureSet.id")).addOrder(Order.desc("draft")).addOrder(Order.desc("version"));
-		mCriteria.setFirstResult(1);
+		mCriteria.setFirstResult(0);
 		
 		@SuppressWarnings("unchecked")
 		List<Measure> measureResultList = mCriteria.list();
@@ -695,7 +679,7 @@ public class MeasureDAO extends GenericDAO<Measure, String> implements mat.dao.c
 	
 	private List<Measure> fetchComponentMeasureResultListForCritera(Criteria mCriteria, MeasureSearchModel measureSearchModel, User user) {
 		mCriteria.addOrder(Order.desc("measureSet.id")).addOrder(Order.desc("draft")).addOrder(Order.desc("version"));
-		mCriteria.setFirstResult(1);
+		mCriteria.setFirstResult(0);
 		
 		@SuppressWarnings("unchecked")
 		List<Measure> measureResultList = mCriteria.list();
@@ -815,76 +799,88 @@ public class MeasureDAO extends GenericDAO<Measure, String> implements mat.dao.c
 		return matchesSearch;
 	}
 
+
 	private boolean advanceSearchResultsForMeasure(MeasureSearchModel model, Measure measure) {
-		if(StringUtils.isNotBlank(model.getSearchTerm())) {
-			String searchTerm = model.getSearchTerm().toLowerCase();
-			String measureAbbName = measure.getaBBRName().toLowerCase();
-			String measureDesc = measure.getDescription().toLowerCase();
-			if (!measureAbbName.contains(searchTerm) && !measureDesc.contains(searchTerm)) {
-				return false;
-			}
-		}
 
-		if (MeasureSearchModel.VersionMeasureType.DRAFT.equals(model.isDraft()) && !measure.isDraft()) {
-			return false;
-		}
-		if (MeasureSearchModel.VersionMeasureType.VERSION.equals(model.isDraft()) && measure.isDraft()) {
-			return false;
-		}
-		//null check is necessary because measures prior to 5.0 do not have patient based indicator and it will be null in the database
-		if(!MeasureSearchModel.PatientBasedType.ALL.equals(model.isPatientBased()) && measure.getPatientBased() == null) {
-			return false;
-		}
-		if (MeasureSearchModel.PatientBasedType.PATIENT.equals(model.isPatientBased()) && !measure.getPatientBased()) {
-			return false;
-		}
-		if (MeasureSearchModel.PatientBasedType.NOT_PATIENT.equals(model.isPatientBased()) && measure.getPatientBased()) {
-
-			return false;
-		}
-		if (model.getScoringTypes().size() > 0) {
-			if (!model.getScoringTypes().contains(measure.getMeasureScoring().toLowerCase())) {
-				return false;
+		try {
+			if(StringUtils.isNotBlank(model.getSearchTerm())) {
+				String searchTerm = model.getSearchTerm().toLowerCase().trim();
+				String measureAbbName = measure.getaBBRName().toLowerCase();
+				String measureDesc = measure.getDescription().toLowerCase();
+				String owner = measure.getOwner().getFirstName().toLowerCase() + " " + measure.getOwner().getLastName().toLowerCase();
+				String measureId = new Integer(measure.geteMeasureId()).toString();
+				if (!measureAbbName.contains(searchTerm) && !measureDesc.contains(searchTerm) && !owner.contains(searchTerm) && !measureId.contains(searchTerm)) {
+					return false;
+				}
 			}
-		}
-		if(StringUtils.isNotBlank(model.getOwner())) {
-			String userFullName = measure.getOwner().getFirstName() + measure.getOwner().getLastName();
-			if (!userFullName.toLowerCase().contains(model.getOwner().toLowerCase())) {
-				return false;
-			}
-		}
-
-		if (StringUtils.isNotEmpty(model.getModifiedOwner())) {
-			if(measure.getLastModifiedBy() == null) {
-				return false;
-			}
-			User user =  measure.getLastModifiedBy();
-			String lastModifiedByName = user.getFirstName() + " " + user.getLastName();
-			if (!lastModifiedByName.toLowerCase().contains(model.getModifiedOwner().toLowerCase())) {
-				return false;
-			}
-		}
-		if (model.getModifiedDate() > 0) {
-			if(measure.getLastModifiedOn() == null) {
-				return false;
-			}
-			int date = model.getModifiedDate();
-
-			Timestamp time = new Timestamp(System.currentTimeMillis());
-			Calendar cal = Calendar.getInstance();
-			cal.setTime(time);
-
-			// multiply by negative one to subtract
-			cal.add(Calendar.DAY_OF_WEEK, -1 * date);
-
-			time = new Timestamp(cal.getTime().getTime());
 			
-			Timestamp modifiedTime =  measure.getLastModifiedOn();
-			if (modifiedTime.before(time)) {
+			if (MeasureSearchModel.VersionMeasureType.DRAFT.equals(model.isDraft()) && !measure.isDraft()) {
 				return false;
 			}
-		}
+			if (MeasureSearchModel.VersionMeasureType.VERSION.equals(model.isDraft()) && measure.isDraft()) {
+				return false;
+			}
+			//TODO in MAT-9216 add this code back in!
+			/*
+			//null check is necessary because measures prior to 5.0 do not have patient based indicator and it will be null in the database
+			if(!MeasureSearchModel.PatientBasedType.ALL.equals(model.isPatientBased()) && measure.getPatientBased() == null) {
+				return false;
+			}
 
+			if (MeasureSearchModel.PatientBasedType.PATIENT.equals(model.isPatientBased()) && !measure.getPatientBased()) {
+				return false;
+			}
+			if (MeasureSearchModel.PatientBasedType.NOT_PATIENT.equals(model.isPatientBased()) && measure.getPatientBased()) {
+	
+				return false;
+			}
+			if (model.getScoringTypes().size() > 0) {
+				if (!model.getScoringTypes().contains(measure.getMeasureScoring().toLowerCase())) {
+					return false;
+				}
+			}
+			if(StringUtils.isNotBlank(model.getOwner())) {
+				String userFullName = measure.getOwner().getFirstName() + measure.getOwner().getLastName();
+				if (!userFullName.toLowerCase().contains(model.getOwner().toLowerCase())) {
+					return false;
+				}
+			}
+	
+			if (StringUtils.isNotEmpty(model.getModifiedOwner())) {
+				if(measure.getLastModifiedBy() == null) {
+					return false;
+				}
+				User user =  measure.getLastModifiedBy();
+				String lastModifiedByName = user.getFirstName() + " " + user.getLastName();
+				if (!lastModifiedByName.toLowerCase().contains(model.getModifiedOwner().toLowerCase())) {
+					return false;
+				}
+			}
+			if (model.getModifiedDate() > 0) {
+				if(measure.getLastModifiedOn() == null) {
+					return false;
+				}
+				int date = model.getModifiedDate();
+	
+				Timestamp time = new Timestamp(System.currentTimeMillis());
+				Calendar cal = Calendar.getInstance();
+				cal.setTime(time);
+	
+				// multiply by negative one to subtract
+				cal.add(Calendar.DAY_OF_WEEK, -1 * date);
+	
+				time = new Timestamp(cal.getTime().getTime());
+				
+				Timestamp modifiedTime =  measure.getLastModifiedOn();
+				if (modifiedTime.before(time)) {
+					return false;
+				}
+			}*/
+		}
+		catch(Exception e) {
+			logger.error("Measure search Failed " + e);
+			return false;
+		}
 		return true;
 	}
 
@@ -1063,6 +1059,10 @@ public class MeasureDAO extends GenericDAO<Measure, String> implements mat.dao.c
 		
 		if(measureSearchModel.isOmitCompositeMeasure() != null && measureSearchModel.isOmitCompositeMeasure()) {
 			mCriteria.add(Restrictions.and(Restrictions.ne("isCompositeMeasure", true)));
+		}
+		
+		if(measureSearchModel.getMeasureSetId() != null) {
+			mCriteria.add(Restrictions.and(Restrictions.eq("measureSet.id", measureSearchModel.getMeasureSetId())));
 		}
 		
 		List<Measure> measureResultList = fetchComponentMeasureResultListForCritera(mCriteria, measureSearchModel, user);

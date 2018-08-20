@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
 import freemarker.template.Configuration;
@@ -66,6 +67,7 @@ import mat.shared.PasswordVerifier;
 /**
  * The Class UserServiceImpl.
  */
+@Service
 public class UserServiceImpl implements UserService {
 	
 	/** The Constant logger. */
@@ -900,6 +902,7 @@ public class UserServiceImpl implements UserService {
 		Date signoutDate = new Date();
 		User user = userDAO.find(userId);
 		user.setSignOutDate(signoutDate);
+		user.setSessionId(null);
 		try{
 			userDAO.save(user);
 			transactionAuditLogDAO.save(auditLog);

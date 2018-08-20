@@ -9,12 +9,12 @@ import mat.client.measure.service.ValidateMeasureResult;
 import mat.model.DataType;
 import mat.model.MatValueSet;
 import mat.model.QualityDataSet;
+import mat.model.clause.ComponentMeasure;
 import mat.model.clause.Measure;
 import mat.model.clause.MeasureSet;
 import mat.model.clause.MeasureShareDTO;
 import mat.shared.MeasureSearchModel;
-// TODO: Auto-generated Javadoc
-/**MeasurePackageService.java.**/
+
 public interface MeasurePackageService {
 	
 	/**
@@ -328,10 +328,10 @@ public interface MeasurePackageService {
 	/**
 	 * Gets the component measures info.
 	 *
-	 * @param measureIds the measure ids
+	 * @param measureId the measure ids
 	 * @return the component measures info
 	 */
-	List<Measure> getComponentMeasuresInfo(List<String> measureIds);
+	List<Measure> getComponentMeasuresInfo(String measureId);
 	
 	/**
 	 * Gets the measure.
@@ -342,4 +342,9 @@ public interface MeasurePackageService {
 	boolean getMeasure(String measureId);
 
 	List<MeasureShareDTO> searchComponentMeasuresWithFilter(MeasureSearchModel measureSearchModel);
+	
+	void saveComponentMeasures(List<ComponentMeasure> componentMeasuresList);
+	
+	void updateComponentMeasures(String compositeMeasureId, List<ComponentMeasure> componentMeasuresList);
+	
 }

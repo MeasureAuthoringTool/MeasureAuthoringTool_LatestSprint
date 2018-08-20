@@ -33,6 +33,7 @@ import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
 import mat.client.buttons.NoButton;
 import mat.client.clause.QDSAttributesService;
 import mat.client.clause.QDSAttributesServiceAsync;
+import mat.client.clause.cqlworkspace.leftNavBar.CQLLeftNavBarPanelView;
 import mat.client.shared.ListBoxMVP;
 import mat.client.shared.MatContext;
 import mat.model.clause.QDSAttributes;
@@ -721,21 +722,35 @@ private static void getAllAttibutesByDataType(final ListBoxMVP availableAttribut
 	 *  true otherwise
 	 */
 	private static boolean isValidPair(String dataType, CQLCode code) {
-		
-		//valid pair
-		if(dataType.equalsIgnoreCase(ConstantMessages.PATIENT_CHARACTERISTIC_BIRTHDATE) && isBirthdate(code)) {
+
+		//this means that code is a valueset, and valuesets can be inserted without a datatype
+		if(code == null) {
 			return true;
-		
-		//valid pair
+
+			//birth date and dead codes cannot be inserted without the correct datatype
+		} else if(dataType == null) {
+			if((isBirthdate(code) || isDead(code))) {
+				return false;
+
+			} else {
+				//non birthdate/dead codes can be inserted without a datatype
+				return true;
+			}
+
+			//valid pair
+		} else if(dataType.equalsIgnoreCase(ConstantMessages.PATIENT_CHARACTERISTIC_BIRTHDATE) && isBirthdate(code)) {
+			return true;
+
+			//valid pair
 		} else if(dataType.equalsIgnoreCase(ConstantMessages.PATIENT_CHARACTERISTIC_EXPIRED) && isDead(code)) {
 			return true;
-		
-		//by elimination of above, must be invalid pair
+
+			//by elimination of above, must be invalid pair
 		} else if(dataType.equalsIgnoreCase(ConstantMessages.PATIENT_CHARACTERISTIC_EXPIRED) ||dataType.equalsIgnoreCase(ConstantMessages.PATIENT_CHARACTERISTIC_BIRTHDATE) ||
 				isDead(code) || isBirthdate(code)) {
 			return false;
-		
-		//valid pair consisting of none of the datatypes or codes we are considering in the scope of this method
+
+			//valid pair consisting of none of the datatypes or codes we are considering in the scope of this method
 		} else {
 			return true;
 		}
