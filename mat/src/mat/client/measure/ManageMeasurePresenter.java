@@ -14,8 +14,6 @@ import org.gwtbootstrap3.client.ui.constants.ValidationState;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.event.dom.client.ChangeEvent;
-import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
@@ -72,6 +70,7 @@ import mat.client.shared.search.SearchResultUpdate;
 import mat.client.util.ClientConstants;
 import mat.client.util.MatTextBox;
 import mat.shared.CompositeMeasureValidationResult;
+import mat.shared.CompositeMethodScoringConstant;
 import mat.shared.ConstantMessages;
 import mat.shared.MatConstants;
 import mat.shared.MeasureSearchModel;
@@ -105,7 +104,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		}
 	};
 
-	private ManageMeasureSearchModel.Result resultToFireEvent ;
+	private ManageMeasureSearchModel.Result resultToFireEvent;
 
 	private ManageMeasureDetailModel currentDetails;
 	
@@ -359,7 +358,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	public void fireMeasureSelected(ManageMeasureSearchModel.Result result){
 		fireMeasureSelectedEvent(result.getId(), result.getVersion(), result.getName(),
 				result.getShortName(), result.getScoringType(), result.isEditable(),
-				result.isMeasureLocked(), result.getLockedUserId(result.getLockedUserInfo()));
+				result.isMeasureLocked(), result.getLockedUserId(result.getLockedUserInfo()), result.isDraft());
 		setSearchingBusy(false);
 		isClone = false;
 	}
@@ -460,115 +459,85 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 			@Override
 			public void onSuccess(List<? extends HasListBox> result) {
+				
 				compositeDetailDisplay.setScoringChoices(result);
 				
-				//TODO add this to server side when we implement functionality and add a database table
-				String allOrNothingTxt = "All or Nothing";
-				String opportunityTxt = "Opportunity";
-				String patientLevelLinearTxt = "Patient-level Linear";
-				List<CompositeMeasureScoreDTO> compositeChoices = new ArrayList<CompositeMeasureScoreDTO>();
-				CompositeMeasureScoreDTO allOrNothing = new CompositeMeasureScoreDTO();
-				allOrNothing.setId("1");
-				allOrNothing.setScore(allOrNothingTxt);
-				compositeChoices.add(allOrNothing);
-				
-				CompositeMeasureScoreDTO opportunity = new CompositeMeasureScoreDTO();
-				opportunity.setId("2");
-				opportunity.setScore(opportunityTxt);
-				compositeChoices.add(opportunity);
-				
-				CompositeMeasureScoreDTO patientLevelLinear = new CompositeMeasureScoreDTO();
-				patientLevelLinear.setId("3");
-				patientLevelLinear.setScore(patientLevelLinearTxt);
-				compositeChoices.add(patientLevelLinear);
-				
-				List<? extends HasListBox> defaultList = result;	
-				List<? extends HasListBox> proportionRatioList = defaultList.stream().filter((x) -> "Proportion".equals(x.getItem()) || "Ratio".equals(x.getItem())).collect(Collectors.toList());
-				List<? extends HasListBox> continuousVariableList = defaultList.stream().filter((x) -> "Continuous Variable".equals(x.getItem())).collect(Collectors.toList());
-				Map<String, List<? extends HasListBox>> selectionMap = new HashMap<String, List<? extends HasListBox>>(){
-					private static final long serialVersionUID = -8329823017052579496L;
-					{
-						put(MatContext.PLEASE_SELECT, defaultList);
-						put(allOrNothingTxt, proportionRatioList);
-						put(opportunityTxt, proportionRatioList);
-						put(patientLevelLinearTxt, continuousVariableList);
-					}
-				};
-				
-				((ManageCompositeMeasureDetailView)compositeDetailDisplay).setCompositeScoringChoices(compositeChoices);
-				((ManageCompositeMeasureDetailView)compositeDetailDisplay).getCompositeScoringMethodInput().addChangeHandler(new ChangeHandler() {
-					
-					@Override
-					public void onChange(ChangeEvent event) {
-						String compositeScoringValue = ((ManageCompositeMeasureDetailView)compositeDetailDisplay).getCompositeScoringValue();
-						compositeDetailDisplay.setScoringChoices(selectionMap.get(compositeScoringValue));
-					}
-				});
+				Map<String, List<? extends HasListBox>> selectionMap = createSelectionMap(result);
+				MatContext.get().setSelectionMap(selectionMap);
+
+				List<CompositeMeasureScoreDTO> compositeChoices = buildCompositeScoringChoiceList();
+				((ManageCompositeMeasureDetailView) compositeDetailDisplay).setCompositeScoringChoices(compositeChoices);
+
 			}
 		});
+
+		((ManageCompositeMeasureDetailView) compositeDetailDisplay).getCompositeScoringMethodInput().addChangeHandler(event -> createSelectionMapAndSetScorings());
 		
-
-		compositeDetailDisplay.getMeasScoringChoice().addChangeHandler(new ChangeHandler() {
-
-			@Override
-			public void onChange(ChangeEvent event) {
-				if(compositeDetailDisplay.getMeasScoringChoice().getItemText(compositeDetailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.PROPORTION) ||
-						compositeDetailDisplay.getMeasScoringChoice().getItemText(compositeDetailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.COHORT) || 
-						compositeDetailDisplay.getMeasScoringChoice().getItemText(compositeDetailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.RATIO)) {
-						resetPatientBasedInput(compositeDetailDisplay); 
-						
-						// default the selected index to be 1, which is yes.  
-						
-						compositeDetailDisplay.getPatientBasedInput().setSelectedIndex(1);
-						compositeDetailDisplay.getMessageFormGrp().setValidationState(ValidationState.SUCCESS);
-						compositeDetailDisplay.getHelpBlock().setColor("transparent");
-						compositeDetailDisplay.getHelpBlock().setText("Patient based indicator set to yes.");	
-				}
-				
-				if(compositeDetailDisplay.getMeasScoringChoice().getItemText(compositeDetailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE)) {
-
-					// yes is the second element in the list, so the 1 index. 
-					compositeDetailDisplay.getPatientBasedInput().removeItem(1);
-					compositeDetailDisplay.getPatientBasedInput().setSelectedIndex(0);
-					compositeDetailDisplay.getMessageFormGrp().setValidationState(ValidationState.SUCCESS);
-					compositeDetailDisplay.getHelpBlock().setColor("transparent");
-					compositeDetailDisplay.getHelpBlock().setText("Patient based indicator set to no.");
-					
-				}
-			}			
-		});
+		compositeDetailDisplay.getMeasScoringChoice().addChangeHandler(event -> setPatientBasedIndicatorBasedOnScoringChoice(compositeDetailDisplay));
 		
-		compositeDetailDisplay.getSaveButton().addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				boolean isEdit = false;
-				if(componentMeasureDisplay != null) {
-					if(currentCompositeMeasureDetails.getId()!=null) {
-						isEdit = true;
-					}
-					componentMeasureDisplay.clearFields(isEdit);
-				}
-
-				String panelHeading = "";
-				if(StringUtility.isEmptyOrNull(currentCompositeMeasureDetails.getId())) {
-					panelHeading = "My Measures > Create New Composite Measure > Component Measures";					
-				} else {
-					panelHeading = "My Measures > Edit Composite Measure > Update Component Measures.";
-				}
-				
-				updateCompositeDetailsFromCompositeDetailView();
-				
-				if(!isValidCompositeMeasure(currentCompositeMeasureDetails)){
-					return;
-				}
-				
-				displayComponentDetails(panelHeading);
-			}
-		});
+		compositeDetailDisplay.getSaveButton().addClickHandler(event -> updateCompositeDetailsOnContinueButton());
 
 	}
 
+	private void createSelectionMapAndSetScorings() {
+		String compositeScoringValue = ((ManageCompositeMeasureDetailView)compositeDetailDisplay).getCompositeScoringValue();
+		compositeDetailDisplay.setScoringChoices(MatContext.get().getSelectionMap().get(compositeScoringValue));
+		setPatientBasedIndicatorBasedOnScoringChoice(compositeDetailDisplay);
+	}
+	
+	private Map<String, List<? extends HasListBox>> createSelectionMap(List<? extends HasListBox> result) {
+
+		List<? extends HasListBox> defaultList = result;	
+		List<? extends HasListBox> proportionRatioList = defaultList.stream().filter(x -> "Proportion".equals(x.getItem()) || "Ratio".equals(x.getItem())).collect(Collectors.toList());
+		List<? extends HasListBox> continuousVariableList = defaultList.stream().filter(x -> "Continuous Variable".equals(x.getItem())).collect(Collectors.toList());
+		
+		return new HashMap<String, List<? extends HasListBox>>(){
+			private static final long serialVersionUID = -8329823017052579496L;
+			{
+				put(MatContext.PLEASE_SELECT, defaultList);
+				put(CompositeMethodScoringConstant.ALL_OR_NOTHING, proportionRatioList);
+				put(CompositeMethodScoringConstant.OPPORTUNITY, proportionRatioList);
+				put(CompositeMethodScoringConstant.PATIENT_LEVEL_LINEAR, continuousVariableList);
+			}
+		};
+		
+	}
+	
+	private List<CompositeMeasureScoreDTO> buildCompositeScoringChoiceList(){
+		List<CompositeMeasureScoreDTO> compositeChoices = new ArrayList<>();
+		compositeChoices.add(new CompositeMeasureScoreDTO("1", CompositeMethodScoringConstant.ALL_OR_NOTHING));
+		compositeChoices.add(new CompositeMeasureScoreDTO("2", CompositeMethodScoringConstant.OPPORTUNITY));
+		compositeChoices.add(new CompositeMeasureScoreDTO("3", CompositeMethodScoringConstant.PATIENT_LEVEL_LINEAR));
+		return compositeChoices;
+	}
+	
+	private void updateCompositeDetailsOnContinueButton() { 
+
+		boolean isEdit = false;
+		if(componentMeasureDisplay != null) {
+			if(currentCompositeMeasureDetails.getId()!=null) {
+				isEdit = true;
+			}
+			componentMeasureDisplay.clearFields(isEdit);
+		}
+
+		String panelHeading = "";
+		if(StringUtility.isEmptyOrNull(currentCompositeMeasureDetails.getId())) {
+			panelHeading = "My Measures > Create New Composite Measure > Component Measures";					
+		} else {
+			panelHeading = "My Measures > Edit Composite Measure > Update Component Measures.";
+		}
+		
+		updateCompositeDetailsFromCompositeDetailView();
+		
+		if(!isValidCompositeMeasure(currentCompositeMeasureDetails)){
+			return;
+		}
+		
+		displayComponentDetails(panelHeading);
+	
+	}
+	
 	private void detailDisplayHandlers(final DetailDisplay detailDisplay) {
 		
 		detailDisplay.getConfirmationDialogBox().getYesButton().addClickHandler(new ClickHandler() {
@@ -623,35 +592,26 @@ public class ManageMeasurePresenter implements MatPresenter {
 			}
 		});
 		
-		detailDisplay.getMeasScoringChoice().addChangeHandler(new ChangeHandler() {
+		detailDisplay.getMeasScoringChoice().addChangeHandler(event -> setPatientBasedIndicatorBasedOnScoringChoice((detailDisplay)));
+	}
 
-			@Override
-			public void onChange(ChangeEvent event) {
-				if(detailDisplay.getMeasScoringChoice().getItemText(detailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.PROPORTION) ||
-						detailDisplay.getMeasScoringChoice().getItemText(detailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.COHORT) || 
-						detailDisplay.getMeasScoringChoice().getItemText(detailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.RATIO)) {
-						resetPatientBasedInput(detailDisplay); 
-						
-						// default the selected index to be 1, which is yes.  
-						
-						detailDisplay.getPatientBasedInput().setSelectedIndex(1);
-						detailDisplay.getMessageFormGrp().setValidationState(ValidationState.SUCCESS);
-						detailDisplay.getHelpBlock().setColor("transparent");
-						detailDisplay.getHelpBlock().setText("Patient based indicator set to yes.");	
-				}
-				
-				if(detailDisplay.getMeasScoringChoice().getItemText(detailDisplay.getMeasScoringChoice().getSelectedIndex()).equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE)) {
+	private void setPatientBasedIndicatorBasedOnScoringChoice(DetailDisplay detailDisplay) {
 
-					// yes is the second element in the list, so the 1 index. 
-					detailDisplay.getPatientBasedInput().removeItem(1);
-					detailDisplay.getPatientBasedInput().setSelectedIndex(0);
-					detailDisplay.getMessageFormGrp().setValidationState(ValidationState.SUCCESS);
-					detailDisplay.getHelpBlock().setColor("transparent");
-					detailDisplay.getHelpBlock().setText("Patient based indicator set to no.");
-					
-				}
-			}			
-		});
+		if (MatConstants.CONTINUOUS_VARIABLE.equalsIgnoreCase(detailDisplay.getMeasScoringChoice().getItemText(detailDisplay.getMeasScoringChoice().getSelectedIndex()))) {
+			if(detailDisplay.getPatientBasedInput().getItemCount() > 1) {
+				// yes is the second element in the list, so the 1 index. 
+				detailDisplay.getPatientBasedInput().removeItem(1);
+			}
+			detailDisplay.getPatientBasedInput().setSelectedIndex(0);
+			detailDisplay.getHelpBlock().setText("Patient based indicator set to no.");
+			
+		} else {
+			resetPatientBasedInput(detailDisplay); 
+			detailDisplay.getHelpBlock().setText("Patient based indicator set to yes.");
+		}
+
+		detailDisplay.getMessageFormGrp().setValidationState(ValidationState.SUCCESS);
+		detailDisplay.getHelpBlock().setColor("transparent");
 	}
 
 	private void displayCommonDetailForAdd(DetailDisplay detailDisplay) {
@@ -671,14 +631,16 @@ public class ManageMeasurePresenter implements MatPresenter {
 	
 	private void displayDetailForAddComposite() {
 		displayCommonDetailForAdd(compositeDetailDisplay);	
-		panel.setHeading("My Measures > Create New Composite Measure", "MeasureLibrary");	
+		panel.setHeading("My Measures > Create New Composite Measure", "CompositeMeasure");	
 		setCompositeDetailsToView();
+		Mat.focusSkipLists("CompositeMeasure");
 	}
 	
 	private void displayComponentDetails(String panelHeading) {
 		panel.getButtonPanel().clear();
-		panel.setHeading(panelHeading, "MeasureLibrary");
+		panel.setHeading(panelHeading, "ComponentMeasure");
 		panel.setContent(componentMeasureDisplay.asWidget());
+		Mat.focusSkipLists("ComponentMeasure");
 	}
 
 	private void displayDetailForClone() {
@@ -751,7 +713,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 		if(currentCompositeMeasureDetails.getMeasScoring().equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE)) {
 			compositeDetailDisplay.getPatientBasedInput().removeItem(1);
 		}
-		((ManageCompositeMeasureDetailView) compositeDetailDisplay).setCompositeScoringSelectedValue(compositeScoringMethod);
 		panel.setContent(compositeDetailDisplay.asWidget());
 		
 	}
@@ -760,6 +721,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		currentDisplay.getPatientBasedInput().clear();
 		currentDisplay.getPatientBasedInput().addItem("No", "No");
 		currentDisplay.getPatientBasedInput().addItem("Yes", "Yes");
+		// default the selected index to be 1, which is yes.  				
 		currentDisplay.getPatientBasedInput().setSelectedIndex(1);
 	}
 
@@ -942,6 +904,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			public void onSuccess(ManageMeasureDetailModel result) {
 				currentDetails = result;
 				displayDetailForClone();
+				Mat.hideLoadingMessage();
 			}
 		});
 	}
@@ -975,9 +938,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 	}
 
 	private void fireMeasureSelectedEvent(String id, String version, String name, String shortName, String scoringType,
-			boolean isEditable, boolean isLocked, String lockedUserId) {
+			boolean isEditable, boolean isLocked, String lockedUserId, boolean isDraft) {
 		MeasureSelectedEvent evt = new MeasureSelectedEvent(id, version, name, shortName, scoringType, isEditable,
-				isLocked, lockedUserId);
+				isLocked, lockedUserId, isDraft);
 		searchDisplay.resetMessageDisplay();
 		MatContext.get().getEventBus().fireEvent(evt);
 	}
@@ -1078,6 +1041,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	private boolean isValidCompositeMeasureForSave(List<String> message) {
 		GWT.log("message size: " + message.size());
 		boolean valid = message.size() == 0;
+		componentMeasureDisplay.getSuccessMessage().clearAlert();
 		if(!valid) {
 			String errorMessage = "";
 			if(message.size() > 0) {
@@ -1285,6 +1249,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		MatContext.get().getMeasureService().searchComponentMeasures(searchModel, new AsyncCallback<ManageMeasureSearchModel>() {
 			@Override
 			public void onFailure(Throwable caught) {
+				componentMeasureDisplay.getSuccessMessage().clearAlert();
 				componentMeasureDisplay.getErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
 				MatContext.get().recordTransactionEvent(null, null, null,
 						"Unhandled Exception: " + caught.getLocalizedMessage(), 0);
@@ -1293,6 +1258,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 			@Override
 			public void onSuccess(ManageMeasureSearchModel result) {
+				componentMeasureDisplay.getSuccessMessage().clearAlert();
 				if ((result.getResultsTotal() == 0) && !lastSearchText.isEmpty()) {
 					componentMeasureDisplay.getErrorMessageDisplay()
 							.createAlert(MatContext.get().getMessageDelegate().getNoMeasuresMessage());
@@ -1329,9 +1295,11 @@ public class ManageMeasurePresenter implements MatPresenter {
 						searchDisplay.getMeasureSearchView().setObserver(new MeasureSearchView.Observer() {
 							@Override
 							public void onCloneClicked(ManageMeasureSearchModel.Result result) {
-								resetMeasureFlags();
-								isClone = true;
-								editClone(result.getId());
+								if(result.isClonable()) {
+									resetMeasureFlags();
+									isClone = true;
+									editClone(result.getId());
+								}
 							}
 
 							@Override
@@ -1515,6 +1483,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 							final String scoringType = result.getScoringType();
 							final boolean isEditable = result.isEditable();
 							final boolean isMeasureLocked = result.isMeasureLocked();
+							final boolean isDraft = result.isDraft();
 							final String userId = result.getLockedUserId(result.getLockedUserInfo());
 
 							MatContext.get().getMeasureLockService().isMeasureLocked(mid);
@@ -1525,13 +1494,13 @@ public class ManageMeasurePresenter implements MatPresenter {
 									if (!synchDel.isCheckingLock()) {
 										if (!synchDel.measureIsLocked()) {
 											fireMeasureSelectedEvent(mid, version, name, shortName, scoringType,
-													isEditable, isMeasureLocked, userId);
+													isEditable, isMeasureLocked, userId, isDraft);
 											if (isEditable) {
 												MatContext.get().getMeasureLockService().setMeasureLock();
 											}
 										} else {
 											fireMeasureSelectedEvent(mid, version, name, shortName, scoringType, false,
-													isMeasureLocked, userId);
+													isMeasureLocked, userId, isDraft);
 											if (isEditable) {
 												MatContext.get().getMeasureLockService().setMeasureLock();
 											}
@@ -1564,6 +1533,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 							final String scoringType = result.getScoringType();
 							final boolean isEditable = result.isEditable();
 							final boolean isMeasureLocked = result.isMeasureLocked();
+							final boolean isDraft = result.isDraft();
 							final String userId = result.getLockedUserId(result.getLockedUserInfo());
 							MatContext.get().getMeasureLockService().isMeasureLocked(mid);
 							Command waitForLockCheck = new Command() {
@@ -1573,13 +1543,13 @@ public class ManageMeasurePresenter implements MatPresenter {
 									if (!synchDel.isCheckingLock()) {
 										if (!synchDel.measureIsLocked()) {
 											fireMeasureSelectedEvent(mid, version, name, shortName, scoringType,
-													isEditable, isMeasureLocked, userId);
+													isEditable, isMeasureLocked, userId, isDraft);
 											if (isEditable) {
 												MatContext.get().getMeasureLockService().setMeasureLock();
 											}
 										} else {
 											fireMeasureSelectedEvent(mid, version, name, shortName, scoringType, false,
-													isMeasureLocked, userId);
+													isMeasureLocked, userId, isDraft);
 											if (isEditable) {
 												MatContext.get().getMeasureLockService().setMeasureLock();
 											}
@@ -1798,6 +1768,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	private void setCompositeDetailsToView() {
 		compositeDetailDisplay.getName().setValue(currentCompositeMeasureDetails.getName());
 		compositeDetailDisplay.getShortName().setValue(currentCompositeMeasureDetails.getShortName());
+		((ManageCompositeMeasureDetailView) compositeDetailDisplay).setCompositeScoringSelectedValue(currentCompositeMeasureDetails.getCompositeScoringMethod());
 		compositeDetailDisplay.getMeasScoringChoice().setValueMetadata(currentCompositeMeasureDetails.getMeasScoring());
 	}
 	
@@ -2005,6 +1976,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			final String shortName = currentDetails.getShortName();
 			final String scoringType = currentDetails.getMeasScoring();
 			final String version = currentDetails.getVersionNumber()+"."+currentDetails.getRevisionNumber();		
+			final boolean isDraft = currentDetails.isDraft();
 			MatContext.get().getMeasureService().save(currentDetails, new AsyncCallback<SaveMeasureResult>() {
 
 				@Override
@@ -2015,7 +1987,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 				@Override
 				public void onSuccess(SaveMeasureResult result) {
-					postSaveMeasureEvents(isInsert, result, detailDisplay, name, shortName, scoringType, version);
+					postSaveMeasureEvents(isInsert, result, detailDisplay, name, shortName, scoringType, version, isDraft);
 					setSearchingBusy(false);
 				}
 			});
@@ -2067,11 +2039,11 @@ public class ManageMeasurePresenter implements MatPresenter {
 	}
 	
 	private void postSaveMeasureEvents(boolean isInsert, SaveMeasureResult result, DetailDisplay detailDisplay,
-			String name, String shortName, String scoringType, String version) {
+			String name, String shortName, String scoringType, String version, boolean isDraft) {
 		
 		if (result.isSuccess()) {
 			if (isInsert) {
-				fireMeasureSelectedEvent(result.getId(), version, name, shortName, scoringType, true, false, null);
+				fireMeasureSelectedEvent(result.getId(), version, name, shortName, scoringType, true, false, null, isDraft);
 				fireMeasureEditEvent();
 			} else {
 				displaySearch();
@@ -2097,7 +2069,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		final String shortName = currentCompositeMeasureDetails.getShortName();
 		final String scoringType = currentCompositeMeasureDetails.getMeasScoring();
 		final String version = currentCompositeMeasureDetails.getVersionNumber() + "." + currentCompositeMeasureDetails.getRevisionNumber();
-		
+		final boolean isDraft = currentCompositeMeasureDetails.isDraft();
 		MatContext.get().getMeasureService().saveCompositeMeasure(currentCompositeMeasureDetails, new AsyncCallback<SaveMeasureResult>() {
 
 			@Override
@@ -2108,8 +2080,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 			@Override
 			public void onSuccess(SaveMeasureResult result) {
-				postSaveMeasureEvents(isInsert, result, compositeDetailDisplay, name, shortName, scoringType, version);
+				postSaveMeasureEvents(isInsert, result, compositeDetailDisplay, name, shortName, scoringType, version, isDraft);
 				setComponentBusy(false);
+
 			}
 			
 		});
