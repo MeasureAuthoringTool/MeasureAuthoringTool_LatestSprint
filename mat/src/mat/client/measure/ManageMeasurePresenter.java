@@ -935,7 +935,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	private void fireMeasureEditEvent() {
 		MeasureEditEvent evt = new MeasureEditEvent();
 		MatContext.get().getEventBus().fireEvent(evt);
-	}
+	} 
 
 	private void fireMeasureSelectedEvent(String id, String version, String name, String shortName, String scoringType,
 			boolean isEditable, boolean isLocked, String lockedUserId, boolean isDraft) {
@@ -1893,7 +1893,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 		((Button) searchDisplay.getSearchButton()).setEnabled(!busy);
 		((Button) searchDisplay.getBulkExportButton()).setEnabled(!busy);
 		((TextBox) (searchDisplay.getSearchString())).setEnabled(!busy);
-
+		((Button) searchDisplay.getCreateMeasureButton()).setEnabled(!busy);
+		((Button) searchDisplay.getCreateCompositeMeasureButton()).setEnabled(!busy);
+		((CustomCheckBox)searchDisplay.getCustomFilterCheckBox()).setEnabled(!busy);
 	}
 
 	private void toggleLoadingMessage(boolean busy) {

@@ -28,7 +28,7 @@ import com.google.gwt.user.client.ui.Widget;
 import mat.client.buttons.CancelButton;
 import mat.client.buttons.SaveContinueCancelButtonBar;
 import mat.client.cqlworkspace.CQLStandaloneWorkSpacePresenter;
-import mat.client.cqlworkspace.CQLWorkSpacePresenter;
+import mat.client.cqlworkspace.CQLMeasureWorkSpacePresenter;
 import mat.client.shared.ChangePasswordWidget;
 import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.ErrorMessageDisplay;
@@ -77,7 +77,7 @@ public class UmlsLoginDialogBox  implements ManageUmlsPresenter.UMLSDisplay{
 
 	public void showUMLSLogInDialog() {
 		
-		CQLWorkSpacePresenter.getSearchDisplay().resetMessageDisplay();//removes error "not signed in" message above search box
+		CQLMeasureWorkSpacePresenter.getSearchDisplay().resetMessageDisplay();//removes error "not signed in" message above search box
 		CQLStandaloneWorkSpacePresenter.getSearchDisplay().resetMessageDisplay();
 		
 		focusPanel.clear();
@@ -126,11 +126,11 @@ public class UmlsLoginDialogBox  implements ManageUmlsPresenter.UMLSDisplay{
 		userIdText.setHeight("27px");
 		userIdText.setId("inputUserId");
 		userIdText.setPlaceholder("Enter UMLS User Name");
-		userIdText.setTitle("Enter UMLS User Name");
+		userIdText.setTitle("Enter UMLS User Name Required");
 		userIdGroup.add(userIdLabel);
 		userIdGroup.add(userIdText);
 		
-		FormLabel passwordLabel = new FormLabel();//passwordInput.getLabel();
+		FormLabel passwordLabel = new FormLabel();
 		passwordLabel.setText("Password");
 		passwordLabel.setTitle("Password");
 		passwordLabel.setFor("inputPwd");
@@ -138,7 +138,7 @@ public class UmlsLoginDialogBox  implements ManageUmlsPresenter.UMLSDisplay{
 		passwordInput.getPassword().setHeight("27px");
 		passwordInput.getPassword().setId("inputPwd");
 		passwordInput.getPassword().setPlaceholder("Enter UMLS Password");
-		passwordInput.getPassword().setTitle("Enter UMLS Password");
+		passwordInput.getPassword().setTitle("Enter UMLS Password Required");
 		passwordInput.getPassword().setValidateOnBlur(true);
 		passwordGroup.add(passwordLabel);
 		passwordGroup.add(passwordInput.getPassword());

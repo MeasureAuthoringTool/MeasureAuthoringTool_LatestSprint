@@ -73,6 +73,7 @@ import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLParametersWrapper;
 import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
+import mat.model.cql.validator.CQLIncludeLibraryValidator;
 import mat.server.cqlparser.CQLTemplateXML;
 import mat.server.service.MeasurePackageService;
 import mat.server.service.impl.MatContextServiceUtil;
@@ -90,6 +91,7 @@ import mat.shared.ConstantMessages;
 import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.LibHolderObject;
 import mat.shared.SaveUpdateCQLResult;
+import mat.shared.cql.error.InvalidLibraryException;
 
 
 /**
@@ -216,7 +218,7 @@ public class CQLServiceImpl implements CQLService {
 	@Override
 	public SaveUpdateCQLResult saveAndModifyFunctions(String xml, CQLFunctions toBeModifiedObj, CQLFunctions currentObj,
 			List<CQLFunctions> functionsList, boolean isFormatable) {
-
+		
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		CQLModel cqlModel = new CQLModel();
 		result.setCqlModel(cqlModel);
@@ -227,7 +229,7 @@ public class CQLServiceImpl implements CQLService {
 
 		String XPATH_EXPRESSION_FUNCTIONS = "//cqlLookUp/functions";
 		if (xml != null && !xml.isEmpty()) {
-
+			CQLModel modelBeforeSave = CQLUtilityClass.getCQLModelFromXML(xml);
 			XmlProcessor processor = new XmlProcessor(xml);
 			if (toBeModifiedObj != null) {
 				currentObj.setId(toBeModifiedObj.getId());
@@ -239,15 +241,15 @@ public class CQLServiceImpl implements CQLService {
 						result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 						return result;
 					}
-					isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
+					isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), modelBeforeSave);
 				}
 
 				//validating function comment string
-				isCommentInvalid = validator.validateForCommentTextArea(toBeModifiedObj.getCommentString());
+				isCommentInvalid = validator.isCommentTooLongOrContainsInvalidText(toBeModifiedObj.getCommentString());
 
 				if (isCommentInvalid) {
 					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.COMMEENT_INVALID);
+					result.setFailureReason(SaveUpdateCQLResult.COMMENT_INVALID);
 					return result;
 				}
 
@@ -255,7 +257,7 @@ public class CQLServiceImpl implements CQLService {
 					boolean isValidArgumentName = true;
 					if (currentObj.getArgumentList() != null && currentObj.getArgumentList().size() > 0) {
 						for (CQLFunctionArgument argument : currentObj.getArgumentList()) {
-							isValidArgumentName = validator.validateForAliasNameSpecialChar(argument.getArgumentName());
+							isValidArgumentName = validator.doesAliasNameFollowCQLAliasNamingConvention(argument.getArgumentName());
 							if (!isValidArgumentName) {
 								break;
 							}
@@ -383,14 +385,14 @@ public class CQLServiceImpl implements CQLService {
 					result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 					return result;
 				}
-				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
+				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), modelBeforeSave);
 
 				//validating function comment string
-				isCommentInvalid = validator.validateForCommentTextArea(currentObj.getCommentString());
+				isCommentInvalid = validator.isCommentTooLongOrContainsInvalidText(currentObj.getCommentString());
 
 				if (isCommentInvalid) {
 					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.COMMEENT_INVALID);
+					result.setFailureReason(SaveUpdateCQLResult.COMMENT_INVALID);
 					return result;
 				}
 
@@ -399,7 +401,7 @@ public class CQLServiceImpl implements CQLService {
 					boolean isValidArgumentName = true;
 					if (currentObj.getArgumentList() != null && currentObj.getArgumentList().size() > 0) {
 						for (CQLFunctionArgument argument : currentObj.getArgumentList()) {
-							isValidArgumentName = validator.validateForAliasNameSpecialChar(argument.getArgumentName());
+							isValidArgumentName = validator.doesAliasNameFollowCQLAliasNamingConvention(argument.getArgumentName());
 							if (!isValidArgumentName) {
 								break;
 							}
@@ -537,7 +539,6 @@ public class CQLServiceImpl implements CQLService {
 	@Override
 	public SaveUpdateCQLResult saveAndModifyParameters(String xml, CQLParameter toBeModifiedObj,
 			CQLParameter currentObj, List<CQLParameter> parameterList, boolean isFormatable) {
-
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		CQLModel cqlModel = new CQLModel();
 		result.setCqlModel(cqlModel);
@@ -547,7 +548,7 @@ public class CQLServiceImpl implements CQLService {
 		boolean isCommentInvalid = false;
 		String XPATH_EXPRESSION_PARAMETERS = "//cqlLookUp/parameters";
 		if (xml != null && !xml.isEmpty()) {
-
+			CQLModel modelBeforeSave = CQLUtilityClass.getCQLModelFromXML(xml);
 			XmlProcessor processor = new XmlProcessor(xml);
 			if (toBeModifiedObj != null) {
 
@@ -563,15 +564,15 @@ public class CQLServiceImpl implements CQLService {
 						result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 						return result;
 					}
-					isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
+					isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), modelBeforeSave);
 				}
 
 				//validating parameter comment
-				isCommentInvalid = validtor.validateForCommentTextArea(toBeModifiedObj.getCommentString());
+				isCommentInvalid = validtor.isCommentTooLongOrContainsInvalidText(toBeModifiedObj.getCommentString());
 
 				if (isCommentInvalid) {
 					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.COMMEENT_INVALID);
+					result.setFailureReason(SaveUpdateCQLResult.COMMENT_INVALID);
 					return result;
 				}
 
@@ -662,14 +663,14 @@ public class CQLServiceImpl implements CQLService {
 					result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 					return result;
 				}
-				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
+				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), modelBeforeSave);
 
 				//validating parameter comment String
-				isCommentInvalid = validtor.validateForCommentTextArea(currentObj.getCommentString());
+				isCommentInvalid = validtor.isCommentTooLongOrContainsInvalidText(currentObj.getCommentString());
 
 				if (isCommentInvalid) {
 					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.COMMEENT_INVALID);
+					result.setFailureReason(SaveUpdateCQLResult.COMMENT_INVALID);
 					return result;
 				}
 
@@ -799,7 +800,6 @@ public class CQLServiceImpl implements CQLService {
 	@Override
 	public SaveUpdateCQLResult saveAndModifyDefinitions(String xml, CQLDefinition toBeModifiedObj,
 			CQLDefinition currentObj, List<CQLDefinition> definitionList, boolean isFormatable) {
-
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		CQLModel cqlModel = new CQLModel();
 		result.setCqlModel(cqlModel);
@@ -810,7 +810,7 @@ public class CQLServiceImpl implements CQLService {
 
 		String XPATH_EXPRESSION_DEFINTIONS = "//cqlLookUp/definitions";
 		if (xml != null && !xml.isEmpty()) {
-
+			CQLModel modelBeforeSave = CQLUtilityClass.getCQLModelFromXML(xml);
 			XmlProcessor processor = new XmlProcessor(xml);
 			if (toBeModifiedObj != null) {
 
@@ -828,15 +828,15 @@ public class CQLServiceImpl implements CQLService {
 						result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
 						return result;
 					}
-					isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
+					isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), modelBeforeSave);
 				}
 
 				//validate definition comment string
-				isCommentInvalid = validator.validateForCommentTextArea(toBeModifiedObj.getCommentString());
+				isCommentInvalid = validator.isCommentTooLongOrContainsInvalidText(toBeModifiedObj.getCommentString());
 
 				if (isCommentInvalid) {
 					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.COMMEENT_INVALID);
+					result.setFailureReason(SaveUpdateCQLResult.COMMENT_INVALID);
 					return result;
 				}
 
@@ -949,14 +949,14 @@ public class CQLServiceImpl implements CQLService {
 					return result;
 				}
 
-				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), xml);
+				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getName(), modelBeforeSave);
 
 				//validating definition Comment
-				isCommentInvalid = validator.validateForCommentTextArea(currentObj.getCommentString());
+				isCommentInvalid = validator.isCommentTooLongOrContainsInvalidText(currentObj.getCommentString());
 
 				if (isCommentInvalid) {
 					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.COMMEENT_INVALID);
+					result.setFailureReason(SaveUpdateCQLResult.COMMENT_INVALID);
 					return result;
 				}
 				if (!isDuplicate) {
@@ -1114,103 +1114,17 @@ public class CQLServiceImpl implements CQLService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public SaveUpdateCQLResult saveAndModifyIncludeLibrayInCQLLookUp(String xml, CQLIncludeLibrary toBeModifiedObj,
-			CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList) {
+	public SaveUpdateCQLResult saveAndModifyIncludeLibrayInCQLLookUp(String xml, CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> includedLibraryList) throws InvalidLibraryException {
 
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		CQLIncludeLibraryWrapper wrapper = new CQLIncludeLibraryWrapper();
-		CQLModelValidator validator = new CQLModelValidator();
-		boolean isDuplicate = false;
 		if (xml != null && !xml.isEmpty()) {
-
 			XmlProcessor processor = new XmlProcessor(xml);
-			// before adding includeLibrary Node we need need to add
-			// <includeLibrarys> tag
-
 			checkAndAppendIncludeLibraryParentNode(processor);
-
 			if (toBeModifiedObj != null) { // this is a part of Modify
-				currentObj.setId(toBeModifiedObj.getId());
-				currentObj.setAliasName(toBeModifiedObj.getAliasName());
-				String XPATH_EXPRESSION_INCLUDES = "//includeLibrary[@cqlLibRefId='" + toBeModifiedObj.getCqlLibraryId()
-						+ "']";
-				try {
-					Node nodeIncludes = processor.findNode(processor.getOriginalDoc(), XPATH_EXPRESSION_INCLUDES);
-
-					if (nodeIncludes != null) {
-						currentObj.setId(toBeModifiedObj.getId());
-						String cqlLibraryXML = createIncludeLibraryXML(currentObj);
-						String XPATH_EXPRESSION_INCLUDELIBRARYS = "//cqlLookUp/includeLibrarys";
-						processor.removeFromParent(nodeIncludes);
-						processor.appendNode(cqlLibraryXML, "includeLibrary", XPATH_EXPRESSION_INCLUDELIBRARYS);
-						processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
-
-						String finalUpdatedXml = processor.transform(processor.getOriginalDoc());
-						result.setXml(finalUpdatedXml);
-						result.setSuccess(true);
-						result.setIncludeLibrary(currentObj);
-						wrapper.setCqlIncludeLibrary(modifyIncludesList(toBeModifiedObj, currentObj, incLibraryList));
-					} else {
-						result.setSuccess(false);
-						result.setFailureReason(SaveUpdateCQLResult.NODE_NOT_FOUND);
-					}
-				} catch (XPathExpressionException | SAXException | IOException | MarshalException | ValidationException | MappingException e) {
-					logger.debug("Exception while replacing Included Library:" + e);
-				} 
-				
-			} else { // this is part of save functionality
-				currentObj.setId(UUID.randomUUID().toString());
-				isDuplicate = validator.validateForAliasNameSpecialChar(currentObj.getAliasName());
-				if (!isDuplicate) {
-					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.NO_SPECIAL_CHAR);
-					return result;
-				}
-
-				isDuplicate = CQLValidationUtil.isDuplicateIdentifierName(currentObj.getAliasName(), xml);
-				if (isDuplicate) {
-					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.NAME_NOT_UNIQUE);
-					return result;
-				}
-
-				isDuplicate = isDupParentCQLLibraryName(currentObj.getAliasName(), xml);
-				if (isDuplicate) {
-					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.NAME_NOT_UNIQUE);
-					return result;
-				}
-
-				if (!isDuplicate) {
-					try {
-						String XPATH_EXPRESSION_INCLUDES = "//cqlLookUp/includeLibrarys";
-						String cqlString = createIncludeLibraryXML(currentObj);
-
-						Node nodeIncludes = processor.findNode(processor.getOriginalDoc(), XPATH_EXPRESSION_INCLUDES);
-
-						if (nodeIncludes != null) {
-
-							processor.appendNode(cqlString, "includeLibrary", XPATH_EXPRESSION_INCLUDES);
-							processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
-
-							String finalUpdatedXml = processor.transform(processor.getOriginalDoc());
-							result.setXml(finalUpdatedXml);
-							result.setSuccess(true);
-							result.setIncludeLibrary(currentObj);
-							incLibraryList.add(currentObj);
-							wrapper.setCqlIncludeLibrary(incLibraryList);
-						} else {
-							result.setSuccess(false);
-							result.setFailureReason(SaveUpdateCQLResult.NODE_NOT_FOUND);
-						}
-
-					} catch (Exception e) {
-						logger.debug("Exception while saving Included Library:" + e);
-					}
-				} else {
-					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.NAME_NOT_UNIQUE);
-				}
+				result = modifyIncludedLibrary(toBeModifiedObj, currentObj, includedLibraryList, wrapper, processor); 
+			} else {
+				result = createNewIncludedLibrary(xml, currentObj, includedLibraryList, wrapper);
 			}
 		}
 
@@ -1220,6 +1134,64 @@ public class CQLServiceImpl implements CQLService {
 			CQLUtil.getIncludedCQLExpressions(cqlModel, cqlLibraryDAO);
 		}
 
+		return result;
+	}
+
+
+	private SaveUpdateCQLResult createNewIncludedLibrary(String xml, CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> includedLibraryList, CQLIncludeLibraryWrapper wrapper) throws InvalidLibraryException {
+		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
+		XmlProcessor processor = new XmlProcessor(xml);
+		CQLModel modelBeforeSave = CQLUtilityClass.getCQLModelFromXML(xml);
+		currentObj.setId(UUID.randomUUID().toString());
+		
+		CQLIncludeLibraryValidator libraryValidator = new CQLIncludeLibraryValidator();
+		libraryValidator.validate(currentObj, modelBeforeSave);
+		
+		if(!libraryValidator.isValid()) {
+			throw new InvalidLibraryException(libraryValidator.getMessages());
+		}
+
+		try {
+			String XPATH_EXPRESSION_INCLUDES = "//cqlLookUp/includeLibrarys";
+			String cqlString = createIncludeLibraryXML(currentObj);
+	
+			processor.appendNode(cqlString, "includeLibrary", XPATH_EXPRESSION_INCLUDES);
+			processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
+			String finalUpdatedXml = processor.transform(processor.getOriginalDoc());
+			result.setXml(finalUpdatedXml);
+			result.setSuccess(true);
+			result.setIncludeLibrary(currentObj);
+			includedLibraryList.add(currentObj);
+			wrapper.setCqlIncludeLibrary(includedLibraryList);
+		} catch(Exception e) {
+			logger.error("Failed to save CQL Included Library: " + e.getMessage());
+		}
+		
+		return result; 
+	}
+
+
+	private SaveUpdateCQLResult modifyIncludedLibrary(CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj,List<CQLIncludeLibrary> incLibraryList, CQLIncludeLibraryWrapper wrapper, XmlProcessor processor) {
+		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
+		currentObj.setId(toBeModifiedObj.getId());
+		currentObj.setAliasName(toBeModifiedObj.getAliasName());
+		String XPATH_EXPRESSION_INCLUDES = "//includeLibrary[@cqlLibRefId='" + toBeModifiedObj.getCqlLibraryId() + "']";
+		try {
+			Node nodeIncludes = processor.findNode(processor.getOriginalDoc(), XPATH_EXPRESSION_INCLUDES);
+			String cqlLibraryXML = createIncludeLibraryXML(currentObj);
+			String XPATH_EXPRESSION_INCLUDELIBRARYS = "//cqlLookUp/includeLibrarys";
+			processor.removeFromParent(nodeIncludes);
+			processor.appendNode(cqlLibraryXML, "includeLibrary", XPATH_EXPRESSION_INCLUDELIBRARYS);
+			processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
+			String finalUpdatedXml = processor.transform(processor.getOriginalDoc());
+			result.setXml(finalUpdatedXml);
+			result.setSuccess(true);
+			result.setIncludeLibrary(currentObj);
+			wrapper.setCqlIncludeLibrary(modifyIncludesList(toBeModifiedObj, currentObj, incLibraryList));
+		} catch (XPathExpressionException | SAXException | IOException | MarshalException | ValidationException | MappingException | NullPointerException e) {
+			logger.error("Failed to replace CQL included Library: " + e.getMessage());
+		}
+		
 		return result;
 	}
 
@@ -1998,37 +1970,6 @@ public class CQLServiceImpl implements CQLService {
 	@Override
 	public CQLKeywords getCQLKeyWords() {
 		return CQLKeywordsUtil.getCQLKeywords();
-	}
-
-	/**
-	 * Checks if is dupidn name with msr name.
-	 *
-	 * @param identifierName
-	 *            the identifier name
-	 * @param id
-	 *            the measure id
-	 * @return true, if is dupidn name with msr name
-	 */
-	private boolean isDupParentCQLLibraryName(String identifierName, String xml) {
-
-		XmlProcessor processor = new XmlProcessor(xml);
-		String XPATH_MEASURE_NAME = "//cqlLookUp/library";
-		try {
-			Node node = processor.findNode(processor.getOriginalDoc(), XPATH_MEASURE_NAME);
-
-			if (node != null) {
-				String msrName = node.getTextContent();
-				if (identifierName.equalsIgnoreCase(msrName)) {
-					return true;
-				}
-
-			}
-
-		} catch (XPathExpressionException e) {
-			e.printStackTrace();
-		}
-
-		return false;
 	}
 
 	private List<CQLIncludeLibrary> modifyIncludesList(CQLIncludeLibrary toBeModified , CQLIncludeLibrary currentObj , List<CQLIncludeLibrary> incLibraryList ){

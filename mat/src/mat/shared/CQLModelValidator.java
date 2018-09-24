@@ -52,31 +52,22 @@ public class CQLModelValidator {
 	 * @param identifierName the identifier name
 	 * @return true, if successful
 	 */
-	public boolean validateForAliasNameSpecialChar(String identifierName) {
-
-		boolean bool = false;
-		for (int i = 0; i < identifierName.length(); i++) {
-			char ch = identifierName.charAt(i);
-			//if its not the first character
-			if(i != 0){
-				if (Character.isDigit(ch) || Character.isLetter(ch) || ch == '_') {
-					bool = true;
-				} else {
-					bool = false;
-					return bool;
-				}
-			} else{
-				if (Character.isLetter(ch) || ch == '_') {
-					bool = true;
-				} else {
-					bool = false;
-					return bool;
-				}
-			}
-			
+	public boolean doesAliasNameFollowCQLAliasNamingConvention(String identifierName) {
+		
+		char firstChar = identifierName.charAt(0);
+		if(!Character.isLetter(firstChar) && firstChar != '_') {
+			return false; 
 		}
+		
+		for(int i = 1; i < identifierName.length(); i++) {
+			char ch = identifierName.charAt(i);
+			if(!Character.isDigit(ch) && !Character.isLetter(ch) && ch != '_') {
+				return false; 
+			}
+		}
+		
 
-		return bool;
+		return true; 
 	}
 	
 	/**
@@ -90,13 +81,21 @@ public class CQLModelValidator {
 		return !isValidCodeIdentifier;
 	}
 	
+	public boolean isCommentMoreThan250Characters(String comment) {
+		return comment.length() > 250;
+	}
+	
+	public boolean doesCommentContainInvalidCharacters(String comment) {
+		return commentRegExp.test(comment);
+	}
+	
 	/**
 	 * Validate for comment text area.
 	 *
 	 * @param comment the comment
 	 * @return true, if successful
 	 */
-	public boolean validateForCommentTextArea(String comment) {
+	public boolean isCommentTooLongOrContainsInvalidText(String comment) {
 		boolean isInValid = false;
 
 		if (comment.length() > 250 || commentRegExp.test(comment)) {

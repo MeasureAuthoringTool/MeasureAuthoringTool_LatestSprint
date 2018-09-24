@@ -59,7 +59,9 @@ import mat.shared.StringUtility;
 
 public class ComponentMeasureDisplay implements BaseDisplay {
 	
-	protected HTML instructions = new HTML("Perform a search for a list of available component measures. "
+	private static final String SEARCH_BY_MEASURE_NAME_OR_OWNER = "Search by measure name or owner";
+
+	protected HTML instructions = new HTML("Perform a search by measure name or owner for a list of available component measures. "
 			+ "Select component measures with the checkbox in-line with the measure name and assign each component measure an alias.");
 	
 	private SimplePanel mainPanel = new SimplePanel();
@@ -75,6 +77,7 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 	
 	private List<ManageMeasureSearchModel.Result> availableMeasuresList = new ArrayList<>();
 	private List<ManageMeasureSearchModel.Result> appliedComponentMeasuresList = new ArrayList<>();
+	MultiSelectionModel<ManageMeasureSearchModel.Result> selectionModel = new MultiSelectionModel<ManageMeasureSearchModel.Result>();
 
 	private Map<String, String> aliasMapping = new HashMap<>();
 	
@@ -82,7 +85,7 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 	private PanelHeader appliedComponentMeasureHeader = new PanelHeader();
 	private static final int PAGE_SIZE = 25;
 	
-	SearchWidgetBootStrap searchWidgetBootStrap = new SearchWidgetBootStrap("Search", "Search");
+	SearchWidgetBootStrap searchWidgetBootStrap = new SearchWidgetBootStrap("Search", SEARCH_BY_MEASURE_NAME_OR_OWNER, SEARCH_BY_MEASURE_NAME_OR_OWNER);
 	private CellTable<ManageMeasureSearchModel.Result> availableMeasuresTable;
 	private CellTable<ManageMeasureSearchModel.Result> appliedComponentTable;
 	private BackSaveCancelButtonBar buttonBar = new BackSaveCancelButtonBar("componentMeasures");
@@ -261,7 +264,7 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 						+ "</span>"));
 		
 		Column<ManageMeasureSearchModel.Result, String> aliasColumn = new Column<ManageMeasureSearchModel.Result, String>(
-				new MatTextCell("Assign Alias")) {
+				new MatTextCell("Assign Alias Required")) {
 			@Override
 			public String getValue(ManageMeasureSearchModel.Result object) {
 				if(aliasMapping.containsKey(object.getId())) {
@@ -408,7 +411,6 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 		};
 		availableMeasuresTable.addColumn(ownerName, SafeHtmlUtils.fromSafeConstant("<span title=\"Owner\">" + "Owner" + "</span>"));
 		
-		MultiSelectionModel<ManageMeasureSearchModel.Result> selectionModel = new MultiSelectionModel<ManageMeasureSearchModel.Result>();
 		availableMeasuresTable.setSelectionModel(selectionModel);
 
 		MatCheckBoxCell chbxCell = new MatCheckBoxCell(false, true);
@@ -492,23 +494,26 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 	private void replaceComponentMeasure(String measureId, EditIncludedComponentMeasureDialogBox editIncludedComponentMeasureDialogBox) {
 		if (null != editIncludedComponentMeasureDialogBox.getSelectedList() && !editIncludedComponentMeasureDialogBox.getSelectedList().isEmpty()) {
 			String replaceMessage = "";
+			Result selectedMeasure = editIncludedComponentMeasureDialogBox.getSelectedList().get(0);
 			for(ManageMeasureSearchModel.Result currentComponentMeasure: appliedComponentMeasuresList) {
 				if(currentComponentMeasure.getId().equals(measureId)) {
 					appliedComponentMeasuresList.remove(currentComponentMeasure);
 					String aliasName = aliasMapping.containsKey(measureId) ? " " + aliasMapping.get(measureId) : "";
-					replaceMessage += currentComponentMeasure.getName() + " " + currentComponentMeasure.getVersion() + " has been saved as the alias" + aliasName  + ".";
+					replaceMessage += selectedMeasure.getName() + " " + selectedMeasure.getVersion() + " has been saved as the alias" + aliasName  + ".";
 				}
 			}
-			Result selectedMeasure = editIncludedComponentMeasureDialogBox.getSelectedList().get(0);
+			
 			appliedComponentMeasuresList.add(selectedMeasure);
 			if(aliasMapping.containsKey(measureId)) {
 				String aliasName = aliasMapping.get(measureId);
 				aliasMapping.remove(measureId);
 				aliasMapping.put(selectedMeasure.getId(), aliasName);
 			}
-			
-			buildAppliedComponentMeasuresTable();
-			buildAvailableMeasuresTable();
+			selectionModel.setSelected(selectedMeasure, true);
+			availableMeasuresTable.setVisibleRangeAndClearData(availableMeasuresTable.getVisibleRange(), true);
+			availableMeasuresTable.redraw();
+			appliedComponentTable.setRowData(appliedComponentMeasuresList);
+			appliedComponentTable.redraw();
 			editIncludedComponentMeasureDialogBox.getDialogModal().hide();	
 			if(!StringUtility.isEmptyOrNull(replaceMessage)) {
 				getSuccessMessage().createAlert(replaceMessage);
@@ -545,12 +550,15 @@ public class ComponentMeasureDisplay implements BaseDisplay {
 
 				for(Result matchingResult: matchingList) {
 					appliedComponentMeasuresList.remove(matchingResult);
+					availableMeasuresTable.getSelectionModel().setSelected(matchingResult, false);
 				}
 				if(aliasMapping.containsKey(object.getId())) {
 					aliasMapping.remove(object.getId());
 				}
-				buildAppliedComponentMeasuresTable();
-				buildAvailableMeasuresTable();
+				availableMeasuresTable.setVisibleRangeAndClearData(availableMeasuresTable.getVisibleRange(), true);
+				availableMeasuresTable.redraw();
+				appliedComponentTable.setRowData(appliedComponentMeasuresList);
+				appliedComponentTable.redraw();
 			}
 		});
 		

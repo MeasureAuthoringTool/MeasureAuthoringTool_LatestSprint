@@ -34,6 +34,7 @@ import mat.client.admin.ManageCQLLibraryAdminPresenter;
 import mat.client.admin.ManageCQLLibraryAdminView;
 import mat.client.admin.reports.ManageAdminReportingPresenter;
 import mat.client.admin.reports.ManageAdminReportingView;
+import mat.client.bonnie.BonnieModal;
 import mat.client.codelist.ListBoxCodeProvider;
 import mat.client.cql.CQLLibraryDetailView;
 import mat.client.cql.CQLLibraryHistoryView;
@@ -437,7 +438,9 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 			
 			//TODO set tabIndex of last object tabIndex = presenterList.indexOf(compositeMeasureEdit);
 			tabIndex = presenterList.indexOf(myAccountPresenter);
-			hideUMLSActive();
+			createUMLSLinks();
+			createBonnieLinks();
+			hideUMLSActive(true);
 			if(resultMatVersion.equals("v5.6")) {
 				setBonnieActiveLink();
 			}
@@ -496,7 +499,7 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 		getLogoutPanel().add(signout);
 		getWelcomeUserPanel(userFirstName);
 		getVersionPanel(resultMatVersion);
-		setIndicatorsVisible();
+		setIndicatorsHidden();
 		/*
 		 * no delay desired when hiding loading message here
 		 * tab selection below will fail if loading
@@ -530,17 +533,11 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 			}
 		});
 		
-		getUMLSButton().addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				final UmlsLoginDialogBox login = new UmlsLoginDialogBox();
-				login.showUMLSLogInDialog();
-				new ManageUmlsPresenter(login, userFirstName, isAlreadySignedIn);
-				login.showModal();
-			}
-		});
+		getUMLSButton().addClickHandler(event -> showUMLSModal(userFirstName, isAlreadySignedIn));
 		
+		getBonnieButton().addClickHandler(event -> showBonnieModal()); 
+			
+			
 		
 		
 		
@@ -589,18 +586,30 @@ public class Mat extends MainLayout implements EntryPoint, Enableable, TabObserv
 		MatContext.get().restartTimeoutWarning();
 	}
 	
+	private void showUMLSModal(String userFirstName, boolean isAlreadySignedIn) {
+		final UmlsLoginDialogBox login = new UmlsLoginDialogBox();
+		login.showUMLSLogInDialog();
+		new ManageUmlsPresenter(login, userFirstName, isAlreadySignedIn);
+		login.showModal();
+	}
+
+	private void showBonnieModal() {
+		BonnieModal bonnieModal = new BonnieModal();
+		bonnieModal.show();
+	}
+
 	private void setBonnieActiveLink() {
 		String matUserId = MatContext.get().getLoggedinUserId();
 		MatContext.get().getBonnieService().getBonnieUserInformationForUser(matUserId, new AsyncCallback<BonnieUserInformationResult>() {
 			
 			@Override
 			public void onSuccess(BonnieUserInformationResult result) {
-				showBonnieActive();
+				hideBonnieActive(false);
 			}
 			
 			@Override
 			public void onFailure(Throwable caught) {
-				hideBonnieActive();
+				hideBonnieActive(true);
 			}
 		});
 	}

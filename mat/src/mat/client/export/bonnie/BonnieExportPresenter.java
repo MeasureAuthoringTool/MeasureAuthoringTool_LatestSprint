@@ -90,7 +90,7 @@ public class BonnieExportPresenter implements MatPresenter {
 	
 	private void bonnieSignOutClickHandler() {
 		String matUserId = MatContext.get().getLoggedinUserId();
-		MatContext.get().getBonnieService().revokeBonnieAccessTokenForUser(matUserId, new AsyncCallback<Boolean>() {
+		MatContext.get().getBonnieService().revokeBonnieAccessTokenForUser(matUserId, new AsyncCallback<Void>() {
 
 			@Override
 			public void onFailure(Throwable caught) {
@@ -99,7 +99,7 @@ public class BonnieExportPresenter implements MatPresenter {
 			}
 
 			@Override
-			public void onSuccess(Boolean result) {
+			public void onSuccess(Void result) {
 				
 				setVeiwAsLoggedOutOfBonnie();
 				createSuccessMessage(DISCONNECTED_FROM_BONNIE_MESSAGE);
@@ -150,7 +150,7 @@ public class BonnieExportPresenter implements MatPresenter {
 				if(caught instanceof UMLSNotActiveException) {
 					view.setHelpBlockMessage(SIGN_INTO_UMLS);
 					createErrorMessage(SIGN_INTO_UMLS);
-					Mat.hideUMLSActive();
+					Mat.hideUMLSActive(true);
 				}
 				if(caught instanceof BonnieUnauthorizedException) {
 					setVeiwAsLoggedOutOfBonnie();
@@ -177,7 +177,7 @@ public class BonnieExportPresenter implements MatPresenter {
 	private void setVeiwAsLoggedOutOfBonnie() {
 		view.getBonnieSignOutButton().setVisible(false);
 		view.getUploadButton().setEnabled(false);
-		Mat.hideBonnieActive();
+		Mat.hideBonnieActive(true);
 	}
 	
 	private void getExportFromBonnieForMeasure(String measureId, String matUserId, String successMessage) {

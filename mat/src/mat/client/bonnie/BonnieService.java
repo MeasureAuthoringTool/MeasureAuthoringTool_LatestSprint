@@ -25,5 +25,7 @@ public interface BonnieService extends RemoteService {
 
 	String getUpdateOrUploadMeasureToBonnie(String measureId, String userId, VsacTicketInformation vsacTicket) throws BonnieUnauthorizedException, BonnieBadParameterException, BonnieDoesNotExistException, BonnieServerException, IOException, BonnieAlreadyExistsException, UMLSNotActiveException;
 	
-	public Boolean revokeBonnieAccessTokenForUser(String userId) throws BonnieServerException, Exception;
+	public void revokeBonnieAccessTokenForUser(String userId) throws BonnieServerException, Exception;
+	
+	public void revokeAllBonnieAccessTokens(String userId, String reason) throws BonnieServerException, Exception;
 }

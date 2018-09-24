@@ -30,6 +30,8 @@ import mat.client.shared.HorizontalFlowPanel;
 import mat.client.shared.MatContext;
 import mat.client.shared.SkipListBuilder;
 import mat.client.shared.VerticalFlowPanel;
+import mat.client.umls.ManageUmlsPresenter;
+import mat.client.umls.UmlsLoginDialogBox;
 import mat.client.util.ClientConstants;
 import mat.client.util.FooterPanelBuilderUtility;
 
@@ -346,41 +348,33 @@ public abstract class MainLayout {
 		return versionPanel;
 	}
 	
-	public static void hideUMLSActive() {
-		showUMLSState.hideActive();
+	public static void createUMLSLinks() {
+		showUMLSState.createAllLinks();
+	}
+
+	public static void hideUMLSActive(boolean hide) {
+		showUMLSState.hideActive(hide);
 	}
 	
-	public static void showUMLSActive() {
-		showUMLSState.showActive();
+	public static void createBonnieLinks() {
+		showBonnieState.createAllLinks();
 	}
 	
-	public static void hideBonnieActive() {
-		showBonnieState.hideActive();
-		getBonnieButton().addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				BonnieModal bonnieModal = new BonnieModal();
-				bonnieModal.show();
-			}
-		});
-	}
-	
-	public static void showBonnieActive() {
-		showBonnieState.showActive();
+	public static void hideBonnieActive(boolean hide) {
+		showBonnieState.hideActive(hide);
 	}
 	
 	public HTML getUMLSButton() {
 		return showUMLSState.getLink();
 	}
 	
-	public static HTML getBonnieButton() {
+	public HTML getBonnieButton() {
 		return showBonnieState.getLink();
 	}
 
-	public void setIndicatorsVisible() {
-		showBonnieState.setVisible();
-		showUMLSState.setVisible();
+	public void setIndicatorsHidden() {
+		showBonnieState.hideActive(true);
+		showUMLSState.hideActive(true);
 	}
 	
 	//method to easily remove bonnie link from page

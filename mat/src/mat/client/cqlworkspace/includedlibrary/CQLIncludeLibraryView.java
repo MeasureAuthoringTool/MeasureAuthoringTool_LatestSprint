@@ -63,9 +63,6 @@ import mat.client.util.CellTableUtility;
 import mat.client.util.MatTextBox;
 import mat.model.cql.CQLLibraryDataSetObject;
 
-/**
- * The Class CQLIncludeLibraryView.
- */
 public class CQLIncludeLibraryView {
 	private SimplePanel containerPanel = new SimplePanel();
 	private FocusPanel searchWidgetFocusPanel = new FocusPanel();
@@ -95,9 +92,7 @@ public class CQLIncludeLibraryView {
 	private FormGroup aliasNameGroup = new FormGroup();	
 	HTML heading = new HTML();
 	
-	/**
-	 * The Interface Observer.
-	 */
+
 	public static interface Observer {
 		/**
 		 * On edit clicked.
@@ -109,9 +104,6 @@ public class CQLIncludeLibraryView {
 	}
 	
 	
-	/**
-	 * Instantiates a new CQL include library view.
-	 */
 	public CQLIncludeLibraryView(){
 		buttonPanel.clear();
 		aliasNameGroup.clear();
@@ -137,7 +129,7 @@ public class CQLIncludeLibraryView {
 		aliasNameTxtBox.setSize("260px", "25px");
 		aliasNameTxtBox.getElement().setId("aliasNameField_IncludeSection");
 		aliasNameTxtBox.setName("aliasName");
-		aliasNameTxtBox.setTitle("Enter Library Alias");
+		aliasNameTxtBox.setTitle("Enter Library Alias Required");
 		
 		aliasNameGroup.add(aliasLabel);
 		aliasNameGroup.add(new SpacerWidget());
@@ -206,9 +198,7 @@ public class CQLIncludeLibraryView {
 	}
 	
 	
-	/**
-	 * Sets the margin in button bar.
-	 */
+
 	private void setMarginInButtonBar() {
 		includesButtonBar.getSaveButton().setMarginLeft(-30.00);
 		includesButtonBar.getEraseButton().setMarginLeft(-10.00);
@@ -311,12 +301,7 @@ public class CQLIncludeLibraryView {
 		return searchWidgetFocusPanel;
 	}
 	
-	/**
-	 * Gets the alias name txt area.
-	 *
-	 * @return the alias name txt area
-	 */
-	public TextBox getAliasNameTxtArea() {
+	public MatTextBox getAliasNameTxtArea() {
 		return aliasNameTxtBox;
 	}
 
@@ -330,11 +315,6 @@ public class CQLIncludeLibraryView {
 		
 	}
 	
-	/**
-	 * Creates the includes button bar.
-	 *
-	 * @return the CQL button tool bar
-	 */
 	private DefinitionFunctionButtonToolBar createIncludesButtonBar() {
 		includesButtonBar.getSaveButton().setVisible(true);
 		includesButtonBar.getEraseButton().setVisible(true);
@@ -345,12 +325,7 @@ public class CQLIncludeLibraryView {
 		includesButtonBar.getTimingExpButton().removeFromParent();
 		return includesButtonBar;
 	}
-	
-	/**
-	 * Creates the read only view includes button bar.
-	 *
-	 * @return the CQL button tool bar
-	 */
+
 	private DefinitionFunctionButtonToolBar createReadOnlyViewIncludesButtonBar() {
 		includesModifyButtonBar.getDeleteButton().setVisible(true);
 		includesModifyButtonBar.getEditButton().setVisible(true);
@@ -465,9 +440,6 @@ public class CQLIncludeLibraryView {
 		}
 	}
 	
-	/**
-	 * Selection Change Handler for Selection Model to make checkbox behave like radio button.
-	 */
 	private void addSelectionHandler() {
 		selectionModel.addSelectionChangeHandler(new Handler() {
 			
@@ -490,14 +462,6 @@ public class CQLIncludeLibraryView {
 		
 	}
 
-	/**
-	 * Adds the column to table.
-	 *
-	 * @param table the table
-	 * @param sortHandler the sort handler
-	 * @param isEditable the is editable
-	 * @return the cell table
-	 */
 	private CellTable<CQLLibraryDataSetObject> addColumnToTable(
 			final CellTable<CQLLibraryDataSetObject> table,
 			ListHandler<CQLLibraryDataSetObject> sortHandler, boolean isEditable) {
@@ -527,7 +491,6 @@ public class CQLIncludeLibraryView {
 					.fromSafeConstant("<span title=\"Version\">"
 							+ "Version" + "</span>"));
 			
-			// Version Column
 			Column<CQLLibraryDataSetObject, SafeHtml> ownerColumn = new Column<CQLLibraryDataSetObject, SafeHtml>(
 					new SafeHtmlCell()) {
 				@Override
@@ -561,12 +524,6 @@ public class CQLIncludeLibraryView {
 	}
 
 	
-	/**
-	 * Gets the check box cell for table.
-	 *
-	 * @param isEditable the is editable
-	 * @return the check box cell for table
-	 */
 	private CompositeCell<CQLLibraryDataSetObject> getCheckBoxCellForTable(final boolean isEditable){
 		//checks to determine libraries selection validation limit.
 		boolean isUsed = false;
@@ -617,13 +574,6 @@ public class CQLIncludeLibraryView {
 		
 	}
 	
-	
-	/**
-	 * Gets the check box cell.
-	 *
-	 * @param isUsed the is used
-	 * @return the check box cell
-	 */
 	private HasCell<CQLLibraryDataSetObject, Boolean> getCheckBoxCell(final boolean isUsed){
 		HasCell<CQLLibraryDataSetObject, Boolean> hasCell = new HasCell<CQLLibraryDataSetObject, Boolean>() {
 			
@@ -714,9 +664,7 @@ public class CQLIncludeLibraryView {
 		resetAceEditor();
 	}
 
-	/**
-	 * Reset ace editor.
-	 */
+
 	private void resetAceEditor() {
 		cqlAceEditor.clearAnnotations();
 		cqlAceEditor.removeAllMarkers();

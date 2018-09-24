@@ -1487,20 +1487,22 @@ public class XmlProcessor {
 	public void removeUnusedDefaultCodes(List<String> usedCodeList) {
 		try {
 			NodeList nodeList = findNodeList(getOriginalDoc(), XPATH_FOR_CODES);
-			List<String> codeSystemOIDsToRemove = new ArrayList<String>();
+			List<String> codeSystemOIDsToRemove = new ArrayList<>();
 			for(int i = 0; i<nodeList.getLength(); i++) {
 				Node currentNode = nodeList.item(i);
-				String codeOID = currentNode.getAttributes().getNamedItem(ATTRIBUTE_CODE_OID).getNodeValue();
-				Boolean readOnly = Boolean.parseBoolean(currentNode.getAttributes().getNamedItem(ATTRIBUTE_READ_ONLY).getNodeValue());
-				
-				if(readOnly && (codeOID.equals(ConstantMessages.BIRTHDATE_OID) || codeOID.equals(ConstantMessages.DEAD_OID))) {
-					String codeName = currentNode.getAttributes().getNamedItem(ATTRIBUTE_CODE_NAME).getNodeValue();
-					if(!usedCodeList.contains(codeName)) {
-						String codeSystemOID = currentNode.getAttributes().getNamedItem(ATTRIBUTE_CODE_SYSTEM_OID).getNodeValue();
-						codeSystemOIDsToRemove.add(codeSystemOID);
-						Node parentNode = currentNode.getParentNode();
-						parentNode.removeChild(currentNode);	
-					} 
+				if(null != currentNode.getAttributes().getNamedItem(ATTRIBUTE_READ_ONLY)) {
+					String codeOID = currentNode.getAttributes().getNamedItem(ATTRIBUTE_CODE_OID).getNodeValue();
+					Boolean readOnly = Boolean.parseBoolean(currentNode.getAttributes().getNamedItem(ATTRIBUTE_READ_ONLY).getNodeValue());
+					
+					if(readOnly && (codeOID.equals(ConstantMessages.BIRTHDATE_OID) || codeOID.equals(ConstantMessages.DEAD_OID))) {
+						String codeName = currentNode.getAttributes().getNamedItem(ATTRIBUTE_CODE_NAME).getNodeValue();
+						if(!usedCodeList.contains(codeName)) {
+							String codeSystemOID = currentNode.getAttributes().getNamedItem(ATTRIBUTE_CODE_SYSTEM_OID).getNodeValue();
+							codeSystemOIDsToRemove.add(codeSystemOID);
+							Node parentNode = currentNode.getParentNode();
+							parentNode.removeChild(currentNode);	
+						} 
+					}
 				}
 			}
 			removeUnusedCodeSystems(codeSystemOIDsToRemove);
