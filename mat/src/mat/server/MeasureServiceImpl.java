@@ -15,6 +15,7 @@ import mat.client.measure.TransferOwnerShipModel;
 import mat.client.measure.service.MeasureService;
 import mat.client.measure.service.SaveMeasureResult;
 import mat.client.measure.service.ValidateMeasureResult;
+import mat.client.shared.GenericResult;
 import mat.client.shared.MatException;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.CQLValueSetTransferObject;
@@ -221,11 +222,16 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	public void updateUsersShare(ManageMeasureShareModel model) {
 		this.getMeasureLibraryService().updateUsersShare(model);
 	}
+	
+	@Override
+	public ValidateMeasureResult validateExports(final String measureId) throws Exception {
+		return this.getMeasureLibraryService().validateExports(measureId);
+	}; 
 
 	@Override
-	public ValidateMeasureResult validateMeasureForExport(String key , List<MatValueSet> matValueSetList, boolean shouldCreateArtifacts)
+	public ValidateMeasureResult createExports(String key , List<MatValueSet> matValueSetList, boolean shouldCreateArtifacts)
 			throws MatException {
-		return this.getMeasureLibraryService().validateMeasureForExport(key, matValueSetList, shouldCreateArtifacts);
+		return this.getMeasureLibraryService().createExports(key, matValueSetList, shouldCreateArtifacts);
 	}
 	
 	@Override
@@ -542,5 +548,10 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	@Override
 	public List<ComponentMeasureTabObject> getCQLLibraryInformationForComponentMeasure(String compositeMeasureId) {
 		return this.getMeasureLibraryService().getCQLLibraryInformationForComponentMeasure(compositeMeasureId);
+	}
+
+	@Override
+	public GenericResult checkIfMeasureIsUsedAsComponentMeasure(String currentMeasureId) {
+		return this.getMeasureLibraryService().checkIfMeasureIsUsedAsComponentMeasure(currentMeasureId);
 	}
 }

@@ -32,6 +32,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.tools.zip.ZipOutputStream;
 import org.cqframework.cql.tools.formatter.CQLFormatter;
+import org.exolab.castor.mapping.MappingException;
+import org.exolab.castor.xml.MarshalException;
+import org.exolab.castor.xml.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
@@ -40,6 +43,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import mat.client.measure.ManageCompositeMeasureDetailModel;
+import mat.client.measure.ManageMeasureSearchModel.Result;
 import mat.dao.ListObjectDAO;
 import mat.dao.QualityDataSetDAO;
 import mat.dao.clause.CQLLibraryDAO;
@@ -66,12 +71,15 @@ import mat.server.service.MeasurePackageService;
 import mat.server.service.SimpleEMeasureService;
 import mat.server.simplexml.HumanReadableGenerator;
 import mat.server.util.CQLUtil;
+import mat.server.util.CompositeMeasureDetailUtil;
 import mat.server.util.XmlProcessor;
 import mat.shared.ConstantMessages;
 import mat.shared.DateUtility;
 import mat.shared.FileNameUtility;
 import mat.shared.SaveUpdateCQLResult;
 import mat.shared.StringUtility;
+import mat.shared.bonnie.error.BonnieBadParameterException;
+import mat.shared.bonnie.error.BonnieDoesNotExistException;
 import mat.shared.bonnie.error.BonnieNotFoundException;
 import mat.shared.bonnie.error.BonnieServerException;
 import mat.shared.bonnie.error.BonnieUnauthorizedException;
@@ -148,6 +156,9 @@ public class SimpleEMeasureServiceImpl implements SimpleEMeasureService {
 	
 	@Autowired
 	private BonnieServiceImpl bonnieServiceImpl;
+	
+	@Autowired
+	private CompositeMeasureDetailUtil compositeMeasureDetailUtil;
 
 	/** MeasureExportDAO. **/
 	private HSSFWorkbook wkbk = null;
@@ -822,7 +833,7 @@ public class SimpleEMeasureServiceImpl implements SimpleEMeasureService {
 		
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	    ZipOutputStream zip = new ZipOutputStream(baos);
-	    
+	    String parentSimpleXML = me.getSimpleXML();
 	    
 		FileNameUtility fnu = new FileNameUtility();
 		//get composite file
@@ -830,16 +841,32 @@ public class SimpleEMeasureServiceImpl implements SimpleEMeasureService {
 		getZipBarr(measureId, me, parentPath, zip);
 		//get component files
 		for(ComponentMeasure measure : componentMeasures) {
-			String componentMeasureId = measure.getComponentMeasureId();
-			MeasureExport componentMeasureExport = getMeasureExport(componentMeasureId);
-			String componentParentPath = parentPath + File.separator + fnu.getParentPath(componentMeasureExport.getMeasure().getaBBRName() +"_" + currentReleaseVersion); 
-			getZipBarr(componentMeasureId, componentMeasureExport, componentParentPath, zip);
+			String componentMeasureId = measure.getComponentMeasure().getId();
+			if(checkIfComponentMeasureIsUsed(parentSimpleXML, componentMeasureId)) {
+				MeasureExport componentMeasureExport = getMeasureExport(componentMeasureId);
+				String componentParentPath = parentPath + File.separator + fnu.getParentPath(componentMeasureExport.getMeasure().getaBBRName() +"_" + currentReleaseVersion); 
+				getZipBarr(componentMeasureId, componentMeasureExport, componentParentPath, zip);
+			}
 		}
 		
 		zip.close();
 		return baos.toByteArray();
 	}
 
+	private boolean checkIfComponentMeasureIsUsed(String parentSimpleXML, String componentMeasureId) throws MarshalException, ValidationException, IOException, MappingException, XPathExpressionException {
+		
+		ManageCompositeMeasureDetailModel usedCompositeModel = compositeMeasureDetailUtil.convertXMLIntoCompositeMeasureDetailModel(parentSimpleXML);
+		List<Result> usedCompositeMeasures = usedCompositeModel.getAppliedComponentMeasures();
+		for (Result usedCompositeMeasure: usedCompositeMeasures) {
+			String measureId = String.valueOf(usedCompositeMeasure.getId());
+			measureId = StringUtils.replace(measureId, "-", "");
+			if(measureId.equals(componentMeasureId)) {
+				return true;
+			}
+		}
+		return false;
+		
+	}
 	private String getHumanReadableForMeasure(String measureId, String simpleXmlStr, String measureVersionNumber, MeasureExport measureExport) {
 		return HumanReadableGenerator.generateHTMLForMeasure(measureId, simpleXmlStr, measureVersionNumber, cqlLibraryDAO);
 	}
@@ -1083,15 +1110,18 @@ public class SimpleEMeasureServiceImpl implements SimpleEMeasureService {
 			String format, String currentReleaseVersion, String sequance) throws Exception {
 		List<ComponentMeasure> componentMeasures = me.getMeasure().getComponentMeasures();
 		FileNameUtility fnu = new FileNameUtility();
+		String parentSimpleXML = me.getSimpleXML();
 		String parentPath = fnu.getParentPath(sequance +"_"+ me.getMeasure().getaBBRName() + "_" + currentReleaseVersion);
 		//get composite file
 		createFilesInBulkZip(measureId, me, filesMap, format, parentPath);
 		//get component files
 		for(ComponentMeasure measure : componentMeasures) {
-			String getComponentMeasureId = measure.getComponentMeasureId();
-			MeasureExport componentMeasureExport = getMeasureExport(getComponentMeasureId);
-			String componentParentPath = parentPath + File.separator + fnu.getParentPath(componentMeasureExport.getMeasure().getaBBRName() +"_" + currentReleaseVersion); 
-			createFilesInBulkZip(getComponentMeasureId, componentMeasureExport, filesMap, format, componentParentPath);
+			String componentMeasureId = measure.getComponentMeasure().getId();
+			if(checkIfComponentMeasureIsUsed(parentSimpleXML, componentMeasureId)) {
+				MeasureExport componentMeasureExport = getMeasureExport(componentMeasureId);
+				String componentParentPath = parentPath + File.separator + fnu.getParentPath(componentMeasureExport.getMeasure().getaBBRName() +"_" + currentReleaseVersion); 
+				createFilesInBulkZip(componentMeasureId, componentMeasureExport, filesMap, format, componentParentPath);
+			}
 		}
 	}
 
@@ -1215,7 +1245,7 @@ public class SimpleEMeasureServiceImpl implements SimpleEMeasureService {
 	}
 
 	@Override
-	public BonnieCalculatedResult getBonnieExportCalculation(String measureId, String userId) throws IOException, BonnieUnauthorizedException, BonnieNotFoundException, BonnieServerException {
+	public BonnieCalculatedResult getBonnieExportCalculation(String measureId, String userId) throws IOException, BonnieUnauthorizedException, BonnieNotFoundException, BonnieServerException, BonnieBadParameterException, BonnieDoesNotExistException {
 		BonnieCalculatedResult results = bonnieServiceImpl.getBonnieExportForMeasure(userId, measureId);
 		return results;
 	}

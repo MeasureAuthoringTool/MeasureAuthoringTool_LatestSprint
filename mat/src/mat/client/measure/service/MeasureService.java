@@ -15,6 +15,7 @@ import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.TransferOwnerShipModel;
+import mat.client.shared.GenericResult;
 import mat.client.shared.MatException;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.CQLValueSetTransferObject;
@@ -349,7 +350,7 @@ public interface MeasureService extends RemoteService {
 	 * @throws MatException
 	 *             the mat exception
 	 */
-	ValidateMeasureResult validateMeasureForExport(String key,
+	ValidateMeasureResult createExports(String key,
 			List<MatValueSet> matValueSetList, boolean shouldCreateArtifacts) throws MatException;
 	
 	/**
@@ -698,4 +699,8 @@ public interface MeasureService extends RemoteService {
 	public CompositeMeasureValidationResult validateCompositeMeasure(ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel);
 
 	List<ComponentMeasureTabObject> getCQLLibraryInformationForComponentMeasure(String compositeMeasureId);
+	
+	public GenericResult checkIfMeasureIsUsedAsComponentMeasure(String currentMeasureId);
+
+	ValidateMeasureResult validateExports(String measureId) throws Exception;
 }

@@ -15,6 +15,7 @@ import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
 import mat.client.measure.ManageMeasureShareModel;
 import mat.client.measure.TransferOwnerShipModel;
+import mat.client.shared.GenericResult;
 import mat.client.umls.service.VsacApiResult;
 import mat.model.CQLValueSetTransferObject;
 import mat.model.ComponentMeasureTabObject;
@@ -362,7 +363,9 @@ public interface MeasureServiceAsync {
 	 * @param callback
 	 *            the callback
 	 */
-	void validateMeasureForExport(String key, List<MatValueSet> matValueSetList, boolean shouldCreateArtifacts, AsyncCallback<ValidateMeasureResult> callback);
+	void createExports(String key, List<MatValueSet> matValueSetList, boolean shouldCreateArtifacts, AsyncCallback<ValidateMeasureResult> callback);
+	
+	void validateExports(String keys,  AsyncCallback<ValidateMeasureResult> callback);
 	
 	/**
 	 * Save Called To update Revision Number at Create New Package button Click.
@@ -734,4 +737,6 @@ public interface MeasureServiceAsync {
 			AsyncCallback<CompositeMeasureValidationResult> asyncCallback);
 	
 	void getCQLLibraryInformationForComponentMeasure(String compositeMeasureId, AsyncCallback<List<ComponentMeasureTabObject>> callback);
+
+	void checkIfMeasureIsUsedAsComponentMeasure(String currentMeasureId, AsyncCallback<GenericResult> asyncCallback);
 }

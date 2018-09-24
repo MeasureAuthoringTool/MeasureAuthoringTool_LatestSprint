@@ -40,10 +40,8 @@ import mat.DTO.CompositeMeasureScoreDTO;
 import mat.DTO.SearchHistoryDTO;
 import mat.client.Mat;
 import mat.client.MatPresenter;
-import mat.client.clause.cqlworkspace.ConfirmationDialogBox;
 import mat.client.codelist.HasListBox;
 import mat.client.codelist.events.OnChangeMeasureVersionOptionsEvent;
-import mat.client.cql.ConfirmationObserver;
 import mat.client.event.MeasureDeleteEvent;
 import mat.client.event.MeasureEditEvent;
 import mat.client.event.MeasureSelectedEvent;
@@ -55,6 +53,8 @@ import mat.client.measure.metadata.CustomCheckBox;
 import mat.client.measure.service.MeasureCloningService;
 import mat.client.measure.service.MeasureCloningServiceAsync;
 import mat.client.measure.service.SaveMeasureResult;
+import mat.client.shared.ConfirmationDialogBox;
+import mat.client.shared.ConfirmationObserver;
 import mat.client.shared.ContentWithHeadingWidget;
 import mat.client.shared.FocusableWidget;
 import mat.client.shared.ManageCompositeMeasureModelValidator;
@@ -1370,33 +1370,56 @@ public class ManageMeasurePresenter implements MatPresenter {
 								if (!isLoading && selectedMeasure.isDraftable()) {
 									if (((selectedMeasure != null) && (selectedMeasure.getId() != null))) {
 										setSearchingBusy(true);
-										MatContext.get().getMeasureService().getMeasure(selectedMeasure.getId(),
-												new AsyncCallback<ManageMeasureDetailModel>() {
-													@Override
-													public void onFailure(Throwable caught) {
-														setSearchingBusy(false);
-														searchDisplay.getErrorMessageDisplay()
-																.createAlert(MatContext.get().getMessageDelegate()
-																		.getGenericErrorMessage());
-														MatContext.get().recordTransactionEvent(null, null, null,
-																"Unhandled Exception: "
-																		+ caught.getLocalizedMessage(),
-																0);
-													}
-
-													@Override
-													public void onSuccess(ManageMeasureDetailModel result) {
-														searchDisplay.getErrorMessageDisplay().clearAlert();
-														currentDetails = result;
-														createDraftOfSelectedVersion(currentDetails);
-													}
-												});
+										if(selectedMeasure.getIsComposite()){
+											draftCompositeMeasure(selectedMeasure);
+										}else {
+											draftMeasure(selectedMeasure);
+										}
 									}
 								} else if (!isLoading && selectedMeasure.isVersionable()) {
 									versionDisplay.setSelectedMeasure(selectedMeasure);
 									createVersion();
 								}
 
+							}
+
+							private void draftCompositeMeasure(Result selectedMeasure) {
+								MatContext.get().getMeasureService().getCompositeMeasure(selectedMeasure.getId(),
+										new AsyncCallback<ManageCompositeMeasureDetailModel>() {
+											@Override
+											public void onFailure(Throwable caught) {
+												setSearchingBusy(false);
+												searchDisplay.getErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+												MatContext.get().recordTransactionEvent(null, null, null, "Unhandled Exception: " + caught.getLocalizedMessage(), 0);
+											}
+
+											@Override
+											public void onSuccess(ManageCompositeMeasureDetailModel result) {
+												searchDisplay.getErrorMessageDisplay().clearAlert();
+												currentDetails = result;
+												createDraftOfSelectedVersion(currentDetails);
+											}
+										});
+								
+							}
+
+							private void draftMeasure(ManageMeasureSearchModel.Result selectedMeasure) {
+								MatContext.get().getMeasureService().getMeasure(selectedMeasure.getId(),
+										new AsyncCallback<ManageMeasureDetailModel>() {
+											@Override
+											public void onFailure(Throwable caught) {
+												setSearchingBusy(false);
+												searchDisplay.getErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
+												MatContext.get().recordTransactionEvent(null, null, null,"Unhandled Exception: "+ caught.getLocalizedMessage(),0);
+											}
+
+											@Override
+											public void onSuccess(ManageMeasureDetailModel result) {
+												searchDisplay.getErrorMessageDisplay().clearAlert();
+												currentDetails = result;
+												createDraftOfSelectedVersion(currentDetails);
+											}
+										});
 							}
 
 						});

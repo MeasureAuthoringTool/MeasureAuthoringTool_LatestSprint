@@ -7,6 +7,7 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/httpcore-4.4.9.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/httpmime-4.5.5.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/org.apache.oltu.oauth2.client-1.0.2.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/jasypt-1.9.0.jar"/>
 	<classpathentry kind="src" output="test-classes" path="test"/>
 	<classpathentry kind="con" path="com.google.gwt.eclipse.core.GWT_CONTAINER"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/activation-1.1.1.jar"/>
@@ -107,5 +108,6 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/mockito-core-2.18.3.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/byte-buddy-1.8.12.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/objenesis-2.6.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/woden-core-1.0M10.jar"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>
