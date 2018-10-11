@@ -488,7 +488,6 @@ public final class CQLUtilityClass {
 	}
 
 	private static StringBuilder createParameterSection(List<CQLParameter> paramList, StringBuilder cqlStr, String toBeInserted) {
-		
 		if (!CollectionUtils.isEmpty(paramList)) {
 
 			for (CQLParameter parameter : paramList) {
@@ -496,7 +495,7 @@ public final class CQLUtilityClass {
 				String param = "parameter " + "\"" + parameter.getName() + "\"";
 
 				if(StringUtils.isNotBlank(parameter.getCommentString())) {
-					createCommentString(parameter.getCommentString());
+					cqlStr.append(createCommentString(parameter.getCommentString()));
 					cqlStr.append(System.lineSeparator());
 				}
 				

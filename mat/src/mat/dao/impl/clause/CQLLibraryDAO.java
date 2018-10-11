@@ -105,33 +105,23 @@ public class CQLLibraryDAO extends GenericDAO<CQLLibrary, String> implements mat
 
 	/** The lock threshold. */
 	private final long lockThreshold = 3 * 60 * 1000; // 3 minutes
-	
-	private List<CQLLibrary> searchForReplaceLibraries(String setId) {
-		Criteria cCriteria = getSessionFactory().getCurrentSession().createCriteria(CQLLibrary.class);
-		cCriteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
-		cCriteria.add(Restrictions.eq("draft", false));
-		cCriteria.add(Restrictions.eq("qdmVersion", MATPropertiesService.get().getQmdVersion()));
-		cCriteria.add(Restrictions.eq("set_id", setId));
-		cCriteria.addOrder(Order.desc("set_id")).addOrder(Order.desc("version"));
-		cCriteria.setFirstResult(0);
-		return sortLibraryList(cCriteria.list());
-	}
 
 	@Override
-	public List<CQLLibrary> searchForIncludes(String setId, String searchText, boolean filter) {
+	public List<CQLLibrary> searchForIncludes(String setId, String libraryName, String searchText) {
 		searchText = searchText.toLowerCase();
 	
 		Criteria criteria = getSessionFactory().getCurrentSession().createCriteria(CQLLibrary.class);
 		criteria.add(Restrictions.eq("qdmVersion", MATPropertiesService.get().getQmdVersion()));
 		criteria.add(Restrictions.eq("draft", false));
+		criteria.add(Restrictions.not(Restrictions.eq("name", libraryName)));
 		criteria.add(Restrictions.not(Restrictions.eq("set_id", setId)));
+		criteria.addOrder(Order.asc("name")).addOrder(Order.desc("version")); 
 		
 		List<CQLLibrary> libraries = criteria.list();
 		if(!StringUtility.isEmptyOrNull(searchText)) {
 			libraries = filterLibraries(searchText, libraries);
 		}
 		
-		libraries = sortLibraryList(libraries);
 		return libraries;
 	}
 	
@@ -143,9 +133,15 @@ public class CQLLibraryDAO extends GenericDAO<CQLLibrary, String> implements mat
 	}
 	
 	@Override
-	public List<CQLLibrary> searchForReplaceLibraries(String setId, boolean filter) {		
-		return searchForReplaceLibraries(setId);
-	}
+	public List<CQLLibrary> searchForReplaceLibraries(String setId) {		
+		Criteria cCriteria = getSessionFactory().getCurrentSession().createCriteria(CQLLibrary.class);
+		cCriteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		cCriteria.add(Restrictions.eq("draft", false));
+		cCriteria.add(Restrictions.eq("qdmVersion", MATPropertiesService.get().getQmdVersion()));
+		cCriteria.add(Restrictions.eq("set_id", setId));
+		cCriteria.addOrder(Order.asc("name")).addOrder(Order.desc("version"));
+		cCriteria.setFirstResult(0);
+		return cCriteria.list();	}
 
 	@Override
 	public List<CQLLibraryShareDTO> search(String searchText, int pageSize, User user, int filter) {

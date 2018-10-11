@@ -108,7 +108,7 @@ public class EditIncludedLibraryDialogBox {
 		bar.setType(ProgressBarType.INFO);
 		bar.setWidth("100%");
 		bar.setPercent(50.00);
-		bar.setText("Please wait.Loaded " +50+"% ");
+		bar.setText("Please wait. Loaded 50%");
 		progress.add(bar);
 	}
 
@@ -144,12 +144,12 @@ public class EditIncludedLibraryDialogBox {
 		dialogModal.show();
 	}
 
-	public void findAvailableLibraries(String setId, final String currentId, boolean filterForInclude) {
+	public void findAvailableLibraries(String setId, final String currentId) {
 		showDialogBox();
 		cellTablePanel.removeStyleName("cellTablePanel");
 		cellTablePanel.add(progress);
 	//	Mat.showLoadingMessage();
-		MatContext.get().getCQLLibraryService().searchForReplaceLibraries(setId, filterForInclude,
+		MatContext.get().getCQLLibraryService().searchForReplaceLibraries(setId,
 				new AsyncCallback<SaveCQLLibraryResult>() {
 					@Override
 					public void onFailure(Throwable caught) {

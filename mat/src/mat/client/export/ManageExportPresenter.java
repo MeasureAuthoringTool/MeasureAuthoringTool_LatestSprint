@@ -42,24 +42,18 @@ public class ManageExportPresenter implements MatPresenter {
 		BonnieExportPresenter bonnieExportPresenter = new BonnieExportPresenter(bonnieExportView, result, manageMeasurePresenter);
 		this.view.getBonnieExportPane().add(bonnieExportView.asWidget());
 		
-		double releaseVersion = Double.parseDouble(result.getHqmfReleaseVersion().replace("v", ""));
-		MatContext.get().getCurrentReleaseVersion(new AsyncCallback<String>() {
-			
-			@Override
-			public void onSuccess(String result) {
-				
-				if(releaseVersion >= 5.4 && result.equals("v5.6")) {
-					setBonnieExportVisible(true);
-				} else {
-					setBonnieExportVisible(false);
-				}				
-			}
-			
-			@Override
-			public void onFailure(Throwable caught) {
-				
-			}
-		});
+		double qdmVersion = 0.0; 
+		if(result.getQdmVersion() != null) {
+			qdmVersion = Double.parseDouble(result.getQdmVersion().replace("v", ""));
+		}
+		
+		double currentQDMVersion = Double.parseDouble(MatContext.get().getCurrentQDMVersion().replace("v", ""));	
+		
+		if(MatContext.get().isCQLMeasure(result.getHqmfReleaseVersion()) && qdmVersion == currentQDMVersion) {
+			setBonnieExportVisible(true);
+		} else {
+			setBonnieExportVisible(false);
+		}				
 	}
 	
 	private void setBonnieExportVisible(boolean isVisible) {
