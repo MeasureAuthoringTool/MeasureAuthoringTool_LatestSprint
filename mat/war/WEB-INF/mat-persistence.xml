@@ -31,12 +31,9 @@
 		<property name="contexts" value="prod" />
 	</bean>
     
-  	<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
-        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
-		<property name="url" value="jdbc:mysql://localhost:3306/MAT_APP"/>
-        <property name="username" value="username"/>
-        <property name="password" value="password"/>
-    </bean>
+	<bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiName" value="java:/comp/env/jdbc/mat_app_tomcat" />
+	</bean>    
     
     <context:annotation-config />
     <context:component-scan base-package="mat.hibernate"/>
@@ -44,42 +41,6 @@
     <context:component-scan base-package="mat.dao"/>
 	<context:component-scan base-package="mat.model.clause"/>
 	
-	<!-- Hibernate SessionFactory -->
-	<bean id="sessionFactory"
-		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean" depends-on="dataSource">
-		<property name="dataSource">
-			<ref bean="dataSource" />
-		</property>
-		<property name="hibernateProperties">
-			<props>
-				<prop key="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</prop>
-				<prop key="hibernate.cache.use_query_cache">true</prop>
-				<prop key="hibernate.cache.use_second_level_cache">true</prop>
-				<prop key="hibernate.show_sql">false</prop>
-				<prop key="hibernate.default_batch_fetch_size">20</prop>
-				<prop key="hibernate.connection.release_mode">auto</prop>
-				<prop key="hibernate.cache.use_second_level_cache">true</prop>
-				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>	
-                <!-- <prop key="hibernate.hbm2ddl.auto">update</prop> -->		
-			</props>
-		</property>
-		<property name="packagesToScan">
-	        <list>
-	            <value>mat.model</value>
-	        </list>
-   		 </property>
-		<property name="mappingLocations">
-			<list>
-				<value>
-					classpath:/hibernate/*.hbm.xml
-				</value>
-			</list>
-		</property>
-		<property name="entityInterceptor">
-		  <bean class="mat.dao.impl.AuditInterceptor"/>
-		</property>
-	</bean>
-
     <bean id="auditEventListener" class="mat.dao.impl.AuditEventListener">
    </bean>
 	<bean id="auditInterceptor" class="mat.dao.impl.AuditInterceptor">
