@@ -15,7 +15,9 @@ import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.resource.transaction.spi.TransactionStatus;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.transaction.annotation.Transactional;
 
 import mat.dao.search.GenericDAO;
 import mat.model.Organization;
@@ -50,8 +52,7 @@ mat.dao.UserDAO {
 	 */
 	@Override
 	public void expireTemporaryPasswords(Date targetDate) {
-		Session session = getSessionFactory().openSession();
-		Transaction tx = session.beginTransaction();
+		Session session = getSessionFactory().getCurrentSession();
 		try {
 			int updatedCount = 0;
 			Criteria criteria = session.createCriteria(User.class)
@@ -67,10 +68,7 @@ mat.dao.UserDAO {
 			}
 			
 			logger.info("Expired password count: " + updatedCount);
-			tx.commit();
 		} finally {
-			rollbackUncommitted(tx);
-			closeSession(session);
 		}
 	}
 	
@@ -79,8 +77,7 @@ mat.dao.UserDAO {
 	 */
 	@Override
 	public void unlockUsers(Date unlockDate) {
-		Session session = getSessionFactory().openSession();
-		Transaction tx = session.beginTransaction();
+		Session session = getSessionFactory().getCurrentSession();
 		try {
 			int updatedCount = 0;
 			Criteria criteria = session.createCriteria(User.class);
@@ -93,11 +90,8 @@ mat.dao.UserDAO {
 				u.getPassword().setPasswordlockCounter(0);
 				updatedCount++;
 			}
-			tx.commit();
 			logger.info("Unlocked user count: " + updatedCount);
 		} finally {
-			rollbackUncommitted(tx);
-			closeSession(session);
 		}
 	}
 	
@@ -231,6 +225,7 @@ mat.dao.UserDAO {
 	 */
 	@Override
 	@SuppressWarnings("rawtypes")
+	@Transactional
 	public UserDetails getUser(String userId) {
 		Session session = getSessionFactory().getCurrentSession();
 		Criteria criteria = session.createCriteria(MatUserDetails.class);
@@ -243,6 +238,7 @@ mat.dao.UserDAO {
 		} else {
 			return (UserDetails) results.get(0);
 		}
+		
 	}
 	
 	/* (non-Javadoc)
@@ -309,17 +305,12 @@ mat.dao.UserDAO {
 	@Override
 	public void saveUserDetails(MatUserDetails userdetails) {
 		Session session = null;
-		Transaction transaction = null;
 		try {
-			session = getSessionFactory().openSession();
-			transaction = session.beginTransaction();
+			session = getSessionFactory().getCurrentSession();
 			session.saveOrUpdate(userdetails);
-			transaction.commit();
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e);
 		} finally {
-			rollbackUncommitted(transaction);
-			closeSession(session);
 		}
 	}
 	
@@ -367,7 +358,7 @@ mat.dao.UserDAO {
 					+ " ORDER BY RAND() LIMIT 1";
 			
 			Session session = getSessionFactory().getCurrentSession();
-			SQLQuery query = session.createSQLQuery(sql);
+			SQLQuery<String> query = session.createSQLQuery(sql);
 			query.setString("userId", user.getId());
 			
 			List<String> list = query.list();

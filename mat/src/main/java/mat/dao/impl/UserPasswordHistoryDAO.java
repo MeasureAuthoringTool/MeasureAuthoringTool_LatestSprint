@@ -2,16 +2,16 @@ package mat.dao.impl;
 
 import java.util.List;
 
-import mat.dao.search.GenericDAO;
-import mat.model.User;
-import mat.model.UserPasswordHistory;
-
 import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+
+import mat.dao.search.GenericDAO;
+import mat.model.User;
+import mat.model.UserPasswordHistory;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -37,8 +37,7 @@ public class UserPasswordHistoryDAO extends GenericDAO<UserPasswordHistory, Stri
 	@Override
 	public void addByUpdateUserPasswordHistory(User user) {
 		String userPasswordHistoryId = getOldPasswordHistoryIdByCreationDate(user.getId());
-		Session session = getSessionFactory().openSession();
-		org.hibernate.Transaction tx = session.beginTransaction();
+		Session session = getSessionFactory().getCurrentSession();
 		try {
 			String sql = "update mat.model.UserPasswordHistory m set m.password = :password, m.salt = :salt, m.createdDate = :createDate " +
 					"where m.id = :passwordHistoryId";
@@ -48,10 +47,7 @@ public class UserPasswordHistoryDAO extends GenericDAO<UserPasswordHistory, Stri
 			query.setDate("createDate", user.getPassword().getCreatedDate());
 			query.setString("passwordHistoryId", userPasswordHistoryId);
 			int rowCount = query.executeUpdate();
-			tx.commit();
 		} finally {
-			rollbackUncommitted(tx);
-			closeSession(session);
 		}
 		
 	}

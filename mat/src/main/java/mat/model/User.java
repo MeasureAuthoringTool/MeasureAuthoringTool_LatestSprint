@@ -1,16 +1,33 @@
 package mat.model;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.Transient;
+import javax.persistence.UniqueConstraint;
+
+import org.hibernate.annotations.GenericGenerator;
 
 import mat.model.clause.MeasureShare;
 import mat.model.cql.CQLLibraryShare;
 
-
+@Entity
+@Table(name = "USER", uniqueConstraints = @UniqueConstraint(columnNames = "LOGIN_ID"))
 public class User  {
 	
 	private String id;
@@ -49,22 +66,27 @@ public class User  {
 	
 	private UserBonnieAccessInfo userBonnieAccessInfo;
 	
-	private List<UserSecurityQuestion> userSecurityQuestions = new ArrayList<UserSecurityQuestion>();
+	private List<UserSecurityQuestion> userSecurityQuestions;
 	
-	private Set<MeasureShare> measureShares = new HashSet<MeasureShare>();
+	private Set<MeasureShare> measureShares;
 	
-	private Set<MeasureShare> ownedMeasureShares = new HashSet<MeasureShare>();
+	private Set<MeasureShare> ownedMeasureShares;
 	
-	private Set<CQLLibraryShare> cqlLibraryShares = new HashSet<CQLLibraryShare>();
+	private Set<CQLLibraryShare> cqlLibraryShares;
 	
-	private Set<CQLLibraryShare> ownedCQLLibraryShares = new HashSet<CQLLibraryShare>();
+	private Set<CQLLibraryShare> ownedCQLLibraryShares;
 	
 	private String loginId;
 	
 	private String sessionId;
 	
-	private Set<UserPasswordHistory> passwordHistory = new  HashSet<UserPasswordHistory>();
+	private Set<UserPasswordHistory> passwordHistory;
 	
+	
+	@Id
+	@GeneratedValue(generator="uuid")
+	@GenericGenerator(name="uuid", strategy = "uuid")
+	@Column(name = "USER_ID", unique = true, nullable = false, length = 40)
 	public String getId() {
 		return id;
 	}
@@ -73,6 +95,7 @@ public class User  {
 		this.id = id;
 	}
 
+	@Column(name = "FIRST_NAME", nullable = false, length = 100)
 	public String getFirstName() {
 		return firstName;
 	}
@@ -81,6 +104,7 @@ public class User  {
 		this.firstName = firstName;
 	}
 	
+	@Column(name = "MIDDLE_INITIAL", length = 45)
 	public String getMiddleInit() {
 		return middleInit;
 	}
@@ -91,6 +115,7 @@ public class User  {
 	}
 	
 
+	@Column(name = "LAST_NAME", nullable = false, length = 100)
 	public String getLastName() {
 		return lastName;
 	}
@@ -100,6 +125,7 @@ public class User  {
 	}
 	
 
+	@Column(name = "EMAIL_ADDRESS", nullable = false, length = 254)
 	public String getEmailAddress() {
 		return emailAddress;
 	}
@@ -108,6 +134,7 @@ public class User  {
 		this.emailAddress = emailAddress;
 	}
 
+	@Column(name = "PHONE_NO", nullable = false, length = 45)
 	public String getPhoneNumber() {
 		return phoneNumber;
 	}
@@ -116,6 +143,7 @@ public class User  {
 		this.phoneNumber = phoneNumber;
 	}
 
+	@Column(name = "TITLE", length = 45)
 	public String getTitle() {
 		return title;
 	}
@@ -124,6 +152,8 @@ public class User  {
 		this.title = title;
 	}
 
+	@Temporal(TemporalType.DATE)
+	@Column(name = "ACTIVATION_DATE", length = 10)
 	public Date getActivationDate() {
 		return activationDate;
 	}
@@ -132,6 +162,8 @@ public class User  {
 		this.activationDate = activationDate;
 	}
 
+	@Temporal(TemporalType.DATE)
+	@Column(name = "TERMINATION_DATE", length = 10)
 	public Date getTerminationDate() {
 		return terminationDate;
 	}
@@ -140,6 +172,7 @@ public class User  {
 		this.terminationDate = terminationDate;
 	}
 
+	@Transient
 	public String getOrganizationName() {
 		String orgName = "";
 		if(this.organization != null){
@@ -148,6 +181,7 @@ public class User  {
 		return orgName;
 	}
 
+	@Transient
 	public String getOrgOID() {
 		String orgOID = "";
 		if(this.organization != null){
@@ -156,7 +190,7 @@ public class User  {
 		return orgOID;
 	}
 
-	
+	@Transient
 	public String getOrganizationId() {
 		String orgId = "";
 		if(this.organization != null){
@@ -165,10 +199,12 @@ public class User  {
 		return orgId;
 	}
 
+	@Transient
 	public String getRootOID() {
 		return "";
 	}
 
+	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user",cascade=CascadeType.ALL)
 	public UserPassword getPassword() {
 		return password;
 	}
@@ -180,7 +216,8 @@ public class User  {
 		this.password = password;
 	}
 	
-
+	@ManyToOne(fetch = FetchType.LAZY,cascade=CascadeType.ALL)
+	@JoinColumn(name = "AUDIT_ID", nullable = false)
 	public AuditLog getAuditLog() {
 		if(auditLog == null) {
 			auditLog = new AuditLog();
@@ -191,7 +228,9 @@ public class User  {
 	public void setAuditLog(AuditLog auditLog) {
 		this.auditLog = auditLog;
 	}
-
+	
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "STATUS_ID", nullable = false)
 	public Status getStatus() {
 		return status;
 	}
@@ -200,7 +239,8 @@ public class User  {
 		this.status = status;
 	}
 	
-
+	@ManyToOne(fetch = FetchType.EAGER)
+	@JoinColumn(name = "SECURITY_ROLE_ID", nullable = false)
 	public SecurityRole getSecurityRole() {
 		return securityRole;
 	}
@@ -209,6 +249,7 @@ public class User  {
 		this.securityRole = securityRole;
 	}
 
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "userId")
 	public List<UserSecurityQuestion> getUserSecurityQuestions() {
 		return userSecurityQuestions;
 	}
@@ -217,6 +258,8 @@ public class User  {
 		this.userSecurityQuestions = securityQuestions;
 	}			
 
+	@Temporal(TemporalType.DATE)
+	@Column(name = "SIGN_IN_DATE", length = 10)
 	public Date getSignInDate() {
 		return signInDate;
 	}
@@ -230,6 +273,8 @@ public class User  {
 		}
 	}
 
+	@Temporal(TemporalType.DATE)
+	@Column(name = "SIGN_OUT_DATE", length = 10)
 	public Date getSignOutDate() {
 		return signOutDate;
 	}
@@ -242,6 +287,8 @@ public class User  {
 		}
 	}
 
+	@Temporal(TemporalType.DATE)
+	@Column(name = "LOCKED_OUT_DATE", length = 10)
 	public Date getLockedOutDate() {
 		return lockedOutDate;
 	}
@@ -254,6 +301,8 @@ public class User  {
 			this.lockedOutDate = null;
 		}
 	}
+	
+	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user")
 	public UserBonnieAccessInfo getUserBonnieAccessInfo() {
 		return userBonnieAccessInfo;
 	}
@@ -261,6 +310,8 @@ public class User  {
 	public void setUserBonnieAccessInfo(UserBonnieAccessInfo userBonnieAccessInfo) {
 		this.userBonnieAccessInfo = userBonnieAccessInfo;
 	}
+	
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "id",cascade=CascadeType.ALL)
 	public Set<MeasureShare> getMeasureShares() {
 		return measureShares;
 	}
@@ -270,6 +321,7 @@ public class User  {
 		this.measureShares = measureShares;
 	}
 
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "owner",cascade=CascadeType.ALL)
 	public Set<MeasureShare> getOwnedMeasureShares() {
 		return ownedMeasureShares;
 	}
@@ -282,10 +334,12 @@ public class User  {
 		this.loginId = loginId;
 	}
 
+	@Column(name = "LOGIN_ID", unique = true, length = 45)
 	public String getLoginId() {
 		return loginId;
 	}
 	
+	@Column(name = "SESSION_ID", length = 64)
 	public String getSessionId() {
 		return sessionId;
 	}
@@ -293,6 +347,9 @@ public class User  {
 	public void setSessionId(String sessionId) {
 		this.sessionId = sessionId;
 	}
+	
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "ORG_ID", nullable = false)
 	public Organization getOrganization() {
 		return organization;
 	}
@@ -301,6 +358,7 @@ public class User  {
 		this.organization = organization;
 	}
 
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "user",cascade=CascadeType.ALL)
 	public Set<UserPasswordHistory> getPasswordHistory() {
 		return passwordHistory;
 	}
@@ -309,6 +367,7 @@ public class User  {
 		this.passwordHistory = passwordHistory;
 	}
 
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "shareUser")
 	public Set<CQLLibraryShare> getCqlLibraryShares() {
 		return cqlLibraryShares;
 	}
@@ -317,6 +376,7 @@ public class User  {
 		this.cqlLibraryShares = cqlLibraryShares;
 	}
 
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "owner")
 	public Set<CQLLibraryShare> getOwnedCQLLibraryShares() {
 		return ownedCQLLibraryShares;
 	}
@@ -325,6 +385,7 @@ public class User  {
 		this.ownedCQLLibraryShares = ownedCQLLibraryShares;
 	}
 	
+	@Transient
 	public String getFullName() {
 		return this.firstName + " " + this.lastName;
 	}

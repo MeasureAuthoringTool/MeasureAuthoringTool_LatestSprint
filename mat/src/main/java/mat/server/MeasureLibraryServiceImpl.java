@@ -1521,6 +1521,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			String xmlString = new XmlProcessor(xmlModel.getXml()).getXmlByTagName(MEASURE_DETAILS);
 			ManageMeasureDetailModel manageMeasureDetailModel = convertXMLToModel(xmlString, measure);
 			manageMeasureDetailModel.setMeasureDetailResult(measureDetailResult);
+			manageMeasureDetailModel.setQdmVersion(measure.getQdmVersion());
 		
 			return manageMeasureDetailModel;
 		}
@@ -1539,6 +1540,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		String xmlString = new XmlProcessor(xmlModel.getXml()).getXmlByTagName(MEASURE_DETAILS);
 		ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel = (ManageCompositeMeasureDetailModel) convertXMLToModel(xmlString, measure);
 		manageCompositeMeasureDetailModel.setMeasureDetailResult(measureDetailResult);
+		manageCompositeMeasureDetailModel.setQdmVersion(measure.getQdmVersion());
 		
 		return manageCompositeMeasureDetailModel;
 	}
@@ -2089,6 +2091,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				if(m.getIsCompositeMeasure()) {
 					measurePackageService.updateComponentMeasures(m.getId(), new ArrayList<>());
 				}
+				m.setOwner(null);
+				m.setLastModifiedBy(null);
+				m.setLockedUser(null);
 				measureDAO.delete(m);
 				logger.info("Measure Deleted Successfully :: " + measureID);
 			} catch (Exception e) {
@@ -5914,12 +5919,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		SaveMeasureResult result = new SaveMeasureResult();
 		String measureId = model.getId();
 		try {
-
 			ValidateMeasureResult validateGroupResult = validateForGroup(model);
 			if (!validateGroupResult.isValid()) {
 				result.setSuccess(false);
 				result.setValidateResult(validateGroupResult);
-				result.setFailureReason(SaveMeasureResult.PACKAGE_VALIDATION_FAIL);
+				result.setFailureReason(SaveMeasureResult.INVALID_GROUPING);
 				return result;
 			}
 
@@ -5927,7 +5931,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			if (!validatePackageGroupingResult.isValid()) {
 				result.setSuccess(false);
 				result.setValidateResult(validateGroupResult);
-				result.setFailureReason(SaveMeasureResult.PACKAGE_VALIDATION_FAIL);
+				result.setFailureReason(SaveMeasureResult.INVALID_PACKAGE_GROUPING);
 				return result;
 			}
 
@@ -5936,7 +5940,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			if(!validateExports.isValid()) {
 				result.setSuccess(false);
 				result.setValidateResult(validateExports);
-				result.setFailureReason(SaveMeasureResult.PACKAGE_VALIDATION_FAIL);
+				result.setFailureReason(SaveMeasureResult.INVALID_EXPORTS);
 				return result; 
 			}
 			
@@ -5949,7 +5953,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			if (!measureExportValidation.isValid()) {
 				result.setSuccess(false);
 				result.setValidateResult(measureExportValidation);
-				result.setFailureReason(SaveMeasureResult.PACKAGE_VALIDATION_FAIL);
+				result.setFailureReason(SaveMeasureResult.INVALID_CREATE_EXPORT);
 				return result; 
 			}
 
@@ -6204,6 +6208,12 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			result.setSuccess(true);
 		}
 		return result;
+	}
+
+	@Override
+	public Boolean isCompositeMeasure(String currentMeasureId) {
+		Measure currentMeasure = measureDAO.find(currentMeasureId);
+		return currentMeasure.getIsCompositeMeasure();
 	}
 
 }

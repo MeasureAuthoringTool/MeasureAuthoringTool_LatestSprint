@@ -169,7 +169,7 @@ public class AuditEventListener implements  PreDeleteEventListener, PreInsertEve
 			if(session.getTransaction().isActive()) {
 				session.getTransaction().rollback();
 			}
-			session.close();			
+			session.close();
 		}
 	}
 }

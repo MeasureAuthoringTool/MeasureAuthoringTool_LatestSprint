@@ -6,18 +6,31 @@ import java.io.InputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+
 import org.hibernate.Hibernate;
+import org.hibernate.annotations.GenericGenerator;
 
 import mat.hibernate.HibernateConf;
 import mat.server.util.XmlProcessor;
 
+@Entity
+@Table(name = "MEASURE_EXPORT")
 public class MeasureExport {
 	
 	private String id;
 	
 	private String simpleXML;
 	
-	private Blob codeList;
+	private  Blob codeList;
 	
 	private Measure measure;
 
@@ -37,6 +50,10 @@ public class MeasureExport {
 	
 	private XmlProcessor humanReadableProcessor;
 
+	@Id
+	@GeneratedValue(generator="uuid")
+	@GenericGenerator(name="uuid", strategy = "uuid")
+	@Column(name = "MEASURE_EXPORT_ID", unique = true, nullable = false, length = 64)
 	public String getId() {
 		return id;
 	}
@@ -45,7 +62,7 @@ public class MeasureExport {
 		this.id = id;
 	}
 	
-
+	@Column(name = "SIMPLE_XML", nullable = false)
 	public String getSimpleXML() {
 		return simpleXML;
 	}
@@ -54,6 +71,8 @@ public class MeasureExport {
 		this.simpleXML = simpleXML;
 	}
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "MEASURE_ID", nullable = false)
 	public Measure getMeasure() {
 		return measure;
 	}
@@ -62,22 +81,26 @@ public class MeasureExport {
 		this.measure = measure;
 	}
 
+	@Transient
 	public byte[] getCodeListBarr() {
 		return toByteArray(codeList);
 	}
 
+	@Transient
 	public void setCodeListBarr(byte[] codeListBarr) {
 		this.codeList = Hibernate.getLobCreator(HibernateConf.getHibernateSession()).createBlob(codeListBarr);
 	}
 
   	public void setCodeList(Blob codeList) {  
 		  this.codeList = codeList; 
-	  } 
-
-  	public Blob getCodeList() {  
-		  return this.codeList; 
-	  } 
+	} 
   	
+  	@Column(name = "CODE_LIST")
+  	public  Blob getCodeList() {  
+		  return this.codeList; 
+	} 
+  	
+  	@Column(name = "HUMAN_READABLE")
 	public String getHumanReadable() {
 		return humanReadable;
 	}
@@ -86,6 +109,7 @@ public class MeasureExport {
 		this.humanReadable = humanReadable;
 	}
 
+	@Column(name = "HQMF")
 	public String getHqmf() {
 		return hqmf;
 	}
@@ -94,6 +118,7 @@ public class MeasureExport {
 		this.hqmf = hqmf;
 	}
 
+	@Column(name = "CQL")
 	public String getCql() {
 		return cql;
 	}
@@ -102,6 +127,7 @@ public class MeasureExport {
 		this.cql = cql;
 	}
 
+	@Column(name = "ELM")
 	public String getElm() {
 		return elm;
 	}
@@ -110,6 +136,7 @@ public class MeasureExport {
 		this.elm = elm;
 	}
 
+	@Column(name = "JSON")
 	public String getJson() {
 		return json;
 	}
@@ -160,6 +187,7 @@ public class MeasureExport {
 		  return baos.toByteArray();
 	}
 
+  	@Transient
 	public XmlProcessor getHQMFXmlProcessor() {
 		return hqmfXMLProcessor;
 	}
@@ -168,6 +196,7 @@ public class MeasureExport {
 		this.hqmfXMLProcessor = xmlProcessor;
 	}
 
+  	@Transient
 	public XmlProcessor getSimpleXMLProcessor() {
 		return simpleXMLProcessor;
 	}
@@ -176,6 +205,7 @@ public class MeasureExport {
 		this.simpleXMLProcessor = simpleXMLProcessor;
 	}
 
+  	@Transient
 	public XmlProcessor getHumanReadableProcessor() {
 		return humanReadableProcessor;
 	}

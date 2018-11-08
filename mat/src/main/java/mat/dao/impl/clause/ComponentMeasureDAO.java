@@ -6,13 +6,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
-import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.query.Query;
 
 import mat.dao.clause.ComponentMeasuresDAO;
 import mat.dao.search.GenericDAO;
-import mat.hibernate.HibernateConf;
 import mat.model.clause.ComponentMeasure;
 
 public class ComponentMeasureDAO extends GenericDAO<ComponentMeasure, String> implements ComponentMeasuresDAO{
@@ -28,41 +26,27 @@ public class ComponentMeasureDAO extends GenericDAO<ComponentMeasure, String> im
 	
 	@Override
 	public void deleteComponentMeasures(List<ComponentMeasure> componentMeasuresToDelete) {
-		Transaction tx = null;
-		try (Session session = HibernateConf.createHibernateSession();){
-			tx = session.beginTransaction();
+		try{
+			Session session = getSessionFactory().getCurrentSession();
 			for(ComponentMeasure component : componentMeasuresToDelete) {
 				session.delete(component);
 			}
-			tx.commit();
-			
 		} catch (Exception e) {
 			logger.error("Error deleting component measures: " + e);
-			if (tx != null) {
-				tx.rollback();
-			}
 		}
 	}
 
 	@Override
 	public void updateComponentMeasures(String measureId, List<ComponentMeasure> componentMeasuresList) {
 		String hql = "DELETE from mat.model.clause.ComponentMeasure where compositeMeasure.id = :compositeMeasureId";
-		Transaction tx = null;
-		try (Session session = HibernateConf.createHibernateSession();){
-			
+		try {
+			Session session = getSessionFactory().getCurrentSession();
 			Query<?> query = session.createQuery(hql);
 			query.setParameter("compositeMeasureId", measureId);
-			
-			tx = session.beginTransaction();
 			query.executeUpdate();			
 			saveComponentMeasures(componentMeasuresList);			
-			tx.commit();
-			
 		} catch (Exception e) {
 			logger.error("Error updating component measures: " + e);
-			if (tx != null) {
-				tx.rollback();
-			}
 		}
 		
 	}

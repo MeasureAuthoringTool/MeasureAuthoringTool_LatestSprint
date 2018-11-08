@@ -2,15 +2,16 @@ package mat.dao.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-import mat.dao.search.GenericDAO;
-import mat.model.Organization;
+
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
-import org.hibernate.Transaction;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+
+import mat.dao.search.GenericDAO;
+import mat.model.Organization;
 
 /** The Class OrganizationDAO. */
 public class OrganizationDAO extends GenericDAO<Organization, Long> implements
@@ -87,17 +88,12 @@ mat.dao.OrganizationDAO {
 	@Override
 	public void saveOrganization(Organization entity) {
 		Session session = null;
-		Transaction transaction = null;
 		try {
-			session = getSessionFactory().openSession();
-			transaction = session.beginTransaction();
+			session = getSessionFactory().getCurrentSession();
 			session.save(entity);
-			transaction.commit();
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			rollbackUncommitted(transaction);
-			closeSession(session);
 		}
 	}
 	
@@ -128,17 +124,12 @@ mat.dao.OrganizationDAO {
 	@Override
 	public void updateOrganization(Organization organization) {
 		Session session = null;
-		Transaction transaction = null;
 		try {
-			session = getSessionFactory().openSession();
-			transaction = session.beginTransaction();
+			session = getSessionFactory().getCurrentSession();
 			session.update(organization);
-			transaction.commit();
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			rollbackUncommitted(transaction);
-			closeSession(session);
 		}
 	}
 	
