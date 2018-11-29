@@ -30,32 +30,20 @@ import mat.shared.StringUtility;
  * The Class DeleteConfirmDialogBox.
  */
 public class DeleteConfirmDialogBox {
-
-	/** The confirm button. */
 	private  Button confirmButton;
-
-	/** The password entered. */
 	private  String passwordEntered;
-	
 	private  Modal panel;
-	
-	FocusPanel focusPanel = new FocusPanel();
-	
+	private FocusPanel focusPanel = new FocusPanel();
 	private ChangePasswordWidget changePasswordWidget = new ChangePasswordWidget();
+	private ErrorMessageAlert messageAlert;
 	
-	/**
-	 * showDeletionConfimationDialog.
-	 *
-	 * @param message
-	 *            the message
-	 */
 	public void showDeletionConfimationDialog(String message) {
 		focusPanel.clear();
 	    panel = new Modal();
 	    confirmButton = new Button("Confirm");
 	    passwordEntered = "";
 		ModalBody modalBody = new ModalBody();
-		ErrorMessageAlert messageAlert = new ErrorMessageAlert();
+		messageAlert = new ErrorMessageAlert();
 
 		modalBody.clear();
 		messageAlert.clear();
@@ -78,12 +66,12 @@ public class DeleteConfirmDialogBox {
 		VerticalPanel passwordPanel = new VerticalPanel();
 		passwordPanel.getElement().setId("passwordPanel_VerticalPanel");
 		HTML passwordText = new HTML(
-				"<h4>To confirm deletion enter your password below:<h4>");
+				"<h4>To confirm deletion, enter your password below:<h4>");
 		
 		
 		changePasswordWidget.getPassword().setId("password_PasswordTextBox");
 		changePasswordWidget.getPassword().setPlaceholder("Enter Password");
-		changePasswordWidget.getPassword().setTitle( message + " To confirm deletion enter your password. Required");
+		changePasswordWidget.getPassword().setTitle( message + " To confirm deletion, enter your password. Required");
 		changePasswordWidget.getPassword().setFocus(true);
 		HorizontalPanel hp = new HorizontalPanel();
 		hp.getElement().setId("hp_HorizontalPanel");
@@ -114,7 +102,6 @@ public class DeleteConfirmDialogBox {
 
 		confirmButton.setType(ButtonType.PRIMARY);
 		confirmButton.setSize(ButtonSize.DEFAULT);
-		confirmButton.setDataDismiss(ButtonDismiss.MODAL);
 		confirmButton.setEnabled(false);
 
 		modalFooter.add(confirmButton);
@@ -129,45 +116,29 @@ public class DeleteConfirmDialogBox {
 		panel.getElement().focus();
 		panel.show();
 	}
+	
+	public void closeDialogBox() {
+		panel.hide();
+	}
 
-	/**
-	 * Gets the confirm button.
-	 *
-	 * @return the confirm button
-	 */
 	public Button getConfirmButton() {
 		return confirmButton;
 	}
 
-	/**
-	 * Gets the password entered.
-	 *
-	 * @return the password entered
-	 */
 	public  String getPasswordEntered() {
 		return passwordEntered;
 	}
 
-	/**
-	 * Sets the password entered.
-	 *
-	 * @param passwordEntered the new password entered
-	 */
 	public  void setPasswordEntered(String passwordEntered) {
 		this.passwordEntered = passwordEntered;
-	}
-
-	/**
-	 * Gets the confirmbutton.
-	 *
-	 * @return the confirmbutton
-	 */
-	public  Button getConfirmbutton() {
-		return confirmButton;
 	}
 
 	public Input getPassword() {
 		return changePasswordWidget.getPassword();
 	}
-
+	
+	public void setMessage(String message) {
+		messageAlert.clear();
+		messageAlert.createAlert(message);
+	}
 }

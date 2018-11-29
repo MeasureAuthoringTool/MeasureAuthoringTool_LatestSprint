@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -157,11 +156,10 @@ import mat.shared.MeasureSearchModel;
 import mat.shared.SaveUpdateCQLResult;
 import mat.shared.UUIDUtilClient;
 import mat.shared.cql.error.InvalidLibraryException;
+import mat.shared.error.AuthenticationException;
+import mat.shared.error.measure.DeleteMeasureException;
 import mat.shared.model.util.MeasureDetailsUtil;
 
-/**
- * The Class MeasureLibraryServiceImpl.
- */
 @Service
 public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 
@@ -273,7 +271,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	
 	@Autowired
 	private ComponentMeasuresDAO componentMeasuresDAO;
-
+	
+	@Autowired
+	private LoginServiceImpl loginService; 
+	
 	@Override
 	public final String appendAndSaveNode(final MeasureXmlModel measureXmlModel, final String nodeName) {
 		String result = "";
@@ -293,7 +294,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		logger.info("Inside checkAndDeleteSubTree Method for measure Id " + measureId);
 		MeasureXmlModel xmlModel = measurePackageService.getMeasureXmlForMeasure(measureId);
 		HashMap<String, String> removeUUIDMap = new HashMap<String, String>();
-		if (MatContextServiceUtil.get().isCurrentMeasureEditable(getMeasureDAO(), measureId)) {
+		if (MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, measureId)) {
 			if (xmlModel != null && StringUtils.isNotBlank(xmlModel.getXml())) {
 				XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
 				try {
@@ -696,7 +697,6 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	 * @param clonedMeasureId
 	 *            the cloned measure id
 	 */
-	@SuppressWarnings("deprecation")
 	@Override
 	public final void cloneMeasureXml(final boolean creatingDraft, final String oldMeasureId,
 			final String clonedMeasureId) {
@@ -1125,7 +1125,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			final boolean isSuperUser, final MeasureShareDTO dto) {
 		boolean isOwner = currentUserId.equals(dto.getOwnerUserId());
 		ManageMeasureSearchModel.Result detail = new ManageMeasureSearchModel.Result();
-		Measure measure = getMeasureDAO().find(dto.getMeasureId());
+		Measure measure = measureDAO.find(dto.getMeasureId());
 		detail.setName(dto.getMeasureName());
 		detail.setShortName(dto.getShortName());
 		detail.setScoringType(dto.getScoringType());
@@ -1319,7 +1319,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	}
 	
 	private ManageMeasureSearchModel.Result buildSearchModelResultObjectFromMeasureId(String measureId){
-		Measure measure = getMeasureDAO().find(measureId);
+		Measure measure = measureDAO.find(measureId);
 		ManageMeasureSearchModel.Result detail = new ManageMeasureSearchModel.Result();
 		detail.setName(measure.getDescription());
 		detail.setShortName(measure.getaBBRName());
@@ -1338,7 +1338,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		detail.setOwnerEmailAddress(measure.getOwner().getEmailAddress());
 		detail.setMeasureSetId(measure.getMeasureSet().getId());
 		detail.setScoringType(measure.getMeasureScoring());
-		boolean isLocked = getMeasureDAO().isMeasureLocked(measure.getId());
+		boolean isLocked = measureDAO.isMeasureLocked(measure.getId());
 		detail.setMeasureLocked(isLocked);
 		detail.setEditable(MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, measure.getId()));
 		detail.setPatientBased(measure.getPatientBased());
@@ -1648,7 +1648,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				for (int i = 0; i < nodeList.getLength(); i++) {
 					Node newNode = nodeList.item(i);
 					String id = newNode.getAttributes().getNamedItem(ID).getNodeValue();
-					boolean isDeleted = getMeasureDAO().getMeasure(id);
+					boolean isDeleted = measureDAO.getMeasure(id);
 					if (!isDeleted) {
 						componentMeasureParentNode.removeChild(newNode);
 					}
@@ -1660,14 +1660,6 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 	}
 
-	/**
-	 * Gets the measure dao.
-	 * 
-	 * @return the measure dao
-	 */
-	private MeasureDAO getMeasureDAO() {
-		return ((MeasureDAO) context.getBean("measureDAO"));
-	}
 
 	/**
 	 * Gets the measure xml dao.
@@ -2079,9 +2071,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	
 
 	@Override
+	@Deprecated
 	public final void saveAndDeleteMeasure(final String measureID, String loginUserId) {
-		logger.info("MeasureLibraryServiceImpl: saveAndDeleteMeasure start : measureId:: " + measureID);
-		MeasureDAO measureDAO = getMeasureDAO();
 		Measure m = measureDAO.find(measureID);
 		SecurityContext sc = SecurityContextHolder.getContext();
 		MatUserDetails details = (MatUserDetails) sc.getAuthentication().getDetails();
@@ -2100,8 +2091,39 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				logger.info("Measure not deleted.Something went wrong for measure Id :: " + measureID);
 			}
 		}
+	}
+	
+	public void deleteMeasure(String measureId, String loggedInUserId, String password) throws DeleteMeasureException, AuthenticationException {
+		logger.info("Measure Deletion Started for measure Id :: " + measureId);		
+		boolean isValidPassword = loginService.isValidPassword(loggedInUserId, password);
+		if(!isValidPassword) {
+			logger.error("Failed to delete measure: " + MatContext.get().getMessageDelegate().getMeasureDeletionInvalidPwd());
+			throw new AuthenticationException(MatContext.get().getMessageDelegate().getMeasureDeletionInvalidPwd());
+		}
+		
+		GenericResult isUsedAsComponentMeasureResult = checkIfMeasureIsUsedAsComponentMeasure(measureId);
+		if(!isUsedAsComponentMeasureResult.isSuccess()) {
+			logger.error("Failed to delete measure: "  + isUsedAsComponentMeasureResult.getMessages().get(0));
+			throw new DeleteMeasureException(isUsedAsComponentMeasureResult.getMessages().get(0));
+		}
+		
+		deleteMeasure(measureId);
+		logger.info("Measure Deleted Successfully: " + measureId);
+	}
 
-		logger.info("MeasureLibraryServiceImpl: saveAndDeleteMeasure End : measureId:: " + measureID);
+	private void deleteMeasure(String measureId) {
+		Measure m = measureDAO.find(measureId);
+		SecurityContext sc = SecurityContextHolder.getContext();
+		MatUserDetails details = (MatUserDetails) sc.getAuthentication().getDetails();
+		if (m.getOwner().getId().equalsIgnoreCase(details.getId())) {
+			if (m.getIsCompositeMeasure()) {
+				measurePackageService.updateComponentMeasures(m.getId(), new ArrayList<>());
+			}
+			m.setOwner(null);
+			m.setLastModifiedBy(null);
+			m.setLockedUser(null);
+			measureDAO.delete(m);
+		}
 	}
 
 	private void removeUnusedLibraries(MeasureXmlModel measureXmlModel, SaveUpdateCQLResult cqlResult, Measure measure) {
@@ -2141,18 +2163,14 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				}
 			}
 
-			List<ComponentMeasure> componentsToDelete = new ArrayList<>(); 
 			for (int i = 0; i < componentMeasureNodeList.getLength(); i++) {
 				Node current = componentMeasureNodeList.item(i);
 				String id = current.getAttributes().getNamedItem("id").getNodeValue();
 				if (!usedIncludedLibraryIds.contains(id)) {
 					current.getParentNode().removeChild(current);
-					Optional<ComponentMeasure> component = measure.getComponentMeasures().stream().filter(m -> m.getComponentMeasure().getId().equals(id)).findFirst(); 
-					componentsToDelete.add(component.get());
+					componentMeasuresDAO.delete(String.valueOf((measure.getComponentMeasures().stream().filter(m -> m.getComponentMeasure().getId().equals(id)).findFirst().get().getId())));
 				}
 			}
-			
-			measurePackageService.deleteComponentMeasure(componentsToDelete);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -2167,7 +2185,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		Measure m = measurePackageService.getById(measureId);
 		logger.info("Measure Loaded for: " + measureId);
 
-		boolean isMeasureVersionable = MatContextServiceUtil.get().isCurrentMeasureEditable(getMeasureDAO(), measureId);
+		boolean isMeasureVersionable = MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, measureId);
 		if (!isMeasureVersionable) {
 			SaveMeasureResult saveMeasureResult = new SaveMeasureResult();
 			return returnFailureReason(saveMeasureResult, SaveMeasureResult.INVALID_DATA);
@@ -2398,7 +2416,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 
 		MeasureXmlModel xmlModel = measurePackageService.getMeasureXmlForMeasure(measureXmlModel.getMeasureId());
 		if ((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml())) {
-			if (MatContextServiceUtil.get().isCurrentMeasureEditable(getMeasureDAO(), measureXmlModel.getMeasureId())) {
+			if (MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, measureXmlModel.getMeasureId())) {
 				XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
 				try {
 					String scoringTypeBeforeNewXml = (String) xPath.evaluate("/measure/measureDetails/scoring/@id",
@@ -2644,7 +2662,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		result.setData(detailList);
 		result.setStartIndex(startIndex);
-		result.setResultsTotal(userService.countSearchResultsNonAdmin(searchText));
+		result.setResultsTotal(searchResults.size());
 
 		return result;
 
@@ -3410,7 +3428,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			String componentId = measure.getId();
 
 			CQLLibrary library = cqlLibraryDAO.getLibraryByMeasureId(componentId);
-
+			String version = library.getVersionNumber() + ".000";
+			
 			String libraryName = library.getName();
 			String data = "";
 			try {
@@ -3422,8 +3441,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			CQLModel libraryCQLModel = CQLUtilityClass.getCQLModelFromXML(data);
 			String libraryContent = CQLUtilityClass.getCqlString(libraryCQLModel, "");
 
-			ComponentMeasureTabObject o = new ComponentMeasureTabObject(measureName, alias, libraryName, ownerName,
-					libraryContent, componentId);
+			ComponentMeasureTabObject o = new ComponentMeasureTabObject(measureName, alias, libraryName, version, ownerName, libraryContent, componentId);
 			componentMeasureInformationList.add(o);
 		}
 
@@ -4664,7 +4682,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 
 		List<String> message = new ArrayList<String>();
 		ValidateMeasureResult result = new ValidateMeasureResult();
-		if (MatContextServiceUtil.get().isCurrentMeasureEditable(getMeasureDAO(), model.getId())) {
+		if (MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, model.getId())) {
 			MeasureXmlModel xmlModel = measurePackageService.getMeasureXmlForMeasure(model.getId());
 
 			if (xmlModel != null && StringUtils.isNotBlank(xmlModel.getXml())) {
@@ -4942,7 +4960,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		Map<User, List<Measure>> map = new HashMap<User, List<Measure>>();
 		List<User> nonAdminUserList = userService.getAllNonAdminActiveUsers();
 		for (User user : nonAdminUserList) {
-			List<Measure> measureList = getMeasureDAO().getMeasureListForMeasureOwner(user);
+			List<Measure> measureList = measureDAO.getMeasureListForMeasureOwner(user);
 			if ((measureList != null) && (measureList.size() > 0)) {
 				map.put(user, measureList);
 			}

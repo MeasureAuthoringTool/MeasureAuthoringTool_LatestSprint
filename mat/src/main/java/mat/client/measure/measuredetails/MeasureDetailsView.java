@@ -1,34 +1,60 @@
 package mat.client.measure.measuredetails;
 
-import org.gwtbootstrap3.client.ui.gwt.FlowPanel;
+import org.gwtbootstrap3.client.ui.Button;
+import org.gwtbootstrap3.client.ui.ButtonToolBar;
+import org.gwtbootstrap3.client.ui.constants.Pull;
+import org.gwtbootstrap3.extras.summernote.client.event.SummernoteKeyUpEvent;
 
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
+import mat.client.buttons.DeleteButton;
+import mat.client.buttons.SaveButton;
+import mat.client.measure.measuredetails.components.MeasureDetailsComponentModel;
+import mat.client.measure.measuredetails.components.MeasureDetailsModel;
 import mat.client.measure.measuredetails.navigation.MeasureDetailsNavigation;
 import mat.client.measure.measuredetails.view.ComponentDetailView;
 import mat.client.measure.measuredetails.view.MeasureDetailsViewFactory;
-import mat.client.shared.MeasureDetailsConstants.MeasureDetailsItems;
+import mat.client.shared.ConfirmationDialogBox;
+import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.MatDetailItem;
+import mat.client.shared.MeasureDetailsConstants.MeasureDetailsItems;
+import mat.client.shared.MessageAlert;
 import mat.client.shared.SpacerWidget;
+import mat.client.util.RichTextEditor;
 
 public class MeasureDetailsView {
-	private FlowPanel mainPanel = new FlowPanel();
-	private HorizontalPanel contentPanel = new HorizontalPanel();
+	private VerticalPanel mainPanel = new VerticalPanel();
+	private HorizontalPanel mainContentPanel = new HorizontalPanel();
 	private HorizontalPanel headingPanel = new HorizontalPanel();
-	private VerticalPanel componentPanel = new VerticalPanel();
+	private HorizontalPanel saveButtonPanel = new HorizontalPanel();
+	private VerticalPanel widgetComponentPanel = new VerticalPanel();
+	private ErrorMessageAlert errorAlert = new ErrorMessageAlert();
 	private MatDetailItem currentMeasureDetail;
 	private ComponentDetailView componentDetailView;
+	private boolean isMeasureEditable;
+	//TODO handle save...
+	private SaveButton saveButton = new SaveButton("Measure Details");
+	private DeleteButton deleteMeasureButton = new DeleteButton("Measure Details", "Delete Measure");
+	private MeasureDetailsModel measureDetailsComponent;
+	private RichTextEditor currentRichTextEditor;
 	
-	public MeasureDetailsView(MeasureDetailsItems measureDetail, MeasureDetailsNavigation navigationPanel) {
+	
+	public MeasureDetailsView(MeasureDetailsModel measureDetailsComponent, MeasureDetailsItems measureDetail, MeasureDetailsNavigation navigationPanel) {
 		currentMeasureDetail = measureDetail;
-		contentPanel.add(navigationPanel.getWidget());
-		buildDetailView(currentMeasureDetail);
-		contentPanel.setStyleName("contentPanel");
-		contentPanel.getElement().setId("measureDetailsView_ContentPanel");
-		mainPanel.add(contentPanel);
+		this.measureDetailsComponent = measureDetailsComponent;
+		mainPanel.add(errorAlert);
+		buildMeasureDetailsButtonPanel();
+
+		mainContentPanel.add(navigationPanel.getWidget());
+		mainContentPanel.setWidth("100%");
+		widgetComponentPanel = buildDetailView(currentMeasureDetail);
+		mainContentPanel.add(widgetComponentPanel);
+		mainContentPanel.getElement().setId("measureDetailsView_ContentPanel");
+		mainPanel.add(mainContentPanel);
+		mainPanel.setStyleName("contentPanel");
 	}
 
 	private void buildHeading() {
@@ -39,27 +65,109 @@ public class MeasureDetailsView {
 		headingHTML.setTitle(currentMeasureDetail.displayName());
 		headingPanel.add(headingHTML);
 		headingPanel.getElement().setId("measureDetailsView_HeadingPanel");
-		componentPanel.add(headingPanel);
-		componentPanel.add(new SpacerWidget());
+		widgetComponentPanel.add(headingPanel);
+		widgetComponentPanel.add(new SpacerWidget());
 	}
 	
-	public void buildDetailView(MatDetailItem currentMeasureDetail) {
+	private void buildSavePanel(MatDetailItem currentMeasureDetail) {
+		if(currentMeasureDetail != MeasureDetailsItems.POPULATIONS) {
+			widgetComponentPanel.add(new SpacerWidget());
+			saveButtonPanel.add(saveButton);
+			saveButtonPanel.setWidth("100%");
+			saveButton.setPull(Pull.RIGHT);
+			saveButton.setMarginRight(30);
+			widgetComponentPanel.add(saveButtonPanel);
+		}
+	}
+	
+	private void buildMeasureDetailsButtonPanel() {
+		mainPanel.add(new SpacerWidget());
+		HorizontalPanel panel = new HorizontalPanel();
+		ButtonToolBar toolbar = new ButtonToolBar();	
+		toolbar.add(deleteMeasureButton);
+		panel.add(toolbar);
+		mainPanel.add(panel);
+		mainPanel.add(new SpacerWidget());
+	}
+	
+	public VerticalPanel buildDetailView(MatDetailItem currentMeasureDetail) {
 		this.currentMeasureDetail = currentMeasureDetail;
-		componentPanel.clear();
+		widgetComponentPanel.clear();
 		buildHeading();
-		componentDetailView = MeasureDetailsViewFactory.get().getMeasureDetailComponentView(currentMeasureDetail);
-		componentPanel.add(componentDetailView.getWidget());
-		componentPanel.setWidth("700px");
-		componentPanel.setStyleName("marginLeft15px");
-		componentPanel.getElement().setId("measureDetailsView_ComponentPanel");
-		contentPanel.add(componentPanel);
+		componentDetailView = MeasureDetailsViewFactory.get().getMeasureDetailComponentView(measureDetailsComponent, currentMeasureDetail);
+		currentRichTextEditor = componentDetailView.getRichTextEditor();
+		if(currentRichTextEditor != null) {
+			currentRichTextEditor.addSummernoteKeyUpHandler(keyUpEvent -> handleRichTextTabOut(keyUpEvent));
+		}
+		widgetComponentPanel.add(componentDetailView.getWidget());
+		widgetComponentPanel.setWidth("100%");
+		widgetComponentPanel.setStyleName("marginLeft15px");
+		widgetComponentPanel.getElement().setId("measureDetailsView_ComponentPanel");
+		buildSavePanel(currentMeasureDetail);
+		setReadOnly(isMeasureEditable);
+		return widgetComponentPanel;
+	}
+	private void handleRichTextTabOut(SummernoteKeyUpEvent keyUpEvent) {
+		if(keyUpEvent.getNativeEvent().getCtrlKey() && keyUpEvent.getNativeEvent().getShiftKey() && keyUpEvent.getNativeEvent().getKeyCode() == 9) {
+            keyUpEvent.getNativeEvent().preventDefault();
+            //TODO set focus on header
+        }
+        else if(keyUpEvent.getNativeEvent().getCtrlKey() && keyUpEvent.getNativeEvent().getKeyCode() == 9) {
+            keyUpEvent.getNativeEvent().preventDefault();
+            saveButton.setFocus(true);
+        }
+	}
+	
+	public VerticalPanel buildDetailView(MeasureDetailsModel measureDetailsComponent, MatDetailItem currentMeasureDetail, MeasureDetailsNavigation navigationPanel) {
+		this.currentMeasureDetail = currentMeasureDetail;
+		this.measureDetailsComponent = measureDetailsComponent;
+		return buildDetailView(currentMeasureDetail);
 	}
 	
 	public Widget getWidget() {
 		return mainPanel;
 	}
 	
+	public Button getDeleteMeasureButton() {
+		return this.deleteMeasureButton;
+	}
+	
 	public boolean isValid() {
-		return componentDetailView.isValid();
+		return componentDetailView.isComplete();
+	}
+	
+	public MessageAlert getErrorMessageAlert() {
+		return errorAlert;
+	}
+
+	public void setReadOnly(boolean isReadOnly) {
+		boolean enabled = !isReadOnly;
+		saveButton.setEnabled(enabled);
+		deleteMeasureButton.setEnabled(enabled);
+		componentDetailView.setReadOnly(isReadOnly);
+		isMeasureEditable = isReadOnly;
+	}
+	
+	public MeasureDetailState getState() {
+		return componentDetailView.getState();
+	}
+	
+	public ConfirmationDialogBox getSaveConfirmation() {
+		return componentDetailView.getSaveConfirmation();
+	}
+	
+	public void resetForm() {
+		componentDetailView.resetForm();
+	}
+	
+	public MeasureDetailsComponentModel getMeasureDetailsComponentModel() {
+		return componentDetailView.getMeasureDetailsComponentModel();
+	}
+	public SaveButton getSaveButton() {
+		return saveButton;
+	}
+
+	public void setSaveButton(SaveButton saveButton) {
+		this.saveButton = saveButton;
 	}
 }

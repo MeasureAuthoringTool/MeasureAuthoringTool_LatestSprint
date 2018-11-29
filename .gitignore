@@ -5,6 +5,7 @@ mat/qa_domain.xml
 mat/staging_domain.xml
 mat/war/velocity.log
 mat/MAT_2Factor_notes.txt
+mat/src/main/resources/vip_cert.p12
 mat/war/vip_cert.p12
 mat/war/prod_vip_cert_mat.p12
 mat/src/main/java/vip_cert.p12

@@ -8,10 +8,6 @@ import mat.model.User;
 import mat.server.model.MatUserDetails;
 import org.springframework.security.core.userdetails.UserDetails;
 
-// TODO: Auto-generated Javadoc
-/**
- * The Interface UserDAO.
- */
 public interface UserDAO extends IDAO<User, String> {
 	
 	/**
@@ -29,15 +25,6 @@ public interface UserDAO extends IDAO<User, String> {
 	 * @return the list
 	 */
 	public List<User> searchForNonTerminatedUser();
-	
-	/**
-	 * Count search results.
-	 * 
-	 * @param text
-	 *            the text
-	 * @return the int
-	 */
-	public int countSearchResults(String text);
 	
 	/**
 	 * User exists.
@@ -136,15 +123,6 @@ public interface UserDAO extends IDAO<User, String> {
 	 * @return the list
 	 */
 	public List<User> searchNonAdminUsers(String orgId, int i, int numResults);
-	
-	/**
-	 * Count search results non admin.
-	 * 
-	 * @param text
-	 *            the text
-	 * @return the int
-	 */
-	public int countSearchResultsNonAdmin(String text);
 	
 	/**
 	 * Gets the random security question.

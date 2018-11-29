@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.shared.HandlerManager;
@@ -17,9 +18,11 @@ import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.rpc.IsSerializable;
+import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.TabPanel;
 import com.google.gwt.user.client.ui.Widget;
 
+import mat.DTO.CompositeMeasureScoreDTO;
 import mat.DTO.OperatorDTO;
 import mat.client.Enableable;
 import mat.client.admin.service.AdminService;
@@ -42,6 +45,7 @@ import mat.client.cqlconstant.service.CQLConstantService;
 import mat.client.cqlconstant.service.CQLConstantServiceAsync;
 import mat.client.event.CQLLibrarySelectedEvent;
 import mat.client.event.ForgottenPasswordEvent;
+import mat.client.event.MeasureEditEvent;
 import mat.client.event.MeasureSelectedEvent;
 import mat.client.login.LoginModel;
 import mat.client.login.service.LoginResult;
@@ -69,6 +73,7 @@ import mat.model.GlobalCopyPasteObject;
 import mat.model.cql.CQLModel;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.shared.CQLIdentifierObject;
+import mat.shared.CompositeMethodScoringConstant;
 import mat.shared.ConstantMessages;
 import mat.shared.SaveUpdateCQLResult;
 
@@ -597,7 +602,7 @@ public class MatContext implements IsSerializable {
 		Window.Location.replace(urlBuilder.buildString());
 	}
 	
-
+	
 	public void openURL(String html){
 		Window.open(html, "User_Guide", "");
 		
@@ -840,6 +845,10 @@ public class MatContext implements IsSerializable {
 		return item.substring(0,idx).trim();
 	}
 	
+	public void fireMeasureEditEvent() {
+		MeasureEditEvent evt = new MeasureEditEvent();
+		MatContext.get().getEventBus().fireEvent(evt);
+	}
 
 	public void recordTransactionEvent(String primaryId, String secondaryId, String activityType, String additionalInfo, int logLevel){
 		String userId = getLoggedinUserId();
@@ -1186,12 +1195,16 @@ public class MatContext implements IsSerializable {
 	
 	/**
 	 * Checks if is measure is CQL Measure depending 
-	 * on Measure release version.
+	 * on Measure release version. If the releaseVersion is null, then it is not a CQL measure. 
 	 *
 	 * @param releaseVersion the release version
-	 * @return true, if is CQL measure
+	 * @return true, if is CQL measure, false if it is not a cql measure or the release version is null
 	 */
 	public boolean isCQLMeasure(String releaseVersion) {
+		
+		if(releaseVersion == null) {
+			return false; 
+		}
 		
 		String str[] = releaseVersion.replace("v", "").split("\\.");
 		int versionInt = Integer.parseInt(str[0]);
@@ -1418,6 +1431,39 @@ public class MatContext implements IsSerializable {
 	
 	public String getBonnieLink() {
 		return bonnieLink;
+	}
+
+	public void createSelectionMap(List<? extends HasListBox> result) {
+		List<? extends HasListBox> defaultList = result;	
+		List<? extends HasListBox> proportionRatioList = defaultList.stream().filter(x -> "Proportion".equals(x.getItem()) || "Ratio".equals(x.getItem())).collect(Collectors.toList());
+		List<? extends HasListBox> continuousVariableList = defaultList.stream().filter(x -> "Continuous Variable".equals(x.getItem())).collect(Collectors.toList());
+		setSelectionMap(new HashMap<String, List<? extends HasListBox>>(){
+			private static final long serialVersionUID = -8329823017052579496L;
+			{
+				put(MatContext.PLEASE_SELECT, defaultList);
+				put(CompositeMethodScoringConstant.ALL_OR_NOTHING, proportionRatioList);
+				put(CompositeMethodScoringConstant.OPPORTUNITY, proportionRatioList);
+				put(CompositeMethodScoringConstant.PATIENT_LEVEL_LINEAR, continuousVariableList);
+			}
+		});
+	}
+	
+	public List<CompositeMeasureScoreDTO> buildCompositeScoringChoiceList(){
+		List<CompositeMeasureScoreDTO> compositeChoices = new ArrayList<>();
+		compositeChoices.add(new CompositeMeasureScoreDTO("1", CompositeMethodScoringConstant.ALL_OR_NOTHING));
+		compositeChoices.add(new CompositeMeasureScoreDTO("2", CompositeMethodScoringConstant.OPPORTUNITY));
+		compositeChoices.add(new CompositeMeasureScoreDTO("3", CompositeMethodScoringConstant.PATIENT_LEVEL_LINEAR));
+		return compositeChoices;
+	}
+	
+	public void setListBoxItems(ListBox listBox, List<? extends HasListBox> itemList, String defaultOption){
+		listBox.clear();
+		listBox.addItem(defaultOption,"");
+		if(itemList != null){
+			for(HasListBox listBoxContent : itemList){
+				listBox.addItem(listBoxContent.getItem(), listBoxContent.getItem());
+			}
+		}
 	}
 	
 }

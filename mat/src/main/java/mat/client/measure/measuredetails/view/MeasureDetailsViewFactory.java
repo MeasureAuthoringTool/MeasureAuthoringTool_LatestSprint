@@ -1,5 +1,12 @@
 package mat.client.measure.measuredetails.view;
 
+import java.util.List;
+
+import mat.DTO.CompositeMeasureScoreDTO;
+import mat.client.measure.measuredetails.components.GeneralInformationModel;
+import mat.client.measure.measuredetails.components.MeasureDetailsModel;
+import mat.client.measure.measuredetails.observers.GeneralMeasureInformationObserver;
+import mat.client.shared.MatContext;
 import mat.client.shared.MatDetailItem;
 import mat.client.shared.MeasureDetailsConstants;
 import mat.client.shared.MeasureDetailsConstants.MeasureDetailsItems;
@@ -16,7 +23,7 @@ public class MeasureDetailsViewFactory {
 		return instance;
 	}
 
-	public ComponentDetailView getMeasureDetailComponentView(MatDetailItem currentMeasureDetail) {
+	public ComponentDetailView getMeasureDetailComponentView(MeasureDetailsModel measureDetailsComponent, MatDetailItem currentMeasureDetail) {
 		if(currentMeasureDetail instanceof MeasureDetailsConstants.MeasureDetailsItems) {
 			switch((MeasureDetailsItems) currentMeasureDetail) {
 			case COMPONENT_MEASURES:
@@ -59,7 +66,7 @@ public class MeasureDetailsViewFactory {
 				return new PopulationsView();
 			case GENERAL_MEASURE_INFORMATION:
 			default:
-				return new GeneralMeasureInformationView();
+				return buildGeneralMeasureInformationView(measureDetailsComponent.isComposite(), measureDetailsComponent.getGeneralInformation());
 			}
 		} else if ( currentMeasureDetail instanceof MeasureDetailsConstants.PopulationItems) {
 			switch((PopulationItems) currentMeasureDetail) {
@@ -81,10 +88,16 @@ public class MeasureDetailsViewFactory {
 				return new DenominatorExceptionsView();
 			case MEASURE_OBSERVATIONS:
 				return new MeasureObservationsView();
-			default:
-				return new GeneralMeasureInformationView();
 			}
 		}
-		return new GeneralMeasureInformationView();
+		return buildGeneralMeasureInformationView(measureDetailsComponent.isComposite(), measureDetailsComponent.getGeneralInformation());
+	}
+	
+	GeneralMeasureInformationView buildGeneralMeasureInformationView(boolean isComposite, GeneralInformationModel generalInformationModel) {
+		List<CompositeMeasureScoreDTO> compositeChoices = MatContext.get().buildCompositeScoringChoiceList();
+		GeneralMeasureInformationView generalInformationView = new GeneralMeasureInformationView(isComposite, generalInformationModel, compositeChoices);
+		GeneralMeasureInformationObserver observer = new GeneralMeasureInformationObserver(generalInformationView);
+		generalInformationView.setObserver(observer);
+		return generalInformationView;
 	}
 }

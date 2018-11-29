@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -37,10 +39,11 @@ import mat.server.humanreadable.cql.HumanReadableExpressionModel;
 import mat.server.humanreadable.cql.HumanReadableModel;
 import mat.server.humanreadable.cql.HumanReadablePopulationCriteriaModel;
 import mat.server.humanreadable.cql.HumanReadablePopulationModel;
+import mat.server.humanreadable.cql.HumanReadableTerminologyModel;
 import mat.server.humanreadable.cql.HumanReadableValuesetModel;
 import mat.server.humanreadable.qdm.HQMFHumanReadableGenerator;
 import mat.server.humanreadable.cql.CQLHumanReadableGenerator;
-import mat.server.util.CQLUtil.CQLArtifactHolder;
+import mat.server.util.CQLUtil.CQLArtifactHolder;	
 import mat.server.util.CQLUtil;
 import mat.server.util.ResourceLoader;
 import mat.server.util.XmlProcessor;
@@ -54,6 +57,12 @@ public class HumanReadableGenerator {
 	private final String CQLFUNCTION = "cqlfunction";
 
 	private final String CQLDEFINITION = "cqldefinition";
+	
+	private static final String[] POPULATION_NAME_ARRAY = {MatConstants.INITIAL_POPULATION,
+			MatConstants.DENOMINATOR, MatConstants.DENOMINATOR_EXCLUSIONS, MatConstants.NUMERATOR,
+			MatConstants.NUMERATOR_EXCLUSIONS, MatConstants.DENOMINATOR_EXCEPTIONS,
+			MatConstants.MEASURE_POPULATION, MatConstants.MEASURE_POPULATION_EXCLUSIONS, MatConstants.STRATUM ,
+			MatConstants.MEASURE_OBSERVATION_POPULATION};
 	
 	@Autowired CQLHumanReadableGenerator humanReadableGenerator; 
 	
@@ -116,6 +125,14 @@ public class HumanReadableGenerator {
 				model.setCodeTerminologyList(getCodeTerminology(processor));
 				model.setDefinitions(getDefinitions(cqlModel, processor, includedLibraryXmlProcessors, cqlResult, usedCQLArtifactHolder));
 				model.setFunctions(getFunctions(cqlModel, processor, includedLibraryXmlProcessors, cqlResult, usedCQLArtifactHolder));
+				
+				
+				List<HumanReadableTerminologyModel> valuesetAndCodeDataCriteriaList = new ArrayList<>(); 
+				valuesetAndCodeDataCriteriaList.addAll(model.getValuesetDataCriteriaList());
+				valuesetAndCodeDataCriteriaList.addAll(model.getCodeDataCriteriaList());
+				valuesetAndCodeDataCriteriaList.sort(Comparator.comparing(HumanReadableTerminologyModel::getDataCriteriaDisplay));				
+				model.setValuesetAndCodeDataCriteriaList(valuesetAndCodeDataCriteriaList);
+				
 				html = humanReadableGenerator.generate(model);
 			} catch (IOException | TemplateException | MappingException | MarshalException | ValidationException | XPathExpressionException e) {
 				e.printStackTrace();
@@ -345,7 +362,7 @@ public class HumanReadableGenerator {
 	}
 	
 	private List<HumanReadableValuesetModel> getValuesetTerminology(XmlProcessor processor) throws XPathExpressionException {
-		List<HumanReadableValuesetModel> valuesets = new ArrayList<>(); 
+		Set<HumanReadableValuesetModel> valuesets = new HashSet<>(); 
 		NodeList elements = processor.findNodeList(processor.getOriginalDoc(), "/measure/elementLookUp/qdm[@code=\"false\"]");
 		
 		for(int i = 0; i < elements.getLength(); i++) {
@@ -357,12 +374,13 @@ public class HumanReadableGenerator {
 			valuesets.add(valueset);
 		}
 		
-		valuesets.sort(Comparator.comparing(HumanReadableValuesetModel::getTerminologyDisplay));
-		return valuesets;
+		List<HumanReadableValuesetModel> valuesetList =  new ArrayList<>(valuesets);
+		valuesetList.sort(Comparator.comparing(HumanReadableValuesetModel::getTerminologyDisplay));
+		return valuesetList;
 	}
 	
 	private List<HumanReadableCodeModel> getCodeTerminology(XmlProcessor processor) throws XPathExpressionException {
-		List<HumanReadableCodeModel> codes = new ArrayList<>(); 
+		Set<HumanReadableCodeModel> codes = new HashSet<>(); 
 		NodeList elements = processor.findNodeList(processor.getOriginalDoc(), "/measure/elementLookUp/qdm[@code=\"true\"]");
 		for(int i = 0; i < elements.getLength(); i++) {
 			Node current = elements.item(i);
@@ -385,8 +403,9 @@ public class HumanReadableGenerator {
 			codes.add(model);
 		}  
 		
-		codes.sort(Comparator.comparing(HumanReadableCodeModel::getTerminologyDisplay));
-		return codes; 
+		List<HumanReadableCodeModel> codesList =  new ArrayList<>(codes);
+		codesList.sort(Comparator.comparing(HumanReadableCodeModel::getTerminologyDisplay));
+		return codesList; 
 	}
 
 	private HumanReadableExpressionModel getExpressionModel(XmlProcessor processor, Node sde)
@@ -416,9 +435,10 @@ public class HumanReadableGenerator {
 		List<HumanReadablePopulationCriteriaModel> groups = new ArrayList<>();
 		
 		NodeList groupNodes = processor.findNodeList(processor.getOriginalDoc(), "/measure/measureGrouping/group");
-		
 		for(int i = 0; i < groupNodes.getLength(); i++) {
 			Node group = groupNodes.item(i);
+			
+			int populationCriteriaNumber = Integer.parseInt(group.getAttributes().getNamedItem("sequence").getNodeValue());
 			
 			List<HumanReadablePopulationModel> populations = new ArrayList<>();
 			
@@ -429,13 +449,42 @@ public class HumanReadableGenerator {
 				populations.add(population);
 			}
 			
-			HumanReadablePopulationCriteriaModel populationCriteria = new HumanReadablePopulationCriteriaModel("Population Criteria " + (i + 1), populations);
+			populations = sortPopulations(populations); 
+			
+			String displayName = "Population Criteria " + populationCriteriaNumber;
+			HumanReadablePopulationCriteriaModel populationCriteria = new HumanReadablePopulationCriteriaModel(displayName, populations, populationCriteriaNumber);
 			groups.add(populationCriteria);
 		}
 		
+		
+		
+		groups.sort(Comparator.comparing(HumanReadablePopulationCriteriaModel::getSequence));
 		return groups; 
 	}
 	 
+	private List<HumanReadablePopulationModel> sortPopulations(List<HumanReadablePopulationModel> populations) {
+		List<HumanReadablePopulationModel> sortedPopulations = new ArrayList<>();  
+		
+		for(String populationType : POPULATION_NAME_ARRAY) {
+			sortedPopulations.addAll(getPopulationsByType(populationType, populations));
+		}
+		
+		return sortedPopulations;
+	}
+	
+	private List<HumanReadablePopulationModel> getPopulationsByType(String type, List<HumanReadablePopulationModel> populations) {		
+		List<HumanReadablePopulationModel> models = new ArrayList<>(); 
+		
+		
+		for(HumanReadablePopulationModel model : populations) {
+			if(type.equals(model.getType())) {
+				models.add(model);
+			}
+		}
+		
+		return models;
+	}
+
 	private String getPopulationNameByUUID(String uuid, XmlProcessor processor) throws XPathExpressionException {
 		Node population = processor.findNode(processor.getOriginalDoc(),"//clause[@uuid=\"" + uuid + "\"]");
 		String name = "";
@@ -511,6 +560,7 @@ public class HumanReadableGenerator {
 		}
 				
 		String populationName = getPopulationNameByUUID(populationNode.getAttributes().getNamedItem("uuid").getNodeValue(), processor);
+		String type = populationNode.getAttributes().getNamedItem("type").getNodeValue();
 		if(populationName.contains("Measure Observation")) {
 			
 			Node functionNode = null;
@@ -553,7 +603,7 @@ public class HumanReadableGenerator {
 			}
 		}
 		
-		HumanReadablePopulationModel population = new HumanReadablePopulationModel(populationName, logic, expressionName, expressionUUID, aggregation, associatedPopulationName, isInGroup);
+		HumanReadablePopulationModel population = new HumanReadablePopulationModel(populationName, logic, expressionName, expressionUUID, aggregation, associatedPopulationName, isInGroup, type);
 		return population;
 	}
 	

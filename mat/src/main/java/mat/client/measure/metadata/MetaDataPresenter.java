@@ -70,11 +70,14 @@ import mat.shared.StringUtility;
 /**
  * The Class MetaDataPresenter.
  */
+@Deprecated
 public class MetaDataPresenter  implements MatPresenter {
+	
 	
 	/**
 	 * The Interface MetaDataDetailDisplay.
 	 */
+	@Deprecated
 	public static interface MetaDataDetailDisplay {
 		
 		
@@ -914,6 +917,9 @@ public class MetaDataPresenter  implements MatPresenter {
 	/** The service. */
 	private MeasureServiceAsync service = MatContext.get().getMeasureService();
 	
+	private DeleteConfirmDialogBox dialogBox;
+
+	
 	/**
 	 * Instantiates a new meta data presenter.
 	 *
@@ -1260,12 +1266,13 @@ public class MetaDataPresenter  implements MatPresenter {
 	private ClickHandler buildDeleteClickHandler(MessageAlert errorMessageAlert) {
 		ClickHandler deleteClickHandler = new ClickHandler() {
 			
+
 			@Override
 			public void onClick(ClickEvent event) {
 				if(isMeasureDeletable()){
-					final DeleteConfirmDialogBox dialogBox = new DeleteConfirmDialogBox();
+					dialogBox = new DeleteConfirmDialogBox();
 					dialogBox.showDeletionConfimationDialog(MatContext.get().getMessageDelegate().getDELETE_MEASURE_WARNING_MESSAGE());
-					dialogBox.getConfirmbutton().addClickHandler(new ClickHandler() {
+					dialogBox.getConfirmButton().addClickHandler(new ClickHandler() {
 						
 						@Override
 						public void onClick(final ClickEvent event) {
@@ -1973,12 +1980,14 @@ public class MetaDataPresenter  implements MatPresenter {
 			
 			@Override
 			public void onSuccess(Boolean result) {
-				if (result) {
+				if(result) {
 					checkIfMeasureIsUsedAsAComponentMeasure(errorMessageAlert);
 				} else {
 					fireBackToMeasureLibraryEvent();
 					fireSuccessfullDeletionEvent(false, MatContext.get().getMessageDelegate().getMeasureDeletionInvalidPwd());
 				}
+				
+				dialogBox.closeDialogBox();
 			}
 		});
 	}
