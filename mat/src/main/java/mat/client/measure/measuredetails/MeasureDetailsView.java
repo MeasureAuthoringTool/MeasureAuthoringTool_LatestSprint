@@ -3,8 +3,9 @@ package mat.client.measure.measuredetails;
 import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.ButtonToolBar;
 import org.gwtbootstrap3.client.ui.constants.Pull;
-import org.gwtbootstrap3.extras.summernote.client.event.SummernoteKeyUpEvent;
 
+import com.google.gwt.event.dom.client.KeyUpEvent;
+import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
@@ -12,18 +13,18 @@ import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.buttons.DeleteButton;
 import mat.client.buttons.SaveButton;
-import mat.client.measure.measuredetails.components.MeasureDetailsComponentModel;
-import mat.client.measure.measuredetails.components.MeasureDetailsModel;
 import mat.client.measure.measuredetails.navigation.MeasureDetailsNavigation;
-import mat.client.measure.measuredetails.view.ComponentDetailView;
-import mat.client.measure.measuredetails.view.MeasureDetailsViewFactory;
+import mat.client.measure.measuredetails.views.MeasureDetailViewInterface;
+import mat.client.measure.measuredetails.views.MeasureDetailsViewFactory;
 import mat.client.shared.ConfirmationDialogBox;
 import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.MatDetailItem;
 import mat.client.shared.MeasureDetailsConstants.MeasureDetailsItems;
 import mat.client.shared.MessageAlert;
 import mat.client.shared.SpacerWidget;
-import mat.client.util.RichTextEditor;
+import mat.client.shared.editor.RichTextEditor;
+import mat.shared.measure.measuredetails.models.MeasureDetailsComponentModel;
+import mat.shared.measure.measuredetails.models.MeasureDetailsModel;
 
 public class MeasureDetailsView {
 	private VerticalPanel mainPanel = new VerticalPanel();
@@ -33,9 +34,8 @@ public class MeasureDetailsView {
 	private VerticalPanel widgetComponentPanel = new VerticalPanel();
 	private ErrorMessageAlert errorAlert = new ErrorMessageAlert();
 	private MatDetailItem currentMeasureDetail;
-	private ComponentDetailView componentDetailView;
+	private MeasureDetailViewInterface componentDetailView;
 	private boolean isMeasureEditable;
-	//TODO handle save...
 	private SaveButton saveButton = new SaveButton("Measure Details");
 	private DeleteButton deleteMeasureButton = new DeleteButton("Measure Details", "Delete Measure");
 	private MeasureDetailsModel measureDetailsComponent;
@@ -63,6 +63,7 @@ public class MeasureDetailsView {
 		headingHTML.setHTML("<h4><b>" + currentMeasureDetail.displayName() + "</b></h4>");
 		headingHTML.getElement().setId("measureDetailsView_HeadingContent");
 		headingHTML.setTitle(currentMeasureDetail.displayName());
+		headingHTML.getElement().setTabIndex(0);
 		headingPanel.add(headingHTML);
 		headingPanel.getElement().setId("measureDetailsView_HeadingPanel");
 		widgetComponentPanel.add(headingPanel);
@@ -97,7 +98,7 @@ public class MeasureDetailsView {
 		componentDetailView = MeasureDetailsViewFactory.get().getMeasureDetailComponentView(measureDetailsComponent, currentMeasureDetail);
 		currentRichTextEditor = componentDetailView.getRichTextEditor();
 		if(currentRichTextEditor != null) {
-			currentRichTextEditor.addSummernoteKeyUpHandler(keyUpEvent -> handleRichTextTabOut(keyUpEvent));
+			currentRichTextEditor.addKeyUpHandler(keyUpEvent -> handleRichTextTabOut(keyUpEvent));
 		}
 		widgetComponentPanel.add(componentDetailView.getWidget());
 		widgetComponentPanel.setWidth("100%");
@@ -107,10 +108,15 @@ public class MeasureDetailsView {
 		setReadOnly(isMeasureEditable);
 		return widgetComponentPanel;
 	}
-	private void handleRichTextTabOut(SummernoteKeyUpEvent keyUpEvent) {
+	
+	public void setFocusOnHeader() {
+		DOM.getElementById("measureDetailsView_HeadingContent").focus();
+	}
+	
+	private void handleRichTextTabOut(KeyUpEvent keyUpEvent) {
 		if(keyUpEvent.getNativeEvent().getCtrlKey() && keyUpEvent.getNativeEvent().getShiftKey() && keyUpEvent.getNativeEvent().getKeyCode() == 9) {
             keyUpEvent.getNativeEvent().preventDefault();
-            //TODO set focus on header
+            DOM.getElementById("measureDetailsView_HeadingContent").focus();
         }
         else if(keyUpEvent.getNativeEvent().getCtrlKey() && keyUpEvent.getNativeEvent().getKeyCode() == 9) {
             keyUpEvent.getNativeEvent().preventDefault();
@@ -148,8 +154,8 @@ public class MeasureDetailsView {
 		isMeasureEditable = isReadOnly;
 	}
 	
-	public MeasureDetailState getState() {
-		return componentDetailView.getState();
+	public void clear() {
+		componentDetailView.clear();
 	}
 	
 	public ConfirmationDialogBox getSaveConfirmation() {

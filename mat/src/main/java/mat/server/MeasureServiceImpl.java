@@ -45,6 +45,9 @@ import mat.shared.SaveUpdateCQLResult;
 import mat.shared.cql.error.InvalidLibraryException;
 import mat.shared.error.AuthenticationException;
 import mat.shared.error.measure.DeleteMeasureException;
+import mat.shared.measure.measuredetails.models.MeasureDetailsModel;
+import mat.shared.measure.measuredetails.translate.ManageMeasureDetailModelMapper;
+import mat.shared.measure.measuredetails.translate.MeasureDetailModelMapper;
 
 /**
  * The Class MeasureServiceImpl.
@@ -110,15 +113,6 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	@Override
 	public ManageCompositeMeasureDetailModel getCompositeMeasure(String measureId) {
 		return this.getMeasureLibraryService().getCompositeMeasure(measureId);
-	}
-	
-	@Override
-	public ManageMeasureDetailModel getMeasureAndLogRecentMeasure(String measureId, String userId) {
-		ManageMeasureDetailModel manageMeasureDetailModel = getMeasure(measureId);
-		if(manageMeasureDetailModel != null){
-			getMeasureLibraryService().recordRecentMeasureActivity(measureId, userId);
-		}
-		return manageMeasureDetailModel;
 	}
 	
 	/**
@@ -565,5 +559,34 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	@Override
 	public Boolean isCompositeMeasure(String currentMeasureId) {
 		return this.getMeasureLibraryService().isCompositeMeasure(currentMeasureId);
+	}
+
+	@Override
+	public MeasureDetailsModel getMeasureDetailsAndLogRecentMeasure(String measureId, String userId) {
+		MeasureDetailsModel measureDetailsModel = null;
+		ManageMeasureDetailModel manageMeasureDetailModel = getManageMeasureDetailModel(measureId, userId);
+		MeasureDetailModelMapper measureDetailModelMapper = new ManageMeasureDetailModelMapper(manageMeasureDetailModel);
+		measureDetailsModel = measureDetailModelMapper.getMeasureDetailsModel(isCompositeMeasure(measureId));
+		return measureDetailsModel;
+	}
+
+	@Deprecated
+	@Override
+	public ManageMeasureDetailModel getMeasureAndLogRecentMeasure(String currentMeasureId, String loggedinUserId) {
+		return getManageMeasureDetailModel(currentMeasureId, loggedinUserId);
+	}
+
+	private ManageMeasureDetailModel getManageMeasureDetailModel(String currentMeasureId, String loggedinUserId) {
+		ManageMeasureDetailModel manageMeasureDetailModel;
+		if(isCompositeMeasure(currentMeasureId)) {
+			manageMeasureDetailModel = getCompositeMeasure(currentMeasureId);
+		} else {
+			manageMeasureDetailModel = getMeasure(currentMeasureId);
+		}
+		
+		if(manageMeasureDetailModel != null){
+			getMeasureLibraryService().recordRecentMeasureActivity(currentMeasureId, loggedinUserId);
+		}
+		return manageMeasureDetailModel;
 	}
 }

@@ -12,7 +12,6 @@ public class MeasureDetailsAnchorListItem extends AnchorListItem{
 	private MeasureDetailState state;
 	public MeasureDetailsAnchorListItem(String text) {
 		super(text);
-		this.state = MeasureDetailState.BLANK;
 	}
 	
 	public void setState(MeasureDetailState state) {

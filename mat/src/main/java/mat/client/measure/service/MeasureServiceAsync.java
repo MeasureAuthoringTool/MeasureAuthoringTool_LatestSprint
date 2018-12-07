@@ -9,7 +9,6 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import mat.client.clause.clauseworkspace.model.MeasureDetailResult;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.clause.clauseworkspace.model.SortedClauseMapResult;
-import mat.shared.CompositeMeasureValidationResult;
 import mat.client.measure.ManageCompositeMeasureDetailModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.ManageMeasureSearchModel;
@@ -36,9 +35,11 @@ import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
-import mat.shared.MeasureSearchModel;
+import mat.shared.CompositeMeasureValidationResult;
 import mat.shared.GetUsedCQLArtifactsResult;
+import mat.shared.MeasureSearchModel;
 import mat.shared.SaveUpdateCQLResult;
+import mat.shared.measure.measuredetails.models.MeasureDetailsModel;
 
 
 public interface MeasureServiceAsync {
@@ -145,10 +146,10 @@ public interface MeasureServiceAsync {
 	 *
 	 * @param measureId the measure id
 	 * @param userId the user id
-	 * @param callback the callback
+	 * @param asyncCallback the callback
 	 * @return the measure and log recent measure
 	 */
-	void getMeasureAndLogRecentMeasure(String measureId, String userId, AsyncCallback<ManageMeasureDetailModel> callback);
+	void getMeasureDetailsAndLogRecentMeasure(String measureId, String userId, AsyncCallback<MeasureDetailsModel> asyncCallback);
 	
 	/**
 	 * Gets the measure xml for measure.
@@ -744,4 +745,8 @@ public interface MeasureServiceAsync {
 	void checkIfMeasureIsUsedAsComponentMeasure(String currentMeasureId, AsyncCallback<GenericResult> asyncCallback);
 
 	void isCompositeMeasure(String currentMeasureId, AsyncCallback<Boolean> compositeMeasureCallBack);
+
+	@Deprecated
+	void getMeasureAndLogRecentMeasure(String currentMeasureId, String loggedinUserId,
+			AsyncCallback<ManageMeasureDetailModel> asyncCallBackForMeasureAndLogRecentMeasure);
 }
