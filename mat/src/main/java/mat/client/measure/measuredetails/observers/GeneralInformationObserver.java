@@ -2,16 +2,23 @@ package mat.client.measure.measuredetails.observers;
 
 import java.util.List;
 
-import mat.client.measure.measuredetails.views.GeneralMeasureInformationView;
+import com.google.gwt.user.client.rpc.AsyncCallback;
+
+import mat.client.measure.measuredetails.views.GeneralInformationView;
+import mat.client.measure.measuredetails.views.MeasureDetailViewInterface;
 import mat.client.shared.ConfirmationDialogBox;
 import mat.client.shared.MatContext;
 import mat.shared.MatConstants;
 import mat.shared.measure.measuredetails.models.GeneralInformationModel;
 
-/* This class handles events that pertain to the general information view and do not need to be visible to the presenter */
-public class GeneralMeasureInformationObserver {
-	public GeneralMeasureInformationView generalMeasureInformationView;
-	public GeneralMeasureInformationObserver(GeneralMeasureInformationView generalMeasureInformationView) {
+/*  */
+/**
+ * This class handles events that pertain to the general information view and do not need to be visible to the presenter
+ */
+public class GeneralInformationObserver implements MeasureDetailsComponentObserver {
+	private GeneralInformationView generalMeasureInformationView;
+
+	public GeneralInformationObserver(GeneralInformationView generalMeasureInformationView) {
 		this.generalMeasureInformationView = generalMeasureInformationView;
 	}
 	
@@ -42,6 +49,8 @@ public class GeneralMeasureInformationObserver {
 		}
 		generalInformationModel.seteCQMAbbreviatedTitle(generalMeasureInformationView.getECQMAbbrInput().getText());
 		generalInformationModel.setMeasureName(generalMeasureInformationView.getMeasureNameInput().getText());
+		generalInformationModel.setEndorseByNQF(Boolean.parseBoolean(generalMeasureInformationView.getEndorsedByListBox().getValue()));
+		generalInformationModel.setNqfId(generalMeasureInformationView.getnQFIDInput().getText());
 		return generalInformationModel;
 	}
 	
@@ -111,5 +120,51 @@ public class GeneralMeasureInformationObserver {
 			scoringMethodChanged = true;
 		}
 		return scoringMethodChanged;
+	}
+	
+	public void generateAndSaveNewEmeasureid() {
+		boolean isEditable = MatContext.get().getMeasureLockService().checkForEditPermission();
+		String measureId = MatContext.get().getCurrentMeasureId();
+		int eMeasureId = generalMeasureInformationView.getGeneralInformationModel().geteMeasureId();
+		if(isEditable && eMeasureId ==0){
+			MatContext.get().getMeasureService().generateAndSaveMaxEmeasureId(isEditable, measureId, new AsyncCallback<Integer>() {
+				
+				@Override
+				public void onFailure(Throwable caught) {
+					//TODO create error message //MatContext.get().getMessageDelegate().getGenericErrorMessage();
+					MatContext.get().recordTransactionEvent(null, null, null, "Unhandled Exception: "+caught.getLocalizedMessage(), 0);
+				}
+				
+				@Override
+				public void onSuccess(Integer result) {
+					if(result > 0){
+						int maxEmeasureId = result.intValue();
+						generalMeasureInformationView.getGenerateEMeasureIDButton().setEnabled(false);
+						generalMeasureInformationView.geteMeasureIdentifierInput().setText(String.valueOf(maxEmeasureId));
+						generalMeasureInformationView.geteMeasureIdentifierInput().setValue(String.valueOf(maxEmeasureId));
+						generalMeasureInformationView.getGeneralInformationModel().seteMeasureId(maxEmeasureId);
+						generalMeasureInformationView.getGenerateEMeasureIDButton().setEnabled(false);
+						generalMeasureInformationView.geteMeasureIdentifierInput().setFocus(true);
+					}
+				}
+			});
+		}
+	}
+
+	@Override
+	public void handleValueChanged() {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void setView(MeasureDetailViewInterface view) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void handleEndorsedByNQFChanged() {
+		boolean endorsedByNQF = generalMeasureInformationView.getEndorsedByListBox().getSelectedIndex() == 1 ? true :  false;
+		generalMeasureInformationView.setNQFTitle(endorsedByNQF);
+		updateGeneralInformationModelFromView();
 	}
 }

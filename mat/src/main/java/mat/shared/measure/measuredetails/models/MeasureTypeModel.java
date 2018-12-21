@@ -21,13 +21,11 @@ public class MeasureTypeModel implements MeasureDetailsComponentModel, IsSeriali
 		return false;
 	}
 
-	@Override
-	public boolean isValid() {
-		// TODO Auto-generated method stub
-		return false;
+	public void update(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
+		measureDetailsModelVisitor.updateModel(this);
 	}
 	
-	public void accept(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
-		measureDetailsModelVisitor.visit(this);
+	public List<String> validateModel(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
+		return measureDetailsModelVisitor.validateModel(this);
 	}
 }

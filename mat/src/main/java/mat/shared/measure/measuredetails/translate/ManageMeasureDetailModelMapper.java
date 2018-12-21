@@ -55,7 +55,6 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 		measureDetailsModel.setRevisionNumber(manageMeasureDetailModel.getRevisionNumber());
 		measureDetailsModel.setOwnerUserId(manageMeasureDetailModel.getMeasureOwnerId());
 		measureDetailsModel.setComposite(isCompositeMeasure);
-		measureDetailsModel.setScoringType(manageMeasureDetailModel.getScoringAbbr());
 		measureDetailsModel.setGeneralInformationModel(buildGeneralInformationModel());
 		measureDetailsModel.setClinicalRecommendationModel(buildClinicalRecommendationModel());
 		measureDetailsModel.setDescriptionModel(buildDescriptionModel());
@@ -163,8 +162,8 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 
 	private MeasureSetModel buildMeasureSetModel() {
 		MeasureSetModel measureSetModel = new MeasureSetModel();
-		measureSetModel.setPlainText(manageMeasureDetailModel.getMeasureSetId());
-		measureSetModel.setFormattedText(manageMeasureDetailModel.getMeasureSetId());
+		measureSetModel.setPlainText(manageMeasureDetailModel.getGroupName());
+		measureSetModel.setFormattedText(manageMeasureDetailModel.getGroupName());
 		return measureSetModel;
 	}
 
@@ -268,6 +267,7 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 
 	private GeneralInformationModel buildGeneralInformationModel() {
 		GeneralInformationModel generalInformationModel = new GeneralInformationModel();
+		generalInformationModel.seteMeasureId(manageMeasureDetailModel.geteMeasureId());
 		generalInformationModel.setMeasureName(manageMeasureDetailModel.getName());
 		generalInformationModel.seteCQMAbbreviatedTitle(manageMeasureDetailModel.getShortName());
 		generalInformationModel.setFinalizedDate(manageMeasureDetailModel.getFinalizedDate());
@@ -275,6 +275,9 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 		generalInformationModel.setGuid(manageMeasureDetailModel.getMeasureSetId());
 		generalInformationModel.seteCQMVersionNumber(manageMeasureDetailModel.getVersionNumber());
 		generalInformationModel.setScoringMethod(manageMeasureDetailModel.getMeasScoring());
+		generalInformationModel.setNqfId(manageMeasureDetailModel.getNqfId());
+		generalInformationModel.setEndorseByNQF(manageMeasureDetailModel.getEndorseByNQF());
+		
 		if(manageMeasureDetailModel instanceof ManageCompositeMeasureDetailModel) {
 			generalInformationModel.setCompositeScoringMethod(((ManageCompositeMeasureDetailModel) manageMeasureDetailModel).getCompositeScoringMethod());
 		}
@@ -292,6 +295,7 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 		}
 		manageMeasureDetailModel.setId(measureDetailsModel.getId());
 		manageMeasureDetailModel.setMeasureId(measureDetailsModel.getMeasureId());
+		manageMeasureDetailModel.seteMeasureId(getEMeasureId());
 		manageMeasureDetailModel.setRevisionNumber(measureDetailsModel.getRevisionNumber());
 		manageMeasureDetailModel.setClinicalRecomms(getClinicalRecommendation());
 		manageMeasureDetailModel.setCopyright(getCopyright());
@@ -313,7 +317,7 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 		manageMeasureDetailModel.setMeasureObservations(getMeasureObservations());
 		manageMeasureDetailModel.setMeasurePopulationExclusions(getMeasurePopulationEclusions());
 		manageMeasureDetailModel.setMeasurePopulation(getMeasurePopulation());
-		manageMeasureDetailModel.setMeasureSetId(getMeasureSetId());
+		manageMeasureDetailModel.setGroupName(getMeasureSetText());
 		manageMeasureDetailModel.setStewardSelectedList(getStewardList());
 		manageMeasureDetailModel.setMeasureTypeSelectedList(getMeasureTypeSelectedList());
 		manageMeasureDetailModel.setNumeratorExclusions(getNumeratorExclusions());
@@ -325,7 +329,30 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 		manageMeasureDetailModel.setStratification(getStratification());
 		manageMeasureDetailModel.setSupplementalData(getSupplementalData());
 		manageMeasureDetailModel.setTransmissionFormat(getTransmissionFormat());
+		manageMeasureDetailModel.setNqfId(getNqfId());
+		manageMeasureDetailModel.setEndorseByNQF(getEndorsedByNQF());
 		return manageMeasureDetailModel;
+	}
+
+	private Boolean getEndorsedByNQF() {
+		if(measureDetailsModel.getGeneralInformationModel() != null) {
+			return measureDetailsModel.getGeneralInformationModel().getEndorseByNQF();
+		}
+		return null;
+	}
+
+	private String getNqfId() {
+		if(measureDetailsModel.getGeneralInformationModel() != null) {
+			return measureDetailsModel.getGeneralInformationModel().getNqfId();
+		}
+		return null;
+	}
+
+	private int getEMeasureId() {
+		if(measureDetailsModel.getGeneralInformationModel() != null) {
+			return measureDetailsModel.getGeneralInformationModel().geteMeasureId();
+		}
+		return 0;
 	}
 
 	private String getCompositeScoringMethod() {
@@ -449,14 +476,14 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 
 	private List<MeasureSteward> getStewardList() {
 		if(measureDetailsModel.getMeasureStewardDeveloperModel() != null) {
-			measureDetailsModel.getMeasureStewardDeveloperModel().getMeasureStewardList();
+			return measureDetailsModel.getMeasureStewardDeveloperModel().getMeasureStewardList();
 		}
 		return null;
 	}
 
-	private String getMeasureSetId() {
+	private String getMeasureSetText() {
 		if(measureDetailsModel.getMeasureSetModel() != null) {
-			measureDetailsModel.getMeasureSetModel().getPlainText();
+			return measureDetailsModel.getMeasureSetModel().getPlainText();
 		}
 		return null;
 	}

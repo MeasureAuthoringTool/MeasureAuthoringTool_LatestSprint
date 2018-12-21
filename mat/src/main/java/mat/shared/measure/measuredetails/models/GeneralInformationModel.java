@@ -1,5 +1,7 @@
 package mat.shared.measure.measuredetails.models;
 
+import java.util.List;
+
 import com.google.gwt.user.client.rpc.IsSerializable;
 
 public class GeneralInformationModel implements MeasureDetailsComponentModel, IsSerializable {
@@ -11,7 +13,10 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 	private String eCQMVersionNumber;
 	private String compositeScoringMethod;
 	private String scoringMethod;
-	
+	private int eMeasureId;
+	private String nqfId;
+	private Boolean endorseByNQF;
+
 	public GeneralInformationModel() {
 	}
 	
@@ -24,8 +29,17 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 		this.eCQMVersionNumber = model.geteCQMVersionNumber();
 		this.compositeScoringMethod = model.getCompositeScoringMethod();
 		this.scoringMethod = model.getScoringMethod();
+		this.eMeasureId = model.geteMeasureId();
+		this.endorseByNQF = model.getEndorseByNQF();
+		this.nqfId = model.nqfId;
 	}
 
+	public int geteMeasureId() {
+		return eMeasureId;
+	}
+	public void seteMeasureId(int eMeasureId) {
+		this.eMeasureId = eMeasureId;
+	}
 	public String getCompositeScoringMethod() {
 		return compositeScoringMethod;
 	}
@@ -79,15 +93,14 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 				((originalModel.getCompositeScoringMethod() == null && getCompositeScoringMethod() == null) ||
 				(originalModel.getCompositeScoringMethod() != null && originalModel.getCompositeScoringMethod().equals(getCompositeScoringMethod()))) && 
 				((originalModel.getScoringMethod() == null && getScoringMethod() == null) ||
-				(originalModel.getScoringMethod() != null && originalModel.getScoringMethod().equals(getScoringMethod())))
+				(originalModel.getScoringMethod() != null && originalModel.getScoringMethod().equals(getScoringMethod()))) &&
+				(originalModel.geteMeasureId() == geteMeasureId()) &&
+				((originalModel.getNqfId() == null && getNqfId() == null) || 
+				(originalModel.getNqfId() != null && originalModel.getNqfId().equals(getNqfId()))) &&
+				((originalModel.getEndorseByNQF() == null && getEndorseByNQF() == null) || 
+				(originalModel.getEndorseByNQF() != null &&  originalModel.getEndorseByNQF().equals(getEndorseByNQF())))
 				);
 		return isEqual;
-	}
-	
-	@Override
-	public boolean isValid() {
-		// TODO Auto-generated method stub
-		return false;
 	}
 	
 	public String getMeasureName() {
@@ -105,6 +118,22 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 		this.scoringMethod = scoringMethod;
 	}
 	
+	public String getNqfId() {
+		return nqfId;
+	}
+
+	public void setNqfId(String nqfId) {
+		this.nqfId = nqfId;
+	}
+	
+	public Boolean getEndorseByNQF() {
+		return endorseByNQF;
+	}
+
+	public void setEndorseByNQF(Boolean endorseByNQF) {
+		this.endorseByNQF = endorseByNQF;
+	}
+	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("measureName: " + measureName);
@@ -115,10 +144,17 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 		sb.append(", eCQMVersionNumber: " + eCQMVersionNumber);
 		sb.append(", compositeScoringMethod: " + compositeScoringMethod);
 		sb.append(", scoringMethod: " + scoringMethod);
+		sb.append(", eMeasureId: " + eMeasureId);
+		sb.append(", endorsedByNQF: " + endorseByNQF);
+		sb.append(", nqfId: " + nqfId);
 		return sb.toString();
 	}
 	
-	public void accept(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
-		measureDetailsModelVisitor.visit(this);
+	public void update(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
+		measureDetailsModelVisitor.updateModel(this);
+	}
+	
+	public List<String> validateModel(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
+		return measureDetailsModelVisitor.validateModel(this);
 	}
 }

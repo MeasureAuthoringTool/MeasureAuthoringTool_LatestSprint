@@ -1,5 +1,8 @@
 package mat.client.measure.measuredetails;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.google.gwt.event.shared.HandlerManager;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Widget;
@@ -24,8 +27,8 @@ import mat.client.shared.ui.DeleteConfirmDialogBox;
 import mat.shared.ConstantMessages;
 import mat.shared.error.AuthenticationException;
 import mat.shared.error.measure.DeleteMeasureException;
-import mat.shared.measure.measuredetails.models.DescriptionModel;
 import mat.shared.measure.measuredetails.models.MeasureDetailsModel;
+import mat.shared.measure.measuredetails.models.MeasureDetailsRichTextAbstractModel;
 import mat.shared.measure.measuredetails.translate.ManageMeasureDetailModelMapper;
 
 public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObserver {
@@ -138,7 +141,7 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	}
 
 	private void displayMeasureDetailsView() {
-		this.scoringType = MatContext.get().getCurrentMeasureScoringType();
+		this.scoringType = measureDetailsModel.getGeneralInformationModel().getScoringMethod();
 		navigationPanel.buildNavigationMenu(scoringType, isCompositeMeasure);
 		measureDetailsView.buildDetailView(measureDetailsModel, MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION, navigationPanel);
 		isMeasureEditable = !MatContext.get().getMeasureLockService().checkForEditPermission();
@@ -237,21 +240,33 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 
 	@Override
 	public void handleSaveButtonClick() {
-		ConfirmationDialogBox confirmationDialog = measureDetailsView.getSaveConfirmation();
-		if(confirmationDialog != null) {
-			confirmationDialog.getYesButton().addClickHandler(event -> saveMeasureDetails());
-			confirmationDialog.show();
-			confirmationDialog.getYesButton().setFocus(true);
+		List<String> validationErrors = measureDetailsView.getMeasureDetailsComponentModel().validateModel(measureDetailsModel);
+		if(validationErrors == null || validationErrors.isEmpty()) {
+			ConfirmationDialogBox confirmationDialog = measureDetailsView.getSaveConfirmation();
+			if(confirmationDialog != null) {
+				showSaveConfirmationDialog(confirmationDialog);
+			} else {
+				saveMeasureDetails();
+			}
 		} else {
-			saveMeasureDetails();
+			String validationErrorMessage = validationErrors.stream().collect(Collectors.joining("\n"));
+			measureDetailsView.displayErrorMessage(validationErrorMessage);
 		}
 	}
 
+	private void showSaveConfirmationDialog(ConfirmationDialogBox confirmationDialog) {
+		confirmationDialog.getYesButton().addClickHandler(event -> saveMeasureDetails());
+		confirmationDialog.getNoButton().addClickHandler(event -> measureDetailsView.resetForm());
+		confirmationDialog.show();
+		confirmationDialog.getYesButton().setFocus(true);
+	}
+
 	private void saveMeasureDetails() {
-		measureDetailsView.getMeasureDetailsComponentModel().accept(measureDetailsModel);
+		measureDetailsView.getComponentDetailView().getObserver().handleValueChanged();
+		measureDetailsView.getMeasureDetailsComponentModel().update(measureDetailsModel);
 		ManageMeasureDetailModelMapper mapper = new ManageMeasureDetailModelMapper(measureDetailsModel);
 		ManageMeasureDetailModel manageMeasureDetails = mapper.convertMeasureDetailsToManageMeasureDetailModel();
-		
+
 		if(measureDetailsModel.isComposite()) {
 			MatContext.get().getMeasureService().saveCompositeMeasure((ManageCompositeMeasureDetailModel) manageMeasureDetails, getSaveCallback());
 		} else {
@@ -263,18 +278,22 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		return new AsyncCallback<SaveMeasureResult>() {
 			@Override
 			public void onFailure(Throwable caught) {
-				// TODO Auto-generated method stub
-				
+				measureDetailsView.displayErrorMessage(MatContext.get().getMessageDelegate().getGenericErrorMessage());
 			}
 
 			@Override
 			public void onSuccess(SaveMeasureResult result) {
-				scoringType = measureDetailsModel.getScoringType();
+				MatDetailItem activeMenuItem = navigationPanel.getActiveMenuItem();
+				scoringType = measureDetailsModel.getGeneralInformationModel().getScoringMethod();
+				MatContext.get().setCurrentMeasureScoringType(scoringType);
+				navigationPanel.buildNavigationMenu(scoringType, isCompositeMeasure);
 				measureDetailsView.buildDetailView(measureDetailsModel, navigationPanel.getActiveMenuItem(), navigationPanel);
 				isMeasureEditable = !MatContext.get().getMeasureLockService().checkForEditPermission();
 				measureDetailsView.setReadOnly(isMeasureEditable);
 				measureDetailsView.getDeleteMeasureButton().setEnabled(isDeletable());
+				measureDetailsView.displaySuccessMessage("Changes for the " +  measureDetailsView.getCurrentMeasureDetail().displayName() + " section have been successfully saved.");
 				handleStateChanged();
+				navigationPanel.setActiveMenuItem(activeMenuItem);
 			}
 		};
 	}
@@ -282,9 +301,9 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	private void updateNavPillStates() {
 		navigationPanel.getMenuItemMap().keySet().forEach(k -> {
 			MeasureDetailState navPillState = getStateForModelByKey(k);
-			MeasureDetailsAnchorListItem test = navigationPanel.getMenuItemMap().get(k);
-			if(test != null) {
-				test.setState(navPillState);
+			MeasureDetailsAnchorListItem anchorListItem = navigationPanel.getMenuItemMap().get(k);
+			if(anchorListItem != null) {
+				anchorListItem.setState(navPillState);
 			}
 			
 		});
@@ -293,24 +312,71 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	private MeasureDetailState getStateForModelByKey(MatDetailItem k) {
 		if(k instanceof MeasureDetailsItems) {
 			switch((MeasureDetailsItems) k) {
-			case DESCRIPTION:
-				return getDescriptionState();
 			case GENERAL_MEASURE_INFORMATION:
 				return MeasureDetailState.INCOMPLETE;
+			case DESCRIPTION:
+				return getRichTextEditableTabState(measureDetailsModel.getDescriptionModel());
+			case COPYRIGHT:
+				return getRichTextEditableTabState(measureDetailsModel.getCopyrightModel());
+			case DISCLAIMER:
+				return getRichTextEditableTabState(measureDetailsModel.getDisclaimerModel());
+			case STRATIFICATION:
+				return getRichTextEditableTabState(measureDetailsModel.getStratificationModel());
+			case RISK_ADJUSTMENT:
+				return getRichTextEditableTabState(measureDetailsModel.getRiskAdjustmentModel());
+			case RATE_AGGREGATION:
+				return getRichTextEditableTabState(measureDetailsModel.getRateAggregationModel());
+			case RATIONALE:
+				return getRichTextEditableTabState(measureDetailsModel.getRationaleModel());
+			case CLINICAL_RECOMMENDATION:
+				return getRichTextEditableTabState(measureDetailsModel.getClinicalRecommendationModel());
+			case IMPROVEMENT_NOTATION:
+				return getRichTextEditableTabState(measureDetailsModel.getImprovementNotationModel());
+			case DEFINITION:
+				return getRichTextEditableTabState(measureDetailsModel.getDefinitionModel());
+			case GUIDANCE:
+				return getRichTextEditableTabState(measureDetailsModel.getGuidanceModel());
+			case TRANSMISSION_FORMAT:
+				return getRichTextEditableTabState(measureDetailsModel.getTransmissionFormatModel());
+			case SUPPLEMENTAL_DATA_ELEMENTS:
+				return getRichTextEditableTabState(measureDetailsModel.getSupplementalDataElementsModel());
+			case MEASURE_SET:
+				return getRichTextEditableTabState(measureDetailsModel.getMeasureSetModel());
 			default: 
 				return MeasureDetailState.BLANK;
 			}
 		} else if (k instanceof PopulationItems) {
-			return MeasureDetailState.BLANK;
+			switch((PopulationItems) k) {
+			case INITIAL_POPULATION:
+				return getRichTextEditableTabState(measureDetailsModel.getInitialPopulationModel());
+			case MEASURE_POPULATION:
+				return getRichTextEditableTabState(measureDetailsModel.getMeasurePopulationModel());
+			case MEASURE_POPULATION_EXCLUSIONS:
+				return getRichTextEditableTabState(measureDetailsModel.getMeasurePopulationExclusionsModel());
+			case DENOMINATOR:
+				return getRichTextEditableTabState(measureDetailsModel.getDenominatorModel());
+			case DENOMINATOR_EXCLUSIONS:
+				return getRichTextEditableTabState(measureDetailsModel.getDenominatorExclusionsModel());
+			case NUMERATOR:
+				return getRichTextEditableTabState(measureDetailsModel.getNumeratorModel());
+			case NUMERATOR_EXCLUSIONS:
+				return getRichTextEditableTabState(measureDetailsModel.getNumeratorExclusionsModel());
+			case DENOMINATOR_EXCEPTIONS:
+				return getRichTextEditableTabState(measureDetailsModel.getDenominatorExceptionsModel());
+			case MEASURE_OBSERVATIONS:
+				return getRichTextEditableTabState(measureDetailsModel.getMeasureObservationsModel());
+			
+			default: 
+				return MeasureDetailState.BLANK;
+			}		
 		}
 		
 		return MeasureDetailState.BLANK;
 	}
-
-	private MeasureDetailState getDescriptionState() {
-		DescriptionModel descriptionModel = measureDetailsModel.getDescriptionModel();
-		if(descriptionModel != null) {
-			if(descriptionModel.getPlainText() == null || descriptionModel.getPlainText().isEmpty()) {
+	
+	private MeasureDetailState getRichTextEditableTabState(MeasureDetailsRichTextAbstractModel model) {
+		if(model != null) {
+			if(model.getPlainText() == null || model.getPlainText().isEmpty()) {
 				return MeasureDetailState.BLANK;
 			} else {
 				return MeasureDetailState.COMPLETE;

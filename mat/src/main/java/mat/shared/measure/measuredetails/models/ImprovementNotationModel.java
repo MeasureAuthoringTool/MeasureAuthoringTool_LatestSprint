@@ -1,22 +1,23 @@
 package mat.shared.measure.measuredetails.models;
 
+import java.util.List;
+
 import com.google.gwt.user.client.rpc.IsSerializable;
 
 public class ImprovementNotationModel extends MeasureDetailsRichTextAbstractModel implements IsSerializable{
-
-	@Override
-	public boolean equals(MeasureDetailsComponentModel model) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean isValid() {
-		// TODO Auto-generated method stub
-		return false;
+	public ImprovementNotationModel() {
+		super("", "");
 	}
 	
-	public void accept(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
-		measureDetailsModelVisitor.visit(this);
+	public ImprovementNotationModel(ImprovementNotationModel model) {
+		super(model.getPlainText(), model.getFormattedText());
+	}
+	
+	public void update(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
+		measureDetailsModelVisitor.updateModel(this);
+	}
+	
+	public List<String> validateModel(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
+		return measureDetailsModelVisitor.validateModel(this);
 	}
 }

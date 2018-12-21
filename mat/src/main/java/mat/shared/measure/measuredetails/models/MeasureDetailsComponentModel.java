@@ -1,7 +1,9 @@
 package mat.shared.measure.measuredetails.models;
 
+import java.util.List;
+
 public interface MeasureDetailsComponentModel {
 	public boolean equals(MeasureDetailsComponentModel model);
-	public boolean isValid();
-	public void accept(MeasureDetailsModelVisitor measureDetailsModelVisitor);
+	public void update(MeasureDetailsModelVisitor measureDetailsModelVisitor);
+	public List<String> validateModel(MeasureDetailsModelVisitor measureDetailsModelVisitor);
 }

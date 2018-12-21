@@ -64,14 +64,16 @@ public class MeasureDetailsNavigation {
 	public void buildPopulationNavPills(NavPills navPills) {
 		List<PopulationItems> populationsList = Arrays.asList(PopulationItems.values());
 		for(PopulationItems populationDetail: populationsList) {
-			List<String> applicableScoringTypes = populationDetail.getApplicableMeasureTypes();
-			if(applicableScoringTypes.contains(scoringType)) {
-				MeasureDetailsAnchorListItem anchorListItem = new MeasureDetailsAnchorListItem(populationDetail.abbreviatedName());
-				anchorListItem.setTitle(populationDetail.abbreviatedName());
-				anchorListItem.getElement().getStyle().setMarginLeft(15, Unit.PX);
-				menuItemMap.put(populationDetail, anchorListItem);
-				navPills.add(anchorListItem);
-				anchorListItem.addClickHandler(event -> handleAnchorListItemClick(populationDetail));
+			List<String> applicableScoringTypes = populationDetail.getApplicableMeasureTypes();				
+			for(String applicableScoringType : applicableScoringTypes) {
+				if(applicableScoringType.equalsIgnoreCase(scoringType)) {
+					MeasureDetailsAnchorListItem anchorListItem = new MeasureDetailsAnchorListItem(populationDetail.abbreviatedName());
+					anchorListItem.setTitle(populationDetail.abbreviatedName());
+					anchorListItem.getElement().getStyle().setMarginLeft(15, Unit.PX);
+					menuItemMap.put(populationDetail, anchorListItem);
+					navPills.add(anchorListItem);
+					anchorListItem.addClickHandler(event -> handleAnchorListItemClick(populationDetail));
+				}
 			}
 		}
 	}
@@ -85,15 +87,16 @@ public class MeasureDetailsNavigation {
 		navPills.getElement().setId("measureDetailsNavigation_measureDetailsNavigationPills");
 		List<MeasureDetailsItems> detailsList = Arrays.asList(MeasureDetailsItems.values());
 		for(MeasureDetailsItems measureDetail: detailsList) {
-			MeasureDetailsAnchorListItem anchorListItem = new MeasureDetailsAnchorListItem(measureDetail.abbreviatedName());
-			anchorListItem.getElement().setTitle(measureDetail.abbreviatedName());
-			menuItemMap.put(measureDetail, anchorListItem);
+			MeasureDetailsAnchorListItem anchorListItem;
+
 			if(measureDetail == MeasureDetailsItems.POPULATIONS) {
+				anchorListItem = new MeasureDetailsPopulationAnchorListItem(measureDetail.abbreviatedName());
 				anchorListItem.setIcon(IconType.PLUS);
 				anchorListItem.add(populationsCollapse);
 				anchorListItem.addClickHandler(event -> handlePopulationItemClick(anchorListItem, measureDetail));
 				navPills.add(anchorListItem);
 			} else {
+				anchorListItem = new MeasureDetailsAnchorListItem(measureDetail.abbreviatedName());
 				//if not a composite measure skip the component menu item
 				if(measureDetail == MeasureDetailsItems.COMPONENT_MEASURES && !isComposite) {
 					continue;
@@ -101,6 +104,8 @@ public class MeasureDetailsNavigation {
 				navPills.add(anchorListItem);
 				anchorListItem.addClickHandler(event -> handleAnchorListItemClick(measureDetail));
 			}
+			anchorListItem.getElement().setTitle(measureDetail.abbreviatedName());
+			menuItemMap.put(measureDetail, anchorListItem);
 		}
 		navPills.setStacked(true);
 		return navPills;
@@ -108,14 +113,22 @@ public class MeasureDetailsNavigation {
 	
 	private void handlePopulationItemClick(AnchorListItem anchorListItem, MatDetailItem menuItem) {
 		deselectAllMenuItems();
+		expandPopulationCollapse(anchorListItem);
+		handleAnchorListItemClick(menuItem);
+	}
+
+	private void expandPopulationCollapse(AnchorListItem anchorListItem) {
 		if (populationsCollapse.getElement().getClassName().equalsIgnoreCase("panel-collapse collapse in")) {
 			populationsCollapse.getElement().setClassName("panel-collapse collapse");
 			anchorListItem.setIcon(IconType.PLUS);
 		} else {
-			populationsCollapse.getElement().setClassName("panel-collapse collapse in");
-			anchorListItem.setIcon(IconType.MINUS);
+			setPopulationCollapseExpanded(anchorListItem);
 		}
-		handleAnchorListItemClick(menuItem);
+	}
+
+	private void setPopulationCollapseExpanded(AnchorListItem anchorListItem) {
+		populationsCollapse.getElement().setClassName("panel-collapse collapse in");
+		anchorListItem.setIcon(IconType.MINUS);
 	}
 
 	private void handleAnchorListItemClick(MatDetailItem menuItem) {
@@ -126,7 +139,12 @@ public class MeasureDetailsNavigation {
 	public void setActiveMenuItem(MatDetailItem activeMenuItem) {
 		this.activeMenuItem = activeMenuItem;
 		deselectAllMenuItems();
-		menuItemMap.get(activeMenuItem).setActive(true);
+		
+		if(activeMenuItem instanceof PopulationItems) {
+			setPopulationCollapseExpanded(menuItemMap.get(MeasureDetailsItems.POPULATIONS));
+		}
+		
+		menuItemMap.get(activeMenuItem).setActive(true);		
 	}
 
 	private void deselectAllMenuItems() {

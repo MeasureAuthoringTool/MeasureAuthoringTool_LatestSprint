@@ -4,15 +4,29 @@ import org.gwtbootstrap3.client.ui.gwt.FlowPanel;
 
 import com.google.gwt.user.client.ui.Widget;
 
+import mat.client.measure.measuredetails.observers.InitialPopulationObserver;
+import mat.client.measure.measuredetails.observers.MeasureDetailsComponentObserver;
 import mat.client.shared.ConfirmationDialogBox;
 import mat.client.shared.editor.RichTextEditor;
+import mat.shared.measure.measuredetails.models.InitialPopulationModel;
 import mat.shared.measure.measuredetails.models.MeasureDetailsComponentModel;
 
 public class InitialPopulationView implements MeasureDetailViewInterface {
 
 	private FlowPanel mainPanel = new FlowPanel();
+	private MeasureDetailsRichTextEditor measureDetailsRichTextEditor;
+	private InitialPopulationModel model;
+	private InitialPopulationModel originalModel;
+	private InitialPopulationObserver observer;
 
 	public InitialPopulationView() {
+
+	}
+	
+	public InitialPopulationView(InitialPopulationModel initialPopulationModel) {
+		this.originalModel = initialPopulationModel;
+		buildInitialPopulationModel(this.originalModel);
+		buildDetailView();
 	}
 
 	@Override
@@ -33,14 +47,15 @@ public class InitialPopulationView implements MeasureDetailViewInterface {
 
 	@Override
 	public void buildDetailView() {
-		// TODO Auto-generated method stub
-		
+		measureDetailsRichTextEditor = new MeasureDetailsRichTextEditor(mainPanel);
+		measureDetailsRichTextEditor.getRichTextEditor().setTitle("Initial Population Editor");
+		measureDetailsRichTextEditor.getRichTextEditor().setEditorText(this.model.getFormattedText());	
+		addEventHandlers();
 	}
 
 	@Override
 	public void setReadOnly(boolean readOnly) {
-		// TODO Auto-generated method stub
-		
+		measureDetailsRichTextEditor.setReadOnly(readOnly);
 	}
 
 	@Override
@@ -56,21 +71,45 @@ public class InitialPopulationView implements MeasureDetailViewInterface {
 
 	@Override
 	public MeasureDetailsComponentModel getMeasureDetailsComponentModel() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.model;
 	}
 
 	@Override
 	public RichTextEditor getRichTextEditor() {
-		// TODO Auto-generated method stub
-		return null;
+		return measureDetailsRichTextEditor.getRichTextEditor();
 	}
 
 	@Override
 	public void clear() {
 		// TODO Auto-generated method stub
+	}
+	
+	public void setObserver(InitialPopulationObserver observer) {
+		this.observer = observer; 
+	}
 		
+	private void addEventHandlers() {
+		measureDetailsRichTextEditor.getRichTextEditor().addKeyUpHandler(event -> observer.handleValueChanged());
+	}
+	
+	private void buildInitialPopulationModel(InitialPopulationModel initialPopulationModel) {
+		this.model = new InitialPopulationModel(initialPopulationModel);
 	}
 
+	@Override
+	public void setMeasureDetailsComponentModel(MeasureDetailsComponentModel model) {
+		this.model = (InitialPopulationModel) model; 	
+		this.originalModel = this.model;
+		buildInitialPopulationModel(this.originalModel);
+	}
 
+	@Override
+	public void setObserver(MeasureDetailsComponentObserver observer) {
+		this.observer = (InitialPopulationObserver) observer; 
+	}
+	
+	@Override
+	public MeasureDetailsComponentObserver getObserver() {
+		return observer;
+	}
 }
