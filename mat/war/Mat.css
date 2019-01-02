@@ -1971,10 +1971,7 @@ padding: 2px;
     border-color: #E8EEF7 #E8EEF7 #E8EFF7;
     border-style: solid;
     border-width: 3px;
-    margin-left: -1px;
-   margin-top: -1px;
-    width: 750px;
-    height:150px;
+    height: 150px;
 }
 
 .cellTablePanel_Report {
@@ -2458,7 +2455,7 @@ padding: 2px;
     background-color: #DCE9F5; 
     font-weight: bold;
     padding: 5px;
-    width: 750px;
+    width: 650px;
     text-align:left;
     margin-bottom: 2px;
 }
@@ -2813,4 +2810,13 @@ padding: 2px;
 .advancedSearchLabels{
 	padding-top: 7px;
 	padding-right: 10px;
+}
+
+.calendarLabel {
+	margin-left: 3px;
+	margin-top: 3px;
+}
+
+.calendarYearLabel {
+	margin-top: 3px;
 }

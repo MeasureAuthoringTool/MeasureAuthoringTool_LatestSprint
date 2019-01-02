@@ -17,6 +17,8 @@ import mat.client.measure.measuredetails.observers.MeasureObservationsObserver;
 import mat.client.measure.measuredetails.observers.MeasurePopulationExclusionsObserver;
 import mat.client.measure.measuredetails.observers.MeasurePopulationObserver;
 import mat.client.measure.measuredetails.observers.MeasureSetObserver;
+import mat.client.measure.measuredetails.observers.MeasureStewardDeveloperObserver;
+import mat.client.measure.measuredetails.observers.MeasureTypeObserver;
 import mat.client.measure.measuredetails.observers.NumeratorExclusionsObserver;
 import mat.client.measure.measuredetails.observers.NumeratorObserver;
 import mat.client.measure.measuredetails.observers.RateAggregationObserver;
@@ -25,6 +27,7 @@ import mat.client.measure.measuredetails.observers.RiskAdjustmentObserver;
 import mat.client.measure.measuredetails.observers.StratificationObserver;
 import mat.client.measure.measuredetails.observers.SupplementalDataElementsObserver;
 import mat.client.measure.measuredetails.observers.TransmissionFormatObserver;
+import mat.client.shared.MatContext;
 import mat.client.shared.MatDetailItem;
 import mat.client.shared.MeasureDetailsConstants;
 import mat.client.shared.MeasureDetailsConstants.MeasureDetailsItems;
@@ -32,6 +35,7 @@ import mat.client.shared.MeasureDetailsConstants.PopulationItems;
 import mat.shared.measure.measuredetails.models.GeneralInformationModel;
 import mat.shared.measure.measuredetails.models.MeasureDetailsModel;
 import mat.shared.measure.measuredetails.models.MeasureDetailsRichTextAbstractModel;
+import mat.shared.measure.measuredetails.models.MeasureStewardDeveloperModel;
 
 public class MeasureDetailsViewFactory {
 	private static MeasureDetailsViewFactory instance;
@@ -54,7 +58,7 @@ public class MeasureDetailsViewFactory {
 			case DISCLAIMER:
 				return buildRichTextEditorView(measureDetailsModel.getDisclaimerModel(), new DisclaimerView(), new DisclaimerObserver());
 			case MEASURE_TYPE:
-				return new MeasureTypeView();
+				return buildMeasureTypeView(new MeasureTypeView(measureDetailsModel.getMeasureTypeModeModel(), MatContext.get().getMeasureTypeList()), new MeasureTypeObserver());
 			case STRATIFICATION:
 				return buildRichTextEditorView(measureDetailsModel.getStratificationModel(), new StratificationView(), new StratificationObserver());
 			case RISK_ADJUSTMENT:
@@ -80,7 +84,7 @@ public class MeasureDetailsViewFactory {
 			case MEASURE_SET:
 				return buildRichTextEditorView(measureDetailsModel.getMeasureSetModel(), new MeasureSetView(), new MeasureSetObserver());
 			case STEWARD:
-				return new MeasureStewardView();
+				return buildMeasureStewardView(measureDetailsModel.getMeasureStewardDeveloperModel());
 			case COPYRIGHT:
 				return buildRichTextEditorView(measureDetailsModel.getCopyrightModel(), new CopyrightView(), new CopyrightObserver());
 			case POPULATIONS:
@@ -120,7 +124,21 @@ public class MeasureDetailsViewFactory {
 		generalInformationView.setObserver(observer);
 		return generalInformationView;
 	}
-	
+
+	private MeasureStewardView buildMeasureStewardView(MeasureStewardDeveloperModel measureStewardDeveloperModel) {
+		MeasureStewardView view = new MeasureStewardView(measureStewardDeveloperModel); 
+		MeasureStewardDeveloperObserver observer = new MeasureStewardDeveloperObserver();
+		view.setObserver(observer);
+		observer.setView(view);
+		return view; 
+	}
+
+	private MeasureTypeView buildMeasureTypeView(MeasureTypeView view, MeasureTypeObserver observer) {
+		view.setObserver(observer);
+		observer.setView(view);
+		return view; 
+	}
+
 	private MeasureDetailViewInterface buildRichTextEditorView(MeasureDetailsRichTextAbstractModel model, MeasureDetailViewInterface view, MeasureDetailsComponentObserver observer) {
 		view.setMeasureDetailsComponentModel(model);
 		observer.setView(view);

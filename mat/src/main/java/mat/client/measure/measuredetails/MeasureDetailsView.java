@@ -43,15 +43,17 @@ public class MeasureDetailsView {
 	private RichTextEditor currentRichTextEditor;
 	private MessagePanel messagePanel;
 	
-	
 	public MeasureDetailsView(MeasureDetailsModel measureDetailsComponent, MeasureDetailsItems measureDetail, MeasureDetailsNavigation navigationPanel) {
 		currentMeasureDetail = measureDetail;
 		this.measureDetailsComponent = measureDetailsComponent;
-		mainPanel.add(errorAlert);
+		
+		HorizontalPanel errorPanel = new HorizontalPanel();
+		errorPanel.add(errorAlert);
+		mainPanel.add(errorPanel);
 		buildMeasureDetailsButtonPanel();
 
 		mainContentPanel.add(navigationPanel.getWidget());
-		mainContentPanel.setWidth("100%");
+		mainContentPanel.setWidth("850px");
 		widgetComponentPanel = buildDetailView(currentMeasureDetail);
 		mainContentPanel.add(widgetComponentPanel);
 		mainContentPanel.getElement().setId("measureDetailsView_ContentPanel");
@@ -70,6 +72,7 @@ public class MeasureDetailsView {
 		headingPanel.getElement().setId("measureDetailsView_HeadingPanel");
 		widgetComponentPanel.add(headingPanel);
 		messagePanel = new MessagePanel();
+		messagePanel.setWidth("625px");
 		widgetComponentPanel.add(messagePanel);
 		widgetComponentPanel.add(new SpacerWidget());
 	}
@@ -78,9 +81,8 @@ public class MeasureDetailsView {
 		if(currentMeasureDetail != MeasureDetailsItems.POPULATIONS) {
 			widgetComponentPanel.add(new SpacerWidget());
 			saveButtonPanel.add(saveButton);
-			saveButtonPanel.setWidth("100%");
+			saveButtonPanel.setWidth("625px");
 			saveButton.setPull(Pull.RIGHT);
-			saveButton.setMarginRight(30);
 			widgetComponentPanel.add(saveButtonPanel);
 		}
 	}
@@ -198,14 +200,23 @@ public class MeasureDetailsView {
 		messagePanel.getWarningMessageAlert().createAlert(message);
 	}
 	
+	public void displayDirtyCheck() {
+		messagePanel.clearAlerts();
+		messagePanel.getWarningConfirmationMessageAlert().createWarningAlert();
+	}
+	
 	public MatDetailItem getCurrentMeasureDetail() {
 		return currentMeasureDetail;
 	}
 
 	public void setCurrentMeasureDetail(MatDetailItem currentMeasureDetail) {
 		this.currentMeasureDetail = currentMeasureDetail;
+	}	
+	
+	public MessagePanel getMessagePanel() {
+		return messagePanel;
 	}
-
+	
 	public MeasureDetailViewInterface getComponentDetailView() {
 		return componentDetailView;
 	}

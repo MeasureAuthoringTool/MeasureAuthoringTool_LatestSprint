@@ -1,5 +1,6 @@
 package mat.client.measure.measuredetails;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,24 +26,28 @@ import mat.client.shared.MeasureDetailsConstants.MeasureDetailsItems;
 import mat.client.shared.MeasureDetailsConstants.PopulationItems;
 import mat.client.shared.ui.DeleteConfirmDialogBox;
 import mat.shared.ConstantMessages;
+import mat.shared.StringUtility;
 import mat.shared.error.AuthenticationException;
 import mat.shared.error.measure.DeleteMeasureException;
 import mat.shared.measure.measuredetails.models.MeasureDetailsModel;
 import mat.shared.measure.measuredetails.models.MeasureDetailsRichTextAbstractModel;
+import mat.shared.measure.measuredetails.models.MeasureStewardDeveloperModel;
 import mat.shared.measure.measuredetails.translate.ManageMeasureDetailModelMapper;
+import mat.shared.measure.measuredetails.validate.GeneralInformationValidator;
 
 public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObserver {
 	private MeasureDetailsView measureDetailsView;
 	private MeasureDetailsNavigation navigationPanel;
 	private String scoringType;
 	private boolean isCompositeMeasure;
-	private boolean isMeasureEditable;
+	private boolean isReadOnly;
+	private boolean isPatientBased;
 	private long lastRequestTime;
 	private DeleteConfirmDialogBox dialogBox;
 	MeasureDetailsModel measureDetailsModel;
 
 	public MeasureDetailsPresenter() {
-		navigationPanel = new MeasureDetailsNavigation(scoringType, isCompositeMeasure);
+		navigationPanel = new MeasureDetailsNavigation(scoringType, isPatientBased, isCompositeMeasure);
 		navigationPanel.setObserver(this);
 		measureDetailsModel = new MeasureDetailsModel();
 		measureDetailsView = new MeasureDetailsView(measureDetailsModel, MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION, navigationPanel);
@@ -55,8 +60,9 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		Mat.hideLoadingMessage();
 		navigationPanel.updateState(MeasureDetailState.BLANK);
 		this.scoringType = null;
+		isPatientBased = false;
 		isCompositeMeasure = false;
-		isMeasureEditable = true;
+		isReadOnly = false;
 	}
 
 	@Override
@@ -77,10 +83,44 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		return measureDetailsView.getWidget();
 	}
 
+	public MeasureDetailsView getView() {
+		return measureDetailsView;
+	}
+	
 	@Override
 	public void handleMenuItemClick(MatDetailItem menuItem) {
+		clearAlerts();
+		if(isDirty()) {
+			measureDetailsView.displayDirtyCheck();
+			measureDetailsView.getMessagePanel().getWarningConfirmationNoButton().addClickHandler(event -> handleWarningConfirmationNoClick());
+			measureDetailsView.getMessagePanel().getWarningConfirmationYesButton().addClickHandler(event -> handleWarningConfirmationYesClick(menuItem));
+			measureDetailsView.getMessagePanel().getWarningConfirmationYesButton().setFocus(true);
+		} else {
+			navigateTo(menuItem);
+		}
+	}
+
+	private void navigateTo(MatDetailItem menuItem) {		
 		measureDetailsView.buildDetailView(menuItem);
+		navigationPanel.setActiveMenuItem(menuItem);
 		measureDetailsView.setFocusOnHeader();
+	}
+	
+	private void handleWarningConfirmationYesClick(MatDetailItem menuItem) {
+		clearAlerts();
+		navigateTo(menuItem);
+	}
+
+	private void handleWarningConfirmationNoClick() {
+		clearAlerts();
+	}
+
+	public boolean isDirty() {
+		if(!isReadOnly && measureDetailsView.getMeasureDetailsComponentModel() != null) {
+			return measureDetailsView.getMeasureDetailsComponentModel().isDirty(measureDetailsModel);
+		}
+		
+		return false; 
 	}
 	
 	@Override
@@ -142,10 +182,11 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 
 	private void displayMeasureDetailsView() {
 		this.scoringType = measureDetailsModel.getGeneralInformationModel().getScoringMethod();
-		navigationPanel.buildNavigationMenu(scoringType, isCompositeMeasure);
+		this.isPatientBased = measureDetailsModel.getGeneralInformationModel().isPatientBased();
+		navigationPanel.buildNavigationMenu(scoringType, isPatientBased, isCompositeMeasure);
 		measureDetailsView.buildDetailView(measureDetailsModel, MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION, navigationPanel);
-		isMeasureEditable = !MatContext.get().getMeasureLockService().checkForEditPermission();
-		measureDetailsView.setReadOnly(isMeasureEditable);
+		isReadOnly = !MatContext.get().getMeasureLockService().checkForEditPermission();
+		measureDetailsView.setReadOnly(isReadOnly);
 		measureDetailsView.getDeleteMeasureButton().setEnabled(isDeletable());
 		navigationPanel.setActiveMenuItem(MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION);
 		updateNavPillStates();
@@ -184,8 +225,7 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	}
 
 	private void clearAlerts() {
-		measureDetailsView.getErrorMessageAlert().clear();
-		measureDetailsView.getErrorMessageAlert().clearAlert();
+		measureDetailsView.getMessagePanel().clearAlerts();
 	}
 	
 	private void showErrorAlert(String message) {
@@ -240,17 +280,19 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 
 	@Override
 	public void handleSaveButtonClick() {
-		List<String> validationErrors = measureDetailsView.getMeasureDetailsComponentModel().validateModel(measureDetailsModel);
-		if(validationErrors == null || validationErrors.isEmpty()) {
-			ConfirmationDialogBox confirmationDialog = measureDetailsView.getSaveConfirmation();
-			if(confirmationDialog != null) {
-				showSaveConfirmationDialog(confirmationDialog);
+		if(!isReadOnly) {
+			List<String> validationErrors = measureDetailsView.getMeasureDetailsComponentModel().validateModel(measureDetailsModel);
+			if(validationErrors == null || validationErrors.isEmpty()) {
+				ConfirmationDialogBox confirmationDialog = measureDetailsView.getSaveConfirmation();
+				if(confirmationDialog != null) {
+					showSaveConfirmationDialog(confirmationDialog);
+				} else {
+					saveMeasureDetails();
+				}
 			} else {
-				saveMeasureDetails();
+				String validationErrorMessage = validationErrors.stream().collect(Collectors.joining("\n"));
+				measureDetailsView.displayErrorMessage(validationErrorMessage);
 			}
-		} else {
-			String validationErrorMessage = validationErrors.stream().collect(Collectors.joining("\n"));
-			measureDetailsView.displayErrorMessage(validationErrorMessage);
 		}
 	}
 
@@ -266,7 +308,6 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		measureDetailsView.getMeasureDetailsComponentModel().update(measureDetailsModel);
 		ManageMeasureDetailModelMapper mapper = new ManageMeasureDetailModelMapper(measureDetailsModel);
 		ManageMeasureDetailModel manageMeasureDetails = mapper.convertMeasureDetailsToManageMeasureDetailModel();
-
 		if(measureDetailsModel.isComposite()) {
 			MatContext.get().getMeasureService().saveCompositeMeasure((ManageCompositeMeasureDetailModel) manageMeasureDetails, getSaveCallback());
 		} else {
@@ -285,11 +326,12 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 			public void onSuccess(SaveMeasureResult result) {
 				MatDetailItem activeMenuItem = navigationPanel.getActiveMenuItem();
 				scoringType = measureDetailsModel.getGeneralInformationModel().getScoringMethod();
+				isPatientBased = measureDetailsModel.getGeneralInformationModel().isPatientBased();
 				MatContext.get().setCurrentMeasureScoringType(scoringType);
-				navigationPanel.buildNavigationMenu(scoringType, isCompositeMeasure);
+				navigationPanel.buildNavigationMenu(scoringType, isPatientBased, isCompositeMeasure);
 				measureDetailsView.buildDetailView(measureDetailsModel, navigationPanel.getActiveMenuItem(), navigationPanel);
-				isMeasureEditable = !MatContext.get().getMeasureLockService().checkForEditPermission();
-				measureDetailsView.setReadOnly(isMeasureEditable);
+				isReadOnly = !MatContext.get().getMeasureLockService().checkForEditPermission();
+				measureDetailsView.setReadOnly(isReadOnly);
 				measureDetailsView.getDeleteMeasureButton().setEnabled(isDeletable());
 				measureDetailsView.displaySuccessMessage("Changes for the " +  measureDetailsView.getCurrentMeasureDetail().displayName() + " section have been successfully saved.");
 				handleStateChanged();
@@ -313,13 +355,17 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		if(k instanceof MeasureDetailsItems) {
 			switch((MeasureDetailsItems) k) {
 			case GENERAL_MEASURE_INFORMATION:
-				return MeasureDetailState.INCOMPLETE;
+				return getGeneralInformationState(measureDetailsModel);
+			case STEWARD:
+				return getMeasureStewardAndDeveloperState(measureDetailsModel.getMeasureStewardDeveloperModel());
 			case DESCRIPTION:
 				return getRichTextEditableTabState(measureDetailsModel.getDescriptionModel());
 			case COPYRIGHT:
 				return getRichTextEditableTabState(measureDetailsModel.getCopyrightModel());
 			case DISCLAIMER:
 				return getRichTextEditableTabState(measureDetailsModel.getDisclaimerModel());
+			case MEASURE_TYPE:
+				return getMeasureTypeState(measureDetailsModel);
 			case STRATIFICATION:
 				return getRichTextEditableTabState(measureDetailsModel.getStratificationModel());
 			case RISK_ADJUSTMENT:
@@ -342,6 +388,8 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 				return getRichTextEditableTabState(measureDetailsModel.getSupplementalDataElementsModel());
 			case MEASURE_SET:
 				return getRichTextEditableTabState(measureDetailsModel.getMeasureSetModel());
+			case POPULATIONS:
+				return getPopulationsState(measureDetailsModel);
 			default: 
 				return MeasureDetailState.BLANK;
 			}
@@ -374,6 +422,43 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		return MeasureDetailState.BLANK;
 	}
 	
+	private MeasureDetailState getMeasureStewardAndDeveloperState(MeasureStewardDeveloperModel model) {
+		if (StringUtility.isEmptyOrNull(model.getStewardId()) && model.getSelectedDeveloperList().isEmpty()) {
+			return MeasureDetailState.BLANK;
+		} else if (StringUtility.isNotBlank(model.getStewardId()) && !model.getSelectedDeveloperList().isEmpty()){
+			return MeasureDetailState.COMPLETE;
+		} else {
+			return MeasureDetailState.INCOMPLETE;
+		}
+	}
+	
+	private MeasureDetailState getGeneralInformationState(MeasureDetailsModel measureDetailsModel) {
+		GeneralInformationValidator modelValidator = new GeneralInformationValidator();
+		return modelValidator.getModelState(measureDetailsModel.getGeneralInformationModel(), measureDetailsModel.isComposite());
+		
+	}
+
+	private MeasureDetailState getMeasureTypeState(MeasureDetailsModel model) {
+		
+		if(model.getMeasureTypeModeModel().getMeasureTypeList() == null) {
+			return MeasureDetailState.BLANK;
+		}
+		
+		// composite measures always have at least one measure type selected. So we should only show a green checkmark
+		// if the composite measure has more than two in its measure type list. 
+		if(model.isComposite()) {
+			if(model.getMeasureTypeModeModel().getMeasureTypeList().size() > 1) {
+				return MeasureDetailState.COMPLETE;
+			}
+		} else {
+			if(model.getMeasureTypeModeModel().getMeasureTypeList().size() > 0) {
+				return MeasureDetailState.COMPLETE;
+			}
+		}
+		
+		return MeasureDetailState.BLANK;
+	}
+
 	private MeasureDetailState getRichTextEditableTabState(MeasureDetailsRichTextAbstractModel model) {
 		if(model != null) {
 			if(model.getPlainText() == null || model.getPlainText().isEmpty()) {
@@ -383,5 +468,49 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 			}
 		}
 		return MeasureDetailState.BLANK;
+	}
+	
+	private MeasureDetailState getPopulationsState(MeasureDetailsModel measureDetailsModel) {
+		List<MeasureDetailsRichTextAbstractModel> applicableModels = new ArrayList<>();
+		if(scoringType.equals(MeasureDetailsConstants.getCohort())) {
+			applicableModels.add(measureDetailsModel.getInitialPopulationModel());
+		} else if (scoringType.equals(MeasureDetailsConstants.getContinuousVariable())) {
+			applicableModels.add(measureDetailsModel.getInitialPopulationModel());
+			applicableModels.add(measureDetailsModel.getMeasurePopulationModel());
+			applicableModels.add(measureDetailsModel.getMeasurePopulationExclusionsModel());
+			applicableModels.add(measureDetailsModel.getMeasureObservationsModel());
+		} else if(scoringType.equals(MeasureDetailsConstants.getProportion())) {
+			applicableModels.add(measureDetailsModel.getInitialPopulationModel());
+			applicableModels.add(measureDetailsModel.getDenominatorModel());
+			applicableModels.add(measureDetailsModel.getDenominatorExclusionsModel());
+			applicableModels.add(measureDetailsModel.getNumeratorModel());
+			applicableModels.add(measureDetailsModel.getNumeratorExclusionsModel());
+			applicableModels.add(measureDetailsModel.getDenominatorExceptionsModel());
+		} else if (scoringType.equals(MeasureDetailsConstants.getRatio())) {
+			applicableModels.add(measureDetailsModel.getInitialPopulationModel());
+			applicableModels.add(measureDetailsModel.getDenominatorModel());
+			applicableModels.add(measureDetailsModel.getDenominatorExclusionsModel());
+			applicableModels.add(measureDetailsModel.getNumeratorModel());
+			applicableModels.add(measureDetailsModel.getNumeratorExclusionsModel());
+		}
+		
+		return calculateStateOffOfList(applicableModels);
+	}
+	
+	private MeasureDetailState calculateStateOffOfList(List<MeasureDetailsRichTextAbstractModel> applicableModels) {
+		int completedPopulationCount = 0;
+		for(MeasureDetailsRichTextAbstractModel model : applicableModels) {
+			if(getRichTextEditableTabState(model) == MeasureDetailState.COMPLETE) {
+				completedPopulationCount++;
+			}
+		}
+		
+		if(completedPopulationCount == 0) {
+			return MeasureDetailState.BLANK;
+		} else if(completedPopulationCount == applicableModels.size()) {
+			return MeasureDetailState.COMPLETE;
+		} else {
+			return MeasureDetailState.INCOMPLETE;
+		}
 	}
 }

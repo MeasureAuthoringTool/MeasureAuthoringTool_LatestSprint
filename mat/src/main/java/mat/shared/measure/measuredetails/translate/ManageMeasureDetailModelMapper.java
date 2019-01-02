@@ -1,9 +1,11 @@
 package mat.shared.measure.measuredetails.translate;
 
+import java.util.Collections;
 import java.util.List;
 
 import mat.client.measure.ManageCompositeMeasureDetailModel;
 import mat.client.measure.ManageMeasureDetailModel;
+import mat.model.Author;
 import mat.model.MeasureSteward;
 import mat.model.MeasureType;
 import mat.shared.measure.measuredetails.models.ClinicalRecommendationModel;
@@ -155,8 +157,16 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 
 	private MeasureStewardDeveloperModel buildMeasureStewardDeveloperModel() {
 		MeasureStewardDeveloperModel measureStewardDeveloperModel = new MeasureStewardDeveloperModel();
-		measureStewardDeveloperModel.setMeasureDeveloperList(manageMeasureDetailModel.getAuthorSelectedList());
-		measureStewardDeveloperModel.setMeasureSteward(manageMeasureDetailModel.getStewardSelectedList());
+		measureStewardDeveloperModel.setMeasureStewardList(manageMeasureDetailModel.getMeasureDetailResult().getAllStewardList());
+		measureStewardDeveloperModel.setMeasureDeveloperList(manageMeasureDetailModel.getMeasureDetailResult().getAllAuthorList());
+		measureStewardDeveloperModel.setSelectedDeveloperList(manageMeasureDetailModel.getMeasureDetailResult().getUsedAuthorList());
+		
+		MeasureSteward usedSteward = manageMeasureDetailModel.getMeasureDetailResult().getUsedSteward();
+		if (usedSteward != null) {
+			measureStewardDeveloperModel.setStewardId(usedSteward.getId());
+			measureStewardDeveloperModel.setStewardValue(usedSteward.getOrgName());
+		}
+
 		return measureStewardDeveloperModel;
 	}
 
@@ -277,7 +287,9 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 		generalInformationModel.setScoringMethod(manageMeasureDetailModel.getMeasScoring());
 		generalInformationModel.setNqfId(manageMeasureDetailModel.getNqfId());
 		generalInformationModel.setEndorseByNQF(manageMeasureDetailModel.getEndorseByNQF());
-		
+		generalInformationModel.setCalendarYear(manageMeasureDetailModel.isCalenderYear());
+		generalInformationModel.setMeasureFromPeriod(manageMeasureDetailModel.getMeasFromPeriod());
+		generalInformationModel.setMeasureToPeriod(manageMeasureDetailModel.getMeasToPeriod());
 		if(manageMeasureDetailModel instanceof ManageCompositeMeasureDetailModel) {
 			generalInformationModel.setCompositeScoringMethod(((ManageCompositeMeasureDetailModel) manageMeasureDetailModel).getCompositeScoringMethod());
 		}
@@ -318,7 +330,9 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 		manageMeasureDetailModel.setMeasurePopulationExclusions(getMeasurePopulationEclusions());
 		manageMeasureDetailModel.setMeasurePopulation(getMeasurePopulation());
 		manageMeasureDetailModel.setGroupName(getMeasureSetText());
-		manageMeasureDetailModel.setStewardSelectedList(getStewardList());
+		manageMeasureDetailModel.setStewardId(getStewardId());
+		manageMeasureDetailModel.setStewardValue(getStewardValue());
+		manageMeasureDetailModel.setAuthorSelectedList(getDeveloperSelectedList());
 		manageMeasureDetailModel.setMeasureTypeSelectedList(getMeasureTypeSelectedList());
 		manageMeasureDetailModel.setNumeratorExclusions(getNumeratorExclusions());
 		manageMeasureDetailModel.setNumerator(getNumerator());
@@ -331,7 +345,31 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 		manageMeasureDetailModel.setTransmissionFormat(getTransmissionFormat());
 		manageMeasureDetailModel.setNqfId(getNqfId());
 		manageMeasureDetailModel.setEndorseByNQF(getEndorsedByNQF());
+		manageMeasureDetailModel.setCalenderYear(isCalendarYear());
+		manageMeasureDetailModel.setMeasFromPeriod(getMeasureFromPeriod());
+		manageMeasureDetailModel.setMeasToPeriod(getMeasureToPeriod());
 		return manageMeasureDetailModel;
+	}
+
+	private String getMeasureToPeriod() {
+		if(measureDetailsModel.getGeneralInformationModel() != null) {
+			return measureDetailsModel.getGeneralInformationModel().getMeasureToPeriod();
+		}
+		return null;
+	}
+
+	private String getMeasureFromPeriod() {
+		if(measureDetailsModel.getGeneralInformationModel() != null) {
+			return measureDetailsModel.getGeneralInformationModel().getMeasureFromPeriod();
+		}
+		return null;
+	}
+
+	private boolean isCalendarYear() {
+		if(measureDetailsModel.getGeneralInformationModel() != null) {
+			return measureDetailsModel.getGeneralInformationModel().isCalendarYear();
+		}
+		return false;
 	}
 
 	private Boolean getEndorsedByNQF() {
@@ -474,11 +512,25 @@ public class ManageMeasureDetailModelMapper implements MeasureDetailModelMapper{
 		return null;
 	}
 
-	private List<MeasureSteward> getStewardList() {
+	private String getStewardId() {
 		if(measureDetailsModel.getMeasureStewardDeveloperModel() != null) {
-			return measureDetailsModel.getMeasureStewardDeveloperModel().getMeasureStewardList();
+			return measureDetailsModel.getMeasureStewardDeveloperModel().getStewardId();
 		}
 		return null;
+	}
+
+	private String getStewardValue() {
+		if(measureDetailsModel.getMeasureStewardDeveloperModel() != null) {
+			return measureDetailsModel.getMeasureStewardDeveloperModel().getStewardValue();
+		}
+		return null;
+	}
+
+	private List<Author> getDeveloperSelectedList() {
+		if(measureDetailsModel.getMeasureStewardDeveloperModel() != null) {
+			return measureDetailsModel.getMeasureStewardDeveloperModel().getSelectedDeveloperList();
+		}
+		return Collections.emptyList();
 	}
 
 	private String getMeasureSetText() {

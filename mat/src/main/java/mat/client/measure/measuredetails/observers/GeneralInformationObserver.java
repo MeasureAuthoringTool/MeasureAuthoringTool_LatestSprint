@@ -51,6 +51,9 @@ public class GeneralInformationObserver implements MeasureDetailsComponentObserv
 		generalInformationModel.setMeasureName(generalMeasureInformationView.getMeasureNameInput().getText());
 		generalInformationModel.setEndorseByNQF(Boolean.parseBoolean(generalMeasureInformationView.getEndorsedByListBox().getValue()));
 		generalInformationModel.setNqfId(generalMeasureInformationView.getnQFIDInput().getText());
+		generalInformationModel.setCalendarYear(generalMeasureInformationView.getCalenderYear().getValue());
+		generalInformationModel.setMeasureFromPeriod(generalMeasureInformationView.getMeasurePeriodFromInput().getValue());
+		generalInformationModel.setMeasureToPeriod(generalMeasureInformationView.getMeasurePeriodToInput().getValue());
 		return generalInformationModel;
 	}
 	
@@ -131,18 +134,17 @@ public class GeneralInformationObserver implements MeasureDetailsComponentObserv
 				
 				@Override
 				public void onFailure(Throwable caught) {
-					//TODO create error message //MatContext.get().getMessageDelegate().getGenericErrorMessage();
 					MatContext.get().recordTransactionEvent(null, null, null, "Unhandled Exception: "+caught.getLocalizedMessage(), 0);
 				}
 				
 				@Override
 				public void onSuccess(Integer result) {
 					if(result > 0){
-						int maxEmeasureId = result.intValue();
+						int eMeasureId = result.intValue();
 						generalMeasureInformationView.getGenerateEMeasureIDButton().setEnabled(false);
-						generalMeasureInformationView.geteMeasureIdentifierInput().setText(String.valueOf(maxEmeasureId));
-						generalMeasureInformationView.geteMeasureIdentifierInput().setValue(String.valueOf(maxEmeasureId));
-						generalMeasureInformationView.getGeneralInformationModel().seteMeasureId(maxEmeasureId);
+						generalMeasureInformationView.geteMeasureIdentifierInput().setText(String.valueOf(eMeasureId));
+						generalMeasureInformationView.geteMeasureIdentifierInput().setValue(String.valueOf(eMeasureId));
+						generalMeasureInformationView.updateEmeasureId(eMeasureId);
 						generalMeasureInformationView.getGenerateEMeasureIDButton().setEnabled(false);
 						generalMeasureInformationView.geteMeasureIdentifierInput().setFocus(true);
 					}
@@ -152,19 +154,25 @@ public class GeneralInformationObserver implements MeasureDetailsComponentObserv
 	}
 
 	@Override
-	public void handleValueChanged() {
-		// TODO Auto-generated method stub
-	}
+	public void handleValueChanged() {}
 
 	@Override
-	public void setView(MeasureDetailViewInterface view) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void setView(MeasureDetailViewInterface view) {}
 
 	public void handleEndorsedByNQFChanged() {
 		boolean endorsedByNQF = generalMeasureInformationView.getEndorsedByListBox().getSelectedIndex() == 1 ? true :  false;
 		generalMeasureInformationView.setNQFTitle(endorsedByNQF);
 		updateGeneralInformationModelFromView();
+	}
+
+	public void handleCalendarYearChanged() {
+		boolean calendarYearSelected = generalMeasureInformationView.getCalenderYear().getValue();
+		generalMeasureInformationView.getMeasurePeriodFromInput().setEnabled(!calendarYearSelected);
+		generalMeasureInformationView.getMeasurePeriodToInput().setEnabled(!calendarYearSelected);
+		if(calendarYearSelected) {
+			generalMeasureInformationView.getMeasurePeriodFromInput().setValue("");
+			generalMeasureInformationView.getMeasurePeriodToInput().setValue("");
+		}
+		handleInputChanged();
 	}
 }

@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.google.gwt.user.client.rpc.IsSerializable;
 
+import mat.shared.StringUtility;
+
 public class GeneralInformationModel implements MeasureDetailsComponentModel, IsSerializable {
 	private String measureName;
 	private String finalizedDate;
@@ -16,6 +18,9 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 	private int eMeasureId;
 	private String nqfId;
 	private Boolean endorseByNQF;
+	private boolean isCalendarYear;
+	private String measureFromPeriod;
+	private String measureToPeriod;
 
 	public GeneralInformationModel() {
 	}
@@ -32,6 +37,9 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 		this.eMeasureId = model.geteMeasureId();
 		this.endorseByNQF = model.getEndorseByNQF();
 		this.nqfId = model.nqfId;
+		this.setCalendarYear(model.isCalendarYear());
+		this.setMeasureFromPeriod(model.getMeasureFromPeriod());
+		this.setMeasureToPeriod(model.getMeasureToPeriod());
 	}
 
 	public int geteMeasureId() {
@@ -79,28 +87,29 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 	@Override
 	public boolean equals(MeasureDetailsComponentModel model) {
 		GeneralInformationModel originalModel = (GeneralInformationModel) model;
-		boolean isEqual = ((originalModel.getMeasureName() == null && getMeasureName() == null) ||
-				(originalModel.getMeasureName() != null && originalModel.getMeasureName().equals(getMeasureName())) &&
-				((originalModel.getFinalizedDate() == null && getFinalizedDate() == null) ||
-						(originalModel.getFinalizedDate() != null && originalModel.getFinalizedDate().equals(getFinalizedDate()))) &&
-				originalModel.isPatientBased() == isPatientBased()  &&
-				((originalModel.getGuid() == null && getGuid() == null) ||
-				(originalModel.getGuid() != null && originalModel.getGuid().equals(getGuid())))  &&
-				((originalModel.geteCQMAbbreviatedTitle() == null && geteCQMAbbreviatedTitle() == null) ||
-				(originalModel.geteCQMAbbreviatedTitle().equals(geteCQMAbbreviatedTitle()))) &&
-				(originalModel.geteCQMVersionNumber() == null && geteCQMVersionNumber() == null) ||
-				(originalModel.geteCQMVersionNumber().equals(geteCQMVersionNumber())) &&
-				((originalModel.getCompositeScoringMethod() == null && getCompositeScoringMethod() == null) ||
-				(originalModel.getCompositeScoringMethod() != null && originalModel.getCompositeScoringMethod().equals(getCompositeScoringMethod()))) && 
-				((originalModel.getScoringMethod() == null && getScoringMethod() == null) ||
-				(originalModel.getScoringMethod() != null && originalModel.getScoringMethod().equals(getScoringMethod()))) &&
-				(originalModel.geteMeasureId() == geteMeasureId()) &&
-				((originalModel.getNqfId() == null && getNqfId() == null) || 
-				(originalModel.getNqfId() != null && originalModel.getNqfId().equals(getNqfId()))) &&
-				((originalModel.getEndorseByNQF() == null && getEndorseByNQF() == null) || 
-				(originalModel.getEndorseByNQF() != null &&  originalModel.getEndorseByNQF().equals(getEndorseByNQF())))
-				);
-		return isEqual;
+		return (modelValuesAreEqual(originalModel.getMeasureName(), getMeasureName()) &&
+				modelValuesAreEqual(originalModel.getFinalizedDate(), getFinalizedDate()) && 
+				modelValuesAreEqual(originalModel.isPatientBased(), isPatientBased()) &&
+				modelValuesAreEqual(originalModel.getGuid(), getGuid()) &&
+				modelValuesAreEqual(originalModel.geteCQMAbbreviatedTitle(), geteCQMAbbreviatedTitle()) &&
+				modelValuesAreEqual(originalModel.geteCQMVersionNumber(), geteCQMVersionNumber()) && 
+				modelValuesAreEqual(originalModel.getCompositeScoringMethod(), getCompositeScoringMethod()) &&
+				modelValuesAreEqual(originalModel.getScoringMethod(), getScoringMethod()) &&
+				modelValuesAreEqual(originalModel.getNqfId(), getNqfId()) && 
+				modelValuesAreEqual(originalModel.getEndorseByNQF(), getEndorseByNQF()) &&
+				modelValuesAreEqual(originalModel.isCalendarYear(), isCalendarYear) &&
+				modelValuesAreEqual(originalModel.getMeasureFromPeriod(), getMeasureFromPeriod()) &&
+				modelValuesAreEqual(originalModel.getMeasureToPeriod(), getMeasureToPeriod()));
+	}
+	
+
+	public boolean modelValuesAreEqual(String originalModelValue, String newModelValue) {
+		return (StringUtility.isEmptyOrNull(originalModelValue) && StringUtility.isEmptyOrNull(newModelValue) ||
+		(originalModelValue != null && originalModelValue.equals(newModelValue)));
+	}
+	
+	public boolean modelValuesAreEqual(boolean originalModelValue, boolean newModelValue) {
+		return originalModelValue == newModelValue;
 	}
 	
 	public String getMeasureName() {
@@ -147,6 +156,9 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 		sb.append(", eMeasureId: " + eMeasureId);
 		sb.append(", endorsedByNQF: " + endorseByNQF);
 		sb.append(", nqfId: " + nqfId);
+		sb.append(", isCalendarYear: " + isCalendarYear);
+		sb.append(", measureFromPeriod: " + measureFromPeriod);
+		sb.append(", measureToperiod: " + measureToPeriod);
 		return sb.toString();
 	}
 	
@@ -156,5 +168,34 @@ public class GeneralInformationModel implements MeasureDetailsComponentModel, Is
 	
 	public List<String> validateModel(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
 		return measureDetailsModelVisitor.validateModel(this);
+	}
+
+	@Override
+	public boolean isDirty(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
+		return measureDetailsModelVisitor.isDirty(this);
+	}
+	
+	public boolean isCalendarYear() {
+		return isCalendarYear;
+	}
+	
+	public void setCalendarYear(boolean isCalenderYear) {
+		this.isCalendarYear = isCalenderYear;
+	}
+	
+	public String getMeasureFromPeriod() {
+		return measureFromPeriod;
+	}
+	
+	public void setMeasureFromPeriod(String measFromPeriod) {
+		this.measureFromPeriod = StringUtility.doTrim(measFromPeriod);
+	}
+	
+	public String getMeasureToPeriod() {
+		return measureToPeriod;
+	}
+	
+	public void setMeasureToPeriod(String measToPeriod) {
+		this.measureToPeriod = StringUtility.doTrim(measToPeriod);
 	}
 }

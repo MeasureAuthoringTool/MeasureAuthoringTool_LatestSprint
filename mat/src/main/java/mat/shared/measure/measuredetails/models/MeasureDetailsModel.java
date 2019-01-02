@@ -1,11 +1,10 @@
 package mat.shared.measure.measuredetails.models;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gwt.user.client.rpc.IsSerializable;
 
-import mat.shared.StringUtility;
+import mat.shared.measure.measuredetails.validate.GeneralInformationValidator;
 
 public class MeasureDetailsModel implements MeasureDetailsComponentModel, MeasureDetailsModelVisitor, IsSerializable  {
 	private String id;
@@ -415,7 +414,7 @@ public class MeasureDetailsModel implements MeasureDetailsComponentModel, Measur
 	}
 
 	@Override
-	public void updatemodel(TransmissionFormatModel transmissionFormatModel) {
+	public void updateModel(TransmissionFormatModel transmissionFormatModel) {
 		setTransmissionFormatModel(transmissionFormatModel);
 	}
 
@@ -463,11 +462,8 @@ public class MeasureDetailsModel implements MeasureDetailsComponentModel, Measur
 
 	@Override
 	public List<String> validateModel(GeneralInformationModel generalInformationModel) {
-		List<String> errorMessages = new ArrayList<>();
-		if(generalInformationModel.getEndorseByNQF() && StringUtility.isEmptyOrNull(generalInformationModel.getNqfId())) {
-			errorMessages.add("NQF Number is required when a measure is endorsed by NQF.");
-		}
-		return errorMessages;
+		final GeneralInformationValidator validator = new GeneralInformationValidator();
+		return validator.validateModel(generalInformationModel);
 	}
 
 	@Override
@@ -588,5 +584,162 @@ public class MeasureDetailsModel implements MeasureDetailsComponentModel, Measur
 	public List<String> validateModel(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public boolean isDirty(ClinicalRecommendationModel clinicalRecommendationModel) {
+		return !clinicalRecommendationModel.equals(this.getClinicalRecommendationModel());
+	}
+
+	@Override
+	public boolean isDirty(CopyrightModel copyrightModel) {
+		return !copyrightModel.equals(this.getCopyrightModel());
+	}
+
+	@Override
+	public boolean isDirty(DefinitionModel definitionModel) {
+		return !definitionModel.equals(this.getDefinitionModel());
+
+	}
+
+	@Override
+	public boolean isDirty(DescriptionModel descriptionModel) {
+		return !descriptionModel.equals(this.getDescriptionModel());
+	}
+
+	@Override
+	public boolean isDirty(DenominatorExceptionsModel denominatorExceptionsModel) {
+		return !denominatorExceptionsModel.equals(this.getDenominatorExceptionsModel());
+	}
+
+	@Override
+	public boolean isDirty(DenominatorExclusionsModel denominatorExclusionsModel) {
+		return !denominatorExclusionsModel.equals(this.getDenominatorExclusionsModel());
+	}
+
+	@Override
+	public boolean isDirty(DenominatorModel denominatorModel) {
+		return !denominatorModel.equals(this.getDenominatorModel());
+	}
+	
+	@Override
+	public boolean isDirty(DisclaimerModel disclaimerModel) {
+		return !disclaimerModel.equals(this.getDisclaimerModel());
+	}
+
+	@Override
+	public boolean isDirty(GeneralInformationModel generalInformationModel) {
+		return !generalInformationModel.equals(this.getGeneralInformationModel());
+	}
+
+	@Override
+	public boolean isDirty(GuidanceModel guidanceModel) {
+		return !guidanceModel.equals(this.getGuidanceModel());
+
+	}
+
+	@Override
+	public boolean isDirty(ImprovementNotationModel improvementNotationModel) {
+		return !improvementNotationModel.equals(this.getImprovementNotationModel());
+
+	}
+
+	@Override
+	public boolean isDirty(InitialPopulationModel initialPopulationModel) {
+		return !initialPopulationModel.equals(this.getInitialPopulationModel());
+
+	}
+
+	@Override
+	public boolean isDirty(MeasureObservationsModel measureObservationsModel) {
+		return !measureObservationsModel.equals(this.getMeasureObservationsModel());
+
+	}
+
+	@Override
+	public boolean isDirty(MeasurePopulationExclusionsModel measurePopulationExclusionsModel) {
+		return !measurePopulationExclusionsModel.equals(this.getMeasurePopulationExclusionsModel());
+
+	}
+
+	@Override
+	public boolean isDirty(MeasurePopulationModel measurePopulationModel) {
+		return !measurePopulationModel.equals(this.getMeasurePopulationModel());
+
+	}
+
+	@Override
+	public boolean isDirty(MeasureSetModel measureSetModel) {
+		return !measureSetModel.equals(this.getMeasureSetModel());
+
+	}
+
+	@Override
+	public boolean isDirty(MeasureStewardDeveloperModel measureStewardDeveloperModel) {
+		return !measureStewardDeveloperModel.equals(this.getMeasureStewardDeveloperModel());
+
+	}
+
+	@Override
+	public boolean isDirty(MeasureTypeModel measureTypeModel) {
+		return !measureTypeModel.equals(this.getMeasureTypeModeModel());
+
+	}
+
+	@Override
+	public boolean isDirty(NumeratorExclusionsModel numeratorExclusionsModel) {
+		return !numeratorExclusionsModel.equals(this.getNumeratorExclusionsModel());
+
+	}
+
+	@Override
+	public boolean isDirty(NumeratorModel numeratorModel) {
+		return !numeratorModel.equals(this.getNumeratorModel());
+
+	}
+
+	@Override
+	public boolean isDirty(RateAggregationModel rateAggregationModel) {
+		return !rateAggregationModel.equals(this.getRateAggregationModel());
+	}
+
+	@Override
+	public boolean isDirty(RationaleModel rationaleModel) {
+		return !rationaleModel.equals(this.getRationaleModel());
+
+	}
+
+	@Override
+	public boolean isDirty(ReferencesModel referencesModel) {
+		return !referencesModel.equals(this.getReferencesModel());
+
+	}
+
+	@Override
+	public boolean isDirty(RiskAdjustmentModel riskAdjustmentModel) {
+		return !riskAdjustmentModel.equals(this.getRiskAdjustmentModel());
+
+	}
+
+	@Override
+	public  boolean isDirty(StratificationModel stratificationModel) {
+		return !stratificationModel.equals(this.getStratificationModel());
+
+	}
+
+	@Override
+	public boolean isDirty(SupplementalDataElementsModel supplementalDataElementsModel) {
+		return !supplementalDataElementsModel.equals(this.getSupplementalDataElementsModel());
+
+	}
+
+	@Override
+	public boolean isDirty(TransmissionFormatModel transmissionFormatModel) {
+		return !transmissionFormatModel.equals(this.getTransmissionFormatModel());
+	}
+
+	@Override
+	public boolean isDirty(MeasureDetailsModelVisitor measureDetailsModelVisitor) {
+		return false;
 	}
 }
