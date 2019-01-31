@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import com.google.gwt.event.shared.HandlerManager;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.Mat;
@@ -13,10 +14,12 @@ import mat.client.MatPresenter;
 import mat.client.event.BackToMeasureLibraryPage;
 import mat.client.event.MeasureDeleteEvent;
 import mat.client.event.MeasureSelectedEvent;
+import mat.client.measure.ComponentMeasureDisplay;
 import mat.client.measure.ManageCompositeMeasureDetailModel;
 import mat.client.measure.ManageMeasureDetailModel;
 import mat.client.measure.measuredetails.navigation.MeasureDetailsAnchorListItem;
 import mat.client.measure.measuredetails.navigation.MeasureDetailsNavigation;
+import mat.client.measure.measuredetails.views.ReferencesView;
 import mat.client.measure.service.SaveMeasureResult;
 import mat.client.shared.ConfirmationDialogBox;
 import mat.client.shared.MatContext;
@@ -24,7 +27,9 @@ import mat.client.shared.MatDetailItem;
 import mat.client.shared.MeasureDetailsConstants;
 import mat.client.shared.MeasureDetailsConstants.MeasureDetailsItems;
 import mat.client.shared.MeasureDetailsConstants.PopulationItems;
+import mat.client.shared.MessagePanel;
 import mat.client.shared.ui.DeleteConfirmDialogBox;
+import mat.shared.CompositeMeasureValidationResult;
 import mat.shared.ConstantMessages;
 import mat.shared.StringUtility;
 import mat.shared.error.AuthenticationException;
@@ -32,25 +37,39 @@ import mat.shared.error.measure.DeleteMeasureException;
 import mat.shared.measure.measuredetails.models.MeasureDetailsModel;
 import mat.shared.measure.measuredetails.models.MeasureDetailsRichTextAbstractModel;
 import mat.shared.measure.measuredetails.models.MeasureStewardDeveloperModel;
+import mat.shared.measure.measuredetails.models.ReferencesModel;
 import mat.shared.measure.measuredetails.translate.ManageMeasureDetailModelMapper;
 import mat.shared.measure.measuredetails.validate.GeneralInformationValidator;
 
 public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObserver {
 	private MeasureDetailsView measureDetailsView;
 	private MeasureDetailsNavigation navigationPanel;
+	private ComponentMeasureDisplay componentMeasureDisplay;
 	private String scoringType;
 	private boolean isCompositeMeasure;
 	private boolean isReadOnly;
 	private boolean isPatientBased;
 	private long lastRequestTime;
 	private DeleteConfirmDialogBox dialogBox;
+	private ManageCompositeMeasureDetailModel currentCompositeMeasureDetails = new ManageCompositeMeasureDetailModel();
+	
+	private SimplePanel panel;
+	
 	MeasureDetailsModel measureDetailsModel;
+	
+	Boolean showCompositeEdit = false;
 
 	public MeasureDetailsPresenter() {
+		panel = new SimplePanel();
 		navigationPanel = new MeasureDetailsNavigation(scoringType, isPatientBased, isCompositeMeasure);
 		navigationPanel.setObserver(this);
 		measureDetailsModel = new MeasureDetailsModel();
-		measureDetailsView = new MeasureDetailsView(measureDetailsModel, MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION, navigationPanel);
+		measureDetailsView = new MeasureDetailsView(measureDetailsModel, MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION, navigationPanel, this);
+		measureDetailsView.setMeasureDetailsObserver(this);
+		measureDetailsView.getWidget().addStyleName("measureDetailsSwitchPanel");
+		componentMeasureDisplay = new ComponentMeasureDisplay();
+		componentMeasureDisplay.getBackButton().setVisible(false);
+		componentMeasureDisplay.getBreadCrumbPanel().setVisible(true);
 		navigationPanel.setActiveMenuItem(MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION);
 		addEventHandlers();
 	}
@@ -69,9 +88,13 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	public void beforeDisplay() {
 		clearAlerts();
 		setIsLoading();
-		MatContext.get().getMeasureService().getMeasureDetailsAndLogRecentMeasure(MatContext.get().getCurrentMeasureId(), MatContext.get().getLoggedinUserId(),getAsyncCallBackForMeasureAndLogRecentMeasure());
+		getDataBaseInfomation(false, false);
 	}
 
+	private void getDataBaseInfomation(boolean goToComposite, boolean displaySuccessMessage) {
+		MatContext.get().getMeasureService().getMeasureDetailsAndLogRecentMeasure(MatContext.get().getCurrentMeasureId(), MatContext.get().getLoggedinUserId(),getAsyncCallBackForMeasureAndLogRecentMeasure(goToComposite, displaySuccessMessage));
+	}
+	
 	private void setIsLoading() {
 		measureDetailsView.clear();
 		measureDetailsView.setReadOnly(true);
@@ -80,17 +103,43 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 
 	@Override
 	public Widget getWidget() {
-		return measureDetailsView.getWidget();
+		return panel;
 	}
 
 	public MeasureDetailsView getView() {
 		return measureDetailsView;
 	}
 	
+	private void displayDetails(Boolean goToComposite, Boolean displaySuccessMessage) {
+		panel.clear();
+		panel.add(measureDetailsView.getWidget());
+		showCompositeEdit = false;
+		if(goToComposite) {
+			handleMenuItemClick(MeasureDetailsItems.COMPONENT_MEASURES);
+		}
+		if(displaySuccessMessage) {
+			measureDetailsView.displaySuccessMessage("Component Measures have been successfully updated");
+		}
+	}
+	
+	private void displayEditComposite(ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel) {
+		showCompositeEdit = true;
+		this.currentCompositeMeasureDetails = manageCompositeMeasureDetailModel;
+		panel.clear();
+		componentMeasureDisplay.getComponentMeasureSearch().clearFields(false);
+		componentMeasureDisplay.getComponentMeasureSearch().setAliasMapping(manageCompositeMeasureDetailModel.getAliasMapping());
+		componentMeasureDisplay.getComponentMeasureSearch().setAppliedComponentMeasuresList(manageCompositeMeasureDetailModel.getAppliedComponentMeasures());
+		componentMeasureDisplay.getComponentMeasureSearch().buildSearch();
+		
+		panel.add(componentMeasureDisplay.asWidget());
+		componentMeasureDisplay.setComponentBusy(false);
+	}
+	
 	@Override
 	public void handleMenuItemClick(MatDetailItem menuItem) {
 		clearAlerts();
 		if(isDirty()) {
+			measureDetailsView.clearAlerts();
 			measureDetailsView.displayDirtyCheck();
 			measureDetailsView.getMessagePanel().getWarningConfirmationNoButton().addClickHandler(event -> handleWarningConfirmationNoClick());
 			measureDetailsView.getMessagePanel().getWarningConfirmationYesButton().addClickHandler(event -> handleWarningConfirmationYesClick(menuItem));
@@ -99,9 +148,16 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 			navigateTo(menuItem);
 		}
 	}
-
+	
+	@Override
+	public void handleEditCompositeMeasures(ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel) {
+		if(!isReadOnly) {
+			displayEditComposite(manageCompositeMeasureDetailModel);
+		}
+	}
+	
 	private void navigateTo(MatDetailItem menuItem) {		
-		measureDetailsView.buildDetailView(menuItem);
+		measureDetailsView.buildDetailView(menuItem, this);
 		navigationPanel.setActiveMenuItem(menuItem);
 		measureDetailsView.setFocusOnHeader();
 	}
@@ -116,11 +172,20 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	}
 
 	public boolean isDirty() {
-		if(!isReadOnly && measureDetailsView.getMeasureDetailsComponentModel() != null) {
-			return measureDetailsView.getMeasureDetailsComponentModel().isDirty(measureDetailsModel);
+		boolean isDirty = false;
+		if(!isReadOnly) {
+			if(showCompositeEdit) {
+				isDirty = componentMeasureDisplay.getComponentMeasureSearch().isDirty();
+			} else if( measureDetailsView.getMeasureDetailsComponentModel() != null) {
+				isDirty = measureDetailsView.getMeasureDetailsComponentModel().isDirty(measureDetailsModel);
+			}
+			if(!isDirty && measureDetailsView.getCurrentMeasureDetail() == MeasureDetailsItems.REFERENCES) {
+				ReferencesView referencesView = (ReferencesView) measureDetailsView.getComponentDetailView();
+				isDirty = referencesView.isEditorDirty();
+			}
 		}
-		
-		return false; 
+
+		return isDirty; 
 	}
 	
 	@Override
@@ -180,16 +245,17 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		MatContext.get().getEventBus().fireEvent(backToMeasureLibraryPage);
 	}
 
-	private void displayMeasureDetailsView() {
+	private void displayMeasureDetailsView(Boolean goToComposite, Boolean displaySuccessMessage) {
 		this.scoringType = measureDetailsModel.getGeneralInformationModel().getScoringMethod();
 		this.isPatientBased = measureDetailsModel.getGeneralInformationModel().isPatientBased();
 		navigationPanel.buildNavigationMenu(scoringType, isPatientBased, isCompositeMeasure);
-		measureDetailsView.buildDetailView(measureDetailsModel, MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION, navigationPanel);
+		measureDetailsView.buildDetailView(measureDetailsModel, MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION, navigationPanel, this);
 		isReadOnly = !MatContext.get().getMeasureLockService().checkForEditPermission();
 		measureDetailsView.setReadOnly(isReadOnly);
 		measureDetailsView.getDeleteMeasureButton().setEnabled(isDeletable());
 		navigationPanel.setActiveMenuItem(MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION);
 		updateNavPillStates();
+		displayDetails(goToComposite, displaySuccessMessage);
 	}
 
 
@@ -203,6 +269,79 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		});
 		measureDetailsView.getDeleteMeasureButton().addClickHandler(event -> handleDeleteMeasureButtonClick());
 		measureDetailsView.getSaveButton().addClickHandler(event -> handleSaveButtonClick());
+		componentMeasureDisplay.getBackButton().addClickHandler(event -> displayCompositeMeasuresOnMeasureDetails(false));
+		componentMeasureDisplay.getCancelButton().addClickHandler(event -> displayCompositeMeasuresOnMeasureDetails(false));
+		componentMeasureDisplay.getSaveButton().addClickHandler(event -> saveCompositeMeasures());
+	}
+
+	
+	
+	private void saveCompositeMeasures() {
+
+		componentMeasureDisplay.setComponentBusy(true);
+		updateCompositeDetailsFromComponentMeasureDisplay();
+		
+		MatContext.get().getMeasureService().validateCompositeMeasure(currentCompositeMeasureDetails, new AsyncCallback<CompositeMeasureValidationResult>() {
+
+			@Override
+			public void onFailure(Throwable caught) {
+				componentMeasureDisplay.setComponentBusy(false);
+			}
+
+			@Override
+			public void onSuccess(CompositeMeasureValidationResult result) {
+				currentCompositeMeasureDetails = result.getModel();
+				if(isValidCompositeMeasureForSave(result.getMessages())){
+					saveCompositeMeasure();
+				}
+			}
+		});
+	}
+		
+		
+	private boolean isValidCompositeMeasureForSave(List<String> message) {
+		boolean valid = message.size() == 0;
+		componentMeasureDisplay.getSuccessMessage().clearAlert();
+		if(!valid) {
+			String errorMessage = "";
+			if(message.size() > 0) {
+				errorMessage = message.get(0);
+				componentMeasureDisplay.setComponentBusy(false);
+			}
+			componentMeasureDisplay.getErrorMessageDisplay().createAlert(errorMessage);
+		} else {
+			componentMeasureDisplay.getErrorMessageDisplay().clearAlert();
+		}
+		return valid;
+	}
+	
+	private void saveCompositeMeasure() {
+		MatContext.get().getMeasureService().saveCompositeMeasure(currentCompositeMeasureDetails, new AsyncCallback<SaveMeasureResult>() {
+
+			@Override
+			public void onFailure(Throwable caught) {
+				componentMeasureDisplay.getErrorMessageDisplay().createAlert(caught.getLocalizedMessage());
+				componentMeasureDisplay.setComponentBusy(false);
+			}
+
+			@Override
+			public void onSuccess(SaveMeasureResult result) {
+				componentMeasureDisplay.setComponentBusy(false);
+				displayCompositeMeasuresOnMeasureDetails(true);
+			}
+			
+		});
+	}
+	
+	private void updateCompositeDetailsFromComponentMeasureDisplay() {
+		currentCompositeMeasureDetails.setAppliedComponentMeasures(componentMeasureDisplay.getComponentMeasureSearch().getAppliedComponentMeasuresList());
+		currentCompositeMeasureDetails.setAliasMapping(componentMeasureDisplay.getComponentMeasureSearch().getAliasMapping());
+	}
+
+	private void displayCompositeMeasuresOnMeasureDetails(Boolean displaySuccessMessage) {
+		componentMeasureDisplay.setComponentBusy(true);
+		componentMeasureDisplay.getComponentMeasureSearch().clearFields(false);
+		getDataBaseInfomation(true, displaySuccessMessage);
 	}
 
 	protected AsyncCallback<ManageCompositeMeasureDetailModel> getAsyncCallBackForCompositeMeasureAndLogRecentMeasure() {
@@ -241,7 +380,7 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		return measureDetailsModel.getOwnerUserId() == MatContext.get().getLoggedinUserId();
 	}
 	
-	private AsyncCallback<MeasureDetailsModel> getAsyncCallBackForMeasureAndLogRecentMeasure() {
+	private AsyncCallback<MeasureDetailsModel> getAsyncCallBackForMeasureAndLogRecentMeasure(Boolean goToComposite, Boolean displaySuccessMessage) {
 		return new AsyncCallback<MeasureDetailsModel>() {
 			final long callbackRequestTime = lastRequestTime;
 			@Override
@@ -258,7 +397,7 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 				Mat.hideLoadingMessage();
 				if (callbackRequestTime == lastRequestTime) {
 					measureDetailsModel = result;
-					displayMeasureDetailsView();
+					displayMeasureDetailsView(goToComposite, displaySuccessMessage);
 				}
 			}
 		};
@@ -281,17 +420,22 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	@Override
 	public void handleSaveButtonClick() {
 		if(!isReadOnly) {
-			List<String> validationErrors = measureDetailsView.getMeasureDetailsComponentModel().validateModel(measureDetailsModel);
-			if(validationErrors == null || validationErrors.isEmpty()) {
-				ConfirmationDialogBox confirmationDialog = measureDetailsView.getSaveConfirmation();
-				if(confirmationDialog != null) {
-					showSaveConfirmationDialog(confirmationDialog);
-				} else {
-					saveMeasureDetails();
-				}
+			if(measureDetailsView.getCurrentMeasureDetail() == MeasureDetailsItems.REFERENCES) {
+				ReferencesView referencesView = (ReferencesView) measureDetailsView.getComponentDetailView();
+				referencesView.saveModel();
 			} else {
-				String validationErrorMessage = validationErrors.stream().collect(Collectors.joining("\n"));
-				measureDetailsView.displayErrorMessage(validationErrorMessage);
+				List<String> validationErrors = measureDetailsView.getMeasureDetailsComponentModel().validateModel(measureDetailsModel);
+				if(validationErrors == null || validationErrors.isEmpty()) {
+					ConfirmationDialogBox confirmationDialog = measureDetailsView.getSaveConfirmation();
+					if(confirmationDialog != null) {
+						showSaveConfirmationDialog(confirmationDialog);
+					} else {
+						saveMeasureDetails();
+					}
+				} else {
+					String validationErrorMessage = validationErrors.stream().collect(Collectors.joining("\n"));
+					measureDetailsView.displayErrorMessage(validationErrorMessage);
+				}
 			}
 		}
 	}
@@ -303,7 +447,7 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		confirmationDialog.getYesButton().setFocus(true);
 	}
 
-	private void saveMeasureDetails() {
+	public void saveMeasureDetails() {
 		measureDetailsView.getComponentDetailView().getObserver().handleValueChanged();
 		measureDetailsView.getMeasureDetailsComponentModel().update(measureDetailsModel);
 		ManageMeasureDetailModelMapper mapper = new ManageMeasureDetailModelMapper(measureDetailsModel);
@@ -329,7 +473,7 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 				isPatientBased = measureDetailsModel.getGeneralInformationModel().isPatientBased();
 				MatContext.get().setCurrentMeasureScoringType(scoringType);
 				navigationPanel.buildNavigationMenu(scoringType, isPatientBased, isCompositeMeasure);
-				measureDetailsView.buildDetailView(measureDetailsModel, navigationPanel.getActiveMenuItem(), navigationPanel);
+				measureDetailsView.buildDetailView(measureDetailsModel, navigationPanel.getActiveMenuItem(), navigationPanel, getMeasureDetailsObserver());
 				isReadOnly = !MatContext.get().getMeasureLockService().checkForEditPermission();
 				measureDetailsView.setReadOnly(isReadOnly);
 				measureDetailsView.getDeleteMeasureButton().setEnabled(isDeletable());
@@ -338,6 +482,10 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 				navigationPanel.setActiveMenuItem(activeMenuItem);
 			}
 		};
+	}
+	
+	private MeasureDetailsObserver getMeasureDetailsObserver() {
+		return this;
 	}
 	
 	private void updateNavPillStates() {
@@ -390,6 +538,10 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 				return getRichTextEditableTabState(measureDetailsModel.getMeasureSetModel());
 			case POPULATIONS:
 				return getPopulationsState(measureDetailsModel);
+			case REFERENCES:
+				return getReferencesState(measureDetailsModel.getReferencesModel());
+			case COMPONENT_MEASURES:
+				return getComponentMeasureState(measureDetailsModel.getCompositeMeasureDetailModel());
 			default: 
 				return MeasureDetailState.BLANK;
 			}
@@ -422,6 +574,21 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		return MeasureDetailState.BLANK;
 	}
 	
+	private MeasureDetailState getComponentMeasureState(ManageCompositeMeasureDetailModel compositeMeasureDetailModel) {
+		if(compositeMeasureDetailModel.getAppliedComponentMeasures().size() >= 2) {
+			return MeasureDetailState.COMPLETE;
+		} else {
+			return MeasureDetailState.BLANK;
+		}
+	}
+
+	private MeasureDetailState getReferencesState(ReferencesModel referencesModel) {
+		if(referencesModel.getReferences() != null && !referencesModel.getReferences().isEmpty()) {
+			return MeasureDetailState.COMPLETE;
+		}
+		return MeasureDetailState.BLANK;
+	}
+
 	private MeasureDetailState getMeasureStewardAndDeveloperState(MeasureStewardDeveloperModel model) {
 		if (StringUtility.isEmptyOrNull(model.getStewardId()) && model.getSelectedDeveloperList().isEmpty()) {
 			return MeasureDetailState.BLANK;
@@ -511,6 +678,14 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 			return MeasureDetailState.COMPLETE;
 		} else {
 			return MeasureDetailState.INCOMPLETE;
+		}
+	}
+
+	public MessagePanel getMessagePanel() {
+		if(showCompositeEdit) {
+			return componentMeasureDisplay.getMessagePanel();
+		} else {
+			return measureDetailsView.getMessagePanel();
 		}
 	}
 }

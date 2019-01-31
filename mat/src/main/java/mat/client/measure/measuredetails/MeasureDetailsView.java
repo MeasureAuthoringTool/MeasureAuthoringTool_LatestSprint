@@ -7,6 +7,7 @@ import org.gwtbootstrap3.client.ui.constants.Pull;
 import com.google.gwt.event.dom.client.KeyUpEvent;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
@@ -16,6 +17,7 @@ import mat.client.buttons.SaveButton;
 import mat.client.measure.measuredetails.navigation.MeasureDetailsNavigation;
 import mat.client.measure.measuredetails.views.MeasureDetailViewInterface;
 import mat.client.measure.measuredetails.views.MeasureDetailsViewFactory;
+import mat.client.measure.measuredetails.views.ReferencesView;
 import mat.client.shared.ConfirmationDialogBox;
 import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.MatDetailItem;
@@ -39,13 +41,14 @@ public class MeasureDetailsView {
 	private boolean isMeasureEditable;
 	private SaveButton saveButton = new SaveButton("Measure Details");
 	private DeleteButton deleteMeasureButton = new DeleteButton("Measure Details", "Delete Measure");
-	private MeasureDetailsModel measureDetailsComponent;
+	private MeasureDetailsModel measureDetailsModel;
 	private RichTextEditor currentRichTextEditor;
 	private MessagePanel messagePanel;
+	private MeasureDetailsObserver measureDetailsObserver;
 	
-	public MeasureDetailsView(MeasureDetailsModel measureDetailsComponent, MeasureDetailsItems measureDetail, MeasureDetailsNavigation navigationPanel) {
+	public MeasureDetailsView(MeasureDetailsModel measureDetailsModel, MeasureDetailsItems measureDetail, MeasureDetailsNavigation navigationPanel, MeasureDetailsObserver measureDetailsObserver) {
 		currentMeasureDetail = measureDetail;
-		this.measureDetailsComponent = measureDetailsComponent;
+		this.measureDetailsModel = measureDetailsModel;
 		
 		HorizontalPanel errorPanel = new HorizontalPanel();
 		errorPanel.add(errorAlert);
@@ -54,7 +57,7 @@ public class MeasureDetailsView {
 
 		mainContentPanel.add(navigationPanel.getWidget());
 		mainContentPanel.setWidth("850px");
-		widgetComponentPanel = buildDetailView(currentMeasureDetail);
+		widgetComponentPanel = buildDetailView(currentMeasureDetail, measureDetailsObserver);
 		mainContentPanel.add(widgetComponentPanel);
 		mainContentPanel.getElement().setId("measureDetailsView_ContentPanel");
 		mainPanel.add(mainContentPanel);
@@ -78,15 +81,19 @@ public class MeasureDetailsView {
 	}
 	
 	private void buildSavePanel(MatDetailItem currentMeasureDetail) {
-		if(currentMeasureDetail != MeasureDetailsItems.POPULATIONS) {
+		if(currentMeasureDetail != MeasureDetailsItems.POPULATIONS && currentMeasureDetail != MeasureDetailsItems.COMPONENT_MEASURES) {
 			widgetComponentPanel.add(new SpacerWidget());
-			saveButtonPanel.add(saveButton);
+			saveButtonPanel.clear();
 			saveButtonPanel.setWidth("625px");
+			saveButtonPanel.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_RIGHT);
+			ButtonToolBar buttonToolBar = new ButtonToolBar();
 			saveButton.setPull(Pull.RIGHT);
+			buttonToolBar.add(saveButton);
+			saveButtonPanel.add(buttonToolBar);
 			widgetComponentPanel.add(saveButtonPanel);
 		}
 	}
-	
+
 	private void buildMeasureDetailsButtonPanel() {
 		mainPanel.add(new SpacerWidget());
 		HorizontalPanel panel = new HorizontalPanel();
@@ -97,11 +104,13 @@ public class MeasureDetailsView {
 		mainPanel.add(new SpacerWidget());
 	}
 	
-	public VerticalPanel buildDetailView(MatDetailItem currentMeasureDetail) {
+	public VerticalPanel buildDetailView(MatDetailItem currentMeasureDetail, MeasureDetailsObserver measureDetailsObserver) {
 		this.currentMeasureDetail = currentMeasureDetail;
 		widgetComponentPanel.clear();
 		buildHeading();
-		componentDetailView = MeasureDetailsViewFactory.get().getMeasureDetailComponentView(measureDetailsComponent, currentMeasureDetail);
+		
+		componentDetailView = MeasureDetailsViewFactory.get().getMeasureDetailComponentView(measureDetailsModel, currentMeasureDetail, this.measureDetailsObserver);
+
 		currentRichTextEditor = componentDetailView.getRichTextEditor();
 		if(currentRichTextEditor != null) {
 			currentRichTextEditor.addKeyUpHandler(keyUpEvent -> handleRichTextTabOut(keyUpEvent));
@@ -130,10 +139,10 @@ public class MeasureDetailsView {
         }
 	}
 	
-	public VerticalPanel buildDetailView(MeasureDetailsModel measureDetailsComponent, MatDetailItem currentMeasureDetail, MeasureDetailsNavigation navigationPanel) {
+	public VerticalPanel buildDetailView(MeasureDetailsModel measureDetailsModel, MatDetailItem currentMeasureDetail, MeasureDetailsNavigation navigationPanel, MeasureDetailsObserver measureDetailsObserver) {
 		this.currentMeasureDetail = currentMeasureDetail;
-		this.measureDetailsComponent = measureDetailsComponent;
-		return buildDetailView(currentMeasureDetail);
+		this.measureDetailsModel = measureDetailsModel;
+		return buildDetailView(currentMeasureDetail, measureDetailsObserver);
 	}
 	
 	public Widget getWidget() {
@@ -142,10 +151,6 @@ public class MeasureDetailsView {
 	
 	public Button getDeleteMeasureButton() {
 		return this.deleteMeasureButton;
-	}
-	
-	public boolean isValid() {
-		return componentDetailView.isComplete();
 	}
 	
 	public MessageAlert getErrorMessageAlert() {
@@ -163,6 +168,14 @@ public class MeasureDetailsView {
 	public void clear() {
 		componentDetailView.clear();
 		messagePanel.clearAlerts();
+	}
+	
+	public void clearAlerts() {
+		messagePanel.clearAlerts();
+		if(currentMeasureDetail == MeasureDetailsItems.REFERENCES) {
+			ReferencesView referencesView = (ReferencesView) getComponentDetailView();
+			referencesView.hideDirtyCheck();
+		}
 	}
 	
 	public ConfirmationDialogBox getSaveConfirmation() {
@@ -201,6 +214,10 @@ public class MeasureDetailsView {
 	}
 	
 	public void displayDirtyCheck() {
+		if(currentMeasureDetail == MeasureDetailsItems.REFERENCES) {
+			ReferencesView referencesView = (ReferencesView) getComponentDetailView();
+			referencesView.hideDirtyCheck();
+		}
 		messagePanel.clearAlerts();
 		messagePanel.getWarningConfirmationMessageAlert().createWarningAlert();
 	}
@@ -219,5 +236,13 @@ public class MeasureDetailsView {
 	
 	public MeasureDetailViewInterface getComponentDetailView() {
 		return componentDetailView;
+	}
+
+	public MeasureDetailsObserver getMeasureDetailsObserver() {
+		return measureDetailsObserver;
+	}
+
+	public void setMeasureDetailsObserver(MeasureDetailsObserver measureDetailsObserver) {
+		this.measureDetailsObserver = measureDetailsObserver;
 	}
 }

@@ -1,5 +1,6 @@
 package mat.client.measure.measuredetails.views;
 
+import mat.client.measure.measuredetails.MeasureDetailsObserver;
 import mat.client.measure.measuredetails.observers.ClinicalRecommendationObserver;
 import mat.client.measure.measuredetails.observers.CopyrightObserver;
 import mat.client.measure.measuredetails.observers.DefinitionObserver;
@@ -23,6 +24,7 @@ import mat.client.measure.measuredetails.observers.NumeratorExclusionsObserver;
 import mat.client.measure.measuredetails.observers.NumeratorObserver;
 import mat.client.measure.measuredetails.observers.RateAggregationObserver;
 import mat.client.measure.measuredetails.observers.RationaleObserver;
+import mat.client.measure.measuredetails.observers.ReferencesObserver;
 import mat.client.measure.measuredetails.observers.RiskAdjustmentObserver;
 import mat.client.measure.measuredetails.observers.StratificationObserver;
 import mat.client.measure.measuredetails.observers.SupplementalDataElementsObserver;
@@ -36,6 +38,7 @@ import mat.shared.measure.measuredetails.models.GeneralInformationModel;
 import mat.shared.measure.measuredetails.models.MeasureDetailsModel;
 import mat.shared.measure.measuredetails.models.MeasureDetailsRichTextAbstractModel;
 import mat.shared.measure.measuredetails.models.MeasureStewardDeveloperModel;
+import mat.shared.measure.measuredetails.models.ReferencesModel;
 
 public class MeasureDetailsViewFactory {
 	private static MeasureDetailsViewFactory instance;
@@ -48,11 +51,11 @@ public class MeasureDetailsViewFactory {
 		return instance;
 	}
 
-	public MeasureDetailViewInterface getMeasureDetailComponentView(MeasureDetailsModel measureDetailsModel, MatDetailItem currentMeasureDetail) {
+	public MeasureDetailViewInterface getMeasureDetailComponentView(MeasureDetailsModel measureDetailsModel, MatDetailItem currentMeasureDetail, MeasureDetailsObserver measureDetailsObserver) {
 		if(currentMeasureDetail instanceof MeasureDetailsConstants.MeasureDetailsItems) {
 			switch((MeasureDetailsItems) currentMeasureDetail) {
 			case COMPONENT_MEASURES:
-				return new ComponentMeasuresView();
+				return new ComponentMeasuresView(measureDetailsObserver, measureDetailsModel.getCompositeMeasureDetailModel());
 			case DESCRIPTION:
 				return buildRichTextEditorView(measureDetailsModel.getDescriptionModel(), new DescriptionView(), new DescriptionObserver());
 			case DISCLAIMER:
@@ -72,7 +75,7 @@ public class MeasureDetailsViewFactory {
 			case IMPROVEMENT_NOTATION:
 				return buildRichTextEditorView(measureDetailsModel.getImprovementNotationModel(), new ImprovementNotationView(), new ImprovementNotationObserver());
 			case REFERENCES:
-				return new ReferencesView();
+				return buildRefererencesView(measureDetailsModel.getReferencesModel(), measureDetailsObserver);
 			case DEFINITION:
 				return buildRichTextEditorView(measureDetailsModel.getDefinitionModel(), new DefinitionView(), new DefinitionObserver());
 			case GUIDANCE:
@@ -118,6 +121,12 @@ public class MeasureDetailsViewFactory {
 		return buildGeneralMeasureInformationView(measureDetailsModel.isComposite(), measureDetailsModel.getGeneralInformationModel());
 	}
 	
+	private MeasureDetailViewInterface buildRefererencesView(ReferencesModel referencesModel, MeasureDetailsObserver measureDetailObserver) {
+		ReferencesView referencesView = new ReferencesView(referencesModel);
+		referencesView.setObserver(new ReferencesObserver(referencesView, measureDetailObserver));
+		return referencesView;
+	}
+
 	private GeneralInformationView buildGeneralMeasureInformationView(boolean isComposite, GeneralInformationModel generalInformationModel) {
 		final GeneralInformationView generalInformationView = new GeneralInformationView(isComposite, generalInformationModel);
 		final GeneralInformationObserver observer = new GeneralInformationObserver(generalInformationView);

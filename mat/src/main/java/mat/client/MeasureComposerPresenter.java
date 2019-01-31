@@ -382,8 +382,9 @@ public class MeasureComposerPresenter implements MatPresenter, Enableable, TabOb
 			saveButton = metaDataPresenter.getMetaDataDisplay().getBottomSaveButton();
 		} else if(presenterList.get(selectedIndex) instanceof MeasureDetailsPresenter) {
 			MeasureDetailsPresenter measureDetailsPresenter = (MeasureDetailsPresenter) presenterList.get(selectedIndex);
-			measureDetailsPresenter.getView().getMessagePanel().clearAlerts();
-			saveErrorMessageAlert = measureDetailsPresenter.getView().getMessagePanel().getGlobalWarningConfirmationMessageAlert();
+			measureDetailsPresenter.getView().clearAlerts();
+			measureDetailsPresenter.getMessagePanel().clearAlerts();
+			saveErrorMessageAlert = measureDetailsPresenter.getMessagePanel().getGlobalWarningConfirmationMessageAlert();
 		} else if(presenterList.get(selectedIndex) instanceof CQLMeasureWorkSpacePresenter){
 			CQLMeasureWorkSpacePresenter cqlWorkSpacePresenter = (CQLMeasureWorkSpacePresenter) presenterList.get(selectedIndex);
 			CQLMeasureWorkSpacePresenter.getSearchDisplay().resetMessageDisplay();

@@ -2,12 +2,26 @@ package mat.client;
 
 import java.util.List;
 
+import org.gwtbootstrap3.client.ui.AnchorButton;
+import org.gwtbootstrap3.client.ui.AnchorListItem;
+import org.gwtbootstrap3.client.ui.DropDownMenu;
+import org.gwtbootstrap3.client.ui.ListDropDown;
+import org.gwtbootstrap3.client.ui.ListItem;
+import org.gwtbootstrap3.client.ui.Navbar;
+import org.gwtbootstrap3.client.ui.NavbarCollapse;
+import org.gwtbootstrap3.client.ui.NavbarLink;
+import org.gwtbootstrap3.client.ui.NavbarNav;
 import org.gwtbootstrap3.client.ui.Progress;
 import org.gwtbootstrap3.client.ui.ProgressBar;
+import org.gwtbootstrap3.client.ui.constants.IconPosition;
+import org.gwtbootstrap3.client.ui.constants.IconSize;
+import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.constants.ProgressBarType;
 import org.gwtbootstrap3.client.ui.constants.ProgressType;
+import org.gwtbootstrap3.client.ui.constants.Styles;
+import org.gwtbootstrap3.client.ui.constants.Toggle;
 
-import com.google.gwt.user.client.DOM;
+import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.FlowPanel;
@@ -21,12 +35,10 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.buttons.IndicatorButton;
-import mat.client.shared.FocusableImageButton;
 import mat.client.shared.FocusableWidget;
 import mat.client.shared.HorizontalFlowPanel;
 import mat.client.shared.MatContext;
 import mat.client.shared.SkipListBuilder;
-import mat.client.shared.VerticalFlowPanel;
 import mat.client.util.ClientConstants;
 import mat.client.util.FooterPanelBuilderUtility;
 
@@ -39,22 +51,28 @@ public abstract class MainLayout {
 	private static final int DEFAULT_LOADING_MSAGE_DELAY_IN_MILLISECONDS = 500;
 	
 	private static Panel loadingPanel;
+
+	private FocusPanel content;
 	
+	private HorizontalPanel linksPanel = new HorizontalPanel();
+
 	private static HTML loadingWidget = new HTML(ClientConstants.MAINLAYOUT_LOADING_WIDGET_MSG);
 	
 	private static IndicatorButton showUMLSState;
-
-	
 	private static IndicatorButton showBonnieState;
 	
 	protected static FocusableWidget skipListHolder;
 
-	static HTML welcomeUserLabel;
-	
-	static HTML versionLabel;
-	
 	static Progress progress = new Progress();
 	static ProgressBar bar = new ProgressBar();
+	
+	NavbarLink homeLink = new NavbarLink();
+	
+	ListItem signedInAsName = new ListItem();
+	AnchorListItem profile = new AnchorListItem("MAT Account");
+	AnchorListItem signOut = new AnchorListItem("Sign Out");
+	
+	public static final String HEADING = "Measure Authoring Tool";
 	
 	/**
 	 * clear the loading panel
@@ -87,8 +105,6 @@ public abstract class MainLayout {
 	}
 	
 	
-	
-	
 	/**
 	 * delay hiding of loading message artifacts by 'delay' milliseconds
 	 * NOTE delay cannot be <= 0 else exception is thrown
@@ -110,8 +126,6 @@ public abstract class MainLayout {
 			delegateHideLoadingMessage();
 		}
 	}
-
-
 	
 	public static void showLoadingMessage(){
 		getLoadingPanel().clear();
@@ -140,17 +154,6 @@ public abstract class MainLayout {
 		showLoadingMessage();
 	}
 	
-
-	
-	private FocusPanel content;
-	
-	private HorizontalFlowPanel logOutPanel;
-	
-	private HorizontalFlowPanel welcomeUserPanel;
-	
-	private FlowPanel versionPanel;
-	
-
 	private Panel buildContentPanel() {
 		content = new FocusPanel();
 		content.getElement().setAttribute("id", "MainLayout.content");
@@ -173,7 +176,7 @@ public abstract class MainLayout {
 	 */
 	private Panel buildFooterPanel() {
 		
-		FlowPanel footerMainPanel = new FlowPanel();
+		final FlowPanel footerMainPanel = new FlowPanel();
 		footerMainPanel.getElement().setId("footerMainPanel_FlowPanel");
 		footerMainPanel.setStylePrimaryName("footer");
 		footerMainPanel.add(FooterPanelBuilderUtility.buildFooterLogoPanel());
@@ -206,55 +209,139 @@ public abstract class MainLayout {
 		return skipListHolder;
 	}
 	
-
 	private Panel buildTopPanel() {
 		final VerticalPanel topPanel = new VerticalPanel();
-		topPanel.setStylePrimaryName("topBanner");
-		HorizontalPanel horizontalBanner = new HorizontalPanel();
-		horizontalBanner.getElement().setId("topBanner_HorizontalPanel");
-		horizontalBanner.getElement().getStyle().setProperty("width", "100%");
-		setId(horizontalBanner, "title");
-		final FocusableImageButton titleImage= new FocusableImageButton(ImageResources.INSTANCE.g_header_title(),"Measure Authoring Tool");
-		titleImage.getElement().setId("titleImage_FocusableImageButton");
-		titleImage.setStylePrimaryName("topBannerImage");
-		Mat.removeInputBoxFromFocusPanel(titleImage.getElement());
-		HTML desc = new HTML("<h4 style=\"font-size:0;\"><b>Measure Authoring Tool</b></h4>");// Doing this for 508 when CSS turned off
-		@SuppressWarnings("deprecation")
-		com.google.gwt.user.client.Element heading = desc.getElement();
-		DOM.insertChild(titleImage.getElement(), heading, 0);
-		versionPanel = new VerticalFlowPanel();
-		versionPanel.getElement().setId("versionPanel_VerticalalFlowPanel");
-		versionPanel.setStyleName("versionPanel");
-		welcomeUserPanel = new HorizontalFlowPanel();
-		welcomeUserPanel.getElement().setId("welcomeUserPanel_HorizontalFlowPanel");
-		welcomeUserPanel.setStyleName("welcomeUserPanel");
-		VerticalPanel titleVerticalPanel = new VerticalPanel();
-		titleVerticalPanel.addStyleName("versionPanel");
-		titleVerticalPanel.add(titleImage);
-		titleVerticalPanel.add(versionPanel);
-		titleVerticalPanel.add(welcomeUserPanel);
-		horizontalBanner.add(titleVerticalPanel);
-		logOutPanel = new HorizontalFlowPanel();
-		logOutPanel.getElement().setId("logOutPanel_HorizontalFlowPanel");
-		logOutPanel.addStyleName("logoutPanel");
-
-		showBonnieState = new IndicatorButton("Bonnie Active", "Sign into Bonnie");
-		showUMLSState = new IndicatorButton("UMLS Active", "Sign into UMLS");
-		
-		VerticalPanel vp = new VerticalPanel();
-		vp.add(logOutPanel);
-		vp.add(showUMLSState.getPanel());
-		vp.add(showBonnieState.getPanel());
-
-		vp.addStyleName("logoutAndUMLSPanel");
-		
-		horizontalBanner.add(vp);
-		topPanel.add(horizontalBanner);
+		topPanel.add(buildHeader());
 		topPanel.add(buildLoadingPanel());
+		topPanel.setStylePrimaryName("topBanner");
 		return topPanel;
+	}
 
+	private HorizontalFlowPanel buildHeader() {
+		final HorizontalFlowPanel hfp = new HorizontalFlowPanel();
+		hfp.add(buildNavbar());
+		hfp.add(linksPanel);
+		return hfp;
 	}
 	
+	private Navbar buildNavbar() {
+		final Navbar nav = new Navbar();
+		nav.setStyleName("versionBanner");
+		setLinkTextAndTitle(HEADING, getHomeLink());
+		nav.add(getHomeLink());
+		return nav;
+	}
+	
+	public void buildLinksPanel() {
+		showBonnieState = new IndicatorButton("Disconnect from Bonnie", "Sign in to Bonnie");
+		showUMLSState = new IndicatorButton("UMLS Active", "Sign in to UMLS");
+
+		linksPanel.add(showUMLSState.getPanel()); 
+		linksPanel.add(showBonnieState.getPanel());
+		linksPanel.add(buildProfileMenu());
+		linksPanel.setStyleName("navLinksBanner", true);
+	}
+	
+	private AnchorButton buildProfileIcon() {
+		AnchorButton ab = new AnchorButton();
+
+		ab.setIcon(IconType.USER_CIRCLE_O);
+		ab.setIconSize(IconSize.TIMES2);
+		ab.setIconPosition(IconPosition.RIGHT);
+		ab.setDataToggle(Toggle.DROPDOWN);
+		ab.setToggleCaret(false);
+		ab.setStyleName(Styles.DROPDOWN_TOGGLE);
+		ab.setActive(true);
+		ab.setTitle("Profile");
+		ab.setId("userprofile");
+		ab.setDataTarget(Styles.NAVBAR_COLLAPSE);
+		
+		SafeHtmlBuilder sb = new SafeHtmlBuilder();
+		sb.appendHtmlConstant("<span style=\"font-size:0px;\" tabindex=\"0\">Profile</span>"); 
+		ab.getElement().setInnerSafeHtml(sb.toSafeHtml());
+
+ 		return ab;
+	}
+	
+	private Navbar buildDivider() {
+		Navbar divider = new Navbar();
+		divider.setStyleName(Styles.DIVIDER);
+		divider.setWidth("100%");
+		return divider;
+	}
+	
+	private ListItem buildSignedInAs() {
+		ListItem li = new ListItem();
+		li.setText("Signed in as");
+		li.setTitle("Signed in as");
+		li.getElement().setTabIndex(0);
+		li.setStyleName("profileText", true);
+		return li;
+	}
+
+	public void setSignedInName(String name) {
+		signedInAsName.setText(name);
+		signedInAsName.setTitle(name);
+		signedInAsName.setStyleName("labelStyling", true);
+		signedInAsName.setStyleName("profileText", true);
+		signedInAsName.getElement().setTabIndex(0);
+	}
+	
+	private void setAccessibilityForLinks() {
+		profile.setStyleName(Styles.DROPDOWN );
+		profile.getWidget(0).setTitle("MAT Account");
+
+		signOut.setStyleName(Styles.DROPDOWN);
+		signOut.getWidget(0).setTitle("Sign Out");
+	}
+	
+	private DropDownMenu buildDropDownMenu() {
+		DropDownMenu ddm = new DropDownMenu();
+	
+		setAccessibilityForLinks();
+		
+		ddm.add(buildSignedInAs());
+		ddm.add(signedInAsName);
+		ddm.add(buildDivider());
+		ddm.add(profile);
+		ddm.add(signOut);
+		ddm.setStyleName(Styles.DROPDOWN_MENU);
+		ddm.addStyleDependentName(Styles.RIGHT);
+		
+		return ddm;
+	}
+	
+	private NavbarCollapse buildProfileMenu() {
+		NavbarCollapse collapse = new NavbarCollapse();
+		NavbarNav nav = new NavbarNav();
+		
+		ListDropDown ldd = new ListDropDown();
+		AnchorButton icon = buildProfileIcon();
+		DropDownMenu ddm = buildDropDownMenu();
+		
+		ldd.add(icon);
+		ldd.add(ddm);
+
+		nav.add(ldd);
+
+		collapse.add(nav);
+		return collapse;
+	}
+	
+	public void setHeader(String version, NavbarLink link) {
+		setLinkTextAndTitle(HEADING + " v" + version, link);
+		link.setTitle(HEADING + " version " + version);
+		link.getElement().setAttribute("role", "alert");
+		link.getElement().setAttribute("aria-label", "Clicking this link will navigate you to Measure Library page.");
+	}
+	
+	private void setLinkTextAndTitle(String text, NavbarLink link) {
+		link.setText(text);
+		link.setTitle(text);
+		link.setTabIndex(0);
+		link.setId("Anchor_" + text);
+		link.setColor("#337ab7");
+	}
 
 	private HTML fetchAndcreateFooterLinks() {
 		MatContext.get().getLoginService().getFooterURLs(new AsyncCallback<List<String>>() {
@@ -279,10 +366,6 @@ public abstract class MainLayout {
 		return content;
 	}
 
-	protected HorizontalFlowPanel getLogoutPanel(){
-		return logOutPanel;
-	}
-
 	protected Widget getNavigationList(){
 		return null;
 	}
@@ -302,7 +385,6 @@ public abstract class MainLayout {
 		container.add(contentPanel);
 		container.add(footerPanel);
 		
-		
 		RootPanel.get().clear();
 		if(RootPanel.get("skipContent")!= null){
 			RootPanel.get("skipContent").add(skipContent);
@@ -312,37 +394,18 @@ public abstract class MainLayout {
 	}
 
 	protected void setId(final Widget widget, final String id) {
-		DOM.setElementAttribute(widget.getElement(), "id", id);
+		widget.getElement().setAttribute("id", id);
 	}
 
 	
-	protected void setLogout(final HorizontalFlowPanel logOutPanel){
-		this.logOutPanel = logOutPanel;
+	public HorizontalPanel getLinksPanel() {
+		return linksPanel;
 	}
-	
 
-	public HorizontalFlowPanel getWelcomeUserPanel(String userFirstName) {
-		welcomeUserLabel = new HTML("<h9><b>Successful login - Welcome, "+ userFirstName+"!</b></h9>");
-		welcomeUserLabel.getElement().setId("welcomeUserLabel_HTML");
-		welcomeUserLabel.getElement().setAttribute("tabIndex", "0");
-		welcomeUserLabel.setStylePrimaryName("htmlDescription");
-		
-		welcomeUserPanel.add(welcomeUserLabel);
-		return welcomeUserPanel;
+	public void setLinksPanel(HorizontalPanel linksPanel) {
+		this.linksPanel = linksPanel;
 	}
-	
 
-	public FlowPanel getVersionPanel(String resultMatVersion) {
-		//Since mat-bootstrap CSS always overrides Mat css settings hardcoded inline style for version. In future need to change this.
-		String versionStyle = "font-family: Arial;font-size:small;font-weight: bold;line-height:1.25;margin-top: 15px;";
-		versionLabel = new HTML("<h4 style="+'"'+versionStyle+'"'+">Version "+ resultMatVersion.replaceAll("[a-zA-Z]", "")+"</h4>");
-		versionLabel.getElement().setId("version_HTML");
-		versionLabel.getElement().setAttribute("tabIndex", "0");
-		versionLabel.setStylePrimaryName("versionPanel");
-		versionPanel.add(versionLabel);
-		return versionPanel;
-	}
-	
 	public static void createUMLSLinks() {
 		showUMLSState.createAllLinks();
 	}
@@ -360,13 +423,17 @@ public abstract class MainLayout {
 	}
 	
 	public HTML getUMLSButton() {
-		return showUMLSState.getLink();
+		return showUMLSState.getHideLink();
 	}
 	
-	public HTML getBonnieButton() {
-		return showBonnieState.getLink();
+	public HTML getBonnieSignInButton() {
+		return showBonnieState.getHideLink();
 	}
-
+	
+	public HTML getBonnieDisconnectButton() {
+		return showBonnieState.getshowLink();
+	}
+	
 	public void setIndicatorsHidden() {
 		showBonnieState.hideActive(true);
 		showUMLSState.hideActive(true);
@@ -376,4 +443,37 @@ public abstract class MainLayout {
 	public void removeBonnieLink() {
 		showBonnieState.getPanel().removeFromParent();
 	}
+
+	public NavbarLink getHomeLink() {
+		return homeLink;
+	}
+
+	public void setHomeLink(NavbarLink homeLink) {
+		this.homeLink = homeLink;
+	}
+
+	public ListItem getSignedInAsName() {
+		return signedInAsName;
+	}
+
+	public void setSignedInAsName(ListItem signedInAsName) {
+		this.signedInAsName = signedInAsName;
+	}
+
+	public AnchorListItem getProfile() {
+		return profile;
+	}
+
+	public void setProfile(AnchorListItem profile) {
+		this.profile = profile;
+	}
+
+	public AnchorListItem getSignOut() {
+		return signOut;
+	}
+
+	public void setSignOut(AnchorListItem signOut) {
+		this.signOut = signOut;
+	}
+
 }

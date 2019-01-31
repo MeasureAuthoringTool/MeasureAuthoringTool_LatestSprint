@@ -69,9 +69,9 @@ public class MeasurePackagerAssociations {
 				denominatorAndNumeratorLabel.setWidth("150px");
 				denominatorAndNumeratorPanel.add(denominatorAndNumeratorLabel);
 				ListBoxMVP denominatorAndNumeratorListBox = new ListBoxMVP();
-				denominatorAndNumeratorListBox.setTitle(detail.getName());
+				denominatorAndNumeratorListBox.setTitle("Select association for " + detail.getName());
 				denominatorAndNumeratorListBox.setWidth("175px");
-				denominatorAndNumeratorListBox.addItem("--Select--", "0");
+				denominatorAndNumeratorListBox.insertItem("--Select--", "0", "Select");
 				Map<String, Integer> denomHashMap = new HashMap<>();
 				createListBoxes(initialPopulations, denominatorAndNumeratorListBox, denomHashMap);
 				denominatorAndNumeratorListBox.setSelectedIndex(detail.getAssociatedPopulationUUID() == null ? 0 : denomHashMap.get(detail.getAssociatedPopulationUUID()));
@@ -95,9 +95,9 @@ public class MeasurePackagerAssociations {
 			measureObservationLabel.setWidth("150px");
 			measureObservationPanel.add(measureObservationLabel);
 			ListBoxMVP measureObservationListBox = new ListBoxMVP();
-			measureObservationListBox.setTitle(detail.getName());
+			measureObservationListBox.setTitle("Select association for " + detail.getName());
 			measureObservationListBox.setWidth("175px");
-			measureObservationListBox.addItem("--Select--", "0");
+			measureObservationListBox.insertItem("--Select--", "0", "Select");
 			Map<String, Integer> measureObservationHashMap = new HashMap<>();
 			createListBoxes(denominatorAndNumerators, measureObservationListBox, measureObservationHashMap);
 			measureObservationListBox.setSelectedIndex(detail.getAssociatedPopulationUUID() == null ? 0 : measureObservationHashMap.get(detail.getAssociatedPopulationUUID()));
@@ -123,12 +123,11 @@ public class MeasurePackagerAssociations {
 		return vPanel;
 	}
 
-	private void createListBoxes(ArrayList<MeasurePackageClauseDetail> initialPopulations,
-			ListBoxMVP denominatorAndNumeratorListBox, Map<String, Integer> denomHashMap) {
+	private void createListBoxes(ArrayList<MeasurePackageClauseDetail> populations, ListBoxMVP populationListBox, Map<String, Integer> populationCountMap) {
 		int count = 1;
-		for(MeasurePackageClauseDetail initialPopulation : initialPopulations) {
-			denominatorAndNumeratorListBox.addItem(initialPopulation.getName(), initialPopulation.getId());
-			denomHashMap.put(initialPopulation.getId(), count);
+		for(MeasurePackageClauseDetail initialPopulation : populations) {
+			populationListBox.insertItem(initialPopulation.getName(), initialPopulation.getId(), initialPopulation.getName());
+			populationCountMap.put(initialPopulation.getId(), count);
 			count++;
 		}
 	}
