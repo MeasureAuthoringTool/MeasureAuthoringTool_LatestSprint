@@ -1,6 +1,7 @@
 package mat.dao.clause.impl;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -370,12 +371,7 @@ public class CQLLibraryDAOImpl extends GenericDAO<CQLLibrary, String> implements
 
 	@Override
 	public void updateLockedOutDate(CQLLibrary existingLibrary) {
-		final Session session = getSessionFactory().getCurrentSession();
-		final CQLLibrary cqlLibrary = session.load(CQLLibrary.class, existingLibrary.getId());
-		cqlLibrary.setId(existingLibrary.getId());
-		cqlLibrary.setLockedOutDate(null);
-		cqlLibrary.setLockedUserId(null);
-		session.update(cqlLibrary);
+		super.save(existingLibrary);
 	}
 
 	@Override
@@ -752,6 +748,13 @@ public class CQLLibraryDAOImpl extends GenericDAO<CQLLibrary, String> implements
 		
 		return CollectionUtils.isNotEmpty(resultCqlLibrary) ? resultCqlLibrary.get(0) : null;
 		
+	}
+	
+	@Override
+	public void save(CQLLibrary entity) {
+		entity.setLastModifiedOn(LocalDateTime.now());
+		entity.setLastModifiedBy(userDAO.findByLoginId(LoggedInUserUtil.getLoggedInLoginId()));
+		super.save(entity);
 	}
 
 }

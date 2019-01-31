@@ -27,6 +27,14 @@ public class CQLAuditLog {
 	private CQLLibrary cqlLibrary;
 	private String additionalInfo;
 
+	public CQLAuditLog() {
+		
+	}
+
+	public CQLAuditLog(CQLLibrary cqlLibrary, Date time) {
+		this.cqlLibrary = cqlLibrary;
+		this.time = new Timestamp(time.getTime());
+	}
 
 	@Id
 	@GeneratedValue(generator="uuid")
@@ -43,7 +51,7 @@ public class CQLAuditLog {
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "TIMESTAMP", nullable = false, length = 19)
 	public Date getTime() {
-		return (Date)time;
+		return time;
 	}
 
 	public void setTime(Date created) {

@@ -11,6 +11,8 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -131,6 +133,10 @@ import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
+import mat.server.humanreadable.cql.CQLHumanReadableGenerator;
+import mat.server.humanreadable.cql.HumanReadableComponentMeasureModel;
+import mat.server.humanreadable.cql.HumanReadableMeasureInformationModel;
+import mat.server.humanreadable.cql.HumanReadableModel;
 import mat.server.model.MatUserDetails;
 import mat.server.service.InvalidValueSetDateException;
 import mat.server.service.MeasureLibraryService;
@@ -275,6 +281,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	
 	@Autowired
 	private LoginServiceImpl loginService; 
+	
+	@Autowired
+	private CQLHumanReadableGenerator humanReadableGenerator;
 	
 	@Override
 	public final String appendAndSaveNode(final MeasureXmlModel measureXmlModel, final String nodeName) {
@@ -6243,5 +6252,53 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 
 		measurePackageService.saveMeasureXml(model);
+	}
+
+	@Override
+	public String getHumanReadableForMeasureDetails(String measureId) {
+		String humanReadableHTML = "";
+		try {
+			MeasureXmlModel measureXML = getMeasureXmlForMeasure(measureId);
+			Mapping mapping = new Mapping(); 
+			mapping.loadMapping(new ResourceLoader().getResourceAsURL("SimpleXMLHumanReadableModelMapping.xml"));
+			Unmarshaller unmarshaller = new Unmarshaller(mapping);
+			unmarshaller.setClass(HumanReadableModel.class);
+			unmarshaller.setWhitespacePreserve(true);
+			
+			HumanReadableModel model = (HumanReadableModel) unmarshaller.unmarshal(new InputSource(new StringReader(measureXML.getXml())));
+
+			if(model.getMeasureInformation().getComponentMeasures() != null) {
+				for(HumanReadableComponentMeasureModel componentModel: model.getMeasureInformation().getComponentMeasures()) {
+					ManageMeasureDetailModel manageComponentMeasureDetailModel = getMeasure(componentModel.getId());
+					componentModel.setMeasureSetId(manageComponentMeasureDetailModel.getMeasureSetId());
+					componentModel.setName(manageComponentMeasureDetailModel.getName());
+					componentModel.setVersion(manageComponentMeasureDetailModel.getVersionNumber());
+				}
+			}
+
+			HumanReadableMeasureInformationModel measureInformationModel = model.getMeasureInformation();
+
+			standardizeStartAndEndDate(measureInformationModel);
+			humanReadableHTML = humanReadableGenerator.generate(measureInformationModel);
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.info("Exception in getHumanReadableForMeasureDetails: " + e);
+		}
+		return humanReadableHTML;
+	}
+
+	private void standardizeStartAndEndDate(HumanReadableMeasureInformationModel measureInformationModel) {
+		if((measureInformationModel.getMeasurementPeriodStartDate() == null && measureInformationModel.getMeasurementPeriodEndDate() == null) ||
+				(measureInformationModel.getMeasurementPeriodStartDate().equals("01/01/20XX") && measureInformationModel.getMeasurementPeriodEndDate().equals("12/31/20XX"))) {
+			measureInformationModel.setMeasurementPeriodStartDate("00000101");
+			measureInformationModel.setMeasurementPeriodEndDate("00001231");
+		} else {
+			DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+			DateTimeFormatter targetFormat = DateTimeFormatter.ofPattern("yyyyMMdd");
+			String startDate = LocalDate.parse(measureInformationModel.getMeasurementPeriodStartDate(), dateFormat).format(targetFormat);
+			String endDate = LocalDate.parse(measureInformationModel.getMeasurementPeriodEndDate(), dateFormat).format(targetFormat);
+			measureInformationModel.setMeasurementPeriodStartDate(startDate);
+			measureInformationModel.setMeasurementPeriodEndDate(endDate);
+		}
 	}
 }

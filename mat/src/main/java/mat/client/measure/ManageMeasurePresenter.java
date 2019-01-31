@@ -70,6 +70,8 @@ import mat.shared.CompositeMeasureValidationResult;
 import mat.shared.ConstantMessages;
 import mat.shared.MatConstants;
 import mat.shared.MeasureSearchModel;
+import mat.shared.MeasureSearchModel.PatientBasedType;
+import mat.shared.MeasureSearchModel.VersionMeasureType;
 import mat.shared.StringUtility;
 
 public class ManageMeasurePresenter implements MatPresenter {
@@ -96,6 +98,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			
 			if(componentMeasureDisplay != null) {
 				componentMeasureDisplay.getComponentMeasureSearch().clearFields(false);
+				componentMeasureDisplay.getMessagePanel().clearAlerts();
 			}
 			displaySearch();
 		}
@@ -277,6 +280,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			waitForUnlock.execute();
 		} else {
 			displaySearch();
+			searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getCollapsePanel().setIn(false);
 		}
 
 		Mat.focusSkipLists(MEASURE_LIBRARY);
@@ -481,6 +485,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 				isEdit = true;
 			}
 			componentMeasureDisplay.getComponentMeasureSearch().clearFields(isEdit);
+			componentMeasureDisplay.getMessagePanel().clearAlerts();
 		}
 
 		String panelHeading = "";
@@ -1139,6 +1144,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			pageSize = 25;
 			setSearchingBusy(true);
 			MeasureSearchModel model = new MeasureSearchModel(filter, startIndex, pageSize, searchText, searchText);
+			
 			if(null != searchDisplay) {
 				searchDisplay.getSuccessMessageDisplay().clearAlert();	
 			}
@@ -1197,7 +1203,20 @@ public class ManageMeasurePresenter implements MatPresenter {
 					});
 		} else {
 			MeasureSearchModel model = new MeasureSearchModel(filter, startIndex, 25, lastSearchText, searchText);
-
+			
+			String userSelectedStateValue = searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getSearchStateValue();
+			VersionMeasureType versionType = userSelectedStateValue.contains("Draft") ? VersionMeasureType.DRAFT :
+												userSelectedStateValue.contains("Versioned") ? VersionMeasureType.VERSION : VersionMeasureType.ALL;
+			model.setIsDraft(versionType);
+			
+			String userSelectedPatientBasedValue =  searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getPatientBasedValue();
+			PatientBasedType patientBasedType = userSelectedPatientBasedValue.contains("Yes") ? PatientBasedType.PATIENT :
+													userSelectedPatientBasedValue.contains("No") ? PatientBasedType.NOT_PATIENT : PatientBasedType.ALL;
+			model.setPatientBased(patientBasedType);
+			
+			model.setScoringTypes(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getScoringTypeList());
+			
+			searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getCollapsePanel().setIn(false);
 			advancedSearch(model);
 		}
 	}
@@ -1810,6 +1829,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		searchDisplay.getCreateMeasureButton().setEnabled(!busy);
 		searchDisplay.getCreateCompositeMeasureButton().setEnabled(!busy);
 		searchDisplay.getCustomFilterCheckBox().setEnabled(!busy);
+		searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getAdvanceSearchAnchor().setEnabled(!busy);
 	}
 
 	private void toggleLoadingMessage(boolean busy) {

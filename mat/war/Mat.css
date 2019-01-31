@@ -149,6 +149,14 @@ left:50px;
     width: 250px; 
 }
 
+#measureNameContainer{
+	width: 350px;
+}
+
+#aliasContainer{
+	width: 150px;
+}
+
 #appliedComponentContainer{
 	width: 100px;
 }
@@ -2843,8 +2851,22 @@ padding: 2px;
 }
 
 .advancedSearchLabels{
-	padding-top: 7px;
+	padding-top: 20px;
+	padding-left: 10px;
 	padding-right: 10px;
+}
+
+.advancedSearchAnchor{
+	padding-left: 10px;
+	padding-top: 10px;
+}
+
+.advancedSearchNegativeButtonMargin{
+	margin-top: -25px;
+}
+
+.advancedSearchHelpText{
+	font-size: 10px;
 }
 
 .calendarLabel {
@@ -2869,4 +2891,44 @@ padding: 2px;
 .breadcrumPaddign{
 	padding-bottom: 10px;
 	padding-top: 2px;
+}
+
+#expressionBuilderModal .modal-dialog {
+  width: 80%;
+}
+
+#expressionBuilderModal .modal-dialog .modal-content {
+  height: auto;
+  border-radius: 0;
+}
+
+#expressionBuilderModal .modal-body {
+	max-height: 600px;
+	overflow-y: auto;
+}
+
+.selectorsPanel {
+	width: 100%;
+	margin-bottom: 15px;
+}
+
+.expressionBuilderExpressionPanel {
+	font-size: small;
+}
+
+.expressionBuilderCode {
+	color: #333;
+	background-color: #f5f5f5;
+	padding: 2px 4px;
+	font-size: 90%;
+	border-radius: 4px;
+}
+
+.modal-open {
+  overflow: auto!important;
+  padding-right:0!important
+}
+
+body {
+    padding-right: 0px !important;
 }

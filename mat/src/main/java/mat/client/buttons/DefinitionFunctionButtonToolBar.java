@@ -10,13 +10,22 @@ import com.google.gwt.user.client.ui.HorizontalPanel;
 
 /**
  * The Button Tool Bar for the Definition and Function sections
- * Includes 'Insert', 'Save', 'Edit', 'Delete', 'save', 'cancel', 'erase'
+ * Includes 'Insert', 'Save', 'Edit', 'Delete', 'save', 'cancel', 'erase', and Expression Builder
+ * 
  */
 public class DefinitionFunctionButtonToolBar extends Composite {
-	private Button insertButton, editButton, saveButton, deleteButton, eraseButton, cancelButton, infoButton;
+	private Button insertButton; 
+	private Button editButton; 
+	private Button saveButton; 
+	private Button deleteButton; 
+	private Button eraseButton; 
+	private Button cancelButton; 
+	private Button infoButton; 
+	private Button expressionBuilderButton;
 	private Button timingExpIcon = new Button();
 	private HorizontalPanel buttonLayout = new HorizontalPanel();
 	private ButtonGroup infoButtonGroup = new ButtonGroup();
+	private ButtonGroup saveButtonGroup = new ButtonGroup();
 	private String sectionName;
 
 	
@@ -32,10 +41,20 @@ public class DefinitionFunctionButtonToolBar extends Composite {
 		addInsertButton();
 		addDeleteButton();
 		addCancelButton();
-		initWidget(buttonLayout);
-			
+		addExpressionBuilderButton();		
+		initWidget(buttonLayout);	
 	}
 	
+	private void addExpressionBuilderButton() {
+		expressionBuilderButton = new ExpressionBuilderButton(sectionName);
+		expressionBuilderButton.getElement().setAttribute("aria-label", "Click the Expression Builder Button to open the expression builder.");
+		buttonLayout.add(expressionBuilderButton);
+		
+		if(!sectionName.equalsIgnoreCase("definition")) {
+			expressionBuilderButton.setVisible(false);
+		}
+	}
+
 	private void addCancelButton() {
 		cancelButton = new CancelToolBarButton(sectionName);
 		buttonLayout.add(cancelButton);
@@ -48,7 +67,7 @@ public class DefinitionFunctionButtonToolBar extends Composite {
 	
 	private void addDeleteButton() {
 		deleteButton = new DeleteToolBarButton(sectionName);
-		buttonLayout.add(deleteButton);
+		saveButtonGroup.add(deleteButton);
 	}
 	
 	private void addEditButton() {
@@ -59,7 +78,7 @@ public class DefinitionFunctionButtonToolBar extends Composite {
 	
 	private void addSaveButton() {
 		saveButton = new SaveToolBarButton(sectionName);
-		buttonLayout.add(saveButton);
+		saveButtonGroup.add(saveButton);
 	}
 	
 	private void addInsertButton() {
@@ -75,7 +94,7 @@ public class DefinitionFunctionButtonToolBar extends Composite {
 		infoButtonGroup.getElement().setAttribute("class", "btn-group");
 		infoButtonGroup.add(infoButton);
 		infoButtonGroup.add(dropDownMenu);
-		infoButtonGroup.getElement().setAttribute("style", "margin-top:-10px;");
+		infoButtonGroup.getElement().setAttribute("style", "margin-top:-10px;margin-left:-10px");
 	}
 	
 	public void setEnabled(boolean isEnabled){
@@ -85,6 +104,7 @@ public class DefinitionFunctionButtonToolBar extends Composite {
 		eraseButton.setEnabled(isEnabled);
 		infoButton.setEnabled(isEnabled);
 		cancelButton.setEnabled(isEnabled);
+		expressionBuilderButton.setEnabled(isEnabled);
 	}
 	
 	public Button getInsertButton() {
@@ -106,6 +126,10 @@ public class DefinitionFunctionButtonToolBar extends Composite {
 	public Button getInfoButton(){
 		return infoButton;
 	}
+	
+	public Button getExpressionBuilderButton() {
+		return expressionBuilderButton;
+	}
 
 	public Button getTimingExpButton(){
 		return timingExpIcon;
@@ -117,6 +141,14 @@ public class DefinitionFunctionButtonToolBar extends Composite {
 
 	public ButtonGroup getInfoButtonGroup() {
 		return infoButtonGroup;
+	}
+
+	public ButtonGroup getSaveButtonGroup() {
+		return saveButtonGroup;
+	}
+
+	public void setSaveButtonGroup(ButtonGroup saveButtonGroup) {
+		this.saveButtonGroup = saveButtonGroup;
 	}
 
 	public Button getEditButton() {
