@@ -28,8 +28,8 @@ public class MessageDelegate {
 	private static final String EMAIL_ID_INCORRECT_FORMAT = "Email Address has an incorrect format.";
 	private static final String EMAIL_ID_REQUIRED = "Email Address is required.";
 	private static final String LOGIN_USER_REQUIRED = "User Name is required.";
-	private static final String NO_MEASURES = "No measures returned. Please search again.";
-	private static final String NO_LIBRARIES_RETURNED = "No libraries returned. Please search again.";
+	private static final String NO_MEASURES = "No measures returned. Please change your search criteria and search again.";
+	private static final String NO_LIBRARIES_RETURNED = "No libraries returned. Please change your search criteria and search again.";
 	private static final String WARNING_BAD_DATA_TYPE_COMBINATION ="Successfully saved with errors. You have an incorrect value set/code datatype combination.";
 	private static final String OID_REQUIRED = "OID is required.";
 	private static final String OID_TOO_LONG = "OID cannot exceed 50 characters.";
@@ -138,7 +138,7 @@ public class MessageDelegate {
 	private static final String INVALIDLOGIC_CLAUSE_WORK_SPACE = "Clause logic is incomplete.Please validate your clause logic.";
 	private static final String COHORT_WRONG_NUM = "For a Cohort measure, a grouping must contain exactly one Initial Population.";
 	private static final String STRATIFICATION_VALIDATION_FOR_GROUPING = " Measure Grouping cannot contain more than one Stratification.";
-	private static final String MEASURE_OBS_VALIDATION_FOR_GROUPING = " A Ratio Measure may not contain more than 2 Measure Observations in a Measure grouping.";
+	private static final String MEASURE_OBS_VALIDATION_FOR_GROUPING = " A Ratio Measure may not contain more than two Measure Observations in a Measure grouping.";
 	private static final String SAVE_ERROR_MSG = "You have unsaved changes that will be discarded if you continue. Do you want to continue without saving?";
 	private static final String SECURITY_NOT_ANSWERED = "Your security questions have not been answered.  You cannot continue. Please contact the Helpdesk";
 	private static final String SECURITY_Q_MISMATCH = "The answer for the security question did not match.";

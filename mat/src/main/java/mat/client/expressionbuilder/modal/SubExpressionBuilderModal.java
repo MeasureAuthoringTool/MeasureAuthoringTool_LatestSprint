@@ -7,8 +7,12 @@ import org.gwtbootstrap3.client.ui.constants.Pull;
 
 import com.google.gwt.user.client.ui.HorizontalPanel;
 
+import mat.client.expressionbuilder.model.ExistsModel;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.IExpressionBuilderModel;
+import mat.client.expressionbuilder.model.IsNullModel;
+import mat.client.expressionbuilder.model.IsTrueFalseModel;
+import mat.client.expressionbuilder.model.NotModel;
 import mat.client.expressionbuilder.model.OperatorModel;
 
 public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
@@ -16,8 +20,12 @@ public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
 	private Button applyButton;
 	private ExpressionBuilderModal parent;
 	
-	public SubExpressionBuilderModal(String title, ExpressionBuilderModal parent, ExpressionBuilderModel model) {
-		super(title, model);
+	public SubExpressionBuilderModal(
+			String title, 
+			ExpressionBuilderModal parent, 
+			ExpressionBuilderModel parentModel, 
+			ExpressionBuilderModel mainModel) {
+		super(title, parentModel, mainModel);
 		this.parent = parent;
 		this.getFooter().add(buildFooter());
 	}
@@ -51,6 +59,7 @@ public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
 		cancelButton.setType(ButtonType.DANGER);
 		cancelButton.setSize(ButtonSize.LARGE);
 		cancelButton.addClickHandler(event -> onCancelButtonClick());
+		cancelButton.getElement().setAttribute("aria-label", "Clicking this button will cancel building the current expression and take you to the previous page");
 		return cancelButton;
 	}
 	
@@ -61,16 +70,30 @@ public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
 		applyButton.setType(ButtonType.PRIMARY);
 		applyButton.setPull(Pull.RIGHT);
 		applyButton.setSize(ButtonSize.LARGE);
+		applyButton.getElement().setAttribute("aria-label", "Clicking this button will save your changes, apply the CQL to your expression, and take you to the previous page.");
 		return applyButton;
 	}
 	
-	private void onCancelButtonClick() {		
-		if(!this.getModel().getChildModels().isEmpty()) {
-			int size = this.getModel().getChildModels().size() - 1;
-			IExpressionBuilderModel lastModel = this.getModel().getChildModels().get(size);
+	protected void onCancelButtonClick() {		
+		if(!this.getParentModel().getChildModels().isEmpty()) {
+			int size = this.getParentModel().getChildModels().size() - 1;
+			IExpressionBuilderModel lastModel = this.getParentModel().getChildModels().get(size);
+			
+			if(lastModel instanceof ExistsModel || 
+					lastModel instanceof NotModel ||
+					lastModel instanceof IsNullModel ||
+					lastModel instanceof IsTrueFalseModel) {
+				this.getParentModel().getChildModels().remove(size);
+				int newSize = this.getParentModel().getChildModels().size() - 1;
+				
+				if(newSize > 0) {
+					lastModel = this.getParentModel().getChildModels().get(newSize);
+					size = newSize;
+				}
+			}
 			
 			if(lastModel instanceof OperatorModel) {
-				this.getModel().getChildModels().remove(size);
+				this.getParentModel().getChildModels().remove(size);
 			}
 		}		
 		

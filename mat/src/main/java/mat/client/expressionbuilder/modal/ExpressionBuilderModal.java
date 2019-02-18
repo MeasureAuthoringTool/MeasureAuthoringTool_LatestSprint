@@ -1,5 +1,6 @@
 package mat.client.expressionbuilder.modal;
 
+import org.gwtbootstrap3.client.ui.HelpBlock;
 import org.gwtbootstrap3.client.ui.Modal;
 import org.gwtbootstrap3.client.ui.ModalBody;
 import org.gwtbootstrap3.client.ui.ModalFooter;
@@ -11,7 +12,9 @@ import org.gwtbootstrap3.client.ui.Pre;
 import org.gwtbootstrap3.client.ui.constants.ModalBackdrop;
 import org.gwtbootstrap3.client.ui.constants.PanelType;
 
+import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.shared.ErrorMessageAlert;
@@ -23,12 +26,16 @@ public abstract class ExpressionBuilderModal extends Modal {
 	private ModalBody body;
 	private ModalFooter footer;
 	private VerticalPanel contentPanel;
-	private ExpressionBuilderModel model;
+	private ExpressionBuilderModel parentModel;
 	private ErrorMessageAlert errorAlert;
 	private Pre pre;
+	private FocusPanel logicFocusPanel;
+	private ExpressionBuilderModel mainModel;
+	private HelpBlock helpBlock;
 	
-	public ExpressionBuilderModal(String title, ExpressionBuilderModel model) {
-		this.model = model;
+	public ExpressionBuilderModal(String title, ExpressionBuilderModel parentModel, ExpressionBuilderModel mainModel) {
+		this.parentModel = parentModel;
+		this.mainModel = mainModel;
 		this.setDataBackdrop(ModalBackdrop.STATIC);
 		this.setDataKeyboard(false);
 		this.setClosable(false);
@@ -46,6 +53,8 @@ public abstract class ExpressionBuilderModal extends Modal {
 		
 		header.setTitle(title);
 		
+		
+		body.add(buildHelpBlock(""));
 		body.add(buildErrorAlert());
 		body.add(contentPanel);
 		body.add(buildAceEditorPanel());
@@ -55,6 +64,16 @@ public abstract class ExpressionBuilderModal extends Modal {
 		this.add(footer);
 	}
 	
+	private Widget buildHelpBlock(String message) {
+		helpBlock = new HelpBlock();
+		helpBlock.setText(message);
+		helpBlock.setColor("transparent");
+		helpBlock.setHeight("0px");
+		helpBlock.setPaddingBottom(0.0);
+		helpBlock.setPaddingBottom(0.0);
+		return helpBlock;
+	}
+
 	public ModalBody getBody() {
 		return body;
 	}
@@ -63,16 +82,21 @@ public abstract class ExpressionBuilderModal extends Modal {
 		return footer;
 	}
 
-	public ExpressionBuilderModel getModel() {
-		return model;
+	public ExpressionBuilderModel getParentModel() {
+		return parentModel;
 	}
 
+	public ExpressionBuilderModel getMainModel() {
+		return mainModel;
+	}
+	
 	public VerticalPanel getContentPanel() {
 		return contentPanel;
 	}
 	
 	public void updateCQLDisplay() {
-		this.pre.setText(model.getCQL());
+		this.logicFocusPanel.getElement().setAttribute("aria-label", "Generated CQL Expression " + mainModel.getCQL(""));
+		this.pre.setText(mainModel.getCQL(""));
 	}
 	
 	public MessageAlert getErrorAlert() {
@@ -102,9 +126,11 @@ public abstract class ExpressionBuilderModal extends Modal {
 		return cqlExpressionPanel;
 	}
 	
-	private Pre buildEditor() {
+	private FocusPanel buildEditor() {
+		logicFocusPanel = new FocusPanel();
 		pre = new Pre();
-		return pre;
+		logicFocusPanel.add(pre);
+		return logicFocusPanel;
 	}
 
 	public abstract void display();
@@ -114,6 +140,11 @@ public abstract class ExpressionBuilderModal extends Modal {
 	 */
 	public void showAndDisplay() {
 		this.show();
+		helpBlock.setText("Successfully applied expression.");
+		helpBlock.getElement().setAttribute("role", "alert");
+		helpBlock.getElement().focus();
 		display();
 	}
+
+
 }

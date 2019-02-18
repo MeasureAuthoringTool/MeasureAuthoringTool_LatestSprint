@@ -11,6 +11,7 @@ import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
+import mat.client.advancedsearch.AdvancedSearchPillPanel;
 import mat.client.buttons.CustomButton;
 import mat.client.cql.CQLLibrarySearchView;
 import mat.client.cqlworkspace.EditConfirmationDialogBox;
@@ -23,6 +24,7 @@ import mat.client.shared.SearchWidgetWithFilter;
 import mat.client.shared.SpacerWidget;
 import mat.client.shared.SuccessMessageAlert;
 import mat.model.cql.CQLLibraryDataSetObject;
+import mat.shared.LibrarySearchModel;
 
 public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 
@@ -53,6 +55,8 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	private MessageAlert successMessageAlert = new SuccessMessageAlert();
 	
 	private EditConfirmationDialogBox draftConfirmationDialogBox = new EditConfirmationDialogBox();
+	
+	AdvancedSearchPillPanel pillPanel = new AdvancedSearchPillPanel("CQL Library");
 
 	@Override
 	public VerticalPanel getWidgetVP() {
@@ -98,6 +102,7 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 		mainPanel.add(errorMessageAlert);
 		mainPanel.add(new SpacerWidget());
 		mainPanel.add(searchFilterWidget);
+		mainPanel.add(pillPanel.getBadgeTable());
 		mainPanel.add(cqlLibrarySearchView.buildCQLLibraryCellTable());
 	}
 	
@@ -107,8 +112,8 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	}
 	
 	@Override
-	public void buildCellTable(SaveCQLLibraryResult result, String searchText,int filter) {
-		cqlLibrarySearchView.buildCellTable(result, searchText,filter);
+	public void buildCellTable(SaveCQLLibraryResult result, LibrarySearchModel librarySearchModel,int filter) {
+		cqlLibrarySearchView.buildCellTable(result, librarySearchModel, filter);
 	}
 	@Override
 	public VerticalPanel getCellTablePanel() {
@@ -142,8 +147,6 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	@Override
 	public Widget asWidget() {
 		widgetVP.clear();
-		//as a part of MAT-9305 - Commenting out Below as we might need it next release 
-		//widgetVP.add(cqlLibraryAdvancedSearchBuilder.asWidget());
 		return mainPanel;
 	}
 	
@@ -223,7 +226,22 @@ public class CqlLibraryView implements CqlLibraryPresenter.ViewDisplay {
 	public void resetMessageDisplay() {
 		getSuccessMessageAlert().clearAlert();
 		getErrorMessageAlert().clearAlert();
-	}	
+	}
+	
+	@Override
+	public AdvancedSearchPillPanel getSearchPillPanel() {
+		return pillPanel;
+	}
+	
+	@Override
+	public void resetSearchDisplay() {
+		searchFilterWidget.getLibraryCustomCheckBox().setValue(true);
+		searchFilterWidget.getSearchInput().setValue("");
+		searchFilterWidget.getAdvancedSearchPanel().resetDisplay(false);
+		searchFilterWidget.getSearchInput().getElement().focus();
+		searchFilterWidget.setSelectedFilter(SearchWidgetWithFilter.MY);
+		errorMessageAlert.clearAlert();
+	}
 
 
 }

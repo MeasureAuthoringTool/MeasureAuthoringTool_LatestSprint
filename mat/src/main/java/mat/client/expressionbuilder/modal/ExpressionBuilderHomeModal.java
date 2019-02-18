@@ -14,10 +14,12 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
 import mat.client.expressionbuilder.component.ExpressionTypeSelectorList;
+import mat.client.expressionbuilder.constant.CQLType;
 import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.constant.OperatorType;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
+import mat.client.expressionbuilder.util.OperatorTypeUtil;
 import mat.client.shared.ConfirmationDialogBox;
 import mat.client.shared.ConfirmationObserver;
 
@@ -28,9 +30,9 @@ public class ExpressionBuilderHomeModal extends ExpressionBuilderModal {
 	private BuildButtonObserver buildButtonObserver;
 	private AceEditor editorToInsertFinalTextInto;
 	
-	public ExpressionBuilderHomeModal(AceEditor editorToInsertFinalTextInto) {
-		super("CQL Expression Builder", new ExpressionBuilderModel());
-		buildButtonObserver = new BuildButtonObserver(this, this.getModel());
+	public ExpressionBuilderHomeModal(AceEditor editorToInsertFinalTextInto, ExpressionBuilderModel model) {
+		super("CQL Expression Builder", model, model);
+		buildButtonObserver = new BuildButtonObserver(this, this.getParentModel(), this.getMainModel());
 		this.editorToInsertFinalTextInto = editorToInsertFinalTextInto;
 		display();
 	}
@@ -42,15 +44,20 @@ public class ExpressionBuilderHomeModal extends ExpressionBuilderModal {
 
 		List<ExpressionType> availableExpressionTypes = new ArrayList<>();
 		availableExpressionTypes.add(ExpressionType.RETRIEVE);
+		availableExpressionTypes.add(ExpressionType.DEFINITION);
+		availableExpressionTypes.add(ExpressionType.EXISTS);
+		availableExpressionTypes.add(ExpressionType.NOT);
+		availableExpressionTypes.add(ExpressionType.IS_NULL_NOT_NULL);
+		availableExpressionTypes.add(ExpressionType.IS_TRUE_FALSE);
 
 		List<OperatorType> availableOperatorTypes = new ArrayList<>();
-		availableOperatorTypes.add(OperatorType.UNION);
-		availableOperatorTypes.add(OperatorType.EXCEPT);
-		availableOperatorTypes.add(OperatorType.INTERSECT);
-
+		availableOperatorTypes.addAll(OperatorTypeUtil.getAvailableOperatorsCQLType(CQLType.ANY));
+		
 		VerticalPanel selectorsPanel = new VerticalPanel();
 		selectorsPanel.setStyleName("selectorsPanel");
-		this.getContentPanel().add(new ExpressionTypeSelectorList(availableExpressionTypes, availableOperatorTypes, buildButtonObserver, this.getModel()));
+		String label = "What type of expression would you like to build?";
+		this.getContentPanel().add(new ExpressionTypeSelectorList(availableExpressionTypes, availableOperatorTypes, 
+				buildButtonObserver, this.getParentModel(), label));
 		this.getFooter().add(buildFooter());
 		this.updateCQLDisplay();
 	}
@@ -93,7 +100,7 @@ public class ExpressionBuilderHomeModal extends ExpressionBuilderModal {
 	}
 
 	private void onCompleteBuildButtonClick() {
-		String text = this.editorToInsertFinalTextInto.getText() + "\n" + this.getModel().getCQL();
+		String text = this.editorToInsertFinalTextInto.getText() + "\n" + this.getParentModel().getCQL("");
 		text = text.trim();
 		this.editorToInsertFinalTextInto.setText(text);
 		this.hide();
@@ -114,13 +121,17 @@ public class ExpressionBuilderHomeModal extends ExpressionBuilderModal {
 
 					@Override
 					public void onNoButtonClicked() {
-						exitBuilderButton.setEnabled(true);
-						completeBuildButton.setEnabled(true);
+						onCloseOfWarningModal();
 					}
 
 					@Override
 					public void onClose() {
-
+						onCloseOfWarningModal();
+					}
+					
+					private void onCloseOfWarningModal() {
+						exitBuilderButton.setEnabled(true);
+						completeBuildButton.setEnabled(true);
 					}
 				});
 

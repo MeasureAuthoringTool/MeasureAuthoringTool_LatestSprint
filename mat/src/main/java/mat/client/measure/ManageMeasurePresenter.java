@@ -70,8 +70,6 @@ import mat.shared.CompositeMeasureValidationResult;
 import mat.shared.ConstantMessages;
 import mat.shared.MatConstants;
 import mat.shared.MeasureSearchModel;
-import mat.shared.MeasureSearchModel.PatientBasedType;
-import mat.shared.MeasureSearchModel.VersionMeasureType;
 import mat.shared.StringUtility;
 
 public class ManageMeasurePresenter implements MatPresenter {
@@ -638,51 +636,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 		Mat.focusSkipLists(MEASURE_LIBRARY);
 	}
 
-	private void displayDetailForEdit() {
-		panel.getButtonPanel().clear();
-		resetPatientBasedInput(detailDisplay); 
-				
-		panel.setHeading("My Measures > Edit Measure", MEASURE_LIBRARY);
-		detailDisplay.showMeasureName(false);
-		detailDisplay.showCautionMsg(true);
-		setDetailsToView();
-		
-		// set the patient based indicators, yes is index 1, no is index 0
-		if(currentDetails.isPatientBased()) {
-			detailDisplay.getPatientBasedInput().setSelectedIndex(1);
-		} else {
-			detailDisplay.getPatientBasedInput().setSelectedIndex(0);
-		}
-		
-		if(currentDetails.getMeasScoring().equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE)) {
-			detailDisplay.getPatientBasedInput().removeItem(1);
-		}
-		
-		panel.setContent(detailDisplay.asWidget());
-	}
-
-	private void displayDetailForEditComposite(String compositeScoringMethod) {
-		panel.getButtonPanel().clear();
-		resetPatientBasedInput(compositeDetailDisplay); 
-		panel.setHeading("My Measures > Edit Composite Measure", MEASURE_LIBRARY);
-		compositeDetailDisplay.showMeasureName(false);
-		compositeDetailDisplay.showCautionMsg(true);
-			
-		setCompositeDetailsToView();
-
-		// set the patient based indicators, yes is index 1, no is index 0
-		if(currentCompositeMeasureDetails.isPatientBased()) {
-			compositeDetailDisplay.getPatientBasedInput().setSelectedIndex(1);
-		} else {
-			compositeDetailDisplay.getPatientBasedInput().setSelectedIndex(0);
-		}
-		
-		if(currentCompositeMeasureDetails.getMeasScoring().equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE)) {
-			compositeDetailDisplay.getPatientBasedInput().removeItem(1);
-		}
-		panel.setContent(compositeDetailDisplay.asWidget());
-		
-	}
 
 	private void resetPatientBasedInput(DetailDisplay currentDisplay) {
 		currentDisplay.getPatientBasedInput().clear();
@@ -719,13 +672,13 @@ public class ManageMeasurePresenter implements MatPresenter {
 		if (ClientConstants.ADMINISTRATOR.equalsIgnoreCase(MatContext.get().getLoggedInUserRole())) {
 			heading = "";
 			filter = SearchWidgetWithFilter.ALL;
-			search(searchDisplay.getAdminSearchString().getValue(), 1, Integer.MAX_VALUE, filter);
+			search(searchDisplay.getAdminSearchString().getValue(), 1, Integer.MAX_VALUE, filter, false);
 			fp.add(searchDisplay.asWidget());
 		} else {
 			searchDisplay.getMeasureSearchFilterWidget().setVisible(true);
 			isMeasureSearchFilterVisible = true;
 			filter = searchDisplay.getSelectedFilter();
-			search(searchDisplay.getSearchString().getValue(), 1, Integer.MAX_VALUE, filter);
+			search(searchDisplay.getSearchString().getValue(), 1, Integer.MAX_VALUE, filter, false);
 			searchRecentMeasures();
 			buildCreateMeasure(); 
 			buildCreateCompositeMeasure();
@@ -810,48 +763,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 					.createAlert(MatContext.get().getMessageDelegate().getTransferCheckBoxErrorMeasure());
 		}
 
-	}
-
-	private void edit(String measureId, Boolean isComposite) {
-		detailDisplay.getErrorMessageDisplay().clearAlert();
-		searchDisplay.getErrorMessageDisplayForBulkExport().clearAlert();
-		if(isComposite != null && isComposite) {
-			MatContext.get().getMeasureService().getCompositeMeasure(measureId, new AsyncCallback<ManageCompositeMeasureDetailModel>() {
-
-				@Override
-				public void onFailure(Throwable caught) {
-					detailDisplay.getErrorMessageDisplay()
-					.createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-					MatContext.get().recordTransactionEvent(null, null, null,
-							"Unhandled Exception: " + caught.getLocalizedMessage(), 0);
-				}
-
-				@Override
-				public void onSuccess(ManageCompositeMeasureDetailModel result) {
-					currentCompositeMeasureDetails = result;
-					componentMeasureDisplay.getComponentMeasureSearch().setAppliedComponentMeasuresList(result.getComponentMeasuresSelectedList());
-					componentMeasureDisplay.getComponentMeasureSearch().setAliasMapping(result.getAliasMapping());
-					displayDetailForEditComposite(result.getCompositeScoringMethod());
-				}
-			});
-		} else {
-			MatContext.get().getMeasureService().getMeasure(measureId, new AsyncCallback<ManageMeasureDetailModel>() {
-
-				@Override
-				public void onFailure(Throwable caught) {
-					detailDisplay.getErrorMessageDisplay()
-							.createAlert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-					MatContext.get().recordTransactionEvent(null, null, null,
-							"Unhandled Exception: " + caught.getLocalizedMessage(), 0);
-				}
-
-				@Override
-				public void onSuccess(ManageMeasureDetailModel result) {
-					currentDetails = result;
-					displayDetailForEdit();
-				}
-			});
-		}
 	}
 
 	private void editClone(String id) {
@@ -1026,7 +937,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	private void getUnusedLibraryDialog(String measureId, String measureName, boolean isMajor, String version, boolean shouldPackage) {
 		ConfirmationDialogBox confirmationDialogBox = new ConfirmationDialogBox(
 				MatContext.get().getMessageDelegate().getUnusedIncludedLibraryWarning(measureName), "Continue",
-				"Cancel", null);
+				"Cancel", null, false);
 		confirmationDialogBox.setObserver(new ConfirmationObserver() {
 
 			@Override
@@ -1135,7 +1046,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		fireSuccessfullVersionEvent(isSuccess, name, message);
 	}
 
-	private void search(final String searchText, int startIndex, int pageSize, final int filter) {
+	private void search(final String searchText, int startIndex, int pageSize, final int filter, boolean didUserSelectSearch) {
 		final String lastSearchText = (searchText != null) ? searchText.trim() : null;
 
 		// This to fetch all Measures if user role is Admin. This will go away
@@ -1143,13 +1054,13 @@ public class ManageMeasurePresenter implements MatPresenter {
 		if (currentUserRole.equalsIgnoreCase(ClientConstants.ADMINISTRATOR)) {
 			pageSize = 25;
 			setSearchingBusy(true);
-			MeasureSearchModel model = new MeasureSearchModel(filter, startIndex, pageSize, searchText, searchText);
+			MeasureSearchModel searchAdminModel = new MeasureSearchModel(filter, startIndex, pageSize, lastSearchText);
 			
 			if(null != searchDisplay) {
 				searchDisplay.getSuccessMessageDisplay().clearAlert();	
 			}
 			
-			MatContext.get().getMeasureService().search(model,
+			MatContext.get().getMeasureService().search(searchAdminModel,
 					new AsyncCallback<ManageMeasureSearchModel>() {
 						@Override
 						public void onFailure(Throwable caught) {
@@ -1202,26 +1113,23 @@ public class ManageMeasurePresenter implements MatPresenter {
 						}
 					});
 		} else {
-			MeasureSearchModel model = new MeasureSearchModel(filter, startIndex, 25, lastSearchText, searchText);
-			
-			String userSelectedStateValue = searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getSearchStateValue();
-			VersionMeasureType versionType = userSelectedStateValue.contains("Draft") ? VersionMeasureType.DRAFT :
-												userSelectedStateValue.contains("Versioned") ? VersionMeasureType.VERSION : VersionMeasureType.ALL;
-			model.setIsDraft(versionType);
-			
-			String userSelectedPatientBasedValue =  searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getPatientBasedValue();
-			PatientBasedType patientBasedType = userSelectedPatientBasedValue.contains("Yes") ? PatientBasedType.PATIENT :
-													userSelectedPatientBasedValue.contains("No") ? PatientBasedType.NOT_PATIENT : PatientBasedType.ALL;
-			model.setPatientBased(patientBasedType);
-			
-			model.setScoringTypes(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getScoringTypeList());
-			
+			MeasureSearchModel searchModel = new MeasureSearchModel(filter, startIndex, 25, lastSearchText);
+			buildAdvancedSearchModel(searchModel);
 			searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getCollapsePanel().setIn(false);
-			advancedSearch(model);
+			advancedSearch(searchModel, didUserSelectSearch);
 		}
 	}
+
+	private void buildAdvancedSearchModel(MeasureSearchModel searchModel) {
+		searchModel.setIsDraft(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getSearchStateValue());
+		searchModel.setPatientBased(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getPatientBasedValue());
+		searchModel.setScoringTypes(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getScoringTypeList());
+		searchModel.setModifiedDate(Integer.parseInt(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getModifiedWithinValue()));
+		searchModel.setModifiedOwner(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getModifiedByValue());
+		searchModel.setOwner(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getOwnedByValue());
+	}
 	
-	private void advancedSearch(MeasureSearchModel measureSearchModel) {
+	private void advancedSearch(MeasureSearchModel measureSearchModel, boolean didUserSelectSearch) {
 		setSearchingBusy(true);
 		MatContext.get().getMeasureService().search(measureSearchModel,
 				new AsyncCallback<ManageMeasureSearchModel>() {
@@ -1236,7 +1144,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 					@Override
 					public void onSuccess(ManageMeasureSearchModel result) {
-						String measureListLabel = (measureSearchModel.isMyMeasureSearch() != 0) ? "All Measures" : "My Measures";
+						addSearchPills(measureSearchModel);
+						String measureListLabel = (measureSearchModel.getIsMyMeasureSearch() != 0) ? "All Measures" : "My Measures";
 						searchDisplay.getMeasureSearchView().setMeasureListLabel(measureListLabel);
 						
 						boolean isExportSelectedButtonVisible = (result.getData().size() > 0);
@@ -1252,11 +1161,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 								}
 							}
 
-							@Override
-							public void onEditClicked(ManageMeasureSearchModel.Result result) {
-								resetMeasureFlags();
-								edit(result.getId(), result.getIsComposite());
-							}
 
 							@Override
 							public void onExportClicked(ManageMeasureSearchModel.Result result) {
@@ -1374,7 +1278,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 						manageMeasureSearchModel = result;
 						MatContext.get().setManageMeasureSearchModel(manageMeasureSearchModel);
 
-						if ((result.getResultsTotal() == 0) && !measureSearchModel.getLastSearchText().isEmpty()) {
+						if (result.getResultsTotal() == 0) {
 							searchDisplay.getErrorMessageDisplay()
 									.createAlert(MatContext.get().getMessageDelegate().getNoMeasuresMessage());
 						} else {
@@ -1398,15 +1302,27 @@ public class ManageMeasurePresenter implements MatPresenter {
 							} 
 						}
 						SearchResultUpdate sru = new SearchResultUpdate();
-						sru.update(result, (TextBox) searchDisplay.getSearchString(), measureSearchModel.getLastSearchText());
+						sru.update(result, (TextBox) searchDisplay.getSearchString(), measureSearchModel.getSearchTerm());
 
-						searchDisplay.buildCellTable(manageMeasureSearchModel, measureSearchModel.isMyMeasureSearch(), measureSearchModel);
+						searchDisplay.buildCellTable(manageMeasureSearchModel, measureSearchModel.getIsMyMeasureSearch(), measureSearchModel);
 
 						setSearchingBusy(false);
-
+						if(didUserSelectSearch) {
+							searchDisplay.getSearchPillPanel().getBadgeHeader().getElement().focus();
+						}
 					}
-
 				});
+	}
+	
+	private void resetSearchFields(MeasureSearchModel measureSearchModel) {
+		searchDisplay.resetDisplay();
+		measureSearchModel.reset();
+		addSearchPills(measureSearchModel);
+	}
+	
+	private void addSearchPills(MeasureSearchModel measureSearchModel) {
+		searchDisplay.getSearchPillPanel().setSearchedByPills(measureSearchModel, "Measures");
+		searchDisplay.getSearchPillPanel().getReset().addClickHandler(event -> resetSearchFields(measureSearchModel));
 	}
 
 	public static void setSubSkipEmbeddedLink(String name) {
@@ -1564,7 +1480,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 				isMeasureVersioned = false;
 				searchDisplay.resetMessageDisplay();
 				int filter = searchDisplay.getSelectedFilter();
-				search(searchDisplay.getSearchString().getValue(), startIndex, Integer.MAX_VALUE, filter);
+				search(searchDisplay.getSearchString().getValue(), startIndex, Integer.MAX_VALUE, filter, true);
 			}
 		});
 
@@ -1634,22 +1550,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 				int startIndex = 1;
 				searchDisplay.getErrorMessageDisplay().clearAlert();
 				int filter = 1;
-				search(searchDisplay.getAdminSearchString().getValue(), startIndex, Integer.MAX_VALUE, filter);
+				search(searchDisplay.getAdminSearchString().getValue(), startIndex, Integer.MAX_VALUE, filter, false);
 			}
 		});
-		
-		//TODO in MAT-9216 add this code back in!
-		/*searchDisplay.getMeasureLibraryAdvancedSearchBuilder().getModal().getSearch().addClickHandler(new ClickHandler() {
-			@Override
-			public void onClick(ClickEvent event) {
-				MeasureSearchModel model = searchDisplay.getMeasureLibraryAdvancedSearchBuilder().generateAdvancedSearchModel();
-				model.setStartIndex(1);
-				model.setPageSize(Integer.MAX_VALUE);
-				model.setLastSearchText("");
-				advancedSearch(model);
-				searchDisplay.getMeasureLibraryAdvancedSearchBuilder().getModal().closeAdvanceSearch();
-			}
-		});*/
 		
 		searchDisplay.getTransferButton().addClickHandler(event -> displayActiveMATUsersToTransferMeasureOwnership());
 
@@ -1666,7 +1569,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	private void clearAllMeasureOwnershipTransfers() {
 		manageMeasureSearchModel.getSelectedTransferResults().clear();
 		manageMeasureSearchModel.getSelectedTransferIds().clear();
-		search(searchDisplay.getAdminSearchString().getValue(), 1, Integer.MAX_VALUE, 1);
+		search(searchDisplay.getAdminSearchString().getValue(), 1, Integer.MAX_VALUE, 1, false);
 	}
 	
 	private void searchHistory(String measureId, int startIndex, int pageSize) {
@@ -1707,16 +1610,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 								isMeasureVersioned = false;
 								searchDisplay.resetMessageDisplay();
 								export(result);
-							}
-
-							@Override
-							public void onEditClicked(Result result) {
-								measureDeletion = false;
-								isMeasureDeleted = false;
-								isMeasureVersioned = false;
-								searchDisplay.resetMessageDisplay();
-								edit(result.getId(), result.getIsComposite());
-
 							}
 
 						});
@@ -1879,7 +1772,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 								transferDisplay.getSuccessMessageDisplay().clearAlert();
 								transferDisplay.getErrorMessageDisplay().clearAlert();
 								int filter = 1;
-								search(searchDisplay.getAdminSearchString().getValue(), 1, Integer.MAX_VALUE, filter);
+								search(searchDisplay.getAdminSearchString().getValue(), 1, Integer.MAX_VALUE, filter, false);
 								searchDisplay.getSuccessMessageDisplay().createAlert(
 										MatContext.get().getMessageDelegate().getTransferOwnershipSuccess() + emailTo);
 							}
@@ -1905,7 +1798,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		transferDisplay.getErrorMessageDisplay().clearAlert();
 		searchDisplay.getSuccessMessageDisplay().clearAlert();
 		int filter = 1;
-		search(searchDisplay.getAdminSearchString().getValue(), 1, Integer.MAX_VALUE, filter);
+		search(searchDisplay.getAdminSearchString().getValue(), 1, Integer.MAX_VALUE, filter, false);
 	}
 	
 	private void searchMeasureLibraryOwners() {

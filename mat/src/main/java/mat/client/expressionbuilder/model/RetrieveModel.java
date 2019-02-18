@@ -1,7 +1,10 @@
 package mat.client.expressionbuilder.model;
 
+import mat.client.expressionbuilder.constant.CQLType;
+
 public class RetrieveModel extends ExpressionBuilderModel {
 
+	private IExpressionBuilderModel parentModel;
 	private String datatype;
 	private String terminology;
 	
@@ -34,7 +37,7 @@ public class RetrieveModel extends ExpressionBuilderModel {
 	}
 	
 	@Override
-	public String getCQL() {
+	public String getCQL(String identation) {
 		String cql = "";
 		cql = cql + "[\"" + datatype + "\""; 
 		
@@ -45,5 +48,10 @@ public class RetrieveModel extends ExpressionBuilderModel {
 		cql = cql + "]";
 		
 		return cql;
+	}
+	
+	@Override
+	public CQLType getType() {
+		return CQLType.LIST;
 	}
 }

@@ -1,4 +1,4 @@
-package mat.client.advancedSearch;
+package mat.client.advancedsearch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,16 +7,19 @@ import org.gwtbootstrap3.client.ui.Anchor;
 import org.gwtbootstrap3.client.ui.CheckBox;
 import org.gwtbootstrap3.client.ui.FormGroup;
 import org.gwtbootstrap3.client.ui.FormLabel;
+import org.gwtbootstrap3.client.ui.Input;
 import org.gwtbootstrap3.client.ui.ListBox;
 import org.gwtbootstrap3.client.ui.PanelCollapse;
+import org.gwtbootstrap3.client.ui.constants.InputType;
 import org.gwtbootstrap3.client.ui.constants.Toggle;
 
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Panel;
 import com.google.gwt.user.client.ui.VerticalPanel;
-import com.google.gwt.user.client.ui.Widget;
 
 import mat.shared.ConstantMessages;
+import mat.shared.MeasureSearchModel.PatientBasedType;
+import mat.shared.SearchModel.VersionType;
 
 public class AdvancedSearchPanel {
 
@@ -26,24 +29,38 @@ public class AdvancedSearchPanel {
 	private static final String NO_NOT_PATIENT_BASED = "No, Not Patient-based";
 	private static final String YES_PATIENT_BASED = "Yes, Patient-based";
 	private static final String ALL_MEASURES = "All Measures";
-	private final String HEIGHT_OF_BOXES = "30px";
-	private final String WIDTH_OF_BOXES = "200px";
+	private static final String HEIGHT_OF_BOXES = "30px";
+	private static final String WIDTH_OF_BOXES = "200px";
+	private static final String ADVANCED_SEARCH_STYLE = "advancedSearchLabels";
+	private static final String PADDING_LEFT_TWENTY_PIXEL = "padding-left: 20px;";
+	private static final String STYLE = "style";
+	private static final String OWNED_BY = " Owned By";
+	private static final String OWNER_PLACEHOLDER = "Enter user first or last name";
+	
+	private boolean isMeasure = false; 
 	
 	private Anchor advanceSearchAnchor = new Anchor();
-	HorizontalPanel anchorPanel;
-	PanelCollapse panelCollapse;
+	private HorizontalPanel anchorPanel;
+	private PanelCollapse panelCollapse;
 	
 	private ListBox searchStateListBox;
-	private FormGroup searchStateGroup;
-	
-	private FormGroup patientIndicatorGroup;
 	private ListBox patientIndicatorListBox;
+	private ListBox modifiedOnList;
 	
 	private CheckBox proportionCheckbox;
 	private CheckBox ratioCheckbox;
 	private CheckBox cohortCheckbox;
 	private CheckBox contVariableCheckbox;
+	
+	private FormGroup searchStateGroup;
+	private FormGroup patientIndicatorGroup;
 	private FormGroup scoreGroup;
+	private FormGroup modifiedWithinGroup;
+	private FormGroup modifiedByGroup;
+	private FormGroup ownedByGroup;
+	
+	private Input modifiedBy;
+	private Input ownedBy;
 	
 	public AdvancedSearchPanel(String forView) {
 		setUpAnchorElement(forView);
@@ -72,97 +89,142 @@ public class AdvancedSearchPanel {
 	private Panel setUpCollapsePanel(String forView) {
 		panelCollapse = new PanelCollapse();
 		panelCollapse.setId("advancedPanelCollapse" + forView);
-		
-		VerticalPanel advancedSearchContentPanel = new VerticalPanel();
-		if("forMeasure".equals(forView)) {
-			advancedSearchContentPanel.add(createAdvancedSearchMeasureContent());
-		}
-		advancedSearchContentPanel.setWidth("100%");
-		advancedSearchContentPanel.setHeight("250px");
-		panelCollapse.add(advancedSearchContentPanel);
+		buildSearchContent(forView);
+		panelCollapse.add(createAdvancedSearchMeasureContent());
 
 		return panelCollapse;
 	}
 	
-	private Widget createAdvancedSearchMeasureContent() {
-		String pluralType = "Measures";
-		HorizontalPanel advancedSearchRow1 = new HorizontalPanel();
-		buildStateSection(pluralType);
-		buildPatientSection();
-		buildScoreSection();
+	private void buildSearchContent(String forView) {
+		String type = "";
+		String pluralType = "";
+
+		isMeasure = "forMeasure".equals(forView);
 		
+		if (isMeasure) {
+			type = "Measure";
+			pluralType = "Measures";
+
+			buildPatientSection();
+			buildScoreSection();
+			
+		} else {
+			type = "Library";
+			pluralType = "Libraries";
+		}
+		
+		buildStateSection(type, pluralType);
+		buildDaysSection(type, pluralType);
+		buildModifiedBySection(type);
+		buildOwnedBySection(type);
+		
+	}
+
+
+	private VerticalPanel createAdvancedSearchMeasureContent() {
+
+		final HorizontalPanel advancedSearchRow1 = new HorizontalPanel();
 		advancedSearchRow1.add(searchStateGroup);
-		advancedSearchRow1.add(patientIndicatorGroup);
-		advancedSearchRow1.add(scoreGroup);
-		return advancedSearchRow1;
+
+		final VerticalPanel advancedSearchVP = new VerticalPanel();
+		advancedSearchVP.setWidth("100%");
+
+		if(isMeasure) {
+			advancedSearchRow1.add(patientIndicatorGroup);
+			advancedSearchRow1.add(scoreGroup);
+			
+			final HorizontalPanel advancedSearchRow2 = new HorizontalPanel();
+			buildCommonSearchHP(advancedSearchRow2);
+			
+			advancedSearchVP.add(advancedSearchRow1);
+			advancedSearchVP.add(advancedSearchRow2);
+			
+		} else {
+			buildCommonSearchHP(advancedSearchRow1);
+			
+			advancedSearchVP.add(advancedSearchRow1);
+		}
+		return advancedSearchVP;
+	}
+
+
+	private void buildCommonSearchHP(HorizontalPanel advancedSearchRow) {
+		advancedSearchRow.add(modifiedWithinGroup);
+		advancedSearchRow.add(modifiedByGroup);
+		advancedSearchRow.add(ownedByGroup);
 	}
 	
-	private void buildStateSection(String pluralType) {
-		FormLabel stateLabel = new FormLabel();
-		stateLabel.setText("Show Only");
-		stateLabel.setTitle("Show Only");
+	private void buildStateSection(String type, String pluralType) {
+		final FormLabel stateLabel = new FormLabel();
+		stateLabel.setText(type + " State");
+		stateLabel.setTitle(type + " State");
 		stateLabel.setFor("stateId");
 		stateLabel.setFor("stateGroup");
 		stateLabel.setPaddingRight(16);
 		searchStateListBox = new ListBox();
-		searchStateListBox.setWidth(WIDTH_OF_BOXES);
+		if(isMeasure) {
+			searchStateListBox.setWidth(WIDTH_OF_BOXES);	
+		} else {
+			searchStateListBox.setWidth("150px");
+		}
+		
 		searchStateListBox.setHeight(HEIGHT_OF_BOXES);
 		searchStateListBox.setId("stateGroup");
-		searchStateListBox.addItem("All " + pluralType, "All " + pluralType);
-		searchStateListBox.addItem("Draft " + pluralType, "Draft " + pluralType);
-		searchStateListBox.addItem("Versioned " + pluralType, "Versioned " + pluralType);
+		searchStateListBox.addItem("All " + pluralType, VersionType.ALL.toString());
+		searchStateListBox.addItem("Draft " + pluralType, VersionType.DRAFT.toString());
+		searchStateListBox.addItem("Versioned " + pluralType, VersionType.VERSION.toString());
 
 		searchStateGroup = new FormGroup();
 		searchStateGroup.add(stateLabel);
 		searchStateGroup.add(searchStateListBox);
-		searchStateGroup.setStyleName("advancedSearchLabels");
+		searchStateGroup.setStyleName(ADVANCED_SEARCH_STYLE);
 	}
 	
 	private void buildPatientSection() {
-		FormLabel patientLabel = new FormLabel();
-		patientLabel.setText("Patient-Based Indicator");
+		final FormLabel patientLabel = new FormLabel();
+		patientLabel.setText(" Patient-Based Indicator");
 		patientLabel.setTitle("Patient-Based Indicator");
 		patientLabel.setFor("patientBase");
 		patientIndicatorListBox = new ListBox();
 		patientIndicatorListBox.setHeight(HEIGHT_OF_BOXES);
 		patientIndicatorListBox.setWidth(WIDTH_OF_BOXES);
 		patientIndicatorListBox.setId("patientBase");
-		patientIndicatorListBox.addItem(ALL_MEASURES, ALL_MEASURES);
-		patientIndicatorListBox.addItem(YES_PATIENT_BASED, YES_PATIENT_BASED);
-		patientIndicatorListBox.addItem(NO_NOT_PATIENT_BASED, NO_NOT_PATIENT_BASED);
+		patientIndicatorListBox.addItem(ALL_MEASURES, PatientBasedType.ALL.toString());
+		patientIndicatorListBox.addItem(YES_PATIENT_BASED, PatientBasedType.PATIENT.toString());
+		patientIndicatorListBox.addItem(NO_NOT_PATIENT_BASED, PatientBasedType.NOT_PATIENT.toString());
 
 		patientIndicatorGroup = new FormGroup();
 		patientIndicatorGroup.add(patientLabel);
 		patientIndicatorGroup.add(patientIndicatorListBox);
-		patientIndicatorGroup.setStyleName("advancedSearchLabels");
+		patientIndicatorGroup.setStyleName(ADVANCED_SEARCH_STYLE);
 	}
 	
 	private void buildScoreSection() {
-		HorizontalPanel scoreheader = new HorizontalPanel();
-		FormLabel scoreLabel = new FormLabel();
+		final HorizontalPanel scoreheader = new HorizontalPanel();
+		final FormLabel scoreLabel = new FormLabel();
 		scoreLabel.setText( MEASURE_SCORING);
 		scoreLabel.setTitle(MEASURE_SCORING);
 		scoreLabel.getElement().setTabIndex(0);
 		scoreheader.add(scoreLabel);
-		FormLabel helpText = new FormLabel();
+		final FormLabel helpText = new FormLabel();
 		helpText.setText(CHECK_ALL_THAT_APPLY);
 		helpText.setTitle(CHECK_ALL_THAT_APPLY);
 		helpText.setStylePrimaryName("helpText");
 		helpText.getElement().setTabIndex(0);
-		helpText.getElement().setAttribute("style", "font-size: 10px;");
+		helpText.getElement().setAttribute(STYLE, "font-size: 10px;");
 		scoreheader.add(helpText);
-		HorizontalPanel scoreRow1 = new HorizontalPanel();
+		final HorizontalPanel scoreRow1 = new HorizontalPanel();
 		proportionCheckbox = new CheckBox(ConstantMessages.PROPORTION_SCORING);
 		proportionCheckbox.setTitle(ConstantMessages.PROPORTION_SCORING);
-		proportionCheckbox.getElement().setAttribute("style", "padding-left: 20px;");
+		proportionCheckbox.getElement().setAttribute(STYLE, PADDING_LEFT_TWENTY_PIXEL);
 		ratioCheckbox = new CheckBox(ConstantMessages.RATIO_SCORING);
 		ratioCheckbox.setTitle(ConstantMessages.RATIO_SCORING);
-		ratioCheckbox.getElement().setAttribute("style", "padding-left: 20px;");
+		ratioCheckbox.getElement().setAttribute(STYLE, PADDING_LEFT_TWENTY_PIXEL);
 		cohortCheckbox = new CheckBox(ConstantMessages.COHORT_SCORING);
 		cohortCheckbox.setTitle(ConstantMessages.COHORT_SCORING);
 		contVariableCheckbox = new CheckBox(ConstantMessages.CONTINUOUS_VARIABLE_SCORING);
 		contVariableCheckbox.setTitle(ConstantMessages.CONTINUOUS_VARIABLE_SCORING);
-		contVariableCheckbox.getElement().setAttribute("style", "padding-left: 20px;");
+		contVariableCheckbox.getElement().setAttribute(STYLE, PADDING_LEFT_TWENTY_PIXEL);
 		scoreRow1.add(cohortCheckbox);
 		scoreRow1.add(contVariableCheckbox);
 		scoreRow1.add(proportionCheckbox);
@@ -172,10 +234,69 @@ public class AdvancedSearchPanel {
 		scoreGroup = new FormGroup();
 		scoreGroup.add(scoreheader);
 		scoreGroup.add(scoreRow1);
-		scoreGroup.setStyleName("advancedSearchLabels");
+		scoreGroup.setStyleName(ADVANCED_SEARCH_STYLE);
 	}
 
+	private void buildDaysSection(String type, String pluralType) {
+		final FormLabel daysLabel = new FormLabel();
+		daysLabel.setText(type + " Last Modified Within");
+		daysLabel.setTitle(type + " Last Modified Within");
+		daysLabel.setFor("modifiedDate");
+		
+		modifiedOnList = new ListBox();
+		modifiedOnList.setWidth(WIDTH_OF_BOXES);
+		modifiedOnList.setHeight(HEIGHT_OF_BOXES);
+		modifiedOnList.setId("modifiedDate");
+		modifiedOnList.addItem("All " + pluralType, "0");
+		modifiedOnList.addItem("14 days", "14");
+		modifiedOnList.addItem("30 days", "30");
+		modifiedOnList.addItem("60 days", "60");
+		modifiedOnList.addItem("90 days", "90");
 
+		modifiedWithinGroup = new FormGroup();
+		modifiedWithinGroup.add(daysLabel);
+		modifiedWithinGroup.add(modifiedOnList);
+		modifiedWithinGroup.setStyleName(ADVANCED_SEARCH_STYLE);
+	}
+	
+	private void buildModifiedBySection(String type) {
+		final FormLabel modifiedByLabel = new FormLabel();
+		modifiedByLabel.setText(type + " Last Modified By");
+		modifiedByLabel.setTitle(type + " Last Modified By");
+		modifiedByLabel.setFor("modifiedById");
+
+		modifiedBy = new Input(InputType.TEXT);
+		modifiedBy.setWidth(WIDTH_OF_BOXES);
+		modifiedBy.setHeight(HEIGHT_OF_BOXES);
+		modifiedBy.setId("modifiedById");
+		modifiedBy.setPlaceholder(OWNER_PLACEHOLDER);
+		modifiedBy.setTitle(OWNER_PLACEHOLDER);
+		
+		modifiedByGroup = new FormGroup();
+		modifiedByGroup.add(modifiedByLabel);
+		modifiedByGroup.add(modifiedBy);
+		modifiedByGroup.setStyleName(ADVANCED_SEARCH_STYLE);
+	}
+
+	private void buildOwnedBySection(String type) {
+		final FormLabel ownedByLabel = new FormLabel();
+		ownedByLabel.setText(type + OWNED_BY);
+		ownedByLabel.setTitle(type + OWNED_BY);
+		ownedByLabel.setFor("ownedById");
+		
+		ownedBy = new Input(InputType.TEXT);
+		ownedBy.setWidth(WIDTH_OF_BOXES);
+		ownedBy.setHeight(HEIGHT_OF_BOXES);
+		ownedBy.setId("ownedById");
+		ownedBy.setPlaceholder(OWNER_PLACEHOLDER);
+		ownedBy.setTitle(OWNER_PLACEHOLDER);
+		
+		ownedByGroup = new FormGroup();
+		ownedByGroup.add(ownedByLabel);
+		ownedByGroup.add(ownedBy);
+		ownedByGroup.setStyleName(ADVANCED_SEARCH_STYLE);
+	}
+	
 	public HorizontalPanel getAnchorPanel() {
 		return anchorPanel;
 	}
@@ -184,26 +305,24 @@ public class AdvancedSearchPanel {
 		return panelCollapse;
 	}
 
-
 	public Anchor getAdvanceSearchAnchor() {
 		return advanceSearchAnchor;
 	}
-
 
 	public void setAdvanceSearchAnchor(Anchor advanceSearchAnchor) {
 		this.advanceSearchAnchor = advanceSearchAnchor;
 	}
 	
-	public String getSearchStateValue() {
-		return searchStateListBox.getSelectedValue();
+	public VersionType getSearchStateValue() {
+		return VersionType.valueOf(searchStateListBox.getSelectedValue());
 	}
 	
-	public String getPatientBasedValue() {
-		return patientIndicatorListBox.getSelectedValue();
+	public PatientBasedType getPatientBasedValue() {
+		return PatientBasedType.valueOf(patientIndicatorListBox.getSelectedValue());
 	}
 	
 	public List<String> getScoringTypeList(){
-		List<String> scoringTypes = new ArrayList<>();
+		final List<String> scoringTypes = new ArrayList<>();
 		if(proportionCheckbox.getValue()) {
 			scoringTypes.add(ConstantMessages.PROPORTION_SCORING);
 		}
@@ -219,6 +338,35 @@ public class AdvancedSearchPanel {
 		
 		return scoringTypes;
 	}
-	
+
+	public String getModifiedWithinValue() {
+		return modifiedOnList.getSelectedValue();
+	}
+
+	public String getModifiedByValue() {
+		return modifiedBy.getValue();
+	}
+
+	public String getOwnedByValue() {
+		return ownedBy.getValue();
+	}
+
+	public void resetDisplay(boolean isMeasure) {
+		if(isMeasure) {
+			resetMeasureFields();
+		}
+		searchStateListBox.setSelectedIndex(0);
+		modifiedOnList.setSelectedIndex(0);
+		modifiedBy.setValue("");
+		ownedBy.setValue("");
+	}
+
+	private void resetMeasureFields() {
+		patientIndicatorListBox.setSelectedIndex(0);
+		proportionCheckbox.setValue(false);
+		ratioCheckbox.setValue(false);
+		cohortCheckbox.setValue(false);
+		contVariableCheckbox.setValue(false);
+	}
 	
 }

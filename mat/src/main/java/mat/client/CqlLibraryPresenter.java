@@ -34,6 +34,7 @@ import com.google.gwt.user.client.ui.Widget;
 
 import mat.DTO.AuditLogDTO;
 import mat.DTO.SearchHistoryDTO;
+import mat.client.advancedsearch.AdvancedSearchPillPanel;
 import mat.client.buttons.CustomButton;
 import mat.client.cql.CQLLibraryDetailView;
 import mat.client.cql.CQLLibraryHistoryView;
@@ -62,10 +63,12 @@ import mat.client.shared.SkipListBuilder;
 import mat.client.shared.SynchronizationDelegate;
 import mat.client.shared.search.SearchResultUpdate;
 import mat.client.shared.ui.DeleteConfirmDialogBox;
+import mat.client.util.ClientConstants;
 import mat.model.cql.CQLLibraryDataSetObject;
 import mat.model.cql.CQLLibraryShareDTO;
 import mat.shared.CQLModelValidator;
 import mat.shared.ConstantMessages;
+import mat.shared.LibrarySearchModel;
 import mat.shared.error.AuthenticationException;
 
 
@@ -166,7 +169,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 		 * @param searchText the search text
 		 * @param filter the filter
 		 */
-		void buildCellTable(SaveCQLLibraryResult searchModel, String searchText,int filter);
+		void buildCellTable(SaveCQLLibraryResult searchModel, LibrarySearchModel model, int filter);
 
 		/**
 		 * Gets the CQL library search view.
@@ -252,6 +255,10 @@ public class CqlLibraryPresenter implements MatPresenter {
 		void resetMessageDisplay();
 
 		CustomCheckBox getCustomFilterCheckBox();
+		
+		AdvancedSearchPillPanel getSearchPillPanel();
+		
+		public void resetSearchDisplay();
 
 	}
 
@@ -277,7 +284,8 @@ public class CqlLibraryPresenter implements MatPresenter {
 
 		void setSelectedLibraryObject(CQLLibraryDataSetObject selectedLibraryObject);
 		
-		ConfirmationDialogBox createConfirmationDialogBox(String messageText, String yesButtonText, String noButtonText, ConfirmationObserver observer);
+		ConfirmationDialogBox createConfirmationDialogBox(String messageText, String yesButtonText, String noButtonText,
+				ConfirmationObserver observer, boolean isError);
 	}
 	
 	
@@ -906,7 +914,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 							} else if(result.getFailureReason() == ConstantMessages.INVALID_CQL_LIBRARIES) {
 								String libraryName = versionDisplay.getSelectedLibrary().getCqlName();
 								String errorMessage =  MatContext.get().getMessageDelegate().getUnusedIncludedLibraryWarning(libraryName);
-								ConfirmationDialogBox dialogBox = versionDisplay.createConfirmationDialogBox(errorMessage, "Continue", "Cancel", null);
+								ConfirmationDialogBox dialogBox = versionDisplay.createConfirmationDialogBox(errorMessage, "Continue", "Cancel", null, false);
 								dialogBox.setObserver(new ConfirmationObserver() {
 									
 									@Override
@@ -1248,19 +1256,24 @@ public class CqlLibraryPresenter implements MatPresenter {
 		pageSize = 25;
 		showSearchingBusy(true);
 		cqlLibraryView.resetMessageDisplay();
-		MatContext.get().getCQLLibraryService().search(lastSearchText, filter, startIndex,pageSize, new AsyncCallback<SaveCQLLibraryResult>() {
+
+		LibrarySearchModel searchModel = new LibrarySearchModel(filter, startIndex, pageSize, lastSearchText);
+		if (!MatContext.get().getLoggedInUserRole().equalsIgnoreCase(ClientConstants.ADMINISTRATOR)) {
+			buildAdvancedSearchModel(searchModel);
+			cqlLibraryView.getSearchFilterWidget().getAdvancedSearchPanel().getCollapsePanel().setIn(false);
+		}
+		MatContext.get().getCQLLibraryService().search(searchModel, new AsyncCallback<SaveCQLLibraryResult>() {
 			
 			@Override
 			public void onSuccess(SaveCQLLibraryResult result) {
-				if(cqlLibraryView.getSearchFilterWidget().
-						getSelectedFilter()!=0){
+				setSearchPills(searchModel);
+				if(cqlLibraryView.getSearchFilterWidget().getSelectedFilter()!=0){
 					cqlLibraryView.getCQLLibrarySearchView().setCQLLibraryListLabel("All CQL Libraries");
 				}else{
 					cqlLibraryView.getCQLLibrarySearchView().setCQLLibraryListLabel("My CQL Libraries");
 				}
 				
-				if ((result.getResultsTotal() == 0)
-						&& !lastSearchText.isEmpty()) {
+				if (result.getResultsTotal() == 0) {
 					cqlLibraryView.getErrorMessageAlert().createAlert(MatContext.get().getMessageDelegate().getNoLibrarues());
 				} else {
 					cqlLibraryView.resetMessageDisplay();
@@ -1286,10 +1299,10 @@ public class CqlLibraryPresenter implements MatPresenter {
 
 				SearchResultUpdate sru = new SearchResultUpdate();
 				sru.update(result, (TextBox) cqlLibraryView.getSearchString(), lastSearchText);
-				cqlLibraryView.buildCellTable(result, lastSearchText,filter);
+				cqlLibraryView.buildCellTable(result, searchModel, filter);
 				showSearchingBusy(false);
 			}
-			
+
 			@Override
 			public void onFailure(Throwable caught) {
 				Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
@@ -1298,6 +1311,24 @@ public class CqlLibraryPresenter implements MatPresenter {
 		});
 	}
 
+	private void buildAdvancedSearchModel(LibrarySearchModel searchModel) {
+		searchModel.setIsDraft(cqlLibraryView.getSearchFilterWidget().getAdvancedSearchPanel().getSearchStateValue());
+		searchModel.setModifiedDate(Integer.parseInt(cqlLibraryView.getSearchFilterWidget().getAdvancedSearchPanel().getModifiedWithinValue()));
+		searchModel.setModifiedOwner(cqlLibraryView.getSearchFilterWidget().getAdvancedSearchPanel().getModifiedByValue());
+		searchModel.setOwner(cqlLibraryView.getSearchFilterWidget().getAdvancedSearchPanel().getOwnedByValue());
+	}
+	
+	private void resetSearchFields(LibrarySearchModel librarySearchModel) {
+		cqlLibraryView.resetSearchDisplay();
+		librarySearchModel.reset();
+		setSearchPills(librarySearchModel);
+	}
+	
+	private void setSearchPills(LibrarySearchModel model) {
+		cqlLibraryView.getSearchPillPanel().setSearchedByPills(model, "Libraries");
+		cqlLibraryView.getSearchPillPanel().getReset().addClickHandler(event -> resetSearchFields(model));
+	}
+	
 	private void searchRecentLibraries() {
 		MatContext.get().getCQLLibraryService().getAllRecentCQLLibrariesForUser(MatContext.get().getLoggedinUserId(),
 				new AsyncCallback<SaveCQLLibraryResult>() {

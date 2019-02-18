@@ -17,7 +17,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.ImageResources;
-import mat.client.advancedSearch.MeasureLibraryAdvancedSearchBuilder;
+import mat.client.advancedsearch.AdvancedSearchPillPanel;
 import mat.client.buttons.CustomButton;
 import mat.client.cqlworkspace.EditConfirmationDialogBox;
 import mat.client.measure.MeasureSearchView.AdminObserver;
@@ -36,7 +36,7 @@ import mat.shared.MeasureSearchModel;
 
 public class ManageMeasureSearchView implements SearchDisplay {
 
-	private Button bulkExportButton = new Button("Export Selected");	
+	private final Button bulkExportButton = new Button("Export Selected");	
 
 	Button createMeasureButton = new Button("New Measure"); 
 	
@@ -44,17 +44,17 @@ public class ManageMeasureSearchView implements SearchDisplay {
 
 	CellTable<ManageMeasureSearchModel.Result> table;
 	
-	private MessageAlert errorMessagesForTransferOS = new ErrorMessageAlert();
+	private final MessageAlert errorMessagesForTransferOS = new ErrorMessageAlert();
 	
 	String currentUserRole = MatContext.get().getLoggedInUserRole();
 	
 	private MessageAlert errorMeasureDeletion = new ErrorMessageAlert();
 	
-	private Button clearButton = new Button("Clear All");
+	private final Button clearButton = new Button("Clear All");
 	
-	private MessageAlert errorMessages = new ErrorMessageAlert();
+	private final MessageAlert errorMessages = new ErrorMessageAlert();
 	
-	private MessageAlert errorMessagesForBulkExport = new ErrorMessageAlert();
+	private final MessageAlert errorMessagesForBulkExport = new ErrorMessageAlert();
 	
 	private ManageMeasureSearchModel data = new ManageMeasureSearchModel();
 	
@@ -62,25 +62,27 @@ public class ManageMeasureSearchView implements SearchDisplay {
 	
 	public VerticalPanel measureVpanel = new VerticalPanel();
 
-	private FlowPanel mainPanel = new FlowPanel();
+	private final FlowPanel mainPanel = new FlowPanel();
 	
 	private SearchWidgetWithFilter measureSearchFilterWidget = new SearchWidgetWithFilter("searchFilter", "measureLibraryFilterDisclosurePanel","forMeasure");
 	
 	SearchWidgetBootStrap searchWidgetBootStrap = new SearchWidgetBootStrap("Search", "Search");
 	
-	private MostRecentMeasureWidget mostRecentMeasureWidget = new MostRecentMeasureWidget();
+	private final MostRecentMeasureWidget mostRecentMeasureWidget = new MostRecentMeasureWidget();
 	
 	VerticalPanel mostRecentVerticalPanel = new VerticalPanel();
 	
 	private MessageAlert successMeasureDeletion = new SuccessMessageAlert();
 	
-	private MessageAlert successMessages = new SuccessMessageAlert();
+	private final MessageAlert successMessages = new SuccessMessageAlert();
 	
 	EditConfirmationDialogBox draftConfirmationDialogBox = new EditConfirmationDialogBox();
 	
-	private Button transferButton = new Button("Transfer");
+	private final Button transferButton = new Button("Transfer");
 	
 	MeasureSearchView searchView;
+	
+	AdvancedSearchPillPanel pillPanel = new AdvancedSearchPillPanel("Measure");
 	
 	MeasureSearchView measureSearchView = new MeasureSearchView("Measures");
 	
@@ -115,6 +117,7 @@ public class ManageMeasureSearchView implements SearchDisplay {
 		mainPanel.add(errorMessages);
 		mainPanel.add(new SpacerWidget());
 		mainPanel.add(measureSearchFilterWidget);
+		mainPanel.add(pillPanel.getBadgeTable());
 		mainPanel.add(measureSearchView.asWidget());
 		mainPanel.add(ManageLoadingView.buildLoadingPanel("loadingPanelExport"));
 		mainPanel.add(new SpacerWidget());
@@ -125,6 +128,8 @@ public class ManageMeasureSearchView implements SearchDisplay {
 		MatContext.get().setManageMeasureSearchView(this);
 		
 	}
+	
+	
 
 	@Override
 	public Widget asWidget() {
@@ -133,7 +138,7 @@ public class ManageMeasureSearchView implements SearchDisplay {
 
 	private Widget buildBottomButtonWidget(Button bulkExportButton,
 			MessageAlert errorMessageDisplay) {
-		FlowPanel flowPanel = new FlowPanel();
+		final FlowPanel flowPanel = new FlowPanel();
 		flowPanel.getElement().setId("measureLibrary_bottomPanel");
 		flowPanel.add(errorMessageDisplay);
 		flowPanel.setStyleName("rightAlignButton");
@@ -149,7 +154,7 @@ public class ManageMeasureSearchView implements SearchDisplay {
 
 	public Widget adminBuildBottomButtonWidget(Button transferButton, Button clearButton,
 			MessageAlert errorMessageDisplay) {
-		FlowPanel flowPanel = new FlowPanel();
+		final FlowPanel flowPanel = new FlowPanel();
 		flowPanel.add(errorMessageDisplay);
 		transferButton.setTitle("Transfer");
 		clearButton.setTitle("Clear All");
@@ -163,7 +168,7 @@ public class ManageMeasureSearchView implements SearchDisplay {
 	}
 
 	public Widget buildSearchWidget() {
-		HorizontalPanel hp = new HorizontalPanel();
+		final HorizontalPanel hp = new HorizontalPanel();
 		hp.add(searchWidgetBootStrap.getSearchWidget());
 
 		return hp;
@@ -172,7 +177,7 @@ public class ManageMeasureSearchView implements SearchDisplay {
 	@Override
 	public void buildDataTable(ManageMeasureSearchModel
 			manageMeasureSearchModel, int filter, String searchText){
-		MeasureSearchModel model = new MeasureSearchModel();
+		final MeasureSearchModel model = new MeasureSearchModel();
 		model.setSearchTerm(searchText);
 		measureSearchView.buildCellTable(manageMeasureSearchModel,filter,model);
 		
@@ -197,19 +202,19 @@ public class ManageMeasureSearchView implements SearchDisplay {
 
 	@Override
 	public void clearBulkExportCheckBoxes(Grid508 dataTable) {
-		int rows = dataTable.getRowCount();
-		int cols = dataTable.getColumnCount();
+		final int rows = dataTable.getRowCount();
+		final int cols = dataTable.getColumnCount();
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < cols; j++) {
-				Widget w = dataTable.getWidget(i, j);
+				final Widget w = dataTable.getWidget(i, j);
 				if ((i == 0) && (j == 8)) {
 					if (w instanceof FlowPanel) {
-						FlowPanel panel = (FlowPanel) w;
-						HorizontalPanel hp = (HorizontalPanel) panel
+						final FlowPanel panel = (FlowPanel) w;
+						final HorizontalPanel hp = (HorizontalPanel) panel
 								.getWidget(0);
-						int childCount = hp.getWidgetCount();
+						final int childCount = hp.getWidgetCount();
 						for (int childNumber = 0; childNumber < childCount; childNumber++) {
-							Widget widget = hp.getWidget(childNumber);
+							final Widget widget = hp.getWidget(childNumber);
 							if (widget instanceof Anchor) {
 								widget.getElement().setAttribute("id",
 										"clearlink");
@@ -232,12 +237,12 @@ public class ManageMeasureSearchView implements SearchDisplay {
 					}
 				}
 				if (w instanceof HorizontalPanel) {
-					HorizontalPanel hPanel = (HorizontalPanel) w;
-					int count = hPanel.getWidgetCount();
+					final HorizontalPanel hPanel = (HorizontalPanel) w;
+					final int count = hPanel.getWidgetCount();
 					for (int k = 0; k < count; k++) {
-						Widget widget = hPanel.getWidget(k);
+						final Widget widget = hPanel.getWidget(k);
 						if (widget instanceof CustomCheckBox) {
-							CustomCheckBox checkBox = ((CustomCheckBox) widget);
+							final CustomCheckBox checkBox = ((CustomCheckBox) widget);
 							checkBox.setValue(false);
 						}
 					}
@@ -278,7 +283,7 @@ public class ManageMeasureSearchView implements SearchDisplay {
 	}
 
 	private Widget getImage(String action, ImageResource url, String key , String id) {
-		CustomButton image = new CustomButton();
+		final CustomButton image = new CustomButton();
 		image.removeStyleName("gwt-button");
 		image.setStylePrimaryName("invisibleButtonTextMeasureLibrary");
 		image.setTitle(action);
@@ -437,13 +442,22 @@ public class ManageMeasureSearchView implements SearchDisplay {
 	}
 
 	@Override
-	public MeasureLibraryAdvancedSearchBuilder getMeasureLibraryAdvancedSearchBuilder() {
-		//TODO in MAT-9216 add this code back in!
-		return null;//measureLibraryAdvancedSearchBuilder;
-	}
-
-	@Override
 	public CustomCheckBox getCustomFilterCheckBox() {
 		return measureSearchFilterWidget.getMeasureCustomCheckBox();
+	}
+	
+	@Override
+	public AdvancedSearchPillPanel getSearchPillPanel() {
+		return pillPanel;
+	}
+	
+	@Override
+	public void resetDisplay() {
+		this.getErrorMessageDisplay().clearAlert();
+		this.measureSearchFilterWidget.getSearchInput().setValue("");
+		this.measureSearchFilterWidget.getMeasureCustomCheckBox().setValue(true);
+		this.measureSearchFilterWidget.getAdvancedSearchPanel().resetDisplay(true);
+		this.measureSearchFilterWidget.getSearchInput().getElement().focus();
+		this.measureSearchFilterWidget.setSelectedFilter(SearchWidgetWithFilter.MY);
 	}
 }
