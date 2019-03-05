@@ -32,12 +32,14 @@ public abstract class ExpressionBuilderModal extends Modal {
 	private FocusPanel logicFocusPanel;
 	private ExpressionBuilderModel mainModel;
 	private HelpBlock helpBlock;
+	private Panel cqlExpressionPanel;
 	
 	public ExpressionBuilderModal(String title, ExpressionBuilderModel parentModel, ExpressionBuilderModel mainModel) {
 		this.parentModel = parentModel;
 		this.mainModel = mainModel;
 		this.setDataBackdrop(ModalBackdrop.STATIC);
 		this.setDataKeyboard(false);
+		this.getElement().setTabIndex(-1);
 		this.setClosable(false);
 		this.setRemoveOnHide(true);
 		this.setHideOtherModals(true);
@@ -94,13 +96,25 @@ public abstract class ExpressionBuilderModal extends Modal {
 		return contentPanel;
 	}
 	
-	public void updateCQLDisplay() {
-		this.logicFocusPanel.getElement().setAttribute("aria-label", "Generated CQL Expression " + mainModel.getCQL(""));
-		this.pre.setText(mainModel.getCQL(""));
+	public void updateCQLDisplay() {		
+		setCQLDisplay(mainModel.getCQL(""));
+	}
+	
+	public void setCQLDisplay(String text) {
+		this.logicFocusPanel.getElement().setAttribute("aria-label", "Generated CQL Expression " + text);
+		this.pre.setText(text);
 	}
 	
 	public MessageAlert getErrorAlert() {
 		return errorAlert;
+	}
+	
+	public void setCQLPanelVisible(boolean isVisible) {
+		cqlExpressionPanel.setVisible(isVisible);
+	}
+	
+	public void setFooterVisible(boolean isVisible) {
+		this.footer.setVisible(isVisible);
 	}
 	
 	private MessageAlert buildErrorAlert() {
@@ -109,7 +123,7 @@ public abstract class ExpressionBuilderModal extends Modal {
 	}
 
 	private Panel buildAceEditorPanel() {
-		Panel cqlExpressionPanel = new Panel();
+		cqlExpressionPanel = new Panel();
 		cqlExpressionPanel.setMarginLeft(0.0);
 		cqlExpressionPanel.setMarginRight(0.0);
 		cqlExpressionPanel.setType(PanelType.PRIMARY);
@@ -139,6 +153,7 @@ public abstract class ExpressionBuilderModal extends Modal {
 	 * This method should be called when returning from a child screen
 	 */
 	public void showAndDisplay() {
+		this.hide();
 		this.show();
 		helpBlock.setText("Successfully applied expression.");
 		helpBlock.getElement().setAttribute("role", "alert");

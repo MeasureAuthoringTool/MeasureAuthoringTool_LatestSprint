@@ -2,13 +2,20 @@ package mat.client.expressionbuilder.observer;
 
 import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.constant.OperatorType;
+import mat.client.expressionbuilder.modal.CodeSelectorModal;
+import mat.client.expressionbuilder.modal.ComparisonBuilderModal;
 import mat.client.expressionbuilder.modal.DefinitionSelectorModal;
 import mat.client.expressionbuilder.modal.ExistsBuilderModal;
 import mat.client.expressionbuilder.modal.ExpressionBuilderModal;
+import mat.client.expressionbuilder.modal.IntervalBuilderModal;
 import mat.client.expressionbuilder.modal.IsNullBuilderModal;
 import mat.client.expressionbuilder.modal.IsTrueFalseBuilderModal;
+import mat.client.expressionbuilder.modal.MembershipInModal;
 import mat.client.expressionbuilder.modal.NotBuilderModal;
+import mat.client.expressionbuilder.modal.ParameterSelectorModal;
+import mat.client.expressionbuilder.modal.QueryBuilderModal;
 import mat.client.expressionbuilder.modal.RetrieveBuilderModal;
+import mat.client.expressionbuilder.modal.ValuesetSelectorModal;
 import mat.client.expressionbuilder.model.AndModel;
 import mat.client.expressionbuilder.model.ExceptModel;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
@@ -61,6 +68,41 @@ public class BuildButtonObserver {
 		else if(expression.equals(ExpressionType.IS_TRUE_FALSE.getValue())) {
 			ExpressionBuilderModal isTrueFalseModal = new IsTrueFalseBuilderModal(this.parentModal, this.parentModel, this.mainModel);
 			isTrueFalseModal.show();
+		} 
+		
+		else if(expression.equals(ExpressionType.COMPARISON.getValue())) {
+			ExpressionBuilderModal comparisonModal = new ComparisonBuilderModal(this.parentModal, this.parentModel, this.mainModel);
+			comparisonModal.show();
+		}
+		
+		else if(expression.equals(ExpressionType.INTERVAL.getValue())) {
+			ExpressionBuilderModal intervalModal = new IntervalBuilderModal(this.parentModal, this.parentModel, this.mainModel);
+			intervalModal.show();
+		}
+		
+		else if(expression.equals(ExpressionType.QUERY.getValue())) {
+			QueryBuilderModal queryModal = new QueryBuilderModal(this.parentModal, this.parentModel, this.mainModel);
+			queryModal.show();
+		}
+		
+		else if(expression.equals(ExpressionType.PARAMETER.getValue())) {
+			ParameterSelectorModal parameterModal = new ParameterSelectorModal(this.parentModal, this.parentModel, this.mainModel);
+			parameterModal.show();
+		}
+		
+		else if(expression.equals(ExpressionType.VALUESET.getValue())) {
+			ValuesetSelectorModal valuesetModal = new ValuesetSelectorModal(this.parentModal, this.parentModel, this.mainModel);
+			valuesetModal.show();
+		}
+		
+		else if(expression.equals(ExpressionType.CODE.getValue())) {
+			CodeSelectorModal codeModal = new CodeSelectorModal(this.parentModal, this.parentModel, this.mainModel);
+			codeModal.show();
+		}
+	
+		else if(expression.equals(ExpressionType.IN.getValue())) {
+			ExpressionBuilderModal inModal = new MembershipInModal(this.parentModal, this.parentModel, this.mainModel);
+			inModal.show();
 		}
 	}
 	

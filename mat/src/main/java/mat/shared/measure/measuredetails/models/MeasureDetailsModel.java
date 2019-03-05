@@ -1,10 +1,12 @@
 package mat.shared.measure.measuredetails.models;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gwt.user.client.rpc.IsSerializable;
 
 import mat.client.measure.ManageCompositeMeasureDetailModel;
+import mat.shared.StringUtility;
 import mat.shared.measure.measuredetails.validate.GeneralInformationValidator;
 
 public class MeasureDetailsModel implements MeasureDetailsComponentModel, MeasureDetailsModelVisitor, IsSerializable  {
@@ -41,6 +43,7 @@ public class MeasureDetailsModel implements MeasureDetailsComponentModel, Measur
 	private SupplementalDataElementsModel supplementalDataElementsModel;
 	private MeasureSetModel measureSetModel;
 	private ManageCompositeMeasureDetailModel compositeMeasureDetailModel;
+	private static String INVALID_TEXT = "Please enter valid text.";
 	
 	public MeasureDetailsModel() {
 		this.ownerUserId = "";
@@ -429,43 +432,36 @@ public class MeasureDetailsModel implements MeasureDetailsComponentModel, Measur
 
 	@Override
 	public List<String> validateModel(ClinicalRecommendationModel clinicalRecommendationModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(CopyrightModel copyrightModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(DefinitionModel definitionModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(DescriptionModel descriptionModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(DenominatorExceptionsModel denominatorExceptionsModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(DenominatorExclusionsModel denominatorExclusionsModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(DenominatorModel denominatorModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -477,43 +473,36 @@ public class MeasureDetailsModel implements MeasureDetailsComponentModel, Measur
 
 	@Override
 	public List<String> validateModel(GuidanceModel guidanceModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(ImprovementNotationModel improvementNotationModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(InitialPopulationModel initialPopulationModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(MeasureObservationsModel measureObservationsModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(MeasurePopulationExclusionsModel measurePopulationExclusionsModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(MeasurePopulationModel measurePopulationModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(MeasureSetModel measureSetModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -531,61 +520,59 @@ public class MeasureDetailsModel implements MeasureDetailsComponentModel, Measur
 
 	@Override
 	public List<String> validateModel(NumeratorExclusionsModel numeratorExclusionsModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(NumeratorModel numeratorModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(RateAggregationModel rateAggregationModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(RationaleModel rationaleModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(ReferencesModel referencesModel) {
-		// TODO Auto-generated method stub
-		return null;
+		List<String> errorList = null;
+		for(String textValue: referencesModel.getReferences()) {
+			if(StringUtility.isEmptyOrNull(textValue)) {
+				errorList = new ArrayList<>();
+				errorList.add(INVALID_TEXT);
+				break;
+			}
+		}
+		return errorList;
 	}
 
 	@Override
 	public List<String> validateModel(RiskAdjustmentModel riskAdjustmentModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(StratificationModel stratificationModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(SupplementalDataElementsModel supplementalDataElementsModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(TransmissionFormatModel transmissionFormatModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> validateModel(DisclaimerModel disclaimerModel) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 

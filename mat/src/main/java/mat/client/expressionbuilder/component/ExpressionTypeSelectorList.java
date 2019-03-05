@@ -2,6 +2,7 @@ package mat.client.expressionbuilder.component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.gwtbootstrap3.client.ui.Anchor;
 import org.gwtbootstrap3.client.ui.Code;
@@ -23,16 +24,23 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import mat.client.expressionbuilder.constant.CQLType;
 import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.constant.OperatorType;
+import mat.client.expressionbuilder.model.CodeModel;
+import mat.client.expressionbuilder.model.ComparisonModel;
 import mat.client.expressionbuilder.model.DefinitionModel;
 import mat.client.expressionbuilder.model.ExistsModel;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.IExpressionBuilderModel;
+import mat.client.expressionbuilder.model.IntervalModel;
 import mat.client.expressionbuilder.model.IsNullModel;
 import mat.client.expressionbuilder.model.IsTrueFalseModel;
+import mat.client.expressionbuilder.model.MembershipInModel;
 import mat.client.expressionbuilder.model.ModelAndOperatorTypeUtil;
 import mat.client.expressionbuilder.model.NotModel;
 import mat.client.expressionbuilder.model.OperatorModel;
+import mat.client.expressionbuilder.model.ParameterModel;
+import mat.client.expressionbuilder.model.QueryModel;
 import mat.client.expressionbuilder.model.RetrieveModel;
+import mat.client.expressionbuilder.model.ValuesetModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
 import mat.client.expressionbuilder.util.OperatorTypeUtil;
 
@@ -45,6 +53,7 @@ public class ExpressionTypeSelectorList extends Composite {
 	private List<OperatorType> availableOperatorTypes;
 	private boolean canOnlyMakeOneSelection;
 	private String labelText;
+	private ExpressionTypeSelector selector;
 
 	public ExpressionTypeSelectorList(List<ExpressionType> availableExpressionTypes, List<OperatorType> availableOperatorTypes,
 			BuildButtonObserver observer, ExpressionBuilderModel model, String labelText) {
@@ -58,6 +67,10 @@ public class ExpressionTypeSelectorList extends Composite {
 		this.labelText = labelText;
 
 		initWidget(buildPanel());
+	}
+		
+	public ExpressionTypeSelector getSelector() {
+		return this.selector;
 	}
 	
 	private VerticalPanel buildPanel() {
@@ -109,7 +122,7 @@ public class ExpressionTypeSelectorList extends Composite {
 				availableOperatorTypes.add(ModelAndOperatorTypeUtil.getOperatorModel(currentChildModel));
 				
 			} else {
-				PanelGroup expressionPanelGroup = buildExpressionCollapsePanel(i, currentChildModel);
+				PanelGroup expressionPanelGroup = buildExpressionCollapsePanel(currentChildModel);
 				
 				if(i != 0) {
 					expressionPanelGroup.setMarginTop(15.0);
@@ -124,7 +137,7 @@ public class ExpressionTypeSelectorList extends Composite {
 		if(!this.model.getChildModels().isEmpty() && canOnlyMakeOneSelection) {
 			
 		} else {
-			ExpressionTypeSelector selector = new ExpressionTypeSelector(availableExpressionTypes, availableOperatorTypes, buildButtonObserver, canAddAnother);
+			selector = new ExpressionTypeSelector(availableExpressionTypes, availableOperatorTypes, buildButtonObserver, canAddAnother);		
 			panel.add(selector);
 		}
 		
@@ -132,10 +145,13 @@ public class ExpressionTypeSelectorList extends Composite {
 		return panel;
 	}
 
-	private PanelGroup buildExpressionCollapsePanel(int index, IExpressionBuilderModel model) {		
+	private PanelGroup buildExpressionCollapsePanel(IExpressionBuilderModel model) {	
+		Random rand = new Random();
+		int index = rand.nextInt(Integer.MAX_VALUE);
+		
 		PanelGroup expressionPanelGroup = new PanelGroup();
 		expressionPanelGroup.setWidth("100%");
-		expressionPanelGroup.setId("accordion");
+		expressionPanelGroup.setId("accordion" + index);
 		
 		Panel expressionPanel = new Panel();
 		expressionPanel.setType(PanelType.SUCCESS);
@@ -147,7 +163,7 @@ public class ExpressionTypeSelectorList extends Composite {
 		anchor.setTitle(panelHeader(model));
 		anchor.setIcon(IconType.PLUS);
 		anchor.setColor("black");
-		anchor.setDataParent("#accordion");
+		anchor.setDataParent("#accordion" + index);
 		anchor.setDataToggle(Toggle.COLLAPSE);
 		anchor.setDataTarget("#collapse" + index);
 		expressionPanelHeader.add(anchor);
@@ -197,6 +213,20 @@ public class ExpressionTypeSelectorList extends Composite {
 			return ExpressionType.IS_NULL_NOT_NULL.getDisplayName();
 		} else if(model instanceof IsTrueFalseModel) {
 			return ExpressionType.IS_TRUE_FALSE.getDisplayName();
+		} else if(model instanceof ComparisonModel) {
+			return ExpressionType.COMPARISON.getDisplayName();
+		} else if(model instanceof IntervalModel) {
+			return ExpressionType.INTERVAL.getDisplayName();
+		} else if(model instanceof QueryModel) {
+			return ExpressionType.QUERY.getDisplayName();
+		} else if(model instanceof ParameterModel) {
+			return ExpressionType.PARAMETER.getDisplayName();
+		} else if(model instanceof ValuesetModel) {
+			return ExpressionType.VALUESET.getDisplayName();
+		} else if(model instanceof CodeModel) {
+			return ExpressionType.CODE.getDisplayName();
+		} else if(model instanceof MembershipInModel) {
+			return ExpressionType.IN.getDisplayName();
 		}
 		
 		return "";

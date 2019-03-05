@@ -39,6 +39,7 @@ import mat.client.buttons.CustomButton;
 import mat.client.cql.CQLLibraryDetailView;
 import mat.client.cql.CQLLibraryHistoryView;
 import mat.client.cql.CQLLibrarySearchView;
+import mat.client.cql.CQLLibrarySearchView.Observer;
 import mat.client.cql.CQLLibraryShareView;
 import mat.client.cql.CQLLibraryVersionView;
 import mat.client.cqlworkspace.EditConfirmationDialogBox;
@@ -61,7 +62,6 @@ import mat.client.shared.SearchWidgetBootStrap;
 import mat.client.shared.SearchWidgetWithFilter;
 import mat.client.shared.SkipListBuilder;
 import mat.client.shared.SynchronizationDelegate;
-import mat.client.shared.search.SearchResultUpdate;
 import mat.client.shared.ui.DeleteConfirmDialogBox;
 import mat.client.util.ClientConstants;
 import mat.model.cql.CQLLibraryDataSetObject;
@@ -259,6 +259,8 @@ public class CqlLibraryPresenter implements MatPresenter {
 		AdvancedSearchPillPanel getSearchPillPanel();
 		
 		public void resetSearchDisplay();
+
+		VerticalPanel getMostRecentLibraryVerticalPanel();
 
 	}
 
@@ -548,7 +550,11 @@ public class CqlLibraryPresenter implements MatPresenter {
 	 * Adds the observer handlers.
 	 */
 	private void addObserverHandlers() {
-		cqlLibraryView.getCQLLibrarySearchView().setObserver(new CQLLibrarySearchView.Observer() {
+		cqlLibraryView.getCQLLibrarySearchView().setTableObserver(createCQLLibraryObserver());
+	}
+
+	private Observer createCQLLibraryObserver() {
+		return new CQLLibrarySearchView.Observer() {
 			
 			@Override
 			public void onShareClicked(CQLLibraryDataSetObject result) {
@@ -608,7 +614,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 				
 			}
 			
-		});
+		};
 	}
 
 	private void addShareDisplayViewHandlers() {
@@ -1266,6 +1272,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 			
 			@Override
 			public void onSuccess(SaveCQLLibraryResult result) {
+				searchModel.setTotalResults(result.getResultsTotal());
 				setSearchPills(searchModel);
 				if(cqlLibraryView.getSearchFilterWidget().getSelectedFilter()!=0){
 					cqlLibraryView.getCQLLibrarySearchView().setCQLLibraryListLabel("All CQL Libraries");
@@ -1297,8 +1304,6 @@ public class CqlLibraryPresenter implements MatPresenter {
 
 				}
 
-				SearchResultUpdate sru = new SearchResultUpdate();
-				sru.update(result, (TextBox) cqlLibraryView.getSearchString(), lastSearchText);
 				cqlLibraryView.buildCellTable(result, searchModel, filter);
 				showSearchingBusy(false);
 			}
@@ -1339,18 +1344,9 @@ public class CqlLibraryPresenter implements MatPresenter {
 			@Override
 			public void onSuccess(SaveCQLLibraryResult result) {
 				cqlLibraryView.getMostRecentLibraryWidget().setResult(result);
-				cqlLibraryView.getMostRecentLibraryWidget().setObserver(new MostRecentCQLLibraryWidget.Observer() {
-					
-					@Override
-					public void onEditClicked(CQLLibraryDataSetObject object) {
-						cqlLibraryDeletion = false;
-						isCqlLibraryDeleted = false;
-						isCqlLibraryVersioned = false;
-						cqlLibraryView.resetMessageDisplay();
-						displayEdit(object);
-					}
-				});
-				cqlLibraryView.buildMostRecentWidget();;
+				cqlLibraryView.getMostRecentLibraryWidget().setTableObserver(createCQLLibraryObserver());
+				cqlLibraryView.buildMostRecentWidget();
+				cqlLibraryView.getMostRecentLibraryVerticalPanel().setVisible(true);
 			}
 		});
 	}
@@ -1376,6 +1372,7 @@ public class CqlLibraryPresenter implements MatPresenter {
 		cqlLibraryDeletion = false;
 		isCqlLibraryVersioned = false;
 		cqlLibraryShared = false;
+		cqlLibraryView.getMostRecentLibraryVerticalPanel().setVisible(false);
 	}
 
 	@Override

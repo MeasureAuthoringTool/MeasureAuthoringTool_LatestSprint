@@ -1,7 +1,8 @@
 package mat.client.expressionbuilder.constant;
 
 import java.util.List;
-import mat.client.expressionbuilder.util.*;
+
+import mat.client.expressionbuilder.util.OperatorTypeUtil;
 
 public enum ExpressionType implements ExpressionBuilderType {
 
@@ -10,7 +11,14 @@ public enum ExpressionType implements ExpressionBuilderType {
 	EXISTS("Exists", OperatorTypeUtil.getBooleanOperators()),
 	NOT("Negation (not)", OperatorTypeUtil.getBooleanOperators()),
 	IS_NULL_NOT_NULL("Null (is null/not null)", OperatorTypeUtil.getBooleanOperators()),
-	IS_TRUE_FALSE("True/False (is true/false)", OperatorTypeUtil.getBooleanOperators());
+	IS_TRUE_FALSE("True/False (is true/false)", OperatorTypeUtil.getBooleanOperators()),
+	COMPARISON("Comparison", OperatorTypeUtil.getBooleanOperators()),
+	INTERVAL("Interval", OperatorTypeUtil.getSetOperators()), 
+	QUERY("Query", OperatorTypeUtil.getSetOperators()),
+	PARAMETER("Parameter", OperatorTypeUtil.getAllOperators()),
+	VALUESET("Value Set", OperatorTypeUtil.getSetOperators()),
+	CODE("Code", OperatorTypeUtil.getAllOperators()),
+	IN("Membership (In)", OperatorTypeUtil.getBooleanOperators());
 	
 	private String displayName;
 	private List<OperatorType> availableOperators;
