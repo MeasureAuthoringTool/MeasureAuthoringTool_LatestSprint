@@ -5,34 +5,28 @@ import org.gwtbootstrap3.client.ui.Modal;
 import org.gwtbootstrap3.client.ui.ModalBody;
 import org.gwtbootstrap3.client.ui.ModalFooter;
 import org.gwtbootstrap3.client.ui.ModalHeader;
-import org.gwtbootstrap3.client.ui.Panel;
-import org.gwtbootstrap3.client.ui.PanelBody;
-import org.gwtbootstrap3.client.ui.PanelHeader;
-import org.gwtbootstrap3.client.ui.Pre;
 import org.gwtbootstrap3.client.ui.constants.ModalBackdrop;
-import org.gwtbootstrap3.client.ui.constants.PanelType;
 
-import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
+import mat.client.expressionbuilder.component.ViewCQLExpressionWidget;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.MessageAlert;
 
 public abstract class ExpressionBuilderModal extends Modal {
 	private static final String CQL_EXPRESSION = "CQL Expression";
+	private String modalTitle;
 	private ModalHeader header;
 	private ModalBody body;
 	private ModalFooter footer;
 	private VerticalPanel contentPanel;
 	private ExpressionBuilderModel parentModel;
 	private ErrorMessageAlert errorAlert;
-	private Pre pre;
-	private FocusPanel logicFocusPanel;
 	private ExpressionBuilderModel mainModel;
 	private HelpBlock helpBlock;
-	private Panel cqlExpressionPanel;
+	private ViewCQLExpressionWidget viewCQLExpressionModal;
 	
 	public ExpressionBuilderModal(String title, ExpressionBuilderModel parentModel, ExpressionBuilderModel mainModel) {
 		this.parentModel = parentModel;
@@ -49,17 +43,19 @@ public abstract class ExpressionBuilderModal extends Modal {
 		body = new ModalBody();
 		footer = new ModalFooter();
 		contentPanel = new VerticalPanel();
+		viewCQLExpressionModal = new ViewCQLExpressionWidget();
 		
 		this.setId("expressionBuilderModal");
 		contentPanel.setWidth("100%");
 		
+		this.modalTitle = title;
 		header.setTitle(title);
 		
 		
 		body.add(buildHelpBlock(""));
 		body.add(buildErrorAlert());
 		body.add(contentPanel);
-		body.add(buildAceEditorPanel());
+		body.add(this.viewCQLExpressionModal);
 		
 		this.add(header);
 		this.add(body);
@@ -74,6 +70,18 @@ public abstract class ExpressionBuilderModal extends Modal {
 		helpBlock.setPaddingBottom(0.0);
 		helpBlock.setPaddingBottom(0.0);
 		return helpBlock;
+	}
+	
+	public String getModalTitle() {
+		return this.modalTitle;
+	}
+	
+	public void setModalTitle(String title) {
+		this.modalTitle = title;
+	}
+	
+	public ModalHeader getHeader() {
+		return header;
 	}
 
 	public ModalBody getBody() {
@@ -97,20 +105,17 @@ public abstract class ExpressionBuilderModal extends Modal {
 	}
 	
 	public void updateCQLDisplay() {		
-		setCQLDisplay(mainModel.getCQL(""));
+		viewCQLExpressionModal.setCQLDisplay(mainModel.getCQL(""));
 	}
 	
-	public void setCQLDisplay(String text) {
-		this.logicFocusPanel.getElement().setAttribute("aria-label", "Generated CQL Expression " + text);
-		this.pre.setText(text);
-	}
+	
 	
 	public MessageAlert getErrorAlert() {
 		return errorAlert;
 	}
 	
 	public void setCQLPanelVisible(boolean isVisible) {
-		cqlExpressionPanel.setVisible(isVisible);
+		this.viewCQLExpressionModal.setCQLPanelVisible(isVisible);
 	}
 	
 	public void setFooterVisible(boolean isVisible) {
@@ -120,31 +125,6 @@ public abstract class ExpressionBuilderModal extends Modal {
 	private MessageAlert buildErrorAlert() {
 		errorAlert = new ErrorMessageAlert();
 		return errorAlert;
-	}
-
-	private Panel buildAceEditorPanel() {
-		cqlExpressionPanel = new Panel();
-		cqlExpressionPanel.setMarginLeft(0.0);
-		cqlExpressionPanel.setMarginRight(0.0);
-		cqlExpressionPanel.setType(PanelType.PRIMARY);
-		
-		PanelHeader cqlExpressionPanelHeader = new PanelHeader();
-		cqlExpressionPanelHeader.setText(CQL_EXPRESSION);
-		cqlExpressionPanelHeader.setTitle(CQL_EXPRESSION);
-		cqlExpressionPanelHeader.setStyleName("expressionBuilderExpressionPanel", true);
-		PanelBody cqlExpressionPanelBody = new PanelBody();
-		cqlExpressionPanelBody.add(buildEditor());
-		
-		cqlExpressionPanel.add(cqlExpressionPanelHeader);
-		cqlExpressionPanel.add(cqlExpressionPanelBody);
-		return cqlExpressionPanel;
-	}
-	
-	private FocusPanel buildEditor() {
-		logicFocusPanel = new FocusPanel();
-		pre = new Pre();
-		logicFocusPanel.add(pre);
-		return logicFocusPanel;
 	}
 
 	public abstract void display();
@@ -160,6 +140,11 @@ public abstract class ExpressionBuilderModal extends Modal {
 		helpBlock.getElement().focus();
 		display();
 	}
-
-
+	
+	public void showAndDisplayWithoutSuccess() {
+		helpBlock.clearError();
+		this.hide();
+		this.show();
+		display();
+	}
 }

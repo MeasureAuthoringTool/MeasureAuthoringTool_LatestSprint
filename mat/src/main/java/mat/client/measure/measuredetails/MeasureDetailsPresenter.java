@@ -2,7 +2,6 @@ package mat.client.measure.measuredetails;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import com.google.gwt.event.shared.HandlerManager;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -11,6 +10,7 @@ import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.Mat;
 import mat.client.MatPresenter;
+import mat.client.MeasureHeading;
 import mat.client.event.BackToMeasureLibraryPage;
 import mat.client.event.MeasureDeleteEvent;
 import mat.client.event.MeasureSelectedEvent;
@@ -65,12 +65,12 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	private ManageCompositeMeasureDetailModel currentCompositeMeasureDetails = new ManageCompositeMeasureDetailModel();
 	private static FocusableWidget subSkipContentHolder;
 	private SimplePanel panel;
-	
+	private MeasureHeading measureHeading;
 	MeasureDetailsModel measureDetailsModel;
 	
 	Boolean showCompositeEdit = false;
 
-	public MeasureDetailsPresenter() {
+	public MeasureDetailsPresenter(MeasureHeading measureHeading) {
 		panel = new SimplePanel();
 		navigationPanel = new MeasureDetailsNavigation(scoringType, isPatientBased, isCompositeMeasure);
 		navigationPanel.setObserver(this);
@@ -82,12 +82,13 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		componentMeasureDisplay.getBackButton().setVisible(false);
 		componentMeasureDisplay.getBreadCrumbPanel().setVisible(true);
 		navigationPanel.setActiveMenuItem(MeasureDetailsConstants.MeasureDetailsItems.GENERAL_MEASURE_INFORMATION);
+		this.measureHeading = measureHeading;
 		addEventHandlers();
 	}
 	
+
 	@Override
 	public void beforeClosingDisplay() {
-		Mat.hideLoadingMessage();
 		navigationPanel.updateState(MeasureDetailState.BLANK);
 		this.scoringType = null;
 		isPatientBased = false;
@@ -453,8 +454,7 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 					saveMeasureDetails();
 				}
 			} else {
-				String validationErrorMessage = validationErrors.stream().collect(Collectors.joining("\n"));
-				measureDetailsView.displayErrorMessage(validationErrorMessage);
+				measureDetailsView.displayErrorMessage(validationErrors);
 			}
 		}
 	}
@@ -534,6 +534,8 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 				scoringType = measureDetailsModel.getGeneralInformationModel().getScoringMethod();
 				isPatientBased = measureDetailsModel.getGeneralInformationModel().isPatientBased();
 				MatContext.get().setCurrentMeasureScoringType(scoringType);
+				MatContext.get().setCurrentMeasureName(measureDetailsModel.getGeneralInformationModel().getMeasureName());
+				measureHeading.updateMeasureHeading();
 				navigationPanel.buildNavigationMenu(scoringType, isPatientBased, isCompositeMeasure);
 				measureDetailsView.buildDetailView(measureDetailsModel, navigationPanel.getActiveMenuItem(), navigationPanel, getMeasureDetailsObserver());
 				isReadOnly = !MatContext.get().getMeasureLockService().checkForEditPermission();

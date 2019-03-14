@@ -83,8 +83,6 @@ import mat.client.measurepackage.MeasurePackageDetail;
 import mat.client.measurepackage.MeasurePackageOverview;
 import mat.client.shared.CQLWorkSpaceConstants;
 import mat.client.shared.GenericResult;
-import mat.client.shared.ManageCompositeMeasureModelValidator;
-import mat.client.shared.ManageMeasureModelValidator;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatException;
 import mat.client.umls.service.VsacApiResult;
@@ -167,6 +165,8 @@ import mat.shared.cql.error.InvalidLibraryException;
 import mat.shared.error.AuthenticationException;
 import mat.shared.error.measure.DeleteMeasureException;
 import mat.shared.model.util.MeasureDetailsUtil;
+import mat.shared.validator.measure.ManageCompositeMeasureModelValidator;
+import mat.shared.validator.measure.ManageMeasureModelValidator;
 
 @Service
 public class MeasureLibraryServiceImpl implements MeasureLibraryService {
@@ -2368,6 +2368,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			if (model.getId() != null) {
 				setMeasureCreated(true);
 				measure = measurePackageService.getById(model.getId());
+				measure.setDescription(model.getName());
+				measure.setaBBRName(model.getShortName());
 				measure.setMeasureScoring(model.getMeasScoring());
 				measure.setPatientBased(model.isPatientBased());
 				measurePackageService.save(measure);

@@ -13,7 +13,7 @@ import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
-import mat.client.cqlworkspace.definitions.CQLDefinitionsView;
+import mat.client.cqlworkspace.AbstractCQLWorkspacePresenter;
 import mat.client.expressionbuilder.component.ExpressionTypeSelectorList;
 import mat.client.expressionbuilder.constant.CQLType;
 import mat.client.expressionbuilder.constant.ExpressionType;
@@ -30,13 +30,13 @@ public class ExpressionBuilderHomeModal extends ExpressionBuilderModal {
 	private Button completeBuildButton;
 	private BuildButtonObserver buildButtonObserver;
 	private AceEditor editorToInsertFinalTextInto;
-	private CQLDefinitionsView view;
+	private AbstractCQLWorkspacePresenter workspacePresenter;
 	
-	public ExpressionBuilderHomeModal(CQLDefinitionsView cqlDefinitionsView, ExpressionBuilderModel model) {
+	public ExpressionBuilderHomeModal(AbstractCQLWorkspacePresenter workspacePresenter, ExpressionBuilderModel model) {
 		super("CQL Expression Builder", model, model);
 		buildButtonObserver = new BuildButtonObserver(this, this.getParentModel(), this.getMainModel());
-		this.editorToInsertFinalTextInto = cqlDefinitionsView.getDefineAceEditor();
-		this.view = cqlDefinitionsView;
+		this.editorToInsertFinalTextInto = workspacePresenter.getCQLWorkspaceView().getCQLDefinitionsView().getDefineAceEditor();
+		this.workspacePresenter = workspacePresenter;
 		display();
 	}
 
@@ -47,15 +47,18 @@ public class ExpressionBuilderHomeModal extends ExpressionBuilderModal {
 
 		List<ExpressionType> availableExpressionTypes = new ArrayList<>();
 		availableExpressionTypes.add(ExpressionType.COMPARISON);
+		availableExpressionTypes.add(ExpressionType.COMPUTATION);
 		availableExpressionTypes.add(ExpressionType.RETRIEVE);
 		availableExpressionTypes.add(ExpressionType.DEFINITION);
 		availableExpressionTypes.add(ExpressionType.EXISTS);
+		availableExpressionTypes.add(ExpressionType.FUNCTION);
 		availableExpressionTypes.add(ExpressionType.INTERVAL);
 		availableExpressionTypes.add(ExpressionType.IN);
 		availableExpressionTypes.add(ExpressionType.NOT);
 		availableExpressionTypes.add(ExpressionType.IS_NULL_NOT_NULL);
 		availableExpressionTypes.add(ExpressionType.QUERY);
 		availableExpressionTypes.add(ExpressionType.IS_TRUE_FALSE);
+		availableExpressionTypes.add(ExpressionType.TIMING);
 				
 		List<OperatorType> availableOperatorTypes = new ArrayList<>();
 		availableOperatorTypes.addAll(OperatorTypeUtil.getAvailableOperatorsCQLType(CQLType.ANY));
@@ -111,7 +114,8 @@ public class ExpressionBuilderHomeModal extends ExpressionBuilderModal {
 		text = text.trim();
 		this.editorToInsertFinalTextInto.setText(text);
 		this.hide();
-		this.view.setHelpBlockText("The Expression has been successfully added to the CQL Editor. Click the save icon to save the Definition.");
+		this.workspacePresenter.setHelpBlockText("The Expression has been successfully added to the CQL Editor. Click the save icon to save the Definition.");
+		this.workspacePresenter.setIsPageDirty(true);
 	}
 
 	private void onClose() {

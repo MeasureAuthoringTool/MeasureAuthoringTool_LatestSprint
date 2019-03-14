@@ -7,13 +7,25 @@ import org.gwtbootstrap3.client.ui.constants.Pull;
 
 import com.google.gwt.user.client.ui.HorizontalPanel;
 
+import mat.client.expressionbuilder.model.ComparisonModel;
+import mat.client.expressionbuilder.model.ComputationModel;
+import mat.client.expressionbuilder.model.DateTimeModel;
 import mat.client.expressionbuilder.model.ExistsModel;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
+import mat.client.expressionbuilder.model.FunctionModel;
 import mat.client.expressionbuilder.model.IExpressionBuilderModel;
+import mat.client.expressionbuilder.model.IntervalModel;
+import mat.client.expressionbuilder.model.AttributeModel;
 import mat.client.expressionbuilder.model.IsNullModel;
 import mat.client.expressionbuilder.model.IsTrueFalseModel;
+import mat.client.expressionbuilder.model.MembershipInModel;
 import mat.client.expressionbuilder.model.NotModel;
 import mat.client.expressionbuilder.model.OperatorModel;
+import mat.client.expressionbuilder.model.QuantityModel;
+import mat.client.expressionbuilder.model.QueryModel;
+import mat.client.expressionbuilder.model.TimeBoundaryModel;
+import mat.client.expressionbuilder.model.TimingModel;
+import mat.client.expressionbuilder.model.TimingPhraseModel;
 
 public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
 	private Button cancelButton;
@@ -25,7 +37,7 @@ public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
 			ExpressionBuilderModal parent, 
 			ExpressionBuilderModel parentModel, 
 			ExpressionBuilderModel mainModel) {
-		super(title, parentModel, mainModel);
+		super(parent.getModalTitle() + " > " + title, parentModel, mainModel);
 		this.parent = parent;
 		this.getFooter().add(buildFooter());
 	}
@@ -82,7 +94,21 @@ public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
 			if(lastModel instanceof ExistsModel || 
 					lastModel instanceof NotModel ||
 					lastModel instanceof IsNullModel ||
-					lastModel instanceof IsTrueFalseModel) {
+					lastModel instanceof IsTrueFalseModel ||
+					lastModel instanceof ComparisonModel ||
+					lastModel instanceof IntervalModel ||
+					lastModel instanceof QueryModel ||
+					lastModel instanceof MembershipInModel ||
+					lastModel instanceof ComputationModel ||
+					lastModel instanceof TimeBoundaryModel ||
+					lastModel instanceof AttributeModel ||
+					lastModel instanceof FunctionModel ||
+					lastModel instanceof TimingModel ||
+					lastModel instanceof TimingPhraseModel ||
+					lastModel instanceof DateTimeModel ||
+					lastModel instanceof QuantityModel) {
+
+					
 				this.getParentModel().getChildModels().remove(size);
 				int newSize = this.getParentModel().getChildModels().size() - 1;
 				
@@ -97,7 +123,7 @@ public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
 			}
 		}		
 		
-		this.getExpressionBuilderParent().showAndDisplay();
+		this.getExpressionBuilderParent().showAndDisplayWithoutSuccess();
 	}
 
 	@Override

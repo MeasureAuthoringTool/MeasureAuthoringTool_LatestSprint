@@ -1,6 +1,7 @@
 package mat.client.expressionbuilder.model;
 
 import mat.client.expressionbuilder.constant.CQLType;
+import mat.client.expressionbuilder.constant.ExpressionType;
 
 public class ComparisonModel extends ExpressionBuilderModel {
 
@@ -8,9 +9,11 @@ public class ComparisonModel extends ExpressionBuilderModel {
 	private ExpressionBuilderModel leftHandSide;
 	private ComparisonOperatorModel comparisonOperator;
 		
-	public ComparisonModel() {
-		this.rightHandSide = new ExpressionBuilderModel();
-		this.leftHandSide = new ExpressionBuilderModel();
+	public ComparisonModel(ExpressionBuilderModel parent) {
+		super(parent);
+		this.rightHandSide = new ExpressionBuilderModel(this);
+		this.leftHandSide = new ExpressionBuilderModel(this);
+		comparisonOperator = new ComparisonOperatorModel("", parent);
 	}
 		
 	public ExpressionBuilderModel getRightHandSide() {
@@ -22,7 +25,7 @@ public class ComparisonModel extends ExpressionBuilderModel {
 	}
 
 	public void setComparisonOperator(String comparisonOperator) {
-		this.comparisonOperator = new ComparisonOperatorModel(comparisonOperator);
+		this.comparisonOperator = new ComparisonOperatorModel(comparisonOperator, (ExpressionBuilderModel) this.getParentModel());
 	}
 	
 	@Override
@@ -47,5 +50,10 @@ public class ComparisonModel extends ExpressionBuilderModel {
 	@Override
 	public CQLType getType() {
 		return CQLType.BOOLEAN;
+	}
+	
+	@Override
+	public String getDisplayName() {
+		return ExpressionType.COMPARISON.getDisplayName();
 	}
 }

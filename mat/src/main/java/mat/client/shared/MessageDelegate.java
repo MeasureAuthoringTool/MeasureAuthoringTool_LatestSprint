@@ -6,7 +6,6 @@ public class MessageDelegate {
 	public static final String DEFAULT_SECURITY_QUESTION_VALUE = "********";
 	public static final String EMPTY_VALUE = "";
 	public static final String CQL_FUNCTION_ARGUMENT_NAME_ERROR = "Invalid argument name. Must start with an alpha-character or underscore followed by an alpha-numeric character(s) or underscore(s), and must not contain spaces.";
-	public static final String s_ERR_MEASURE_SCORE_REQUIRED = "Measure Scoring is required.";
 	public static final String CONTINOUS_VARIABLE_IS_NOT_PATIENT_BASED_ERROR = "Continous Variable measures must not be patient based.";
 	public static final String s_ERR_RETRIEVE_SCORING_CHOICES = "Problem while retrieving measure scoring choices.";
 	public static final String NQF_NUMBER_REQUIRED_ERROR = "NQF Number is required when a measure is Endorsed by NQF.";
@@ -30,7 +29,6 @@ public class MessageDelegate {
 	private static final String LOGIN_USER_REQUIRED = "User Name is required.";
 	private static final String NO_MEASURES = "No measures returned. Please change your search criteria and search again.";
 	private static final String NO_LIBRARIES_RETURNED = "No libraries returned. Please change your search criteria and search again.";
-	private static final String WARNING_BAD_DATA_TYPE_COMBINATION ="Successfully saved with errors. You have an incorrect value set/code datatype combination.";
 	private static final String OID_REQUIRED = "OID is required.";
 	private static final String OID_TOO_LONG = "OID cannot exceed 50 characters.";
 	private static final String ORG_REQUIRED = "Organization is required.";
@@ -62,7 +60,6 @@ public class MessageDelegate {
 	private static final String PACKAGER_CQL_ERROR = "Your CQL file contains validation errors. Errors must be corrected before proceeding to measure packaging. Please return to the CQL Workspace to make corrections.";
 	private static final String SUCCESSFULLY_SHARED = " sharing status has been successfully updated.";
 	private static final String UMLS_CODE_IDENTIFIER_REQUIRED = "Please enter a code identifier.";	
-	private static final String ABV_NAME_REQUIRED = "eCQM Abbreviated Title is required.";
 	private static final String ACCOUNT_REVOKED = "Your account has been revoked. Please contact Support.";
 	private static final String CLAUSE_WORK_SPACE_VALIDATION_SUCCESS = "Measure logic validation successful.";
 	private static final String ALL_PASSWORD_FIELDS_REQUIRED = "All password fields are required.";
@@ -194,10 +191,6 @@ public class MessageDelegate {
 	public String getRATIO_TOO_FEW_POPULATIONS() {
 		return RATIO_TOO_FEW_POPULATIONS;
 	}	
-	
-	public String getAbvNameRequiredMessage() {
-		return ABV_NAME_REQUIRED;
-	}
 	
 	public String getAccountRevokedMessage() {
 		return ACCOUNT_REVOKED;
@@ -781,10 +774,6 @@ public class MessageDelegate {
 
 	public String getNoVersionCreated() {
 		return NO_VERSION_CREATED;
-	}
-
-	public String getWarningBadDataTypeCombination() {
-		return WARNING_BAD_DATA_TYPE_COMBINATION;
 	}
 
 	public String getERROR_SELECT_ATTRIBUTE_NAME() {

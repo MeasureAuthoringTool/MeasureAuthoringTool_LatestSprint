@@ -15,10 +15,12 @@ import org.gwtbootstrap3.client.ui.constants.Pull;
 
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.HorizontalPanel;
+import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.expressionbuilder.component.ExpressionTypeSelectorList;
+import mat.client.expressionbuilder.component.ViewCQLExpressionWidget;
 import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.constant.OperatorType;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
@@ -30,6 +32,7 @@ import mat.shared.CQLModelValidator;
 
 public class QueryBuilderModal extends SubExpressionBuilderModal {
 
+	private static final String HOW_WOULD_YOU_LIKE_TO_SORT_THE_DATA = "How would you like to sort the data?";
 	private static final String REVIEW_QUERY = "Review Query";
 	private static final String SORT = "Sort";
 	private static final String FILTER = "Filter";
@@ -51,16 +54,21 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 	private NavPills pills;
 	private ExpressionTypeSelectorList sourceSelector;
 	private ExpressionTypeSelectorList filterSelector;
+	private ExpressionTypeSelectorList sortSelector;
+	private BuildButtonObserver sortBuildButtonObserver;
+	
+	private boolean isAscendingSort = true;
 
 	public QueryBuilderModal(ExpressionBuilderModal parent, ExpressionBuilderModel parentModel,
 			ExpressionBuilderModel mainModel) {
 		super("Query", parent, parentModel, mainModel);
-		queryModel = new QueryModel();
+		queryModel = new QueryModel(parentModel);
+		this.getParentModel().appendExpression(queryModel);
 		
 		sourceBuildButtonObserver = new BuildButtonObserver(this, queryModel.getSource(), mainModel);
 		filterBuildButtonObserver = new BuildButtonObserver(this, queryModel.getFilter(), mainModel);
+		sortBuildButtonObserver = new BuildButtonObserver(this, queryModel.getSort().getSortExpression(), mainModel);
 		
-		this.setCQLPanelVisible(false);
 		this.getApplyButton().setVisible(false);
 		this.getApplyButton().addClickHandler(event -> onApplyButtonClick());
 		display();
@@ -74,7 +82,6 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		} else if(queryModel.getAlias().isEmpty() || !validator.doesAliasNameFollowCQLAliasNamingConvention(queryModel.getAlias())) {
 			this.getErrorAlert().createAlert("The name of your source must start with an alpha character and can not contain spaces or special characters other than an underscore.");
 		} else {
-			this.getParentModel().appendExpression(queryModel);
 			this.getExpressionBuilderParent().showAndDisplay();
 		}
 	}
@@ -179,6 +186,7 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		availableExpressionsForFilter.add(ExpressionType.EXISTS);
 		availableExpressionsForFilter.add(ExpressionType.IN);
 		availableExpressionsForFilter.add(ExpressionType.IS_NULL_NOT_NULL);
+		availableExpressionsForFilter.add(ExpressionType.TIMING);
 		availableExpressionsForFilter.add(ExpressionType.IS_TRUE_FALSE);
 		
 		List<OperatorType> availableOperatorsForFilter = new ArrayList<>(OperatorTypeUtil.getBooleanOperators());
@@ -188,6 +196,74 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 				 "What would you like to use to filter your source?");
 		
 		filterPanel.add(filterSelector);		
+		return filterPanel;
+	}
+	
+	private Widget buildSortByWidget() {
+		VerticalPanel sortByPanel = new VerticalPanel();
+		sortByPanel.setStyleName("selectorsPanel");
+		
+		List<ExpressionType> availableExpressionsForSort = new ArrayList<>();
+		availableExpressionsForSort.add(ExpressionType.ATTRIBUTE);
+		availableExpressionsForSort.add(ExpressionType.TIME_BOUNDARY);
+		
+		sortSelector = new ExpressionTypeSelectorList(availableExpressionsForSort, new ArrayList<>(), 
+				sortBuildButtonObserver, queryModel.getSort().getSortExpression(), 
+				"What would you like to sort?");
+		
+		sortByPanel.add(sortSelector);
+		sortByPanel.add(new SpacerWidget());
+		sortByPanel.add(new SpacerWidget());
+		sortByPanel.add(buildSortDirectionFormGroup());
+		
+		return sortByPanel;
+	}
+
+	private Widget buildSortDirectionFormGroup() {
+		
+		FormGroup sortDirectionFormGroup = new FormGroup();
+		FormLabel sortDirectionFormLabel = new FormLabel();
+		sortDirectionFormLabel.setText(HOW_WOULD_YOU_LIKE_TO_SORT_THE_DATA);
+		sortDirectionFormLabel.setTitle(HOW_WOULD_YOU_LIKE_TO_SORT_THE_DATA);
+
+		
+		
+		RadioButton ascendingSortRadioButton = new RadioButton("sortDirectionRadioButton", "Ascending");
+		RadioButton descendingSortRadioButton = new RadioButton("sortDirectionRadioButton", "Descending");
+		ascendingSortRadioButton.setValue(isAscendingSort);
+		descendingSortRadioButton.setValue(!isAscendingSort);
+		
+		ascendingSortRadioButton.addValueChangeHandler(event -> {
+			isAscendingSort = event.getValue();
+			queryModel.getSort().setAscendingSort(isAscendingSort);
+			this.updateCQLDisplay();
+		});
+		
+		descendingSortRadioButton.addValueChangeHandler(event -> {
+			isAscendingSort = !event.getValue();
+			queryModel.getSort().setAscendingSort(isAscendingSort);
+			this.updateCQLDisplay();
+		});
+		
+		
+		HorizontalPanel sortDirectionHorizontalPanel = new HorizontalPanel();
+		sortDirectionHorizontalPanel.setStyleName("selectorsPanel");
+		sortDirectionHorizontalPanel.setWidth("250px");
+		sortDirectionHorizontalPanel.add(ascendingSortRadioButton);
+		sortDirectionHorizontalPanel.add(descendingSortRadioButton);
+		
+		sortDirectionFormGroup.add(sortDirectionFormLabel);
+		sortDirectionFormGroup.add(sortDirectionHorizontalPanel);
+
+		return sortDirectionFormGroup;
+	}
+	
+	private Widget buildReviewQueryWidget() {
+		VerticalPanel filterPanel = new VerticalPanel();
+		filterPanel.setStyleName("selectorsPanel");
+		ViewCQLExpressionWidget cqlExpressionModal = new ViewCQLExpressionWidget();
+		cqlExpressionModal.setCQLDisplay(this.getMainModel().getCQL(""));
+		filterPanel.add(cqlExpressionModal);		
 		return filterPanel;
 	}
 	
@@ -203,6 +279,7 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		aliasTextBox.addChangeHandler(event -> {
 			alias = aliasTextBox.getValue();
 			queryModel.setAlias(alias);
+			this.updateCQLDisplay();
 		});
 		
 		aliasTextBox.setTitle("Enter an Alias");
@@ -248,6 +325,7 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		updatePreviousButton(FILTER, event -> navigate(FILTER));
 		updateNextButton(REVIEW_QUERY, event -> navigate(REVIEW_QUERY));
 		queryBuilderContentPanel.clear();
+		queryBuilderContentPanel.add(buildSortByWidget());
 	}
 
 	private void displayReviewQuery() {
@@ -259,6 +337,7 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		updatePreviousButton(SORT, event -> navigate(SORT));
 		
 		queryBuilderContentPanel.clear();
+		queryBuilderContentPanel.add(buildReviewQueryWidget());
 	}
 	
 	private void navigate(String text) {
@@ -266,12 +345,12 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		this.getApplyButton().setVisible(false);
 		displayCurrentTab(text);
 		this.getErrorAlert().clearAlert();
-		this.setCQLPanelVisible(false);
 		this.updateCQLDisplay();
 	}
 	
 	private void displayCurrentTab(String tab) {
 		this.currentScreen = tab;
+		this.setCQLPanelVisible(true);
 		if(tab.equals(SOURCE)) {
 			sourceListItem.setActive(true);
 			displaySource();
@@ -293,6 +372,7 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 			displaySort();
  		} else if(tab.equals(REVIEW_QUERY)) {
  			reviewQueryListItem.setActive(true);
+ 			this.setCQLPanelVisible(false);
  			displayReviewQuery();
  		}
 	}
@@ -305,6 +385,7 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 	}
 	
 	private void updateTitle(String text) {
-		this.setTitle("Query > " + text);
+		this.setTitle(this.getExpressionBuilderParent().getModalTitle() + " > " +  "Query > " + text);
+		this.setModalTitle(this.getExpressionBuilderParent().getModalTitle() + " > " +  "Query > " + text);
 	}
 }

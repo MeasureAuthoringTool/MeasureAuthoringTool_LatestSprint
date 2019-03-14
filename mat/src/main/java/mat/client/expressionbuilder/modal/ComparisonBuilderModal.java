@@ -35,7 +35,8 @@ public class ComparisonBuilderModal extends SubExpressionBuilderModal {
 	public ComparisonBuilderModal(ExpressionBuilderModal parent, ExpressionBuilderModel parentModel, ExpressionBuilderModel mainModel) {
 		super("Comparison", parent, parentModel, mainModel);
 		
-		comparisonModel = new ComparisonModel();
+		comparisonModel = new ComparisonModel(this.getParentModel());
+		this.getParentModel().appendExpression(comparisonModel);
 		leftHandSideBuildButtonObserver = new BuildButtonObserver(this, comparisonModel.getLeftHandSide(), mainModel);
 		rightHandSideBuildButtonObserver = new BuildButtonObserver(this, comparisonModel.getRightHandSide(), mainModel);
 
@@ -46,6 +47,13 @@ public class ComparisonBuilderModal extends SubExpressionBuilderModal {
 	
 	private void onComparisonOperatorListBoxChange() {
 		this.selectedOperatorIndex = operatorListBox.getSelectedIndex();
+		if(this.selectedOperatorIndex == 0) {
+			comparisonModel.setComparisonOperator("");
+		} else {
+			comparisonModel.setComparisonOperator(operatorListBox.getSelectedValue());
+		}
+		
+		this.updateCQLDisplay();
 	}
 
 	@Override
@@ -78,7 +86,9 @@ public class ComparisonBuilderModal extends SubExpressionBuilderModal {
 		panel.setStyleName("selectorsPanel");
 		
 		List<ExpressionType> availableExpressionForLeftSideOfComparison = new ArrayList<>();
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.ATTRIBUTE);
 		availableExpressionForLeftSideOfComparison.add(ExpressionType.DEFINITION);
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.QUANTITY);
 		
 		
 		leftHandSideOfComparisonSelectorList = new ExpressionTypeSelectorList(
@@ -91,8 +101,10 @@ public class ComparisonBuilderModal extends SubExpressionBuilderModal {
 		panel.add(buildComparisonOperatorListBox());
 		
 		List<ExpressionType> availableExpressionForRightSideOfComparison = new ArrayList<>();
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.ATTRIBUTE);
 		availableExpressionForRightSideOfComparison.add(ExpressionType.CODE);
 		availableExpressionForRightSideOfComparison.add(ExpressionType.DEFINITION);
+		availableExpressionForRightSideOfComparison.add(ExpressionType.QUANTITY);
 		rightHandSideOfComparisonSelectorList = new ExpressionTypeSelectorList(
 				availableExpressionForRightSideOfComparison, new ArrayList<>(), rightHandSideBuildButtonObserver, comparisonModel.getRightHandSide(), 
 				"What is the second type of expression you would like to compare?"
@@ -140,8 +152,6 @@ public class ComparisonBuilderModal extends SubExpressionBuilderModal {
 				operatorListBox.getSelectedIndex() == 0) {
 			this.getErrorAlert().createAlert("All fields required.");
 		} else {
-			this.getParentModel().appendExpression(comparisonModel);
-			comparisonModel.setComparisonOperator(operatorListBox.getSelectedValue());
 			this.getExpressionBuilderParent().showAndDisplay();
 		}
 	}

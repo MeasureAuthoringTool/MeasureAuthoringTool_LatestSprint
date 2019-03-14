@@ -1,11 +1,14 @@
 package mat.client.expressionbuilder.model;
 
 import mat.client.expressionbuilder.constant.CQLType;
+import mat.client.expressionbuilder.constant.ExpressionType;
 
 public class NotModel extends ExpressionBuilderModel {
 
-	
-	
+	public NotModel(ExpressionBuilderModel parent) {
+		super(parent);
+	}
+
 	@Override
 	public String getCQL(String identation) {
 
@@ -41,5 +44,10 @@ public class NotModel extends ExpressionBuilderModel {
 	@Override
 	public CQLType getType() {
 		return CQLType.BOOLEAN;
+	}
+
+	@Override
+	public String getDisplayName() {
+		return ExpressionType.NOT.getDisplayName();
 	}
 }

@@ -1,12 +1,13 @@
-package mat.client.shared;
+package mat.shared.validator.measure;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import mat.client.measure.ManageMeasureDetailModel;
-import mat.shared.MatConstants;
+import mat.client.shared.MessageDelegate;
 import mat.shared.StringUtility;
+import mat.shared.validator.measure.CommonMeasureValidator;
 
 public class ManageMeasureModelValidator {
 	
@@ -16,9 +17,6 @@ public class ManageMeasureModelValidator {
 		return message;
 	}
 	
-	protected boolean isValidValue(String value) {
-		return !value.equalsIgnoreCase("--Select--") && !value.equals("");
-	}
 
 	public List<String> validateMeasureWithClone(ManageMeasureDetailModel model, boolean isClone) {
 		List<String> message = performCommonMeasureValidation(model);
@@ -40,28 +38,12 @@ public class ManageMeasureModelValidator {
 	
 	private List<String> performCommonMeasureValidation(ManageMeasureDetailModel model) {
 		List<String> message = new ArrayList<String>();
-
-		if ((model.getName() == null) || "".equals(model.getName().trim())) {
-			message.add(MatContext.get().getMessageDelegate()
-					.getMeasureNameRequiredMessage());
-		}
-		if ((model.getShortName() == null)
-				|| "".equals(model.getShortName().trim())) {
-			message.add(MatContext.get().getMessageDelegate()
-					.getAbvNameRequiredMessage());
-		}
-		
+		CommonMeasureValidator commonMeasureValidator = new CommonMeasureValidator();
+		message.addAll(commonMeasureValidator.validateMeasureName(model.getName()));
+		message.addAll(commonMeasureValidator.validateECQMAbbreviation(model.getShortName()));
 		String scoring = model.getMeasScoring();
-		if ((scoring == null) || !isValidValue(model.getMeasScoring())) {
-			MatContext.get().getMessageDelegate();
-			message.add(MessageDelegate.s_ERR_MEASURE_SCORE_REQUIRED);
-		}
-		
-		// MAT-8602 Continous Variable measures must be patient based.
-		if((scoring.equalsIgnoreCase(MatConstants.CONTINUOUS_VARIABLE) && (model.isPatientBased()))) {
-			MatContext.get().getMessageDelegate();
-			message.add(MessageDelegate.CONTINOUS_VARIABLE_IS_NOT_PATIENT_BASED_ERROR);
-		}
+		message.addAll(commonMeasureValidator.validateMeasureScore(scoring));
+		message.addAll(commonMeasureValidator.validatePatientBased(scoring, model.isPatientBased()));
 		return message;
 	}
 }

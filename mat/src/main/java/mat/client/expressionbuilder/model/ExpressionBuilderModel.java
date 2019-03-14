@@ -10,15 +10,14 @@ public class ExpressionBuilderModel implements IExpressionBuilderModel {
 	private List<IExpressionBuilderModel> models;
 	
 
-	public ExpressionBuilderModel() {
+	public ExpressionBuilderModel(ExpressionBuilderModel parent) {
+		this.parentModel = parent;
 		models = new ArrayList<>();
 	}
 
+	@Override
 	public String getCQL(String identation) {
 		StringBuilder builder = new StringBuilder();
-
-		
-		
 		if (!models.isEmpty()) {
 			
 			boolean shouldAddParentheses = models.size() > 1 ;
@@ -80,5 +79,10 @@ public class ExpressionBuilderModel implements IExpressionBuilderModel {
 
 	public void setParentModel(IExpressionBuilderModel parentModel) {
 		this.parentModel = parentModel;
+	}
+
+	@Override
+	public String getDisplayName() {
+		return "";
 	}
 }

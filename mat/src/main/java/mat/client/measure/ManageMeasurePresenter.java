@@ -55,8 +55,6 @@ import mat.client.shared.ConfirmationDialogBox;
 import mat.client.shared.ConfirmationObserver;
 import mat.client.shared.ContentWithHeadingWidget;
 import mat.client.shared.FocusableWidget;
-import mat.client.shared.ManageCompositeMeasureModelValidator;
-import mat.client.shared.ManageMeasureModelValidator;
 import mat.client.shared.MatContext;
 import mat.client.shared.MessageDelegate;
 import mat.client.shared.MostRecentMeasureWidget;
@@ -72,6 +70,8 @@ import mat.shared.ConstantMessages;
 import mat.shared.MatConstants;
 import mat.shared.MeasureSearchModel;
 import mat.shared.StringUtility;
+import mat.shared.validator.measure.ManageCompositeMeasureModelValidator;
+import mat.shared.validator.measure.ManageMeasureModelValidator;
 
 public class ManageMeasurePresenter implements MatPresenter {
 
@@ -82,24 +82,26 @@ public class ManageMeasurePresenter implements MatPresenter {
 	private ClickHandler cancelClickHandler = new ClickHandler() {
 		@Override
 		public void onClick(ClickEvent event) {
-			isClone = false;
-
-			if(detailDisplay != null) {
-				detailDisplay.getName().setValue("");
-				detailDisplay.getShortName().setValue("");
+			if(!isLoading) {
+				isClone = false;
+	
+				if(detailDisplay != null) {
+					detailDisplay.getName().setValue("");
+					detailDisplay.getShortName().setValue("");
+				}
+	
+				if(compositeDetailDisplay != null) {
+					compositeDetailDisplay.getName().setValue("");
+					compositeDetailDisplay.getShortName().setValue("");
+					compositeDetailDisplay.clearFields();
+				}
+				
+				if(componentMeasureDisplay != null) {
+					componentMeasureDisplay.getComponentMeasureSearch().clearFields(false);
+					componentMeasureDisplay.getMessagePanel().clearAlerts();
+				}
+				displaySearch();
 			}
-
-			if(compositeDetailDisplay != null) {
-				compositeDetailDisplay.getName().setValue("");
-				compositeDetailDisplay.getShortName().setValue("");
-				compositeDetailDisplay.clearFields();
-			}
-			
-			if(componentMeasureDisplay != null) {
-				componentMeasureDisplay.getComponentMeasureSearch().clearFields(false);
-				componentMeasureDisplay.getMessagePanel().clearAlerts();
-			}
-			displaySearch();
 		}
 	};
 
@@ -207,7 +209,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		if(componentMeasureDisplay != null) {
 			componentMeasureDisplayHandlers();
 		}
-
+		
 		// This event will be called when measure is successfully deleted and
 		// then MeasureLibrary is reloaded.
 		MatContext.get().getEventBus().addHandler(MeasureDeleteEvent.TYPE, new MeasureDeleteEvent.Handler() {
@@ -738,14 +740,14 @@ public class ManageMeasurePresenter implements MatPresenter {
 		searchDisplay.getErrorMessagesForTransferOS().clearAlert();
 		transferDisplay.getErrorMessageDisplay().clearAlert();
 		if (!transferMeasureResults.isEmpty()) {
-			setSearchingBusy(true);
+			showAdminSearchingBusy(true);
 			MatContext.get().getMeasureService().searchUsers(searchString, startIndex, pageSize,
 					new AsyncCallback<TransferOwnerShipModel>() {
 
 						@Override
 						public void onFailure(Throwable caught) {
 							Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
-							setSearchingBusy(false);
+							showAdminSearchingBusy(false);
 						}
 
 						@Override
@@ -757,7 +759,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 							transferDisplay.buildCellTable(result);
 							panel.setHeading("Measure Library Ownership >  Measure Ownership Transfer", MEASURE_LIBRARY);
 							panel.setContent(transferDisplay.asWidget());
-							setSearchingBusy(false);
+							showAdminSearchingBusy(false);
 							model = result;
 						}
 					});
@@ -920,7 +922,6 @@ public class ManageMeasurePresenter implements MatPresenter {
 	}
 	
 	private boolean isValidCompositeMeasureForSave(List<String> message) {
-		GWT.log("message size: " + message.size());
 		boolean valid = message.size() == 0;
 		componentMeasureDisplay.getSuccessMessage().clearAlert();
 		if(!valid) {
@@ -1056,7 +1057,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		// when Pagination will be implemented in Measure Library.
 		if (currentUserRole.equalsIgnoreCase(ClientConstants.ADMINISTRATOR)) {
 			pageSize = 25;
-			setSearchingBusy(true);
+			showAdminSearchingBusy(true);
 			MeasureSearchModel searchAdminModel = new MeasureSearchModel(filter, startIndex, pageSize, lastSearchText);
 			
 			if(null != searchDisplay) {
@@ -1726,6 +1727,8 @@ public class ManageMeasurePresenter implements MatPresenter {
 		((Button) searchDisplay.getSearchButton()).setEnabled(!busy);
 		((Button) searchDisplay.getBulkExportButton()).setEnabled(!busy);
 		((TextBox) (searchDisplay.getSearchString())).setEnabled(!busy);
+		((Button) versionDisplay.getSaveButton()).setEnabled(!busy);
+		((Button) versionDisplay.getCancelButton()).setEnabled(!busy);
 		searchDisplay.getCreateMeasureButton().setEnabled(!busy);
 		searchDisplay.getCreateCompositeMeasureButton().setEnabled(!busy);
 		searchDisplay.getCustomFilterCheckBox().setEnabled(!busy);
@@ -2006,19 +2009,21 @@ public class ManageMeasurePresenter implements MatPresenter {
 		versionDisplay.getSaveButton().addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
-				isMeasureDeleted = false;
-				measureDeletion = false;
-				ManageMeasureSearchModel.Result selectedMeasure = versionDisplay.getSelectedMeasure();
-				versionDisplay.getErrorMessageDisplay().clearAlert();
-				if (((selectedMeasure != null) && (selectedMeasure.getId() != null))
-						&& (versionDisplay.getMajorRadioButton().getValue()
-								|| versionDisplay.getMinorRadioButton().getValue())) {
-					
-					boolean shouldPackage = true; 
-					boolean ignoreUnusedIncludedLibraries = false; 
-					saveFinalizedVersion(selectedMeasure.getId(), selectedMeasure.getName(),versionDisplay.getMajorRadioButton().getValue(), selectedMeasure.getVersion(), shouldPackage, ignoreUnusedIncludedLibraries);		
-				} else {
-					versionDisplay.getErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getERROR_LIBRARY_VERSION());
+				if(!isLoading) {
+					isMeasureDeleted = false;
+					measureDeletion = false;
+					ManageMeasureSearchModel.Result selectedMeasure = versionDisplay.getSelectedMeasure();
+					versionDisplay.getErrorMessageDisplay().clearAlert();
+					if (((selectedMeasure != null) && (selectedMeasure.getId() != null))
+							&& (versionDisplay.getMajorRadioButton().getValue()
+									|| versionDisplay.getMinorRadioButton().getValue())) {
+						
+						boolean shouldPackage = true; 
+						boolean ignoreUnusedIncludedLibraries = false; 
+						saveFinalizedVersion(selectedMeasure.getId(), selectedMeasure.getName(),versionDisplay.getMajorRadioButton().getValue(), selectedMeasure.getVersion(), shouldPackage, ignoreUnusedIncludedLibraries);		
+					} else {
+						versionDisplay.getErrorMessageDisplay().createAlert(MatContext.get().getMessageDelegate().getERROR_LIBRARY_VERSION());
+					}
 				}
 			}
 		});

@@ -1,17 +1,19 @@
 package mat.client.expressionbuilder.model;
 
 import mat.client.expressionbuilder.constant.CQLType;
+import mat.client.expressionbuilder.constant.ExpressionType;
 
 public class IntervalModel extends ExpressionBuilderModel {
 
 	private ExpressionBuilderModel lowerBound;
 	private ExpressionBuilderModel upperBound;
-	private boolean isLowerBoundInclusive;
-	private boolean isUpperBoundInclusive;
+	private boolean isLowerBoundInclusive = true;
+	private boolean isUpperBoundInclusive = true;
 	
-	public IntervalModel() {
-		lowerBound = new ExpressionBuilderModel();
-		upperBound = new ExpressionBuilderModel();
+	public IntervalModel(ExpressionBuilderModel parent) {
+		super(parent);
+		lowerBound = new ExpressionBuilderModel(this);
+		upperBound = new ExpressionBuilderModel(this);
 	}
 
 	public ExpressionBuilderModel getLowerBound() {
@@ -64,5 +66,10 @@ public class IntervalModel extends ExpressionBuilderModel {
 	@Override
 	public CQLType getType() {
 		return CQLType.LIST;
+	}
+	
+	@Override
+	public String getDisplayName() {
+		return ExpressionType.INTERVAL.getDisplayName();
 	}
 }

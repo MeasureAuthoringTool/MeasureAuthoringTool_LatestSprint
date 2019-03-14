@@ -9,14 +9,29 @@ import com.google.gwt.i18n.shared.DateTimeFormat;
 import mat.client.measure.measuredetails.MeasureDetailState;
 import mat.shared.StringUtility;
 import mat.shared.measure.measuredetails.models.GeneralInformationModel;
+import mat.shared.validator.measure.CommonMeasureValidator;
 
 public class GeneralInformationValidator {
 	private static final String MEASURE_PERIOD_DATES_ERROR = "The dates for Measurement Period are invalid. Please enter valid dates.";
-
-	public List<String> validateModel(GeneralInformationModel generalInformationModel) {
+	public static final String COMPOSITE_MEASURE_SCORE_REQUIRED_ERROR = "A Composite Scoring Method is required. ";
+	public static final String NQF_REQUIRED_ERROR = "NQF Number is required when a measure is endorsed by NQF.";
+	
+	public List<String> validateModel(GeneralInformationModel generalInformationModel, boolean isComposite) {
 		List<String> errorMessages = new ArrayList<>();
+		
+		if(isComposite) {
+			if(StringUtility.isEmptyOrNull(generalInformationModel.getCompositeScoringMethod())) {
+				errorMessages.add(COMPOSITE_MEASURE_SCORE_REQUIRED_ERROR);
+			}
+		}
+
+		CommonMeasureValidator commonMeasureValidator = new CommonMeasureValidator();
+		errorMessages.addAll(commonMeasureValidator.validateMeasureName(generalInformationModel.getMeasureName()));
+		errorMessages.addAll(commonMeasureValidator.validateMeasureScore(generalInformationModel.getScoringMethod()));
+		errorMessages.addAll(commonMeasureValidator.validateECQMAbbreviation(generalInformationModel.geteCQMAbbreviatedTitle()));
+		errorMessages.addAll(commonMeasureValidator.validatePatientBased(generalInformationModel.getScoringMethod(), generalInformationModel.isPatientBased()));
 		if(generalInformationModel.getEndorseByNQF() && StringUtility.isEmptyOrNull(generalInformationModel.getNqfId())) {
-			errorMessages.add("NQF Number is required when a measure is endorsed by NQF.");
+			errorMessages.add(NQF_REQUIRED_ERROR);
 		}
 		
 		if(!generalInformationModel.isCalendarYear()) {
