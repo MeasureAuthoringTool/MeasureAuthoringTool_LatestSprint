@@ -84,9 +84,20 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 	
 	public CQLStandaloneWorkSpacePresenter(final CQLWorkspaceView srchDisplay) {
 		cqlWorkspaceView = srchDisplay;
-		cqlWorkspaceView.getCqlGeneralInformationView().getInAppHelp().setMessage(InAppHelpMessages.STANDALONE_CQL_LIBRARY_GENERAL_INFORMATION);
+		setInAppHelpMessages();
 		emptyWidget.add(new Label("No CQL Library Selected"));
 		addEventHandlers();
+	}
+
+	private void setInAppHelpMessages() {
+		cqlWorkspaceView.getCqlGeneralInformationView().getInAppHelp().setMessage(InAppHelpMessages.STANDALONE_CQL_LIBRARY_GENERAL_INFORMATION);
+		cqlWorkspaceView.getValueSetView().getInAppHelp().setMessage(InAppHelpMessages.STANDALONE_CQL_LIBRARY_VALUE_SET);
+		cqlWorkspaceView.getCQLParametersView().getInAppHelp().setMessage(InAppHelpMessages.STANDALONE_CQL_LIBRARY_PARAMETER);
+		cqlWorkspaceView.getCQLFunctionsView().getInAppHelp().setMessage(InAppHelpMessages.STANDALONE_CQL_LIBRARY_FUNCTION);
+		cqlWorkspaceView.getIncludeView().getInAppHelp().setMessage(InAppHelpMessages.STANDALONE_CQL_LIBRARY_INCLUDES);
+		cqlWorkspaceView.getCodesView().getInAppHelp().setMessage(InAppHelpMessages.STANDALONE_CQL_LIBRARY_CODES);
+		cqlWorkspaceView.getCQLDefinitionsView().getInAppHelp().setMessage(InAppHelpMessages.STANDALONE_CQL_LIBRARY_DEFINITION);
+		cqlWorkspaceView.getViewCQLView().getInAppHelp().setMessage(InAppHelpMessages.STANDALONE_CQL_LIBRARY_VIEW_CQL);
 	}
 
 	private void addViewCQLEventHandlers() {

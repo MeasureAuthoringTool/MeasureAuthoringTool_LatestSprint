@@ -48,53 +48,38 @@ public class QueryModel extends ExpressionBuilderModel {
 	}	
 
 	@Override
-	public String getCQL(String identation) {
-		
-		boolean shouldAddParentheses = source.getChildModels().size() > 1; 
-		
-		
+	public String getCQL(String indentation) {		
 		StringBuilder builder = new StringBuilder();
+		
+		if(this.getParentModel().getParentModel() != null) {
+			builder.append("(");
+		}
+						
+		builder.append(source.getCQL(indentation + "  "));
 				
-		if(shouldAddParentheses) {
-			builder.append("( ");
-		}
-		
-		builder.append(source.getCQL(""));
-		
-		if(shouldAddParentheses) {
-			builder.append(" )");
-		}
-		
 		builder.append(" ");
 		builder.append(alias);
 		
-		String filterIdentationIdentation = identation + "  ";
-		builder.append("\n" + filterIdentationIdentation);
+		String filterIdentation = indentation + "  ";
+		builder.append("\n" + filterIdentation);
 		builder.append("where ");
 		
 		
 		if(this.getChildModels().size() == 1) {
-			builder.append(this.getChildModels().get(0).getCQL(identation));
+			builder.append(this.getChildModels().get(0).getCQL(filterIdentation));
 		} else {
 			if (!filter.getChildModels().isEmpty()) {
-				builder.append(filter.getChildModels().get(0).getCQL(identation));
-
-				String innerIdentation = identation + "  ";
-				for (int i = 1; i < filter.getChildModels().size(); i += 2) {
-					builder.append("\n");
-					builder.append(innerIdentation);
-					builder.append(filter.getChildModels().get(i).getCQL(innerIdentation));
-					
-					if((i + 1) <= filter.getChildModels().size() - 1) {
-						builder.append(" " + filter.getChildModels().get(i + 1).getCQL(innerIdentation));
-					}
-				}
+				builder.append(filter.getCQL(filterIdentation));
 			}
 		}
-				
+
 		if(!sort.getSortExpression().getChildModels().isEmpty()) {
-			builder.append("\n" + filterIdentationIdentation);
+			builder.append("\n" + filterIdentation);
 			builder.append(sort.getCQL(""));
+		}
+		
+		if(this.getParentModel().getParentModel() != null) {
+			builder.append(")");
 		}
 				
 		return builder.toString();

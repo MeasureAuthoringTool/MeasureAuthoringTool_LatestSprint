@@ -17,6 +17,7 @@ import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.TimingModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 import mat.client.shared.SpacerWidget;
 
 public class TimingBuilderModal extends SubExpressionBuilderModal {
@@ -96,12 +97,15 @@ public class TimingBuilderModal extends SubExpressionBuilderModal {
 		availableExpressionForLeftSideOfTiming.add(ExpressionType.FUNCTION);
 		availableExpressionForLeftSideOfTiming.add(ExpressionType.INTERVAL);
 		availableExpressionForLeftSideOfTiming.add(ExpressionType.PARAMETER);
+		availableExpressionForLeftSideOfTiming.add(ExpressionType.TIME_BOUNDARY);
 
 		
 		leftHandSideOfTimingSelectorList = new ExpressionTypeSelectorList(
-				availableExpressionForLeftSideOfTiming, new ArrayList<>(), leftHandSideBuildButtonObserver, timingModel.getLeftHandSide(), 
-				"What expression would you like to use on the left-hand side of your timing?"
+				availableExpressionForLeftSideOfTiming, new ArrayList<>(), QueryFinderHelper.findAliasNames(this.timingModel),
+				leftHandSideBuildButtonObserver, timingModel.getLeftHandSide(), 
+				"What expression would you like to use on the left-hand side of your timing?", this
 		);
+		
 		panel.add(leftHandSideOfTimingSelectorList);
 		
 		
@@ -111,7 +115,7 @@ public class TimingBuilderModal extends SubExpressionBuilderModal {
 
 		
 		List<ExpressionType> availableExpressionForRightSideOfTiming = new ArrayList<>();
-		availableExpressionForRightSideOfTiming.add(ExpressionType.ATTRIBUTE);
+		availableExpressionForRightSideOfTiming.add(ExpressionType.ATTRIBUTE);		
 		availableExpressionForRightSideOfTiming.add(ExpressionType.COMPUTATION);
 		availableExpressionForRightSideOfTiming.add(ExpressionType.DATE_TIME);
 		availableExpressionForRightSideOfTiming.add(ExpressionType.DEFINITION);
@@ -120,9 +124,9 @@ public class TimingBuilderModal extends SubExpressionBuilderModal {
 		availableExpressionForRightSideOfTiming.add(ExpressionType.PARAMETER);
 		
 		rightHandSideOfTimingSelectorList = new ExpressionTypeSelectorList(
-				availableExpressionForRightSideOfTiming, new ArrayList<>(), rightHandSideBuildButtonObserver, timingModel.getRightHandSide(), 
-				"What expression would you like to use on the right-hand side of your timing?"
-		);
+				availableExpressionForRightSideOfTiming, new ArrayList<>(), QueryFinderHelper.findAliasNames(this.timingModel),
+				rightHandSideBuildButtonObserver, timingModel.getRightHandSide(), 
+				"What expression would you like to use on the right-hand side of your timing?", this);
 		panel.add(rightHandSideOfTimingSelectorList);
 		
 		return panel;

@@ -16,6 +16,7 @@ import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.model.ComparisonModel;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 import mat.client.shared.ListBoxMVP;
 
 public class ComparisonBuilderModal extends SubExpressionBuilderModal {
@@ -87,29 +88,43 @@ public class ComparisonBuilderModal extends SubExpressionBuilderModal {
 		
 		List<ExpressionType> availableExpressionForLeftSideOfComparison = new ArrayList<>();
 		availableExpressionForLeftSideOfComparison.add(ExpressionType.ATTRIBUTE);
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.CODE);
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.COMPUTATION);
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.DATE_TIME);
 		availableExpressionForLeftSideOfComparison.add(ExpressionType.DEFINITION);
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.FUNCTION);
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.INTERVAL);
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.PARAMETER);
 		availableExpressionForLeftSideOfComparison.add(ExpressionType.QUANTITY);
+		availableExpressionForLeftSideOfComparison.add(ExpressionType.TIME_BOUNDARY);
 		
 		
 		leftHandSideOfComparisonSelectorList = new ExpressionTypeSelectorList(
-				availableExpressionForLeftSideOfComparison, new ArrayList<>(), leftHandSideBuildButtonObserver, comparisonModel.getLeftHandSide(), 
-				"What is the first type of expression you would like to compare?"
-		);
+				availableExpressionForLeftSideOfComparison, new ArrayList<>(), QueryFinderHelper.findAliasNames(this.comparisonModel),
+				leftHandSideBuildButtonObserver, comparisonModel.getLeftHandSide(), 
+				"What is the first type of expression you would like to compare?", this);
 		
 		panel.add(leftHandSideOfComparisonSelectorList);
 
 		panel.add(buildComparisonOperatorListBox());
 		
 		List<ExpressionType> availableExpressionForRightSideOfComparison = new ArrayList<>();
-		availableExpressionForLeftSideOfComparison.add(ExpressionType.ATTRIBUTE);
+		availableExpressionForRightSideOfComparison.add(ExpressionType.ATTRIBUTE);
 		availableExpressionForRightSideOfComparison.add(ExpressionType.CODE);
+		availableExpressionForRightSideOfComparison.add(ExpressionType.COMPUTATION);
+		availableExpressionForRightSideOfComparison.add(ExpressionType.DATE_TIME);
 		availableExpressionForRightSideOfComparison.add(ExpressionType.DEFINITION);
+		availableExpressionForRightSideOfComparison.add(ExpressionType.FUNCTION);
+		availableExpressionForRightSideOfComparison.add(ExpressionType.INTERVAL);
+		availableExpressionForRightSideOfComparison.add(ExpressionType.PARAMETER);
 		availableExpressionForRightSideOfComparison.add(ExpressionType.QUANTITY);
+		availableExpressionForRightSideOfComparison.add(ExpressionType.TIME_BOUNDARY);
+
+
 		rightHandSideOfComparisonSelectorList = new ExpressionTypeSelectorList(
-				availableExpressionForRightSideOfComparison, new ArrayList<>(), rightHandSideBuildButtonObserver, comparisonModel.getRightHandSide(), 
-				"What is the second type of expression you would like to compare?"
-		);
-		
+				availableExpressionForRightSideOfComparison, new ArrayList<>(), QueryFinderHelper.findAliasNames(this.comparisonModel),
+				rightHandSideBuildButtonObserver, comparisonModel.getRightHandSide(), 
+				"What is the second type of expression you would like to compare?", this);		
 		panel.add(rightHandSideOfComparisonSelectorList);
 		
 		return panel;

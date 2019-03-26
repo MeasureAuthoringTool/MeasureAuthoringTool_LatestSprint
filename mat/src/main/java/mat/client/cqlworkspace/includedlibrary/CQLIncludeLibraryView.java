@@ -49,6 +49,8 @@ import edu.ycp.cs.dh.acegwt.client.ace.AceEditorMode;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditorTheme;
 import mat.client.CustomPager;
 import mat.client.buttons.CQLIncludesButtonToolBar;
+import mat.client.cqlworkspace.SharedCQLWorkspaceUtility;
+import mat.client.inapphelp.component.InAppHelp;
 import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.shared.CQLWorkSpaceConstants;
 import mat.client.shared.LabelBuilder;
@@ -107,7 +109,9 @@ public class CQLIncludeLibraryView {
 	private AceEditor cqlAceEditor = new AceEditor();
 	
 	HTML heading = new HTML();
-
+	
+	private InAppHelp inAppHelp = new InAppHelp("");
+	
 	public static interface Observer {
 		void onCheckBoxClicked(CQLLibraryDataSetObject result);
 	}
@@ -151,7 +155,8 @@ public class CQLIncludeLibraryView {
 		VerticalPanel verticalPanel = new VerticalPanel();
 
 		verticalPanel.getElement().setId("vPanel_VerticalPanelIncludeSection");
-		verticalPanel.add(heading);
+		
+		verticalPanel.add(SharedCQLWorkspaceUtility.buildHeaderPanel(heading, inAppHelp));
 		verticalPanel.add(new SpacerWidget());
 		verticalPanel.add(new SpacerWidget());
 		verticalPanel.add(buildAliasLabelVP());
@@ -757,6 +762,14 @@ public class CQLIncludeLibraryView {
 		getSaveButton().setEnabled(isEditable);
 		getEraseButton().setEnabled(isEditable);
 		getSearchButton().setEnabled(isEditable);
+	}
+
+	public InAppHelp getInAppHelp() {
+		return inAppHelp;
+	}
+
+	public void setInAppHelp(InAppHelp inAppHelp) {
+		this.inAppHelp = inAppHelp;
 	}
 
 }

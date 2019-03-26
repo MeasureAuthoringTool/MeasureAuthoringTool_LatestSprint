@@ -13,6 +13,7 @@ import mat.client.expressionbuilder.model.ExistsModel;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
 import mat.client.expressionbuilder.util.OperatorTypeUtil;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 
 public class ExistsBuilderModal extends SubExpressionBuilderModal {
 
@@ -48,8 +49,12 @@ public class ExistsBuilderModal extends SubExpressionBuilderModal {
 	
 	private Widget buildContentPanel() { 
 		List<ExpressionType> availableExpressionTypes = new ArrayList<>();
+		
+		availableExpressionTypes.add(ExpressionType.ATTRIBUTE);		
 		availableExpressionTypes.add(ExpressionType.RETRIEVE);
 		availableExpressionTypes.add(ExpressionType.DEFINITION);
+		availableExpressionTypes.add(ExpressionType.FUNCTION);
+		availableExpressionTypes.add(ExpressionType.QUERY);
 		
 		List<OperatorType> availableOperatorTypes = new ArrayList<>();
 		availableOperatorTypes.addAll(OperatorTypeUtil.getSetOperators());
@@ -59,8 +64,8 @@ public class ExistsBuilderModal extends SubExpressionBuilderModal {
 		
 		String label = "For what type of expression would you like to determine existence?";
 		ExpressionTypeSelectorList selectors = 
-				new ExpressionTypeSelectorList(availableExpressionTypes, availableOperatorTypes, 
-						buildButtonObserver, existsModel, label);
+				new ExpressionTypeSelectorList(availableExpressionTypes, availableOperatorTypes, QueryFinderHelper.findAliasNames(this.existsModel),
+						buildButtonObserver, existsModel, label, this);
 		panel.add(selectors);
 		
 		return panel;

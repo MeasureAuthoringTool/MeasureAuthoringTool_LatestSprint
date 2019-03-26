@@ -15,6 +15,7 @@ import mat.client.expressionbuilder.constant.OperatorType;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.IsNullModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 import mat.client.shared.ListBoxMVP;
 
 public class IsNullBuilderModal extends SubExpressionBuilderModal {
@@ -60,16 +61,18 @@ public class IsNullBuilderModal extends SubExpressionBuilderModal {
 		panel.setStyleName("selectorsPanel");
 		
 		List<ExpressionType> availableExpressionTypes = new ArrayList<>();
-		availableExpressionTypes.add(ExpressionType.DEFINITION);
+		availableExpressionTypes.add(ExpressionType.ATTRIBUTE);
 		availableExpressionTypes.add(ExpressionType.RETRIEVE);
+		availableExpressionTypes.add(ExpressionType.DEFINITION);
+		availableExpressionTypes.add(ExpressionType.FUNCTION);
+		availableExpressionTypes.add(ExpressionType.QUERY);
 		
 		List<OperatorType> availableOperatorTypes = new ArrayList<>();
 		
 		String label =  "What type of expression would you like to use for your Null statement?";
 		ExpressionTypeSelectorList selectors = 
-				new ExpressionTypeSelectorList(availableExpressionTypes, availableOperatorTypes, 
-						buildButtonObserver, isNullModel, label);
-		
+				new ExpressionTypeSelectorList(availableExpressionTypes, availableOperatorTypes, QueryFinderHelper.findAliasNames(this.isNullModel),
+						buildButtonObserver, isNullModel, label, this);
 		panel.add(buildIsNullNotNullFormGroup());		
 		panel.add(selectors);	
 		

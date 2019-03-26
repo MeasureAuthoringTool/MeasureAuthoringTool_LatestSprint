@@ -84,11 +84,22 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 	
 	public CQLMeasureWorkSpacePresenter(final CQLWorkspaceView workspaceView) {
 		cqlWorkspaceView = workspaceView;
-		cqlWorkspaceView.getCqlGeneralInformationView().getInAppHelp().setMessage(InAppHelpMessages.MEASURE_CQL_LIBRARY_GENERAL_INFORMATION);
+		setInAppHelpMessages();
 		addEventHandlers();
 		JSONCQLTimingExpressionUtility.getAllCQLTimingExpressionsList();
 		JSONAttributeModeUtility.getAllAttrModeList();
 		JSONAttributeModeUtility.getAllModeDetailsList();
+	}
+
+	private void setInAppHelpMessages() {
+		cqlWorkspaceView.getCqlGeneralInformationView().getInAppHelp().setMessage(InAppHelpMessages.MEASURE_CQL_LIBRARY_GENERAL_INFORMATION);
+		cqlWorkspaceView.getValueSetView().getInAppHelp().setMessage(InAppHelpMessages.MEASURE_CQL_LIBRARY_VALUE_SET);
+		cqlWorkspaceView.getCQLParametersView().getInAppHelp().setMessage(InAppHelpMessages.MEASURE_CQL_LIBRARY_PARAMETER);
+		cqlWorkspaceView.getCQLFunctionsView().getInAppHelp().setMessage(InAppHelpMessages.MEASURE_CQL_LIBRARY_FUNCTION);
+		cqlWorkspaceView.getIncludeView().getInAppHelp().setMessage(InAppHelpMessages.MEASURE_CQL_LIBRARY_INCLUDES);
+		cqlWorkspaceView.getCodesView().getInAppHelp().setMessage(InAppHelpMessages.MEASURE_CQL_LIBRARY_CODES);
+		cqlWorkspaceView.getCQLDefinitionsView().getInAppHelp().setMessage(InAppHelpMessages.MEASURE_CQL_LIBRARY_DEFINITION);
+		cqlWorkspaceView.getViewCQLView().getInAppHelp().setMessage(InAppHelpMessages.MEASURE_CQL_LIBRARY_VIEW_CQL);
 	}
 	
 	private void buildInsertPopUp() {

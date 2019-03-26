@@ -20,9 +20,8 @@ public class CQLHumanReadableGenerator {
 	@Autowired private Configuration freemarkerConfiguration;
 	
 	public String generate(HumanReadableModel model) throws TemplateNotFoundException, MalformedTemplateNameException, ParseException, IOException, TemplateException {
-		Map<String, HumanReadableModel> paramsMap = new HashMap<>();				
+		Map<String, HumanReadableModel> paramsMap = new HashMap<>();	
 		paramsMap.put("model", model);
-		
 		setMeasurementPeriod(model.getMeasureInformation());
 		return FreeMarkerTemplateUtils.processTemplateIntoString(freemarkerConfiguration.getTemplate("humanreadable/human_readable.ftl"), paramsMap);
 	}

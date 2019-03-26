@@ -60,6 +60,8 @@ import com.google.gwt.view.client.MultiSelectionModel;
 
 import mat.client.CustomPager;
 import mat.client.buttons.CodesValuesetsButtonToolBar;
+import mat.client.cqlworkspace.SharedCQLWorkspaceUtility;
+import mat.client.inapphelp.component.InAppHelp;
 import mat.client.shared.CustomQuantityTextBox;
 import mat.client.shared.LabelBuilder;
 import mat.client.shared.MatCheckBoxCell;
@@ -138,6 +140,7 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 	SimplePanel cellTableMainPanel = new SimplePanel();
 	HTML heading = new HTML();
 	private CodesValuesetsButtonToolBar copyPasteClearButtonToolBar = new CodesValuesetsButtonToolBar("valueset");
+	private InAppHelp inAppHelp = new InAppHelp("");
 
 	public CQLAppliedValueSetView() {
 		
@@ -154,8 +157,11 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 		hp.add(simplePanel);
 		
 		verticalPanel.getElement().setId("vPanel_VerticalPanel");
+		
 		heading.addStyleName("leftAligned");
-		verticalPanel.add(heading);
+		heading.getElement().setTabIndex(0);
+		
+		verticalPanel.add(SharedCQLWorkspaceUtility.buildHeaderPanel(heading, inAppHelp));
 		verticalPanel.add(new SpacerWidget());
 		
 		verticalPanel.add(new SpacerWidget());
@@ -1144,6 +1150,14 @@ public class CQLAppliedValueSetView implements HasSelectionHandlers<Boolean>{
 
 	public List<CQLQualityDataSetDTO> getAllValueSets() {
 		return allValueSetsList;
+	}
+
+	public InAppHelp getInAppHelp() {
+		return inAppHelp;
+	}
+
+	public void setInAppHelp(InAppHelp inAppHelp) {
+		this.inAppHelp = inAppHelp;
 	}
 
 }

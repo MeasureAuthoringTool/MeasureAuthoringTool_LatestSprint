@@ -26,6 +26,8 @@ import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditorMode;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditorTheme;
 import mat.client.buttons.DefinitionFunctionButtonToolBar;
+import mat.client.cqlworkspace.SharedCQLWorkspaceUtility;
+import mat.client.inapphelp.component.InAppHelp;
 import mat.client.shared.CQLAddNewButton;
 import mat.client.shared.CQLCollapsibleCQLPanelWidget;
 import mat.client.shared.SkipListBuilder;
@@ -55,6 +57,8 @@ public class CQLParametersView {
 	
 	HTML heading = new HTML();
 	
+	private InAppHelp inAppHelp = new InAppHelp("");
+	
 	public CQLParametersView() {
 		mainParamViewVerticalPanel.getElement().setId("mainParamViewVerticalPanel");
 		parameterAceEditor.startEditor();
@@ -77,9 +81,11 @@ public class CQLParametersView {
 		paramCommentGroup.clear();
 		VerticalPanel parameterVP = new VerticalPanel();
 		HorizontalPanel parameterFP = new HorizontalPanel();
-		parameterVP.add(heading);
+		
+		parameterVP.add(SharedCQLWorkspaceUtility.buildHeaderPanel(heading, inAppHelp));
 		parameterVP.add(new SpacerWidget());
 		parameterVP.add(new SpacerWidget());
+		
 		FormLabel parameterLabel = new FormLabel();
 		parameterLabel.setText("Parameter Name");
 		parameterLabel.setTitle("Parameter Name");
@@ -413,6 +419,14 @@ public class CQLParametersView {
 		getParameterButtonBar().getEraseButton().setEnabled(isEditable);
 		getParameterButtonBar().getDeleteButton().setEnabled(isEditable);
 		getParameterButtonBar().getInfoButton().setEnabled(isEditable);
+	}
+
+	public InAppHelp getInAppHelp() {
+		return inAppHelp;
+	}
+
+	public void setInAppHelp(InAppHelp inAppHelp) {
+		this.inAppHelp = inAppHelp;
 	}	
 	
 }

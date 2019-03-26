@@ -31,6 +31,7 @@ public class InAppHelp extends Composite {
 	
 	public InAppHelp(String message) {
 		this.message = message;
+		
 		initWidget(createInAppHelp());
 		
 	}
@@ -54,7 +55,7 @@ public class InAppHelp extends Composite {
 	private void createPopUpElement() {
 		messageHTML = new HTML();
 		messageHTML.setHTML(this.message);
-		messageHTML.setWidth("500px");
+		messageHTML.setWidth("760px");
 		messageHTML.setStyleName("inAppHelp");
 		
 		ModalHeader header = new ModalHeader();
@@ -72,7 +73,7 @@ public class InAppHelp extends Composite {
 		Button closeButton = new Button("Close");
 		closeButton.setTitle("Close");
 		closeButton.setType(ButtonType.PRIMARY);
-		closeButton.addClickHandler(event -> helpModal.hide());
+		closeButton.addClickHandler(event -> hideHelpModal());
 		closeButton.setPull(Pull.RIGHT);
 		footer.add(closeButton);
 		footer.getElement().setAttribute("style", "border-color: transparent");
@@ -81,14 +82,34 @@ public class InAppHelp extends Composite {
 		
 		helpModal.setDataKeyboard(true);
 		
-		helpModal.setWidth("550px");
+		helpModal.setWidth("800px");
 	}
 	
+	private void hideHelpModal() {
+		 helpModal.hide();
+	}
+
 	public void setMessage(String message) {
 		this.messageHTML.setHTML(message);
 	}
 
 	public void show(Boolean visible) {
 		inAppHelpButton.setVisible(visible);
+	}
+
+	public Modal getHelpModal() {
+		return helpModal;
+	}
+
+	public void setHelpModal(Modal helpModal) {
+		this.helpModal = helpModal;
+	}
+
+	public InAppHelpButton getInAppHelpButton() {
+		return inAppHelpButton;
+	}
+
+	public void setInAppHelpButton(InAppHelpButton inAppHelpButton) {
+		this.inAppHelpButton = inAppHelpButton;
 	}
 }

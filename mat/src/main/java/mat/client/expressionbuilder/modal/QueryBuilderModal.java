@@ -27,11 +27,15 @@ import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.QueryModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
 import mat.client.expressionbuilder.util.OperatorTypeUtil;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 import mat.client.shared.SpacerWidget;
 import mat.shared.CQLModelValidator;
 
 public class QueryBuilderModal extends SubExpressionBuilderModal {
 
+	private static final String EXIT_QUERY = "Exit Query";
+	private static final String STYLE = "style";
+	private static final String NAV_PILL_BACKGROUND_COLOR = "background-color: #F1F1F1";
 	private static final String HOW_WOULD_YOU_LIKE_TO_SORT_THE_DATA = "How would you like to sort the data?";
 	private static final String REVIEW_QUERY = "Review Query";
 	private static final String SORT = "Sort";
@@ -95,6 +99,8 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 	}
 
 	private Widget buildContentPanel() {
+		this.getCancelButton().setTitle(EXIT_QUERY);
+		this.getCancelButton().setText(EXIT_QUERY);
 		this.getContentPanel().clear();
 		
 		VerticalPanel mainPanel = new VerticalPanel();
@@ -107,15 +113,15 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		queryBuilderContentPanel.setStyleName("selectorsPanel");
 		
 		navPillsAndContentPanel.add(buildNavPanel());
-		pills.getElement().getParentElement().setAttribute("style", "vertical-align: top; width: 20%");
+		pills.getElement().getParentElement().setAttribute(STYLE, "vertical-align: top; width: 20%");
 		navPillsAndContentPanel.add(queryBuilderContentPanel);
 		
 		ButtonToolBar buttonPanel = new ButtonToolBar();
 		previousButton = new Button("Previous");
-		previousButton.setType(ButtonType.LINK);
+		previousButton.setType(ButtonType.PRIMARY);
 		nextButton = new Button("Next");
 		nextButton.setPull(Pull.RIGHT);
-		nextButton.setType(ButtonType.LINK);
+		nextButton.setType(ButtonType.PRIMARY);
 		
 		buttonPanel.add(previousButton);
 		buttonPanel.add(nextButton);
@@ -134,16 +140,20 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		pills.setMarginRight(15.0);
 		sourceListItem = new AnchorListItem(SOURCE);
 		sourceListItem.addClickHandler(event -> navigate(SOURCE));
+		sourceListItem.getElement().setAttribute(STYLE, NAV_PILL_BACKGROUND_COLOR);
 		sourceListItem.setActive(true);
 		
 		filterListItem = new AnchorListItem(FILTER);
 		filterListItem.addClickHandler(event -> navigate(FILTER));
+		filterListItem.getElement().setAttribute(STYLE, NAV_PILL_BACKGROUND_COLOR);
 		
 		sortListItem = new AnchorListItem(SORT);
 		sortListItem.addClickHandler(event -> navigate(SORT));
+		sortListItem.getElement().setAttribute(STYLE, NAV_PILL_BACKGROUND_COLOR);
 		
 		reviewQueryListItem = new AnchorListItem(REVIEW_QUERY);
 		reviewQueryListItem.addClickHandler(event -> navigate(REVIEW_QUERY));
+		reviewQueryListItem.getElement().setAttribute(STYLE, NAV_PILL_BACKGROUND_COLOR);
 
 		pills.add(sourceListItem);
 		pills.add(filterListItem);
@@ -158,13 +168,17 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		VerticalPanel sourcePanel = new VerticalPanel();
 		sourcePanel.setStyleName("selectorsPanel");
 		List<ExpressionType> availableExpressionsForSouce = new ArrayList<>();
+		availableExpressionsForSouce.add(ExpressionType.ATTRIBUTE);	
 		availableExpressionsForSouce.add(ExpressionType.RETRIEVE);
 		availableExpressionsForSouce.add(ExpressionType.DEFINITION);
+		availableExpressionsForSouce.add(ExpressionType.FUNCTION);
+		availableExpressionsForSouce.add(ExpressionType.QUERY);
 		List<OperatorType> availableOperatorsForSource = new ArrayList<>(OperatorTypeUtil.getSetOperators());
 		
-		sourceSelector = new ExpressionTypeSelectorList(availableExpressionsForSouce, availableOperatorsForSource, 
+		sourceSelector = new ExpressionTypeSelectorList(
+				availableExpressionsForSouce, availableOperatorsForSource, QueryFinderHelper.findAliasNames(this.getParentModel()),
 				sourceBuildButtonObserver, queryModel.getSource(), 
-				"What type of expression would you like to use as your data source?");
+				"What type of expression would you like to use as your data source?", this);
 		
 		
 		sourcePanel.add(sourceSelector);
@@ -184,16 +198,19 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		availableExpressionsForFilter.add(ExpressionType.COMPARISON);
 		availableExpressionsForFilter.add(ExpressionType.DEFINITION);
 		availableExpressionsForFilter.add(ExpressionType.EXISTS);
+		availableExpressionsForFilter.add(ExpressionType.FUNCTION);
 		availableExpressionsForFilter.add(ExpressionType.IN);
+		availableExpressionsForFilter.add(ExpressionType.NOT);
 		availableExpressionsForFilter.add(ExpressionType.IS_NULL_NOT_NULL);
 		availableExpressionsForFilter.add(ExpressionType.TIMING);
 		availableExpressionsForFilter.add(ExpressionType.IS_TRUE_FALSE);
 		
 		List<OperatorType> availableOperatorsForFilter = new ArrayList<>(OperatorTypeUtil.getBooleanOperators());
 		
-		filterSelector = new ExpressionTypeSelectorList(availableExpressionsForFilter, availableOperatorsForFilter, 
+		filterSelector = new ExpressionTypeSelectorList(
+				availableExpressionsForFilter, availableOperatorsForFilter, QueryFinderHelper.findAliasNames(this.queryModel),
 				filterBuildButtonObserver, queryModel.getFilter(), 
-				 "What would you like to use to filter your source?");
+				 "What would you like to use to filter your source?", this);
 		
 		filterPanel.add(filterSelector);		
 		return filterPanel;
@@ -209,7 +226,7 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		
 		sortSelector = new ExpressionTypeSelectorList(availableExpressionsForSort, new ArrayList<>(), 
 				sortBuildButtonObserver, queryModel.getSort().getSortExpression(), 
-				"What would you like to sort?");
+				"What would you like to sort?", this);
 		
 		sortByPanel.add(sortSelector);
 		sortByPanel.add(new SpacerWidget());
@@ -370,6 +387,10 @@ public class QueryBuilderModal extends SubExpressionBuilderModal {
 		} else if(tab.equals(SORT)) {
 			sortListItem.setActive(true);
 			displaySort();
+			
+			if(sortSelector.getSelector()!= null && sortSelector.getSelector().getExpressionTypeSelectorListBox() != null) {
+				sortSelector.getSelector().getExpressionTypeSelectorListBox().setFocus(true);
+			}
  		} else if(tab.equals(REVIEW_QUERY)) {
  			reviewQueryListItem.setActive(true);
  			this.setCQLPanelVisible(false);

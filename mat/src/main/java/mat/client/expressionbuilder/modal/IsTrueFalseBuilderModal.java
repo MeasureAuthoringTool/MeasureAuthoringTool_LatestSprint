@@ -15,6 +15,7 @@ import mat.client.expressionbuilder.constant.OperatorType;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.IsTrueFalseModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 import mat.client.shared.ListBoxMVP;
 
 public class IsTrueFalseBuilderModal extends SubExpressionBuilderModal {
@@ -62,14 +63,22 @@ public class IsTrueFalseBuilderModal extends SubExpressionBuilderModal {
 		panel.setStyleName("selectorsPanel");
 		
 		List<ExpressionType> availableExpressionTypes = new ArrayList<>();
+		availableExpressionTypes.add(ExpressionType.COMPARISON);
 		availableExpressionTypes.add(ExpressionType.DEFINITION);
+		availableExpressionTypes.add(ExpressionType.EXISTS);
+		availableExpressionTypes.add(ExpressionType.FUNCTION);
+		availableExpressionTypes.add(ExpressionType.IN);
+		availableExpressionTypes.add(ExpressionType.NOT);
+		availableExpressionTypes.add(ExpressionType.IS_NULL_NOT_NULL);
+		availableExpressionTypes.add(ExpressionType.TIMING);
 		
 		List<OperatorType> availableOperatorTypes = new ArrayList<>();
 		
 		String label = "What type of expression would you like to use for your true or false statement?";
 		ExpressionTypeSelectorList selectors = 
-				new ExpressionTypeSelectorList(availableExpressionTypes, availableOperatorTypes, 
-						buildButtonObserver, isTrueFalseModel, label);
+				new ExpressionTypeSelectorList(
+						availableExpressionTypes, availableOperatorTypes, QueryFinderHelper.findAliasNames(this.isTrueFalseModel),
+						buildButtonObserver, isTrueFalseModel, label, this);
 		
 		panel.add(buildIsTrueFalseFormGroup());		
 		panel.add(selectors);	

@@ -13,6 +13,7 @@ import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.NotModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
 import mat.client.expressionbuilder.util.OperatorTypeUtil;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 
 public class NotBuilderModal extends SubExpressionBuilderModal {
 
@@ -49,8 +50,14 @@ public class NotBuilderModal extends SubExpressionBuilderModal {
 	
 	public Widget buildContentPanel() {
 		List<ExpressionType> availableExpressionTypes = new ArrayList<>();
+		availableExpressionTypes.add(ExpressionType.COMPARISON);
 		availableExpressionTypes.add(ExpressionType.DEFINITION);
 		availableExpressionTypes.add(ExpressionType.EXISTS);
+		availableExpressionTypes.add(ExpressionType.FUNCTION);
+		availableExpressionTypes.add(ExpressionType.IN);
+		availableExpressionTypes.add(ExpressionType.IS_NULL_NOT_NULL);
+		availableExpressionTypes.add(ExpressionType.TIMING);
+		availableExpressionTypes.add(ExpressionType.IS_TRUE_FALSE);
 		
 		List<OperatorType> availableOperatorTypes = new ArrayList<>();
 		availableOperatorTypes.addAll(OperatorTypeUtil.getBooleanOperators());
@@ -60,8 +67,9 @@ public class NotBuilderModal extends SubExpressionBuilderModal {
 		
 		String label = "What type of expression would you like to negate?";
 		ExpressionTypeSelectorList selectors = 
-			new ExpressionTypeSelectorList(availableExpressionTypes, availableOperatorTypes, 
-					buildButtonObserver, notModel, label);
+			new ExpressionTypeSelectorList(
+					availableExpressionTypes, availableOperatorTypes, QueryFinderHelper.findAliasNames(this.notModel),
+					buildButtonObserver, notModel, label, this);
 		panel.add(selectors);
 		
 		return panel;

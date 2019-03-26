@@ -56,6 +56,8 @@ import edu.ycp.cs.dh.acegwt.client.ace.AceEditorMode;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditorTheme;
 import mat.client.CustomPager;
 import mat.client.buttons.DefinitionFunctionButtonToolBar;
+import mat.client.cqlworkspace.SharedCQLWorkspaceUtility;
+import mat.client.inapphelp.component.InAppHelp;
 import mat.client.shared.CQLAddNewButton;
 import mat.client.shared.CQLCollapsibleCQLPanelWidget;
 import mat.client.shared.CQLWorkSpaceConstants;
@@ -142,6 +144,8 @@ public class CQLFunctionsView {
 
 	HTML heading = new HTML();
 	
+	private InAppHelp inAppHelp = new InAppHelp("");
+	
 	public CQLFunctionsView() {
 		mainFunctionVerticalPanel.clear();
 		functionBodyAceEditor.startEditor();
@@ -168,7 +172,7 @@ public class CQLFunctionsView {
 		VerticalPanel funcVP = new VerticalPanel();
 		HorizontalPanel funcFP = new HorizontalPanel();
 		
-		funcVP.add(heading);
+		funcVP.add(SharedCQLWorkspaceUtility.buildHeaderPanel(heading, inAppHelp));
 		funcVP.add(new SpacerWidget());
 		funcVP.add(new SpacerWidget());
 		
@@ -1023,5 +1027,13 @@ public class CQLFunctionsView {
 		getFunctionButtonBar().getDeleteButton().setEnabled(isEditable);
 		getFunctionButtonBar().getInsertButton().setEnabled(isEditable);
 		getFunctionButtonBar().getInfoButton().setEnabled(isEditable);
+	}
+
+	public InAppHelp getInAppHelp() {
+		return inAppHelp;
+	}
+
+	public void setInAppHelp(InAppHelp inAppHelp) {
+		this.inAppHelp = inAppHelp;
 	}	
 }

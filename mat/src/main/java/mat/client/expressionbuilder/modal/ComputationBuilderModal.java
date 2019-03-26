@@ -1,3 +1,4 @@
+
 package mat.client.expressionbuilder.modal;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.model.ComputationModel;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 import mat.client.shared.ListBoxMVP;
 
 public class ComputationBuilderModal extends SubExpressionBuilderModal {
@@ -104,7 +106,8 @@ public class ComputationBuilderModal extends SubExpressionBuilderModal {
 		leftSideOfComputationOptions.addAll(buildDropDownOptions());
 
 		leftHandSideOfComputationSelectorList = new ExpressionTypeSelectorList(
-				leftSideOfComputationOptions, new ArrayList<>(), leftHandSideBuildButtonObserver, computationModel.getLeftHandSide(), FIRST_HEADING);
+				leftSideOfComputationOptions, new ArrayList<>(), QueryFinderHelper.findAliasNames(this.computationModel),
+				leftHandSideBuildButtonObserver, computationModel.getLeftHandSide(), FIRST_HEADING, this);
 	}
 
 	private void buildSecondExpressionList() {
@@ -112,15 +115,18 @@ public class ComputationBuilderModal extends SubExpressionBuilderModal {
 		rightSideOfComputationOptions.addAll(buildDropDownOptions());
 
 		rightHandSideOfComputationSelectorList = new ExpressionTypeSelectorList(
-				rightSideOfComputationOptions, new ArrayList<>(), rightHandSideBuildButtonObserver, computationModel.getRightHandSide(), SECOND_HEADING);
+				rightSideOfComputationOptions, new ArrayList<>(), QueryFinderHelper.findAliasNames(this.computationModel),
+				rightHandSideBuildButtonObserver, computationModel.getRightHandSide(), SECOND_HEADING, this);
 	}
 
 	private List<ExpressionType> buildDropDownOptions(){
 		final List<ExpressionType> availableExpressions = new ArrayList<>();
 		availableExpressions.add(ExpressionType.ATTRIBUTE);
+		availableExpressions.add(ExpressionType.COMPUTATION);
 		availableExpressions.add(ExpressionType.DATE_TIME);
 		availableExpressions.add(ExpressionType.DEFINITION);
 		availableExpressions.add(ExpressionType.FUNCTION);
+		availableExpressions.add(ExpressionType.PARAMETER);
 		availableExpressions.add(ExpressionType.QUANTITY);
 		availableExpressions.add(ExpressionType.TIME_BOUNDARY);
 		return availableExpressions;

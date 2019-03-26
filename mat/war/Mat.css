@@ -2903,6 +2903,11 @@ padding: 2px;
 	overflow-y: auto;
 }
 
+#inAppHelp .modal-body {
+	max-height: 500px;
+	overflow-y: auto;
+}
+
 .selectorsPanel {
 	width: 100%;
 	margin-bottom: 15px;
@@ -2932,7 +2937,8 @@ body {
 .inAppHelp {
 	margin-left: auto;
 	margin-right: auto;
-	margin-bottom: 15px;
+	margin-bottom: 5px;
+	font-size: small;
 }
 
 .quantityWidgetCellLeft{

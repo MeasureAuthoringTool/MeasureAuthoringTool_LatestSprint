@@ -14,6 +14,7 @@ import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.TimeBoundaryModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 import mat.client.shared.ListBoxMVP;
 
 public class TimeBoundaryBuilderModal extends SubExpressionBuilderModal {
@@ -104,12 +105,15 @@ public class TimeBoundaryBuilderModal extends SubExpressionBuilderModal {
 
 	private ExpressionTypeSelectorList buildSecondExpressionList() {
 		final List<ExpressionType> availableExpressionTypes = new ArrayList<>();
+		availableExpressionTypes.add(ExpressionType.ATTRIBUTE);		
 		availableExpressionTypes.add(ExpressionType.DEFINITION);
 		availableExpressionTypes.add(ExpressionType.FUNCTION);
 		availableExpressionTypes.add(ExpressionType.INTERVAL);
 		availableExpressionTypes.add(ExpressionType.PARAMETER);
-		
-		return new ExpressionTypeSelectorList(availableExpressionTypes, new ArrayList<>(), buildButtonObserver, timeBoundaryModel, LABEL);
+
+		return new ExpressionTypeSelectorList(
+				availableExpressionTypes, new ArrayList<>(), QueryFinderHelper.findAliasNames(this.timeBoundaryModel),
+				buildButtonObserver, timeBoundaryModel, LABEL, this);
 	}
 
 	private void onApplyButtonClick() {

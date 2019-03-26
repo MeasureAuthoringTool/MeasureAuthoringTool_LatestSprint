@@ -16,6 +16,7 @@ import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.IntervalModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
+import mat.client.expressionbuilder.util.QueryFinderHelper;
 import mat.client.shared.SpacerWidget;
 
 public class IntervalBuilderModal extends SubExpressionBuilderModal {	
@@ -83,13 +84,19 @@ public class IntervalBuilderModal extends SubExpressionBuilderModal {
 		panel.setStyleName("selectorsPanel");
 		
 		List<ExpressionType> availableExpressions = new ArrayList<>();
+		availableExpressions.add(ExpressionType.ATTRIBUTE);
+		availableExpressions.add(ExpressionType.COMPUTATION);
 		availableExpressions.add(ExpressionType.DATE_TIME);
 		availableExpressions.add(ExpressionType.DEFINITION);
+		availableExpressions.add(ExpressionType.FUNCTION);
+		availableExpressions.add(ExpressionType.PARAMETER);
+		availableExpressions.add(ExpressionType.QUANTITY);
 		availableExpressions.add(ExpressionType.TIME_BOUNDARY);
 		
 		lowerBoundExpressionTypeSelector = new ExpressionTypeSelectorList(
-				availableExpressions, new ArrayList<>(), lowerBoundBuildButtonObserver, intervalModel.getLowerBound(), 
-				"What would you like to use for the lower boundary of your interval?"
+				availableExpressions, new ArrayList<>(), QueryFinderHelper.findAliasNames(this.intervalModel),
+				lowerBoundBuildButtonObserver, intervalModel.getLowerBound(), 
+				"What would you like to use for the lower boundary of your interval?", this
 		);
 		
 		panel.add(lowerBoundExpressionTypeSelector);
@@ -99,7 +106,7 @@ public class IntervalBuilderModal extends SubExpressionBuilderModal {
 
 		upperBoundExpressionTypeSelector = new ExpressionTypeSelectorList(
 				availableExpressions, new ArrayList<>(), upperBoundBuildButtonObserver, intervalModel.getUpperBound(), 
-				"What would you like to use for the upper boundary of your interval?"
+				"What would you like to use for the upper boundary of your interval?", this
 		);
 		
 		panel.add(upperBoundExpressionTypeSelector);

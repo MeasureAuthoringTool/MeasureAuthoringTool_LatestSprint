@@ -16,44 +16,52 @@ public class ExpressionBuilderModel implements IExpressionBuilderModel {
 	}
 
 	@Override
-	public String getCQL(String identation) {
+	public String getCQL(String indentation) {
 		StringBuilder builder = new StringBuilder();
-		if (!models.isEmpty()) {
+		if (!models.isEmpty()) {			
 			
-			boolean shouldAddParentheses = models.size() > 1 ;
-
-			if(shouldAddParentheses) {
-				builder.append("( ");
+			// if the current model has more than one child element and it's parent is not the main model, put parentheses around the whole
+			// expression
+			if(this.getChildModels().size() > 1 && (this.getParentModel() != null)) {
+				builder.append("(");
 			}
 			
-			
-			builder.append(models.get(0).getCQL(identation));
-
-			if(shouldAddParentheses) {
-				builder.append("\n");
-				builder.append(identation + ")");
+			if(this.getChildModels().size() > 1) {
+				builder.append("(");
 			}
 			
+			// this the first element
+			builder.append(models.get(0).getCQL(indentation));
 			
-			identation = identation + "  ";
+			if(this.getChildModels().size() > 1) {
+				builder.append(")");
+			}
+			
+
+			indentation = indentation + "  ";
 			for (int i = 1; i < models.size(); i += 2) {
 				builder.append("\n");
-				
-				builder.append(models.get(i).getCQL(identation));
-				
-				if(shouldAddParentheses) {
-					builder.append(" ( ");
+				// this appends the operator
+				builder.append(models.get(i).getCQL(indentation));
+					
+				if(this.getChildModels().size() > 1) {
+					builder.append(" (");
 				}
 				
-				
-				if((i + 1) <= models.size() - 1) {
-					builder.append(" " + models.get(i + 1).getCQL(identation));
+				// this appends the subsequent elements
+				if((i + 1) <= models.size() - 1) {		
+					builder.append(" " + models.get(i + 1).getCQL(indentation));
+					
+					if(this.getChildModels().size() > 1) {
+						builder.append(")");
+					}
 				}
-				
-				if(shouldAddParentheses) {
-					builder.append("\n");
-					builder.append(identation + ")");
-				}
+			}
+			
+			// if the current model has more than one child element and it's parent is not the main model, put parentheses around the whole
+			// expression
+			if(this.getChildModels().size() > 1 && (this.getParentModel() != null)) {
+				builder.append(")");
 			}
 		}
 
