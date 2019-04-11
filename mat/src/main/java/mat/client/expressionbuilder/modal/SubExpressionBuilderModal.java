@@ -7,6 +7,7 @@ import org.gwtbootstrap3.client.ui.constants.Pull;
 
 import com.google.gwt.user.client.ui.HorizontalPanel;
 
+import mat.client.expressionbuilder.model.AttributeModel;
 import mat.client.expressionbuilder.model.ComparisonModel;
 import mat.client.expressionbuilder.model.ComputationModel;
 import mat.client.expressionbuilder.model.DateTimeModel;
@@ -15,7 +16,6 @@ import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.expressionbuilder.model.FunctionModel;
 import mat.client.expressionbuilder.model.IExpressionBuilderModel;
 import mat.client.expressionbuilder.model.IntervalModel;
-import mat.client.expressionbuilder.model.AttributeModel;
 import mat.client.expressionbuilder.model.IsNullModel;
 import mat.client.expressionbuilder.model.IsTrueFalseModel;
 import mat.client.expressionbuilder.model.MembershipInModel;
@@ -26,6 +26,7 @@ import mat.client.expressionbuilder.model.QueryModel;
 import mat.client.expressionbuilder.model.TimeBoundaryModel;
 import mat.client.expressionbuilder.model.TimingModel;
 import mat.client.expressionbuilder.model.TimingPhraseModel;
+import mat.client.shared.MatContext;
 
 public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
 	private Button cancelButton;
@@ -82,12 +83,13 @@ public abstract class SubExpressionBuilderModal extends ExpressionBuilderModal {
 		applyButton.setType(ButtonType.PRIMARY);
 		applyButton.setPull(Pull.RIGHT);
 		applyButton.setSize(ButtonSize.LARGE);
+		applyButton.addClickHandler(event -> MatContext.get().restartTimeoutWarning());
 		applyButton.getElement().setAttribute("aria-label", "Clicking this button will save your changes, apply the CQL to your expression, and take you to the previous page.");
-		applyButton.addClickHandler(event -> resetTimer());
 		return applyButton;
 	}
 	
-	protected void onCancelButtonClick() {		
+	protected void onCancelButtonClick() {
+		MatContext.get().restartTimeoutWarning();
 		if(!this.getParentModel().getChildModels().isEmpty()) {
 			int size = this.getParentModel().getChildModels().size() - 1;
 			IExpressionBuilderModel lastModel = this.getParentModel().getChildModels().get(size);

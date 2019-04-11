@@ -3,9 +3,8 @@ package mat.client.measure;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.gwtbootstrap3.client.ui.CheckBox;
+import org.gwtbootstrap3.client.ui.FormLabel;
 
-import com.google.gwt.cell.client.Cell;
 import com.google.gwt.cell.client.FieldUpdater;
 import com.google.gwt.cell.client.SafeHtmlCell;
 import com.google.gwt.core.client.GWT;
@@ -21,7 +20,6 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.HasVerticalAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
-import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
@@ -29,6 +27,7 @@ import com.google.gwt.view.client.ListDataProvider;
 
 import mat.client.CustomPager;
 import mat.client.buttons.SaveContinueCancelButtonBar;
+import mat.client.measure.metadata.CustomCheckBox;
 import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.LabelBuilder;
 import mat.client.shared.MatCheckBoxCell;
@@ -57,7 +56,7 @@ public class ManageMeasureShareView implements ShareDisplay {
 
 	private MeasureNameLabel measureNameLabel = new MeasureNameLabel();
 
-	private CheckBox privateCheck = new CheckBox();
+	private CustomCheckBox privateCheck = new CustomCheckBox("Click to mark measure private", "Click to mark measure private", false);
 
 	private SearchWidgetBootStrap searchWidgetBootStrap = new SearchWidgetBootStrap("Search", "Search User Name");
 
@@ -71,9 +70,22 @@ public class ManageMeasureShareView implements ShareDisplay {
 		horizontalPanel.setVerticalAlignment(HasVerticalAlignment.ALIGN_MIDDLE);
 		horizontalPanel.getElement().setId("horizontalPanel_HorizontalPanel");
 		horizontalPanel.add(measureNameLabel);
-		InlineLabel privateCheckLabel = new InlineLabel("Private Measure");
-		privateCheck.setStyleName("gwt-CheckBox");
-		privateCheckLabel.setStyleName("qdmLabel");
+		FormLabel privateCheckLabel = new FormLabel();
+		privateCheckLabel.getElement().setAttribute("style","margin-top:10px;");
+		privateCheckLabel.setText("Private Measure");
+		privateCheckLabel.setTitle("Private Measure");
+		privateCheckLabel.setFor("privateMeasure_CheckBox");
+		privateCheck.getElement().setId("privateMeasure_CheckBox");
+		privateCheck.setTitle("Click to mark measure as private");
+		privateCheck.addValueChangeHandler(event -> {
+			if(privateCheck.isChecked()) {
+				privateCheck.setTitle("Click to mark measure public");
+			} else {
+				privateCheck.setTitle("Click to mark measure private");
+			}
+		});
+			
+		
 		horizontalPanel.add(privateCheck);
 		horizontalPanel.add(privateCheckLabel);
 		horizontalPanel.setStyleName("horizontalPanel");
@@ -96,7 +108,6 @@ public class ManageMeasureShareView implements ShareDisplay {
 		content.add(errorMessages);
 		content.add(warningMessages);
 		content.add(buttonBar);
-		
 	}
 
 	private CellTable<MeasureShareDTO> addColumnToTable(final CellTable<MeasureShareDTO> cellTable) {
@@ -127,7 +138,7 @@ public class ManageMeasureShareView implements ShareDisplay {
 		};
 		cellTable.addColumn(organizationColumn, SafeHtmlUtils.fromSafeConstant("<span title='Organization'>"
 				+ "Organization" + "</span>"));
-		Cell<Boolean> shareTransferCB = new MatCheckBoxCell();
+		MatCheckBoxCell shareTransferCB = new MatCheckBoxCell();
 		Column<MeasureShareDTO, Boolean> shareColumn = new Column<MeasureShareDTO, Boolean>(shareTransferCB) {
 			@Override
 			public Boolean getValue(MeasureShareDTO object) {
@@ -138,6 +149,13 @@ public class ManageMeasureShareView implements ShareDisplay {
 				} else if (ShareLevel.MODIFY_ID.equals(currentShare)) {
 					shareValue = true;
 				}
+				
+				if(shareValue) {
+					shareTransferCB.setTitle("Click to unshare measure with " + object.getFirstName() + " " + object.getLastName());
+				} else {
+					shareTransferCB.setTitle("Click to share measure with " + object.getFirstName() + " " + object.getLastName());
+				}
+				
 				return shareValue;
 			}
 		};
@@ -241,6 +259,12 @@ public class ManageMeasureShareView implements ShareDisplay {
 	@Override
 	public void setPrivate(boolean isPrivate) {
 		privateCheck.setValue(isPrivate);
+		
+		if(!isPrivate) {
+			privateCheck.setTitle("Click to mark measure as private");
+		} else {
+			privateCheck.setTitle("Click to mark measure as public");
+		}
 	}
 
 	public SearchWidgetBootStrap getSearchWidgetBootStrap() {

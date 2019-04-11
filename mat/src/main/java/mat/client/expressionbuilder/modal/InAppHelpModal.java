@@ -11,6 +11,7 @@ import com.google.gwt.user.client.ui.Widget;
 
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
 import mat.client.inapphelp.message.InAppHelpMessages;
+import mat.client.shared.MatContext;
 
 public class InAppHelpModal extends SubExpressionBuilderModal {
 
@@ -48,8 +49,9 @@ public class InAppHelpModal extends SubExpressionBuilderModal {
 	}
 	
 	private void hideModal() {
+		MatContext.get().restartTimeoutWarning();
 		this.hide();
-		this.getExpressionBuilderParent().showAndDisplay();
+		this.getExpressionBuilderParent().showWithoutSuccess();
 	}
 
 	public void showModal() {

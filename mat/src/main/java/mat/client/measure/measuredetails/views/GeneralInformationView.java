@@ -10,6 +10,7 @@ import org.gwtbootstrap3.client.ui.HelpBlock;
 import org.gwtbootstrap3.client.ui.TextBox;
 import org.gwtbootstrap3.client.ui.constants.ButtonType;
 
+import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.CheckBox;
@@ -23,6 +24,7 @@ import mat.DTO.CompositeMeasureScoreDTO;
 import mat.client.codelist.HasListBox;
 import mat.client.measure.measuredetails.observers.GeneralInformationObserver;
 import mat.client.measure.measuredetails.observers.MeasureDetailsComponentObserver;
+import mat.client.measure.metadata.CustomCheckBox;
 import mat.client.shared.ConfirmationDialogBox;
 import mat.client.shared.DateBoxWithCalendar;
 import mat.client.shared.ListBoxMVP;
@@ -60,7 +62,7 @@ public class GeneralInformationView implements MeasureDetailViewInterface {
 	private Button generateEMeasureIDButton = new Button("Generate Identifier");
 	private TextBox eMeasureIdentifierInput = new TextBox();
 	private TextBox nQFIDInput = new TextBox();
-	private CheckBox calendarYear = new CheckBox();	
+	private CustomCheckBox calendarYear = new CustomCheckBox("Click to select custom measurement period", "Click to select custom measurement period", false);	
 	protected DateBoxWithCalendar measurePeriodFromInput = new DateBoxWithCalendar();
 	protected DateBoxWithCalendar measurePeriodToInput = new DateBoxWithCalendar();
 	private FormLabel measureNameLabel;
@@ -147,15 +149,10 @@ public class GeneralInformationView implements MeasureDetailViewInterface {
 		calendarYearDatePanel.getElement().setId("calendarYear_HorizontalPanel");
 		calendarYearDatePanel.add(calendarYear);
 		FormLabel calendarLabel = new FormLabel();
-		calendarLabel.setText("Calendar Year");
-		calendarLabel.getElement().addClassName("calendarLabel");
-		FormLabel calendarYearLabel = new FormLabel();
-		calendarYearLabel.setText("(January 1,20XX through December 31,20XX)");
-		calendarYearLabel.getElement().addClassName("calendarYearLabel");
-		calendarYearDatePanel.add(calendarLabel);
+		calendarLabel.setText("Calendar Year (January 1,20XX through December 31,20XX)");
+		calendarLabel.getElement().getStyle().setPaddingTop(5.0, Unit.PX);
 		calendarYearDatePanel.getElement().setAttribute("verticalAlign", "middle");
-		
-		calendarYearDatePanel.add(calendarYearLabel);
+		calendarYearDatePanel.add(calendarLabel);
 		calendarYear.getElement().setId("calendarYear_CustomCheckBox");
 		
 		HorizontalPanel measurePeriodPanel = new HorizontalPanel();
@@ -189,6 +186,13 @@ public class GeneralInformationView implements MeasureDetailViewInterface {
 		queryGrid.setWidget(2, 0, measurePeriodPanel);
 		measurementPeriodPanel.add(queryGrid);
 		queryGrid.getElement().setId("queryGrid_Grid");
+		
+		if(generalInformationModel.isCalendarYear()) {
+			calendarYear.setTitle("Click to select custom measurement period");
+		} else {
+			calendarYear.setTitle("Click to select calendar year measurement period");
+		}
+		
 		calendarYear.setValue(generalInformationModel.isCalendarYear());
 		measurePeriodFromInput.setValue(generalInformationModel.getMeasureFromPeriod());
 		measurePeriodToInput.setValue(generalInformationModel.getMeasureToPeriod());
@@ -506,6 +510,7 @@ public class GeneralInformationView implements MeasureDetailViewInterface {
 		compositeScoringLabel.setFor("compositeScoringMethodInput");
 		compositeScoringPanel.add(compositeScoringLabel);
 		compositeScoringPanel.add(compositeScoringMethodInput);
+		compositeScoringMethodInput.setWidth("18em");
 		return compositeScoringPanel;
 	}
 
@@ -753,11 +758,11 @@ public class GeneralInformationView implements MeasureDetailViewInterface {
 		this.endorsedByListBox = endorsedByListBox;
 	}
 
-	public CheckBox getCalenderYear() {
+	public CustomCheckBox getCalenderYear() {
 		return calendarYear;
 	}
 
-	public void setCalenderYear(CheckBox calenderYear) {
+	public void setCalenderYear(CustomCheckBox calenderYear) {
 		this.calendarYear = calenderYear;
 	}
 	public DateBoxWithCalendar getMeasurePeriodFromInput() {

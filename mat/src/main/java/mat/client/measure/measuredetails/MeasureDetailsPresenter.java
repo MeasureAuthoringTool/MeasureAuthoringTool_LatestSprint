@@ -48,7 +48,6 @@ import mat.shared.measure.measuredetails.models.MeasureStewardDeveloperModel;
 import mat.shared.measure.measuredetails.models.NumeratorExclusionsModel;
 import mat.shared.measure.measuredetails.models.NumeratorModel;
 import mat.shared.measure.measuredetails.models.ReferencesModel;
-import mat.shared.measure.measuredetails.models.StratificationModel;
 import mat.shared.measure.measuredetails.translate.ManageMeasureDetailModelMapper;
 import mat.shared.measure.measuredetails.validate.GeneralInformationValidator;
 
@@ -445,6 +444,7 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	@Override
 	public void handleSaveButtonClick() {
 		if(!isReadOnly) {
+			measureDetailsView.getComponentDetailView().getObserver().handleValueChanged();
 			List<String> validationErrors = measureDetailsView.getMeasureDetailsComponentModel().validateModel(measureDetailsModel);
 			if(validationErrors == null || validationErrors.isEmpty()) {
 				ConfirmationDialogBox confirmationDialog = measureDetailsView.getSaveConfirmation();
@@ -467,7 +467,6 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	}
 
 	public void saveMeasureDetails() {
-		measureDetailsView.getComponentDetailView().getObserver().handleValueChanged();
 		measureDetailsView.getMeasureDetailsComponentModel().update(measureDetailsModel);
 		removeInvalidPopulationSelections(measureDetailsModel);
 
@@ -490,7 +489,6 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 				measureDetailsModel.setDenominatorModel(new DenominatorModel());
 				measureDetailsModel.setDenominatorExclusionsModel(new DenominatorExclusionsModel());
 				measureDetailsModel.setDenominatorExceptionsModel(new DenominatorExceptionsModel());
-				measureDetailsModel.setStratificationModel(new StratificationModel());
 				measureDetailsModel.setMeasureObservationsModel(new MeasureObservationsModel());
 				measureDetailsModel.setMeasurePopulationModel(new MeasurePopulationModel());
 				measureDetailsModel.setMeasurePopulationExclusionsModel(new MeasurePopulationExclusionsModel());

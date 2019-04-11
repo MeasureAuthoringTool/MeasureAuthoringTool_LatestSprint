@@ -69,17 +69,17 @@ public class InsertIntoAceEditorDialogBox {
 	
 	private static InAppHelp inAppHelp;
 	private static Modal dialogModal;
-
+	private static ClickHandler handler;
+	
 	public static void showListOfItemAvailableForInsertDialogBox(final AceEditor editor, AbstractCQLWorkspacePresenter cqlWorkspacePresenter) {
 		dialogModal = new Modal();
-		
-		inAppHelp = new InAppHelp(InAppHelpMessages.CQL_LIBRARY_INSERT_MODAL);
 		dialogModal.getElement().setAttribute("role", "dialog");
 		
 		ModalHeader dialogHeader = new ModalHeader();
 		heading.setHTML("<h4><b>Insert Item into CQL Editor</b></h4>");
 		heading.addStyleName("leftAligned");
-
+		
+		inAppHelp = new InAppHelp(InAppHelpMessages.CQL_LIBRARY_INSERT_MODAL);
 		dialogHeader.add(SharedCQLWorkspaceUtility.buildHeaderPanel(heading, inAppHelp));
 		
 		inAppHelp.getInAppHelpButton().addClickHandler(event -> showModal());
@@ -92,6 +92,12 @@ public class InsertIntoAceEditorDialogBox {
 		dialogModal.setId("InsertItemToAceEditor_Modal");
 		dialogModal.setSize(ModalSize.MEDIUM);
 		dialogModal.setRemoveOnHide(true);
+		
+		if(handler == null) {
+			handler = MatContext.get().addClickHandlerToResetTimeoutWarning();
+		}
+		
+		dialogModal.addDomHandler(handler, ClickEvent.getType());
 
 		ModalBody modalBody = new ModalBody();
 		curEditor = editor;
@@ -343,20 +349,22 @@ public class InsertIntoAceEditorDialogBox {
 
 
 	private static void showModal() {
-		removeAndHideModal();
+		removeModalFromParent();
 		inAppHelp.getHelpModal().show();
+		inAppHelp.getHelpModal().getElement().setTabIndex(-1);
+		inAppHelp.getMessageFocusPanel().getElement().focus();
 	}
 
 
-	private static void removeAndHideModal() {
+	private static void removeModalFromParent() {
 		dialogModal.removeFromParent();
-		dialogModal.hide();
 	}
 
 
 	private static void handleClose(ModalHideEvent event) {
-		removeAndHideModal();
-		showListOfItemAvailableForInsertDialogBox(curEditor, workspacePresenter);
+		inAppHelp.getHelpModal().removeFromParent();
+		removeModalFromParent();
+		dialogModal.show();
 	}
 
 
