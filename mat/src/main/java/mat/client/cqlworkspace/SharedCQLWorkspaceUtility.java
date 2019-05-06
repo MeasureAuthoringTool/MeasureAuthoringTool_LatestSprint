@@ -31,17 +31,31 @@ public class SharedCQLWorkspaceUtility {
 	}
 
 	public static boolean validateCQLArtifact(SaveUpdateCQLResult result, AceEditor aceEditor, MessagePanel messagePanel, String expressionType, String expressionName) {
-		result.getCqlErrors().forEach(error -> SharedCQLWorkspaceUtility.createCQLWorkspaceAnnotations(error, SharedCQLWorkspaceUtility.ERROR_PREFIX, AceAnnotationType.ERROR, aceEditor));
-		result.getCqlWarnings().forEach(error -> SharedCQLWorkspaceUtility.createCQLWorkspaceAnnotations(error, SharedCQLWorkspaceUtility.WARNING_PREFIX, AceAnnotationType.WARNING, aceEditor));		
+		displayAnnotations(result, aceEditor);		
 		SharedCQLWorkspaceUtility.displayMessageBanner(result, messagePanel, expressionType, expressionName); 
 		return !result.getCqlErrors().isEmpty();
 	}
+
+	public static void displayAnnotations(SaveUpdateCQLResult result, AceEditor aceEditor) {
+		aceEditor.clearAnnotations();
+		result.getCqlErrors().forEach(error -> SharedCQLWorkspaceUtility.createCQLWorkspaceAnnotations(error, SharedCQLWorkspaceUtility.ERROR_PREFIX, AceAnnotationType.ERROR, aceEditor));
+		result.getCqlWarnings().forEach(error -> SharedCQLWorkspaceUtility.createCQLWorkspaceAnnotations(error, SharedCQLWorkspaceUtility.WARNING_PREFIX, AceAnnotationType.WARNING, aceEditor));
+		aceEditor.setAnnotations();
+	}
 	
 	public static void displayMessagesForViewCQL(SaveUpdateCQLResult result, AceEditor aceEditor, MessagePanel messagePanel) {
+		aceEditor.clearAnnotations();
+		displayAnnotationForViewCQL(result, aceEditor);
+		SharedCQLWorkspaceUtility.displayMessageBannerForViewCQL(result, messagePanel);
+		aceEditor.setAnnotations();
+	}
+
+	public static void displayAnnotationForViewCQL(SaveUpdateCQLResult result, AceEditor aceEditor) {
+		aceEditor.clearAnnotations();
 		String formattedName = result.getCqlModel().getFormattedName();
 		SharedCQLWorkspaceUtility.createCQLWorkspaceAnnotations(result.getLibraryNameErrorsMap().get(formattedName), ERROR_PREFIX, AceAnnotationType.ERROR, aceEditor);
 		SharedCQLWorkspaceUtility.createCQLWorkspaceAnnotations(result.getLibraryNameWarningsMap().get(formattedName), WARNING_PREFIX, AceAnnotationType.WARNING, aceEditor);
-		SharedCQLWorkspaceUtility.displayMessageBannerForViewCQL(result, messagePanel);
+		aceEditor.setAnnotations();
 	}
 
 	private static void displayMessageBannerForViewCQL(SaveUpdateCQLResult result, MessagePanel messagePanel) {

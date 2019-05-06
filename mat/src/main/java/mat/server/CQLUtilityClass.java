@@ -1,15 +1,22 @@
 package mat.server;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.exolab.castor.mapping.Mapping;
+import org.exolab.castor.mapping.MappingException;
+import org.exolab.castor.xml.MarshalException;
+import org.exolab.castor.xml.Marshaller;
 import org.exolab.castor.xml.Unmarshaller;
+import org.exolab.castor.xml.ValidationException;
 import org.springframework.util.CollectionUtils;
 import org.xml.sax.InputSource;
 
@@ -230,7 +237,7 @@ public final class CQLUtilityClass {
 
 
 			cqlStr = cqlStr.append(func + "(");
-			if(function.getArgumentList()!=null) {
+			if(function.getArgumentList() != null && !function.getArgumentList().isEmpty()) {
 				for (CQLFunctionArgument argument : function.getArgumentList()) {
 					StringBuilder argumentType = new StringBuilder();
 					if (argument.getArgumentType().equalsIgnoreCase("QDM Datatype")) {
@@ -300,6 +307,22 @@ public final class CQLUtilityClass {
 			}
 		}
 		return cqlModel;
+	}
+	
+	public static String getXMLFromCQLModel(CQLModel cqlModel) throws IOException, MappingException, MarshalException, ValidationException {
+		String xml = "";
+
+		try (ByteArrayOutputStream stream = new ByteArrayOutputStream();) {
+			Mapping mapping = new Mapping();
+			mapping.loadMapping(new ResourceLoader().getResourceAsURL("CQLModelMapping.xml"));
+			Marshaller marshaller = new Marshaller(new OutputStreamWriter(stream));
+			marshaller.setMapping(mapping);
+			marshaller.marshal(cqlModel);
+			xml = stream.toString();
+		}
+
+
+		return xml;
 	}
 	
 	public static void getValueSet(CQLModel cqlModel, String cqlLookUpXMLString){
