@@ -6,13 +6,11 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
-import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -20,19 +18,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.exolab.castor.mapping.Mapping;
 import org.exolab.castor.mapping.MappingException;
 import org.exolab.castor.xml.MarshalException;
-import org.exolab.castor.xml.Marshaller;
-import org.exolab.castor.xml.Unmarshaller;
 import org.exolab.castor.xml.ValidationException;
 import org.json.JSONObject;
 import org.json.XML;
@@ -42,15 +37,12 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import mat.CQLFormatter;
 import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.codelist.service.SaveUpdateCodeListResult;
 import mat.client.measure.service.CQLService;
 import mat.client.shared.MatException;
-import mat.client.shared.ValueSetNameInputValidator;
 import mat.dao.clause.CQLLibraryAssociationDAO;
 import mat.dao.clause.CQLLibraryDAO;
 import mat.model.CQLValueSetTransferObject;
@@ -58,7 +50,6 @@ import mat.model.MatCodeTransferObject;
 import mat.model.MatValueSet;
 import mat.model.cql.CQLCode;
 import mat.model.cql.CQLCodeSystem;
-import mat.model.cql.CQLCodeSystemWrapper;
 import mat.model.cql.CQLCodeWrapper;
 import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLDefinitionsWrapper;
@@ -75,8 +66,11 @@ import mat.model.cql.CQLParametersWrapper;
 import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
 import mat.model.cql.validator.CQLIncludeLibraryValidator;
+import mat.server.cqlparser.CQLLinter;
+import mat.server.cqlparser.CQLLinterConfig;
 import mat.server.cqlparser.ReverseEngineerListener;
 import mat.server.service.MeasurePackageService;
+import mat.server.service.impl.XMLMarshalUtil;
 import mat.server.util.CQLLibraryWrapperMappingUtil;
 import mat.server.util.CQLUtil;
 import mat.server.util.CQLUtil.CQLArtifactHolder;
@@ -103,12 +97,9 @@ public class CQLServiceImpl implements CQLService {
 
 	private static final int COMMENTS_MAX_LENGTH = 2500;
 
-	@Autowired
-	private CQLLibraryDAO cqlLibraryDAO;
-	@Autowired
-	private CQLLibraryAssociationDAO cqlLibraryAssociationDAO;
-	@Autowired
-	private MeasurePackageService measurePackageService;
+	@Autowired private CQLLibraryDAO cqlLibraryDAO;
+	@Autowired private CQLLibraryAssociationDAO cqlLibraryAssociationDAO;
+	@Autowired private MeasurePackageService measurePackageService;
 
 	/** The cql supplemental definition XML string. */
 	private String cqlSupplementalDefinitionXMLString =
@@ -172,10 +163,12 @@ public class CQLServiceImpl implements CQLService {
 		return result;
 	}
 
-	public SaveUpdateCQLResult saveCQLFile(String xml, String cql) {
+	public SaveUpdateCQLResult saveCQLFile(String xml, String cql, CQLLinterConfig config) {
 		XmlProcessor processor = new XmlProcessor(xml);
+		CQLModel previousModel = CQLUtilityClass.getCQLModelFromXML(xml);
+		config.setPreviousCQLModel(previousModel);
 		try {
-			ReverseEngineerListener listener = new ReverseEngineerListener(cql);
+			ReverseEngineerListener listener = new ReverseEngineerListener(cql, previousModel);
 			CQLModel reversedEngineeredCQLModel = listener.getCQLModel();			
 			String reverseEngineeredCQLLookup = marshallCQLModel(reversedEngineeredCQLModel);
 			processor.replaceNode(reverseEngineeredCQLLookup, "cqlLookUp", "measure");
@@ -193,7 +186,7 @@ public class CQLServiceImpl implements CQLService {
 			if (parsedResult.getCqlErrors().isEmpty()) {
 				CQLFormatter formatter = new CQLFormatter();
 				String formattedCQL = formatter.format(CQLUtilityClass.getCqlString(reversedEngineeredCQLModel, ""));
-				CQLModel formattedReversedEngineeredCQLModel = reverseEngineerCQLModel(formattedCQL);
+				CQLModel formattedReversedEngineeredCQLModel = reverseEngineerCQLModel(formattedCQL, previousModel);
 				String formattedCQLLookup = marshallCQLModel(formattedReversedEngineeredCQLModel);
 				parsedResult.setXml(formattedCQLLookup);
 				parsedResult.setCqlString(formattedCQL);
@@ -201,8 +194,20 @@ public class CQLServiceImpl implements CQLService {
 				parsedResult.setXml(reverseEngineeredCQLLookup);
 				parsedResult.setCqlString(cql);
 			}
-			parsedResult.setSuccess(true);				
-			return parsedResult;
+			
+			CQLLinter linter = CQLUtil.lint(parsedResult.getCqlString(), config);			
+			SaveUpdateCQLResult result = getCQLDataForLoad(parsedResult.getXml());
+			result.setCqlErrors(parsedResult.getCqlErrors());
+			result.setCqlWarnings(parsedResult.getCqlWarnings());
+			result.setLibraryNameErrorsMap(parsedResult.getLibraryNameErrorsMap());
+			result.setLibraryNameWarningsMap(parsedResult.getLibraryNameWarningsMap());
+			result.setCqlString(parsedResult.getCqlString());
+			result.setXml(parsedResult.getXml());
+			result.getLinterErrors().addAll(linter.getErrors());
+			result.getLinterErrorMessages().addAll(linter.getErrorMessages());
+			result.setSuccess(true);		
+			
+			return result;
 
 		} catch (IOException | MappingException | MarshalException | ValidationException e) {
 			e.printStackTrace();
@@ -216,8 +221,8 @@ public class CQLServiceImpl implements CQLService {
 		return CQLUtilityClass.getXMLFromCQLModel(cqlModel);
 	}
 
-	private CQLModel reverseEngineerCQLModel(String cql) throws IOException {
-		ReverseEngineerListener listener = new ReverseEngineerListener(cql);
+	private CQLModel reverseEngineerCQLModel(String cql, CQLModel previousModel) throws IOException {
+		ReverseEngineerListener listener = new ReverseEngineerListener(cql, previousModel);
 		CQLModel reversedEngineeredCQLModel = listener.getCQLModel();	
 		return reversedEngineeredCQLModel;
 	}
@@ -398,9 +403,6 @@ public class CQLServiceImpl implements CQLService {
 
 	}
 
-	/*
-	 * {@inheritDoc}
-	 */
 	@Override
 	public SaveUpdateCQLResult saveAndModifyParameters(String xml, CQLParameter parameterWithOriginalContent,
 			CQLParameter parameterWithEdits, List<CQLParameter> parameterList, boolean isFormatable) {
@@ -524,9 +526,6 @@ public class CQLServiceImpl implements CQLService {
 
 	}
 
-	/*
-	 * {@inheritDoc}
-	 */
 	@Override
 	public SaveUpdateCQLResult saveAndModifyDefinitions(String xml, CQLDefinition definitionWithOriginalContent,
 			CQLDefinition definitionWithEdits, List<CQLDefinition> definitionList, boolean isFormatable) {
@@ -687,90 +686,64 @@ public class CQLServiceImpl implements CQLService {
 		return builder.toString();
 	}
 
-	/*
-	 * {@inheritDoc}
-	 */
 	@Override
-	public SaveUpdateCQLResult saveAndModifyIncludeLibrayInCQLLookUp(String xml, CQLIncludeLibrary toBeModifiedObj,
-			CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> includedLibraryList) throws InvalidLibraryException {
+	public SaveUpdateCQLResult saveAndModifyIncludeLibrayInCQLLookUp(String xml, CQLIncludeLibrary includedLibraryWithOriginalContent,
+			CQLIncludeLibrary includedLibraryWithEdits, List<CQLIncludeLibrary> includedLibraryList) throws InvalidLibraryException {
 
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		CQLIncludeLibraryWrapper wrapper = new CQLIncludeLibraryWrapper();
-		if (xml != null && !xml.isEmpty()) {
-			XmlProcessor processor = new XmlProcessor(xml);
-			checkAndAppendIncludeLibraryParentNode(processor);
-			if (toBeModifiedObj != null) { // this is a part of Modify
-				result = modifyIncludedLibrary(toBeModifiedObj, currentObj, includedLibraryList, wrapper, processor);
+		result.setXml(xml); // if any failure, it will use this xml, which is the original
+
+		if (StringUtils.isEmpty(xml)) {
+			return result;
+		}
+
+
+		CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(xml);	
+		if(includedLibraryWithOriginalContent != null) {
+			includedLibraryWithEdits.setId(includedLibraryWithOriginalContent.getId());
+		} else {
+			includedLibraryWithEdits.setId(UUID.randomUUID().toString());
+		}
+
+		// check if there is a library that has a name, identifier, and version the one being saved
+		// if there is, update and return.
+		List<CQLIncludeLibrary> previousMatchingLibraries = cqlModel.getCqlIncludeLibrarys().stream()
+				.filter(l -> 
+				(l.getAliasName().equals(includedLibraryWithEdits.getAliasName())
+						&& l.getCqlLibraryName().equals(includedLibraryWithEdits.getCqlLibraryName())
+						&& l.getVersion().equals(includedLibraryWithEdits.getVersion())
+						&& l.getCqlLibraryId() == null)
+						).collect(Collectors.toList());
+
+		if(!previousMatchingLibraries.isEmpty()) {
+			previousMatchingLibraries.forEach(l -> {
+				l.setCqlLibraryId(includedLibraryWithEdits.getCqlLibraryId());
+				l.setMeasureId(includedLibraryWithEdits.getMeasureId());
+				l.setQdmVersion(includedLibraryWithEdits.getQdmVersion());
+				l.setSetId(includedLibraryWithEdits.getSetId());
+			});
+		} else {
+			Optional<CQLIncludeLibrary> includedLibraryToBeEditedFromModel = cqlModel.getCqlIncludeLibrarys().stream().filter(l -> includedLibraryWithEdits.getId().equals(l.getId())).findFirst();
+			if(includedLibraryToBeEditedFromModel.isPresent()) {
+				includedLibraryToBeEditedFromModel.get().setAliasName(includedLibraryWithEdits.getAliasName());
 			} else {
-				result = createNewIncludedLibrary(xml, currentObj, includedLibraryList, wrapper);
+				CQLIncludeLibraryValidator libraryValidator = new CQLIncludeLibraryValidator();
+				libraryValidator.validate(includedLibraryWithEdits, cqlModel);
+
+				if (!libraryValidator.isValid()) {
+					throw new InvalidLibraryException(libraryValidator.getMessages());
+				}	
+
+				cqlModel.getCqlIncludeLibrarys().add(includedLibraryWithEdits);
 			}
-		}
+		}		
 
-		if (result.isSuccess()) {
-			CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(result.getXml());
-			result.setCqlModel(cqlModel);
-			CQLUtil.getIncludedCQLExpressions(cqlModel, cqlLibraryDAO);
-		}
+		result.setSuccess(true);
+		CQLUtil.getIncludedCQLExpressions(cqlModel, cqlLibraryDAO);
+		result.setXml(CQLUtilityClass.getXMLFromCQLModel(cqlModel));
+		result.setCqlModel(cqlModel);
+		result.setIncludeLibrary(includedLibraryWithEdits);
 
-		return result;
-	}
-
-	private SaveUpdateCQLResult createNewIncludedLibrary(String xml, CQLIncludeLibrary currentObj,
-			List<CQLIncludeLibrary> includedLibraryList, CQLIncludeLibraryWrapper wrapper)
-			throws InvalidLibraryException {
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		XmlProcessor processor = new XmlProcessor(xml);
-		CQLModel modelBeforeSave = CQLUtilityClass.getCQLModelFromXML(xml);
-		currentObj.setId(UUID.randomUUID().toString());
-
-		CQLIncludeLibraryValidator libraryValidator = new CQLIncludeLibraryValidator();
-		libraryValidator.validate(currentObj, modelBeforeSave);
-
-		if (!libraryValidator.isValid()) {
-			throw new InvalidLibraryException(libraryValidator.getMessages());
-		}
-
-		try {
-			String XPATH_EXPRESSION_INCLUDES = "//cqlLookUp/includeLibrarys";
-			String cqlString = createIncludeLibraryXML(currentObj);
-
-			processor.appendNode(cqlString, "includeLibrary", XPATH_EXPRESSION_INCLUDES);
-			processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
-			String finalUpdatedXml = processor.transform(processor.getOriginalDoc());
-			result.setXml(finalUpdatedXml);
-			result.setSuccess(true);
-			result.setIncludeLibrary(currentObj);
-			includedLibraryList.add(currentObj);
-			wrapper.setCqlIncludeLibrary(includedLibraryList);
-		} catch (Exception e) {
-			logger.error("Failed to save CQL Included Library: " + e.getMessage());
-		}
-
-		return result;
-	}
-
-	private SaveUpdateCQLResult modifyIncludedLibrary(CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj,
-			List<CQLIncludeLibrary> incLibraryList, CQLIncludeLibraryWrapper wrapper, XmlProcessor processor) {
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		currentObj.setId(toBeModifiedObj.getId());
-		currentObj.setAliasName(toBeModifiedObj.getAliasName());
-		String XPATH_EXPRESSION_INCLUDES = "//includeLibrary[@cqlLibRefId='" + toBeModifiedObj.getCqlLibraryId() + "']";
-		try {
-			Node nodeIncludes = processor.findNode(processor.getOriginalDoc(), XPATH_EXPRESSION_INCLUDES);
-			String cqlLibraryXML = createIncludeLibraryXML(currentObj);
-			String XPATH_EXPRESSION_INCLUDELIBRARYS = "//cqlLookUp/includeLibrarys";
-			processor.removeFromParent(nodeIncludes);
-			processor.appendNode(cqlLibraryXML, "includeLibrary", XPATH_EXPRESSION_INCLUDELIBRARYS);
-			processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
-			String finalUpdatedXml = processor.transform(processor.getOriginalDoc());
-			result.setXml(finalUpdatedXml);
-			result.setSuccess(true);
-			result.setIncludeLibrary(currentObj);
-			wrapper.setCqlIncludeLibrary(modifyIncludesList(toBeModifiedObj, currentObj, incLibraryList));
-		} catch (XPathExpressionException | SAXException | IOException | MarshalException | ValidationException
-				| MappingException | NullPointerException e) {
-			logger.error("Failed to replace CQL included Library: " + e.getMessage());
-		}
 
 		return result;
 	}
@@ -797,30 +770,6 @@ public class CQLServiceImpl implements CQLService {
 	@Override
 	public List<CQLLibraryAssociation> getAssociations(String associatedWithId) {
 		return cqlLibraryAssociationDAO.getAssociations(associatedWithId);
-	}
-
-	/**
-	 * Check and append include library parent node.
-	 *
-	 * @param processor the processor
-	 */
-	private void checkAndAppendIncludeLibraryParentNode(XmlProcessor processor) {
-
-		try {
-			Node cqlNode = processor.findNode(processor.getOriginalDoc(), "//cqlLookUp");
-			if (cqlNode != null) {
-
-				Node cqlIncludeLibNode = processor.findNode(processor.getOriginalDoc(), "//cqlLookUp/includeLibrarys");
-				if (cqlIncludeLibNode == null) {
-					Element includesChildElem = processor.getOriginalDoc().createElement("includeLibrarys");
-					cqlNode.appendChild(includesChildElem);
-				}
-
-			}
-		} catch (XPathExpressionException e) {
-			e.printStackTrace();
-		}
-
 	}
 
 	/**
@@ -1187,6 +1136,7 @@ public class CQLServiceImpl implements CQLService {
 		}
 
 		parsedCQL.setCqlModel(cqlModel);
+		parsedCQL.setCqlString(CQLUtilityClass.getCqlString(cqlModel, ""));
 
 		return parsedCQL;
 	}
@@ -1346,135 +1296,66 @@ public class CQLServiceImpl implements CQLService {
 		logger.info("In CQLServiceImpl.convertXmltoCQLDefinitionModel()");
 		CQLDefinitionsWrapper details = null;
 		String xml = null;
-		if ((xmlModel != null) && StringUtils.isNotBlank(xmlModel.getXml())) {
+		if (xmlModel != null && StringUtils.isNotBlank(xmlModel.getXml())) {
 			xml = new XmlProcessor(xmlModel.getXml()).getXmlByTagName("cqlLookUp");
 		}
+
 		try {
-			if (xml == null) {// TODO: This Check should be replaced when the
-				// DataConversion is complete.
-				logger.info("xml is null or xml doesn't contain cqlLookUp tag");
-
-			} else {
-				Mapping mapping = new Mapping();
-				mapping.loadMapping(new ResourceLoader().getResourceAsURL("CQLDefinitionModelMapping.xml"));
-				Unmarshaller unmar = new Unmarshaller(mapping);
-				unmar.setClass(CQLDefinitionsWrapper.class);
-				unmar.setWhitespacePreserve(true);
-				details = (CQLDefinitionsWrapper) unmar.unmarshal(new InputSource(new StringReader(xml)));
-
+			if (xml != null) {
+				XMLMarshalUtil xmlMarshalUtil = new XMLMarshalUtil();
+				details = (CQLDefinitionsWrapper) xmlMarshalUtil.convertXMLToObject("CQLDefinitionModelMapping.xml", xml, CQLDefinitionsWrapper.class);
 			}
 
-		} catch (Exception e) {
-			if (e instanceof IOException) {
-				logger.info("Failed to load CQLDefinitionModelMapping.xml" + e);
-			} else if (e instanceof MappingException) {
-				logger.info("Mapping Failed" + e);
-			} else if (e instanceof MarshalException) {
-				logger.info("Unmarshalling Failed" + e);
-			} else {
-				logger.info("Other Exception" + e);
-			}
+		} catch (MarshalException | ValidationException | MappingException | IOException e) {
+			logger.error("Failed to load MeasureDetailsModelMapping.xml" + e.getMessage());
+			e.printStackTrace();
 		}
 		return details;
 	}
 
-	/**
-	 * Creates the Parameters xml.
-	 *
-	 * @param parameter the CQLParameter
-	 * @return the string
-	 */
 	@Override
 	public String createParametersXML(CQLParameter parameter) {
-
 		logger.info("In CQLServiceImpl.createParametersXML");
-		Mapping mapping = new Mapping();
 		CQLParametersWrapper wrapper = new CQLParametersWrapper();
 		List<CQLParameter> paramList = new ArrayList<>();
-
 		paramList.add(parameter);
 		wrapper.setCqlParameterList(paramList);
 
-		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		try {
-			mapping.loadMapping(new ResourceLoader().getResourceAsURL("CQLParameterModelMapping.xml"));
-			Marshaller marshaller = new Marshaller(new OutputStreamWriter(stream));
-			marshaller.setMapping(mapping);
-			marshaller.marshal(wrapper);
-			logger.info("Marshalling of CQLParameter is successful..");
-		} catch (Exception e) {
-			if (e instanceof IOException) {
-				logger.info("Failed to load CQLParameterModelMapping.xml" + e);
-			} else if (e instanceof MappingException) {
-				logger.info("Mapping Failed" + e);
-			} else if (e instanceof MarshalException) {
-				logger.info("Unmarshalling Failed" + e);
-			} else if (e instanceof ValidationException) {
-				logger.info("Validation Exception" + e);
-			} else {
-				logger.info("Other Exception" + e.getMessage());
-				e.printStackTrace();
-			}
-		}
-		logger.info("Exiting CQLServiceImpl.createParametersXML()");
-		return stream.toString();
-
+		return createNewXML("CQLParameterModelMapping.xml", wrapper);
 	}
-
-	/**
-	 * Creates the definitions xml.
-	 *
-	 * @param definition the definition
-	 * @return the string
-	 */
+	
 	@Override
 	public String createDefinitionsXML(CQLDefinition definition) {
-
 		logger.info("In CQLServiceImpl.createDefinitionsXML");
-		Mapping mapping = new Mapping();
 		CQLDefinitionsWrapper wrapper = new CQLDefinitionsWrapper();
 		List<CQLDefinition> definitionList = new ArrayList<>();
 		definitionList.add(definition);
 		wrapper.setCqlDefinitions(definitionList);
 
-		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		try {
-			mapping.loadMapping(new ResourceLoader().getResourceAsURL("CQLDefinitionModelMapping.xml"));
-			Marshaller marshaller = new Marshaller(new OutputStreamWriter(stream));
-			marshaller.setMapping(mapping);
-			marshaller.marshal(wrapper);
-			logger.info("Marshalling of CQLDefinition is successful..");
-		} catch (Exception e) {
-			if (e instanceof IOException) {
-				logger.info("Failed to load CQLDefinitionModelMapping.xml" + e);
-			} else if (e instanceof MappingException) {
-				logger.info("Mapping Failed" + e);
-			} else if (e instanceof MarshalException) {
-				logger.info("Unmarshalling Failed" + e);
-			} else if (e instanceof ValidationException) {
-				logger.info("Validation Exception" + e);
-			} else {
-				e.printStackTrace();
-			}
-		}
-		logger.info("Exiting CQLServiceImpl.createDefinitionsXML()");
-		return stream.toString();
+		return createNewXML("CQLDefinitionModelMapping.xml", wrapper);
 	}
 
-	/*
-	 * {@inheritDoc}
-	 */
+	private String createNewXML(String mapping, Object object) {
+		String stream = null;
+		try {
+			final XMLMarshalUtil xmlMarshalUtil = new XMLMarshalUtil();
+			stream = xmlMarshalUtil.convertObjectToXML(mapping, object);
+			
+		} catch (MarshalException | ValidationException | IOException | MappingException e) {
+			logger.info("Exception in createExpressionXML: " + e);
+			e.printStackTrace();
+		}
+
+		logger.info("Exiting ManageCodeListServiceImpl.createXml()");
+		return stream;
+	}
+
 	@Override
 	public SaveUpdateCQLResult getCQLFileData(String xmlString) {
 
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		result = getCQLData(xmlString);
+		SaveUpdateCQLResult result = getCQLData(xmlString);
 		String cqlString = getCqlString(result.getCqlModel());
-		if (cqlString != null) {
-			result.setSuccess(true);
-		} else {
-			result.setSuccess(false);
-		}
+		result.setSuccess(cqlString != null);
 		result.setCqlString(cqlString);
 		return result;
 	}
@@ -1491,27 +1372,9 @@ public class CQLServiceImpl implements CQLService {
 		return CQLUtilityClass.getCqlString(cqlModel, "");
 	}
 
-	/*
-	 * {@inheritDoc}
-	 */
 	@Override
 	public CQLKeywords getCQLKeyWords() {
 		return CQLKeywordsUtil.getCQLKeywords();
-	}
-
-	private List<CQLIncludeLibrary> modifyIncludesList(CQLIncludeLibrary toBeModified, CQLIncludeLibrary currentObj,
-			List<CQLIncludeLibrary> incLibraryList) {
-		Iterator<CQLIncludeLibrary> iterator = incLibraryList.iterator();
-		while (iterator.hasNext()) {
-			CQLIncludeLibrary cqlParam = iterator.next();
-			if (cqlParam.getId().equals(toBeModified.getId())) {
-
-				iterator.remove();
-				break;
-			}
-		}
-		incLibraryList.add(currentObj);
-		return incLibraryList;
 	}
 
 	/**
@@ -1522,12 +1385,7 @@ public class CQLServiceImpl implements CQLService {
 	 */
 	private List<CQLDefinition> sortDefinitionsList(List<CQLDefinition> defineList) {
 
-		Collections.sort(defineList, new Comparator<CQLDefinition>() {
-			@Override
-			public int compare(final CQLDefinition o1, final CQLDefinition o2) {
-				return o1.getName().compareToIgnoreCase(o2.getName());
-			}
-		});
+		Collections.sort(defineList, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
 
 		return defineList;
 	}
@@ -1540,12 +1398,7 @@ public class CQLServiceImpl implements CQLService {
 	 */
 	private List<CQLParameter> sortParametersList(List<CQLParameter> paramList) {
 
-		Collections.sort(paramList, new Comparator<CQLParameter>() {
-			@Override
-			public int compare(final CQLParameter o1, final CQLParameter o2) {
-				return o1.getName().compareToIgnoreCase(o2.getName());
-			}
-		});
+		Collections.sort(paramList, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
 
 		return paramList;
 	}
@@ -1558,32 +1411,9 @@ public class CQLServiceImpl implements CQLService {
 	 */
 	private List<CQLFunctions> sortFunctionssList(List<CQLFunctions> funcList) {
 
-		Collections.sort(funcList, new Comparator<CQLFunctions>() {
-			@Override
-			public int compare(final CQLFunctions o1, final CQLFunctions o2) {
-				return o1.getName().compareToIgnoreCase(o2.getName());
-			}
-		});
+		Collections.sort(funcList, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
 
 		return funcList;
-	}
-
-	/**
-	 * Sort include lib list.
-	 *
-	 * @param IncLibList the inc lib list
-	 * @return the list
-	 */
-	private List<CQLIncludeLibrary> sortIncludeLibList(List<CQLIncludeLibrary> IncLibList) {
-
-		Collections.sort(IncLibList, new Comparator<CQLIncludeLibrary>() {
-			@Override
-			public int compare(final CQLIncludeLibrary o1, final CQLIncludeLibrary o2) {
-				return o1.getAliasName().compareToIgnoreCase(o2.getAliasName());
-			}
-		});
-
-		return IncLibList;
 	}
 
 	@Override
@@ -1853,128 +1683,102 @@ public class CQLServiceImpl implements CQLService {
 	public SaveUpdateCQLResult parseCQLStringForError(String cqlFileString) {
 		return null;
 	}
-
-	/**
-	 * Save QD sto measure.
-	 *
-	 * @param valueSetTransferObject the value set transfer object
-	 * @return the save update code list result
-	 */
+	
 	@Override
-	public final SaveUpdateCQLResult saveCQLValueset(CQLValueSetTransferObject valueSetTransferObject) {
+	public SaveUpdateCQLResult saveCQLValueset(String xml, CQLValueSetTransferObject valueSetTransferObject) {
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		CQLQualityDataModelWrapper wrapper = new CQLQualityDataModelWrapper();
-		ArrayList<CQLQualityDataSetDTO> qdsList = new ArrayList<>();
-		wrapper.setQualityDataDTO(qdsList);
-		valueSetTransferObject.scrubForMarkUp();
-
+		CQLModel model = CQLUtilityClass.getCQLModelFromXML(xml);
+		
 		if (!valueSetTransferObject.validateModel()) {
 			result.setSuccess(false);
 			result.setFailureReason(SaveUpdateCodeListResult.SERVER_SIDE_VALIDATION);
 			return result;
+		}	
+		
+		CQLQualityDataSetDTO qds = convertValueSetTransferObjectToQualityDataSetDTO(valueSetTransferObject);		
+		List<CQLQualityDataSetDTO> previousMatchingValuesets = model.getValueSetList().stream().filter(v -> 
+				(v.getName().equals(qds.getName()))
+						&& v.getOid().equals(qds.getOid())
+						&& StringUtils.isEmpty(v.getOriginalCodeListName())
+				).collect(Collectors.toList());
+						
+		if(!previousMatchingValuesets.isEmpty()) {
+			previousMatchingValuesets.forEach(v -> {
+				v.setSuffix(qds.getSuffix());
+				v.setOriginalCodeListName(qds.getOriginalCodeListName());
+				v.setProgram(qds.getProgram());
+				v.setRelease(qds.getRelease());
+				v.setDataType(qds.getDataType());
+				v.setValueSetType(qds.getTaxonomy());
+				v.setSuppDataElement(qds.isSuppDataElement());
+				v.setType(qds.getType());
+			});
+		} else {
+			Optional<CQLQualityDataSetDTO> existingValueset = model.getValueSetList().stream().filter(v -> v.getUuid().equals(valueSetTransferObject.getCqlQualityDataSetDTO().getUuid())).findFirst();
+			// if this is an edit, make sure the UUID and ID are the same as the valueset being edited
+			// and remove it from the list
+			if(existingValueset.isPresent()) {
+				qds.setUuid(existingValueset.get().getUuid());
+				qds.setId(existingValueset.get().getId());
+				model.getValueSetList().remove(existingValueset.get());
+			} else {
+				qds.setUuid(UUID.randomUUID().toString());
+				qds.setId(UUID.randomUUID().toString().replaceAll("-", ""));
+				
+				if(isDuplicate(valueSetTransferObject, true)) {
+					result.setSuccess(false);
+					result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
+					result.setCqlQualityDataSetDTO(qds);
+					return result;
+				}
+			}
+			
+			model.getValueSetList().add(qds);
 		}
+				
+		result.setSuccess(true);
+		result.setCqlAppliedQDMList(sortQualityDataSetList(model.getValueSetList()));
+		result.setXml(CQLUtilityClass.getXMLFromCQLModel(model));
+		return result;
+	}
+	
 
+	private CQLQualityDataSetDTO convertValueSetTransferObjectToQualityDataSetDTO(CQLValueSetTransferObject valueSetTransferObject) {
 		CQLQualityDataSetDTO qds = new CQLQualityDataSetDTO();
 		MatValueSet matValueSet = valueSetTransferObject.getMatValueSet();
-		qds.setOid(matValueSet.getID());
-		qds.setId(UUID.randomUUID().toString().replaceAll("-", ""));
 		qds.setName(valueSetTransferObject.getCqlQualityDataSetDTO().getName());
 		qds.setSuffix(valueSetTransferObject.getCqlQualityDataSetDTO().getSuffix());
 		qds.setOriginalCodeListName(valueSetTransferObject.getCqlQualityDataSetDTO().getOriginalCodeListName());
-		qds.setRelease(valueSetTransferObject.getCqlQualityDataSetDTO().getRelease());
-		qds.setProgram(valueSetTransferObject.getCqlQualityDataSetDTO().getProgram());
-		qds.setVersion("");
-		qds.setValueSetType(matValueSet.getType());
-		if (matValueSet.isGrouping()) {
-			qds.setTaxonomy(ConstantMessages.GROUPING_CODE_SYSTEM);
-		} else {
-			qds.setTaxonomy(matValueSet.getCodeSystemName());
-		}
-		qds.setUuid(UUID.randomUUID().toString());
-
-		ArrayList<CQLQualityDataSetDTO> qualityDataSetDTOs = (ArrayList<CQLQualityDataSetDTO>) valueSetTransferObject
-				.getAppliedQDMList();
-
-		// Treat as regular QDM
-		if (!isDuplicate(valueSetTransferObject, true)) {
-			wrapper.getQualityDataDTO().add(qds);
-			String xmlString = generateXmlForAppliedValueset(wrapper);
-			result.setSuccess(true);
-			qualityDataSetDTOs.add(qds);
-			result.setCqlAppliedQDMList(sortQualityDataSetList(qualityDataSetDTOs));
-			result.setXml(xmlString);
-		} else {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
-		}
-
-		return result;
-	}
-
-	/**
-	 * Sort quality data set list.
-	 *
-	 * @param finalList the final list
-	 * @return the list
-	 */
-	private List<CQLQualityDataSetDTO> sortQualityDataSetList(final List<CQLQualityDataSetDTO> finalList) {
-
-		Collections.sort(finalList, new Comparator<CQLQualityDataSetDTO>() {
-			@Override
-			public int compare(final CQLQualityDataSetDTO o1, final CQLQualityDataSetDTO o2) {
-				return o1.getName().compareToIgnoreCase(o2.getName());
-			}
-		});
-
-		return finalList;
-
-	}
-
-	/*
-	 * {@inheritDoc}
-	 */
-	@Override
-	public SaveUpdateCQLResult saveCQLUserDefinedValueset(CQLValueSetTransferObject matValueSetTransferObject) {
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		CQLQualityDataModelWrapper wrapper = new CQLQualityDataModelWrapper();
-		matValueSetTransferObject.scrubForMarkUp();
-
-		if (!matValueSetTransferObject.validateModel()) {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCQLResult.SERVER_SIDE_VALIDATION);
-			return result;
-		}
-
-		ValueSetNameInputValidator validator = new ValueSetNameInputValidator();
-		String errorMessage = validator.validate(matValueSetTransferObject);
-		if (errorMessage.isEmpty()) {
-			ArrayList<CQLQualityDataSetDTO> qdsList = new ArrayList<>();
-
-			wrapper.setQualityDataDTO(qdsList);
-			CQLQualityDataSetDTO qds = new CQLQualityDataSetDTO();
+		qds.setDataType("");
+		// if the oid is empty, that means it is a user defined valueset and we need to save some special data
+		// or if the oid is the user defined oid
+		if(StringUtils.isEmpty(valueSetTransferObject.getCqlQualityDataSetDTO().getOid()) ||
+				valueSetTransferObject.getCqlQualityDataSetDTO().getOid().equals(ConstantMessages.USER_DEFINED_QDM_OID)) {
 			qds.setOid(ConstantMessages.USER_DEFINED_QDM_OID);
-			qds.setId(UUID.randomUUID().toString());
-			qds.setName(matValueSetTransferObject.getCqlQualityDataSetDTO().getName());
-			qds.setSuffix(matValueSetTransferObject.getCqlQualityDataSetDTO().getSuffix());
-			qds.setOriginalCodeListName(matValueSetTransferObject.getCqlQualityDataSetDTO().getOriginalCodeListName());
 			qds.setTaxonomy(ConstantMessages.USER_DEFINED_QDM_NAME);
 			qds.setValueSetType(StringUtils.EMPTY);
-			qds.setUuid(UUID.randomUUID().toString());
 			qds.setVersion("1.0");
 			qds.setRelease("");
 			qds.setProgram("");
-			wrapper.getQualityDataDTO().add(qds);
-
-			String qdmXMLString = generateXmlForAppliedValueset(wrapper);
-			result.setSuccess(true);
-			result.setCqlAppliedQDMList(sortQualityDataSetList(wrapper.getQualityDataDTO()));
-			result.setXml(qdmXMLString);
-
 		} else {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCodeListResult.SERVER_SIDE_VALIDATION);
+			qds.setOid(matValueSet.getID());
+			qds.setRelease(valueSetTransferObject.getCqlQualityDataSetDTO().getRelease());
+			qds.setProgram(valueSetTransferObject.getCqlQualityDataSetDTO().getProgram());
+			qds.setVersion("");
+			qds.setValueSetType(matValueSet.getType());
+			if (matValueSet.isGrouping()) {
+				qds.setTaxonomy(ConstantMessages.GROUPING_CODE_SYSTEM);
+			} else {
+				qds.setTaxonomy(matValueSet.getCodeSystemName());
+			}
 		}
-		return result;
+		
+		return qds;
+	}
+
+	private List<CQLQualityDataSetDTO> sortQualityDataSetList(final List<CQLQualityDataSetDTO> finalList) {
+		Collections.sort(finalList, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
+		return finalList;
 	}
 
 	@Override
@@ -1982,33 +1786,51 @@ public class CQLServiceImpl implements CQLService {
 		logger.info("::: CQLServiceImpl saveCQLCodes Start :::");
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		codeTransferObject.scrubForMarkUp();
+		CQLModel model = CQLUtilityClass.getCQLModelFromXML(xml);		
+		
 		if (codeTransferObject.isValidModel()) {
 
-			XmlProcessor xmlProcessor = new XmlProcessor(xml);
 			CQLCode appliedCode = codeTransferObject.getCqlCode();
-			appliedCode.setId(UUID.randomUUID().toString().replaceAll("-", ""));
 
-			try {
-				Node existingCodeList = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(),
-						"//cqlLookUp/codes/code[@displayName=\"" + appliedCode.getDisplayName() + "\" ]");
-				if (existingCodeList != null) {
-					logger.info("::: Duplicate Code :::");
-					result.setSuccess(false);
-					result.setFailureReason(result.getDuplicateCode());
+			List<CQLCode> previousMatchingCodes = model.getCodeList().stream().filter(c -> (
+					c.getDisplayName().equals(appliedCode.getDisplayName()) 
+					&& c.getCodeOID().equals(appliedCode.getCodeOID())
+					&& StringUtils.isEmpty(c.getCodeIdentifier()))
+					).collect(Collectors.toList());
+
+			if(!previousMatchingCodes.isEmpty()) {
+				previousMatchingCodes.forEach(c -> {
+					c.setSuffix(appliedCode.getSuffix());
+					c.setCodeIdentifier(appliedCode.getCodeIdentifier());
+					c.setCodeSystemOID(appliedCode.getCodeSystemOID());
+					c.setCodeSystemName(appliedCode.getCodeSystemName());
+					c.setCodeSystemVersion(appliedCode.getCodeSystemVersion());
+					c.setIsCodeSystemVersionIncluded(appliedCode.isIsCodeSystemVersionIncluded());
+				});
+			} else {
+				Optional<CQLCode> existingCode = model.getCodeList().stream().filter(c -> c.getId().equals(appliedCode.getId())).findFirst();
+				if(existingCode.isPresent()) {
+					appliedCode.setId(existingCode.get().getId());
+					model.getCodeList().remove(existingCode.get());
+					model.getCodeList().add(appliedCode);
 				} else {
-					CQLCodeWrapper wrapper = new CQLCodeWrapper();
-					ArrayList<CQLCode> codeList = new ArrayList<>();
-					wrapper.setCqlCodeList(codeList);
-					wrapper.getCqlCodeList().add(codeTransferObject.getCqlCode());
-					String codeXMLString = generateXmlForAppliedCode(wrapper);
-					result.setSuccess(true);
-					result.setXml(codeXMLString);
+					if (model.getCodeList().stream().filter(c -> c.getDisplayName().equals(appliedCode.getDisplayName())).count() > 0) {
+						result.setSuccess(false);
+						result.setFailureReason(result.getDuplicateCode());
+						return result;
+					} 
+
+					appliedCode.setId(UUID.randomUUID().toString().replaceAll("-", ""));
+					model.getCodeList().add(appliedCode);
 				}
-			} catch (XPathExpressionException e) {
-				e.printStackTrace();
-			}
+			}	
+
+			result.setCqlCodeList(model.getCodeList());
+			result.setSuccess(true);
+			result.setCqlModel(model);
+			result.setXml(CQLUtilityClass.getXMLFromCQLModel(model));
 		}
-		logger.info("::: CQLServiceImpl saveCQLCodes End :::");
+
 		return result;
 	}
 
@@ -2016,29 +1838,33 @@ public class CQLServiceImpl implements CQLService {
 	public SaveUpdateCQLResult saveCQLCodeSystem(String xml, CQLCodeSystem codeSystem) {
 		logger.info("::: CQLServiceImpl saveCQLCodeSystem Start :::");
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		XmlProcessor xmlProcessor = new XmlProcessor(xml);
+		CQLModel model = CQLUtilityClass.getCQLModelFromXML(xml);
 
-		codeSystem.setId(UUID.randomUUID().toString().replaceAll("-", ""));
-		try {
-			Node existingCodeSystemList = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(),
-					"//cqlLookUp/codeSystems/codeSystem[@codeSystemName='" + codeSystem.getCodeSystemName()
-							+ "' and @codeSystemVersion='" + codeSystem.getCodeSystemVersion() + "' ]");
-
-			if (existingCodeSystemList != null) {
+		Optional<CQLCodeSystem> existingCodesystem = model.getCodeSystemList().stream().filter(cs -> cs.getId().equals(codeSystem.getId())).findFirst();
+		
+		if(existingCodesystem.isPresent()) {
+			// edit codesystem
+			codeSystem.setId(existingCodesystem.get().getId());
+			model.getCodeSystemList().remove(existingCodesystem.get());
+			model.getCodeSystemList().add(codeSystem);
+		} else {
+			// new code system 
+			
+			if(model.getCodeSystemList().stream().filter(cs -> (cs.getCodeSystemName().equals(codeSystem.getCodeSystemName()) 
+					&& cs.getCodeSystemVersion().equals(codeSystem.getCodeSystemVersion()))).count() > 0 ) {
 				logger.info("::: CodeSystem Already added :::");
 				result.setSuccess(false);
-			} else {
-				CQLCodeSystemWrapper wrapper = new CQLCodeSystemWrapper();
-				ArrayList<CQLCodeSystem> codeSystemList = new ArrayList<>();
-				wrapper.setCqlCodeSystemList(codeSystemList);
-				wrapper.getCqlCodeSystemList().add(codeSystem);
-				String codeSystemXMLString = generateXmlForAppliedCodeSystem(wrapper);
-				result.setSuccess(true);
-				result.setXml(codeSystemXMLString);
-			}
-		} catch (XPathExpressionException e) {
-			e.printStackTrace();
+				return result;
+			} 
+				
+			codeSystem.setId(UUID.randomUUID().toString().replaceAll("-", ""));
+			model.getCodeSystemList().add(codeSystem);	
 		}
+		
+		result.setCqlModel(model);
+		result.setSuccess(true);
+		result.setXml(CQLUtilityClass.getXMLFromCQLModel(model));
+
 		logger.info("::: CQLServiceImpl saveCQLCodeSystem End :::");
 		return result;
 	}
@@ -2068,80 +1894,6 @@ public class CQLServiceImpl implements CQLService {
 		}
 		logger.info("checkForDuplicates Method Call End.Check resulted in :" + (isQDSExist));
 		return isQDSExist;
-	}
-
-	/*
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final SaveUpdateCQLResult modifyCQLValueSets(CQLValueSetTransferObject matValueSetTransferObject) {
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		matValueSetTransferObject.scrubForMarkUp();
-		if (!matValueSetTransferObject.validateModel()) {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCodeListResult.SERVER_SIDE_VALIDATION);
-			return result;
-		}
-		if (matValueSetTransferObject.getMatValueSet() != null) {
-			result = modifyVSACValueSetInCQLLookUp(matValueSetTransferObject);
-		} else if (matValueSetTransferObject.getCodeListSearchDTO() != null) {
-			result = modifyUserDefineValuesetInCQLLookUp(matValueSetTransferObject);
-		}
-		return result;
-	}
-
-	/**
-	 * Update VSAC value set in element look up.
-	 *
-	 * @param matValueSetTransferObject the mat value set transfer object
-	 * @return the save update code list result
-	 */
-	private SaveUpdateCQLResult modifyVSACValueSetInCQLLookUp(CQLValueSetTransferObject matValueSetTransferObject) {
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		CQLQualityDataSetDTO oldQdm = new CQLQualityDataSetDTO();
-		populatedOldQDM(oldQdm, matValueSetTransferObject.getCqlQualityDataSetDTO());
-		// Treat as regular QDM
-		List<CQLQualityDataSetDTO> origAppliedQDMList = matValueSetTransferObject.getAppliedQDMList();
-		List<CQLQualityDataSetDTO> tempAppliedQDMList = new ArrayList<>();
-		tempAppliedQDMList.addAll(matValueSetTransferObject.getAppliedQDMList());
-		// Removing the QDS that is being modified from the
-		// tempAppliedQDMList.
-		Iterator<CQLQualityDataSetDTO> iterator = tempAppliedQDMList.iterator();
-		while (iterator.hasNext()) {
-			CQLQualityDataSetDTO qualityDataSetDTO = iterator.next();
-			if (qualityDataSetDTO.getUuid().equals(matValueSetTransferObject.getCqlQualityDataSetDTO().getUuid())) {
-				iterator.remove();
-				break;
-			}
-		}
-		matValueSetTransferObject.setAppliedQDMList(tempAppliedQDMList);
-
-		if (!isDuplicate(matValueSetTransferObject, true)) {
-			matValueSetTransferObject.setAppliedQDMList(origAppliedQDMList);
-			CQLQualityDataSetDTO qds = matValueSetTransferObject.getCqlQualityDataSetDTO();
-			MatValueSet matValueSet = matValueSetTransferObject.getMatValueSet();
-			qds.setOid(matValueSet.getID());
-			qds.setId(UUID.randomUUID().toString().replaceAll("-", ""));
-			qds.setName(matValueSet.getDisplayName());
-			qds.setValueSetType(matValueSet.getType());
-			if (matValueSet.isGrouping()) {
-				qds.setTaxonomy(ConstantMessages.GROUPING_CODE_SYSTEM);
-			} else {
-				qds.setTaxonomy(matValueSet.getCodeSystemName());
-			}
-
-			CQLQualityDataModelWrapper wrapper = modifyAppliedElementList(qds,
-					(ArrayList<CQLQualityDataSetDTO>) matValueSetTransferObject.getAppliedQDMList());
-
-			result.setSuccess(true);
-			result.setCqlAppliedQDMList(sortQualityDataSetList(wrapper.getQualityDataDTO()));
-			result.setCqlQualityDataSetDTO(qds);
-		} else {
-			matValueSetTransferObject.setAppliedQDMList(origAppliedQDMList);
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
-		}
-		return result;
 	}
 
 	@Override
@@ -2226,212 +1978,6 @@ public class CQLServiceImpl implements CQLService {
 
 	}
 
-	/**
-	 * Update user define QDM in element look up.
-	 *
-	 * @param matValueSetTransferObject the mat value set transfer object
-	 * @return the save update code list result
-	 */
-	private SaveUpdateCQLResult modifyUserDefineValuesetInCQLLookUp(
-			CQLValueSetTransferObject matValueSetTransferObject) {
-		CQLQualityDataModelWrapper wrapper = new CQLQualityDataModelWrapper();
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		ValueSetNameInputValidator validator = new ValueSetNameInputValidator();
-		List<String> messageList = new ArrayList<>();
-		validator.validate(matValueSetTransferObject);
-		if (messageList.isEmpty()) {
-			if (!isDuplicate(matValueSetTransferObject, false)) {
-				ArrayList<CQLQualityDataSetDTO> qdsList = new ArrayList<>();
-				wrapper.setQualityDataDTO(qdsList);
-				CQLQualityDataSetDTO qds = matValueSetTransferObject.getCqlQualityDataSetDTO();
-				qds.setOid(ConstantMessages.USER_DEFINED_QDM_OID);
-				qds.setId(UUID.randomUUID().toString());
-				qds.setName(matValueSetTransferObject.getCodeListSearchDTO().getName());
-				qds.setTaxonomy(ConstantMessages.USER_DEFINED_QDM_NAME);
-				qds.setValueSetType(StringUtils.EMPTY);
-				qds.setVersion("1.0");
-				wrapper = modifyAppliedElementList(qds,
-						(ArrayList<CQLQualityDataSetDTO>) matValueSetTransferObject.getAppliedQDMList());
-				String qdmXMLString = generateXmlForAppliedValueset(wrapper);
-				result.setSuccess(true);
-				result.setCqlAppliedQDMList(sortQualityDataSetList(wrapper.getQualityDataDTO()));
-				result.setXml(qdmXMLString);
-				result.setCqlQualityDataSetDTO(qds);
-			} else {
-				result.setSuccess(false);
-				result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
-			}
-		} else {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCodeListResult.SERVER_SIDE_VALIDATION);
-		}
-		return result;
-	}
-
-	/**
-	 * Adds the new applied QDM in measure XML.
-	 *
-	 * @param qualityDataSetDTOWrapper the quality data set DTO wrapper
-	 * @return the string
-	 */
-	private String generateXmlForAppliedValueset(final CQLQualityDataModelWrapper qualityDataSetDTOWrapper) {
-		logger.info("addNewAppliedQDMInMeasureXML Method Call Start.");
-		ByteArrayOutputStream stream = createNewXML(qualityDataSetDTOWrapper);
-		int startIndex = stream.toString().indexOf("<valueset ", 0);
-		int lastIndex = stream.toString().indexOf("/>", startIndex);
-		String xmlString = stream.toString().substring(startIndex, lastIndex + 2);
-		logger.debug("addNewAppliedQDMInMeasureXML Method Call xmlString :: " + xmlString);
-		return xmlString;
-	}
-
-	private String generateXmlForAppliedCode(CQLCodeWrapper wrapper) {
-		logger.info("generateXmlForAppliedCode Method Call Start.");
-		ByteArrayOutputStream stream = createNewCodeXML(wrapper);
-		int startIndex = stream.toString().indexOf("<code ", 0);
-		int lastIndex = stream.toString().indexOf("/>", startIndex);
-		String xmlString = stream.toString().substring(startIndex, lastIndex + 2);
-		logger.debug("generateXmlForAppliedCode Method Call xmlString :: " + xmlString);
-		return xmlString;
-	}
-
-	private String generateXmlForAppliedCodeSystem(CQLCodeSystemWrapper wrapper) {
-		logger.info("generateXmlForAppliedCodeSystem Method Call Start.");
-		ByteArrayOutputStream stream = createNewCodeSystemXML(wrapper);
-		int startIndex = stream.toString().indexOf("<codeSystem ", 0);
-		int lastIndex = stream.toString().indexOf("/>", startIndex);
-		String xmlString = stream.toString().substring(startIndex, lastIndex + 2);
-		logger.debug("generateXmlForAppliedCodeSystem Method Call xmlString :: " + xmlString);
-		return xmlString;
-	}
-
-	/**
-	 * Creates the new XML.
-	 *
-	 * @param qualityDataSetDTO the quality data set DTO
-	 * @return the byte array output stream
-	 */
-	private ByteArrayOutputStream createNewXML(final CQLQualityDataModelWrapper qualityDataSetDTO) {
-		logger.info("In CQLServiceImpl.createXml()");
-		Mapping mapping = new Mapping();
-		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		try {
-			mapping.loadMapping(new ResourceLoader().getResourceAsURL("ValueSetsMapping.xml"));
-			Marshaller marshaller = new Marshaller(new OutputStreamWriter(stream));
-			marshaller.setMapping(mapping);
-			marshaller.marshal(qualityDataSetDTO);
-			logger.debug("Marshalling of QualityDataSetDTO is successful.." + stream.toString());
-		} catch (Exception e) {
-			if (e instanceof IOException) {
-				logger.info("Failed to load ValueSetsMapping.xml" + e);
-			} else if (e instanceof MappingException) {
-				logger.info("Mapping Failed" + e);
-			} else if (e instanceof MarshalException) {
-				logger.info("Unmarshalling Failed" + e);
-			} else if (e instanceof ValidationException) {
-				logger.info("Validation Exception" + e);
-			} else {
-				logger.info("Other Exception" + e);
-			}
-		}
-		logger.info("Exiting CQLServiceImpl.createXml()");
-		return stream;
-	}
-
-	private ByteArrayOutputStream createNewCodeXML(final CQLCodeWrapper wrapper) {
-		logger.info("In CQLServiceImpl.createXml()");
-		Mapping mapping = new Mapping();
-		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		try {
-			mapping.loadMapping(new ResourceLoader().getResourceAsURL("CodeMapping.xml"));
-			Marshaller marshaller = new Marshaller(new OutputStreamWriter(stream));
-			marshaller.setMapping(mapping);
-			marshaller.marshal(wrapper);
-			logger.debug("Marshalling of CQLCode is successful.." + stream.toString());
-		} catch (Exception e) {
-			if (e instanceof IOException) {
-				logger.info("Failed to load CQLMapping.xml" + e);
-			} else if (e instanceof MappingException) {
-				logger.info("Mapping Failed" + e);
-			} else if (e instanceof MarshalException) {
-				logger.info("Unmarshalling Failed" + e);
-			} else if (e instanceof ValidationException) {
-				logger.info("Validation Exception" + e);
-			} else {
-				logger.info("Other Exception" + e);
-			}
-		}
-		logger.info("Exiting CQLServiceImpl.createNewCodeXml()");
-		return stream;
-	}
-
-	private ByteArrayOutputStream createNewCodeSystemXML(final CQLCodeSystemWrapper wrapper) {
-		logger.info("In CQLServiceImpl.createNewCodeSystemXML()");
-		Mapping mapping = new Mapping();
-		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		try {
-			mapping.loadMapping(new ResourceLoader().getResourceAsURL("CodeSystemsMapping.xml"));
-			Marshaller marshaller = new Marshaller(new OutputStreamWriter(stream));
-			marshaller.setMapping(mapping);
-			marshaller.marshal(wrapper);
-			logger.debug("Marshalling of CQLCode is successful.." + stream.toString());
-		} catch (Exception e) {
-			if (e instanceof IOException) {
-				logger.info("Failed to load CQLMapping.xml" + e);
-			} else if (e instanceof MappingException) {
-				logger.info("Mapping Failed" + e);
-			} else if (e instanceof MarshalException) {
-				logger.info("Unmarshalling Failed" + e);
-			} else if (e instanceof ValidationException) {
-				logger.info("Validation Exception" + e);
-			} else {
-				logger.info("Other Exception" + e);
-			}
-		}
-		logger.info("Exiting CQLServiceImpl.createNewCodeSystemXML()");
-		return stream;
-	}
-
-	/**
-	 * Modify applied element list.
-	 *
-	 * @param dataSetDTO the data set DTO
-	 * @param appliedQDM the applied QDM
-	 * @return the CQL quality data model wrapper
-	 */
-	private CQLQualityDataModelWrapper modifyAppliedElementList(final CQLQualityDataSetDTO dataSetDTO,
-			final ArrayList<CQLQualityDataSetDTO> appliedQDM) {
-		CQLQualityDataModelWrapper wrapper = new CQLQualityDataModelWrapper();
-		Iterator<CQLQualityDataSetDTO> iterator = appliedQDM.iterator();
-		while (iterator.hasNext()) {
-			CQLQualityDataSetDTO qualityDataSetDTO = iterator.next();
-			if (qualityDataSetDTO.getUuid().equals(dataSetDTO.getUuid())) {
-				iterator.remove();
-				break;
-			}
-		}
-		appliedQDM.add(dataSetDTO);
-		wrapper.setQualityDataDTO(appliedQDM);
-		return wrapper;
-	}
-
-	/**
-	 * Populated old QDM.
-	 *
-	 * @param oldQdm            the old qdm
-	 * @param qualityDataSetDTO the quality data set DTO
-	 */
-	private void populatedOldQDM(CQLQualityDataSetDTO oldQdm, CQLQualityDataSetDTO qualityDataSetDTO) {
-		oldQdm.setName(qualityDataSetDTO.getName());
-		oldQdm.setSuffix(qualityDataSetDTO.getSuffix());
-		oldQdm.setOriginalCodeListName(qualityDataSetDTO.getOriginalCodeListName());
-		oldQdm.setOid(qualityDataSetDTO.getOid());
-		oldQdm.setUuid(qualityDataSetDTO.getUuid());
-		oldQdm.setVersion(qualityDataSetDTO.getVersion());
-	}
-
-	/*
-	 * {@inheritDoc}
-	 */
 	@Override
 	public CQLQualityDataModelWrapper getCQLValusets(String measureId,
 			CQLQualityDataModelWrapper cqlQualityDataModelWrapper) {
@@ -2678,7 +2224,6 @@ public class CQLServiceImpl implements CQLService {
 
 	@Override
 	public CQLModel parseCQL(String cqlBuilder) {
-		CQLModel cqlModel = new CQLModel();
-		return cqlModel;
+		return new CQLModel();
 	}
 }

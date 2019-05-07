@@ -103,12 +103,6 @@ public interface CQLLibraryServiceAsync {
 	void deleteValueSet(String toBeDeletedValueSetId, String currentMeasureId,
 			AsyncCallback<SaveUpdateCQLResult> asyncCallback);
 
-	void saveCQLUserDefinedValueset(CQLValueSetTransferObject matValueSetTransferObject,
-			AsyncCallback<SaveUpdateCQLResult> asyncCallback);
-
-	void modifyCQLValueSets(CQLValueSetTransferObject matValueSetTransferObject,
-			AsyncCallback<SaveUpdateCQLResult> asyncCallback);
-
 	void updateCQLVSACValueSets(String currentCQLLibraryId, String expansionId,
 			AsyncCallback<VsacApiResult> asyncCallback);
 
@@ -127,7 +121,4 @@ public interface CQLLibraryServiceAsync {
 	void saveValueSetList(List<CQLValueSetTransferObject> transferObjectList,
 			List<CQLQualityDataSetDTO> appliedValueSetList, String cqlLibraryId,
 			AsyncCallback<CQLQualityDataModelWrapper> callback);
-
-	void modifyCQLCodeInCQLLibrary(CQLCode codeToReplace, CQLCode replacementCode, String cqlLibraryId,
-			AsyncCallback<SaveUpdateCQLResult> asyncCallback);
 }

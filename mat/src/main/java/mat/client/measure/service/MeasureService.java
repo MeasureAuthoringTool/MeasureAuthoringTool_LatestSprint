@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 
@@ -66,16 +65,6 @@ public interface MeasureService extends RemoteService {
 	 *            the new node name
 	 */
 	void appendAndSaveNode(MeasureXmlModel measureXmlModel, String nodeName);
-	
-	/**
-	 * Clone measure xml.
-	 *
-	 * @param creatingDraft            the creating draft	 * @param oldMeasureId
-	 *            the old measure id
-	 * @param oldMeasureId the old measure id
-	 * @param clonedMeasureId            the cloned measure id
-	 */
-	void cloneMeasureXml(boolean creatingDraft, String oldMeasureId, String clonedMeasureId);
 	
 	/**
 	 * Creates the and save element look up.
@@ -643,10 +632,6 @@ public interface MeasureService extends RemoteService {
 
 	SaveUpdateCQLResult saveCQLValuesettoMeasure(CQLValueSetTransferObject valueSetTransferObject);
 
-	SaveUpdateCQLResult saveCQLUserDefinedValuesettoMeasure(CQLValueSetTransferObject valueSetTransferObject);
-
-	SaveUpdateCQLResult updateCQLValuesetsToMeasure(CQLValueSetTransferObject matValueSetTransferObject);
-
 	SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String measureId, CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList) throws InvalidLibraryException;
 
 	SaveUpdateCQLResult getMeasureCQLFileData(String measureId);
@@ -661,8 +646,6 @@ public interface MeasureService extends RemoteService {
 	
 	SaveUpdateCQLResult saveCQLCodeListToMeasure(List<CQLCode> codeList, String measureId);
 	
-	SaveUpdateCQLResult modifyCQLCodeInMeasure(CQLCode modifyCQLCode, CQLCode refCode, String measureId);
-
 	CQLCodeWrapper getCQLCodes(String measureID);
 
 	SaveUpdateCQLResult deleteCode(String toBeDeletedId, String measureID);

@@ -27,6 +27,7 @@ import mat.client.Mat;
 import mat.client.clause.QDSAttributesService;
 import mat.client.clause.QDSAttributesServiceAsync;
 import mat.client.cqlworkspace.codes.CQLCodesView;
+import mat.client.cqlworkspace.generalinformation.CQLGeneralInformationUtility;
 import mat.client.cqlworkspace.valuesets.CQLAppliedValueSetUtility;
 import mat.client.expressionbuilder.modal.ExpressionBuilderHomeModal;
 import mat.client.expressionbuilder.model.ExpressionBuilderModel;
@@ -174,7 +175,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected abstract void addAndModifyParameters();
 	protected abstract void addAndModifyFunction();
 	protected abstract void addAndModifyDefintions();
-	protected abstract void getAppliedValueSetList();
+	protected abstract void getAppliedValuesetAndCodeList();
 	
 	protected HelpBlock buildHelpBlock() {
 		helpBlock = new HelpBlock();
@@ -487,10 +488,16 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected abstract void saveCQLFile();
 	
 	protected void onSaveCQLFileSuccess(SaveUpdateCQLResult result) {
-		if(!result.getCqlErrors().isEmpty()) {
+		List<String> errorMessages = new ArrayList<>();
+		if(!result.getLinterErrorMessages().isEmpty() || !result.getCqlErrors().isEmpty()) {
+			errorMessages.add("The CQL file was saved with errors.");
+			
+			if(!result.getLinterErrorMessages().isEmpty()) {
+				result.getLinterErrorMessages().forEach(e -> errorMessages.add(e));	
+			} 
+			
 			SharedCQLWorkspaceUtility.displayAnnotationForViewCQL(result, cqlWorkspaceView.getViewCQLView().getCqlAceEditor());
-			messagePanel.getErrorMessageAlert().createAlert("CQL File " + result.getCqlModel().getLibraryName() + " saved with errors.");
-
+			messagePanel.getErrorMessageAlert().createAlert(errorMessages);
 		} else {
 			messagePanel.getSuccessMessageAlert().createAlert("Changes to the CQL File have been successfully saved.");
 		}
@@ -1194,7 +1201,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected void successfullyDeletedValueSet(final SaveUpdateCQLResult result) {
 		if (result != null && result.getCqlErrors().isEmpty()) {
 			modifyValueSetDTO = null;
-			getAppliedValueSetList();
+			getAppliedValuesetAndCodeList();
 			messagePanel.getSuccessMessageAlert().createAlert(buildRemovedSuccessfullyMessage(VALUESET, result.getCqlQualityDataSetDTO().getName()));
 			messagePanel.getSuccessMessageAlert().setVisible(true);
 		}
@@ -1657,6 +1664,19 @@ public abstract class AbstractCQLWorkspacePresenter {
 		} else if(validator.doesCommentContainInvalidCharacters(comment)){
 			messagePanel.getErrorMessageAlert().createAlert(MatContext.get().getMessageDelegate().getINVALID_COMMENT_CHARACTERS());
 			cqlWorkspaceView.getCQLDefinitionsView().getDefineCommentGroup().setValidationState(ValidationState.ERROR);
+		}
+	}
+	
+	protected void generalCommentBlurEvent() {
+		cqlWorkspaceView.resetMessageDisplay();
+		cqlWorkspaceView.getCqlGeneralInformationView().getCommentsGroup().setValidationState(ValidationState.NONE);
+		String comment = cqlWorkspaceView.getCqlGeneralInformationView().getComments().getText();
+		if (validator.isCommentMoreThan2500Characters(comment)) {
+			cqlWorkspaceView.getCqlGeneralInformationView().getCommentsGroup().setValidationState(ValidationState.ERROR);
+			messagePanel.getErrorMessageAlert().createAlert(CQLGeneralInformationUtility.COMMENT_LENGTH_ERROR);
+		} else if(validator.doesCommentContainInvalidCharacters(comment)){
+			cqlWorkspaceView.getCqlGeneralInformationView().getCommentsGroup().setValidationState(ValidationState.ERROR);
+			messagePanel.getErrorMessageAlert().createAlert(MatContext.get().getMessageDelegate().getINVALID_COMMENT_CHARACTERS());
 		}
 	}
 	

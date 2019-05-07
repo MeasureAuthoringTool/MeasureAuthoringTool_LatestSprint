@@ -2,7 +2,6 @@ package mat.server;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -15,10 +14,8 @@ import org.exolab.castor.mapping.Mapping;
 import org.exolab.castor.mapping.MappingException;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.Marshaller;
-import org.exolab.castor.xml.Unmarshaller;
 import org.exolab.castor.xml.ValidationException;
 import org.springframework.util.CollectionUtils;
-import org.xml.sax.InputSource;
 
 import mat.client.shared.CQLWorkSpaceConstants;
 import mat.model.cql.CQLCode;
@@ -30,6 +27,7 @@ import mat.model.cql.CQLModel;
 import mat.model.cql.CQLParameter;
 import mat.model.cql.CQLQualityDataModelWrapper;
 import mat.model.cql.CQLQualityDataSetDTO;
+import mat.server.service.impl.XMLMarshalUtil;
 import mat.server.util.ResourceLoader;
 import mat.server.util.XmlProcessor;
 
@@ -40,6 +38,8 @@ public final class CQLUtilityClass {
 	private static final String PATIENT = "Patient";
 
 	private static final String POPULATION = "Population";
+	
+	public static final String VERSION = " version ";
 
 	private static StringBuilder toBeInsertedAtEnd;
 
@@ -110,7 +110,7 @@ public final class CQLUtilityClass {
 		if (StringUtils.isNotBlank(cqlModel.getLibraryName())) {
 
 			sb.append("library ").append(cqlModel.getLibraryName());
-			sb.append(" version ").append("'" + cqlModel.getVersionUsed()).append("'");
+			sb.append(VERSION).append("'" + cqlModel.getVersionUsed()).append("'");
 			sb.append(System.lineSeparator()).append(System.lineSeparator());
 			
 			if(StringUtils.isNotBlank(cqlModel.getLibraryComment())) {
@@ -118,7 +118,8 @@ public final class CQLUtilityClass {
 				sb.append(System.lineSeparator()).append(System.lineSeparator());
 			}
 			
-			sb.append("using QDM version ");			
+			sb.append("using ").append(cqlModel.getUsingName());
+			sb.append(VERSION);			
 			sb.append("'").append(cqlModel.getQdmVersion()).append("'");
 			sb.append("\n\n");			
 		}
@@ -279,13 +280,8 @@ public final class CQLUtilityClass {
 
 		if (StringUtils.isNotBlank(cqlLookUpXMLString)) {
 			try {
-				Mapping mapping = new Mapping();
-				mapping.loadMapping(new ResourceLoader().getResourceAsURL("CQLModelMapping.xml"));
-				Unmarshaller unmarshaller = new Unmarshaller(mapping);
-				unmarshaller.setClass(CQLModel.class);
-				unmarshaller.setWhitespacePreserve(true);
-				unmarshaller.setValidation(false);
-				cqlModel = (CQLModel) unmarshaller.unmarshal(new InputSource(new StringReader(cqlLookUpXMLString)));
+				XMLMarshalUtil xmlMarshalUtil = new XMLMarshalUtil();
+				cqlModel = (CQLModel) xmlMarshalUtil.convertXMLToObject("CQLModelMapping.xml", cqlLookUpXMLString, CQLModel.class);
 			} catch (Exception e) {
 				logger.info("Error while getting codesystems :" + e.getMessage());
 			}
@@ -309,7 +305,7 @@ public final class CQLUtilityClass {
 		return cqlModel;
 	}
 	
-	public static String getXMLFromCQLModel(CQLModel cqlModel) throws IOException, MappingException, MarshalException, ValidationException {
+	public static String getXMLFromCQLModel(CQLModel cqlModel) {
 		String xml = "";
 
 		try (ByteArrayOutputStream stream = new ByteArrayOutputStream();) {
@@ -319,6 +315,8 @@ public final class CQLUtilityClass {
 			marshaller.setMapping(mapping);
 			marshaller.marshal(cqlModel);
 			xml = stream.toString();
+		} catch (MarshalException | ValidationException | IOException | MappingException e) {
+			e.printStackTrace();
 		}
 
 
@@ -328,14 +326,8 @@ public final class CQLUtilityClass {
 	public static void getValueSet(CQLModel cqlModel, String cqlLookUpXMLString){
 		CQLQualityDataModelWrapper valuesetWrapper;
 		try {
-
-			Mapping mapping = new Mapping();
-			mapping.loadMapping(new ResourceLoader().getResourceAsURL("ValueSetsMapping.xml"));
-			Unmarshaller unmarshaller = new Unmarshaller(mapping);
-			unmarshaller.setClass(CQLQualityDataModelWrapper.class);
-			unmarshaller.setWhitespacePreserve(true);
-			unmarshaller.setValidation(false);
-			valuesetWrapper = (CQLQualityDataModelWrapper) unmarshaller.unmarshal(new InputSource(new StringReader(cqlLookUpXMLString)));
+			XMLMarshalUtil xmlMarshalUtil = new XMLMarshalUtil();
+			valuesetWrapper = (CQLQualityDataModelWrapper) xmlMarshalUtil.convertXMLToObject("ValueSetsMapping.xml", cqlLookUpXMLString, CQLQualityDataModelWrapper.class);
 			if(!valuesetWrapper.getQualityDataDTO().isEmpty()){
 				cqlModel.setValueSetList(filterValuesets(valuesetWrapper.getQualityDataDTO()));
 			}
@@ -414,7 +406,7 @@ public final class CQLUtilityClass {
 		if(!CollectionUtils.isEmpty(includeLibList)){
 			for(CQLIncludeLibrary includeLib : includeLibList){
 				sb.append("include ").append(includeLib.getCqlLibraryName());
-				sb.append(" version ").append("'").append(includeLib.getVersion()).append("' ");
+				sb.append(VERSION).append("'").append(includeLib.getVersion()).append("' ");
 				sb.append("called ").append(includeLib.getAliasName());
 				sb.append("\n");
 			}
@@ -462,24 +454,18 @@ public final class CQLUtilityClass {
 
 		StringBuilder sb = new StringBuilder();
 
-		List<String> valueSetAlreadyUsed = new ArrayList<>();
-
 		if (!CollectionUtils.isEmpty(valueSetList)) {
 
 			for (CQLQualityDataSetDTO valueset : valueSetList) {
-
-				if(!valueSetAlreadyUsed.contains(valueset.getName())){
-
-					String version = valueset.getVersion().replaceAll(" ", "%20");
-					sb.append("valueset ").append('"').append(valueset.getName()).append('"');
-					sb.append(": 'urn:oid:").append(valueset.getOid()).append("' ");
-					//Check if QDM has expansion identifier or not.
-					if(StringUtils.isNotBlank(version) && !version.equals("1.0") ){
-						sb.append("version 'urn:hl7:version:").append(version).append("' ");
-					}
-					sb.append("\n");
-					valueSetAlreadyUsed.add(valueset.getName());
+				String version = valueset.getVersion().replaceAll(" ", "%20");
+				sb.append("valueset ").append('"').append(valueset.getName()).append('"');
+				sb.append(": 'urn:oid:").append(valueset.getOid()).append("' ");
+				//Check if QDM has expansion identifier or not.
+				if(StringUtils.isNotBlank(version) && !version.equals("1.0") ){
+					sb.append("version 'urn:hl7:version:").append(version).append("' ");
 				}
+				sb.append("\n");
+
 			}
 
 			sb.append("\n");

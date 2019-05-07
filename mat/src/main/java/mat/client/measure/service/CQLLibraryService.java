@@ -95,11 +95,7 @@ public interface CQLLibraryService extends RemoteService {
 	
 	SaveUpdateCQLResult deleteParameter(String libraryId, CQLParameter toBeDeletedObj, 
 			List<CQLParameter> parameterList);
-		
-	SaveUpdateCQLResult saveCQLUserDefinedValueset(CQLValueSetTransferObject matValueSetTransferObject);
-	
-	SaveUpdateCQLResult modifyCQLValueSets(CQLValueSetTransferObject matValueSetTransferObject);
-	
+				
 	VsacApiResult updateCQLVSACValueSets(String currentCQLLibraryId, String expansionId);
 	 CQLKeywords getCQLKeywordsLists();
 	 void transferLibraryOwnerShipToUser(List<String> list, String toEmail);
@@ -107,9 +103,7 @@ public interface CQLLibraryService extends RemoteService {
 	SaveUpdateCQLResult saveCQLCodestoCQLLibrary(MatCodeTransferObject transferObject);
 	
 	SaveUpdateCQLResult saveCQLCodeListToCQLLibrary(List<CQLCode> codeList, String libraryId);
-	
-	SaveUpdateCQLResult modifyCQLCodeInCQLLibrary(CQLCode codeToReplace, CQLCode replacementCode, String cqlLibraryId);
-	
+		
 	SaveUpdateCQLResult deleteCode(String toBeDeletedId, String libraryId);
 
 	void deleteCQLLibrary(String cqllibId, String loginUserId, String password) throws AuthenticationException;

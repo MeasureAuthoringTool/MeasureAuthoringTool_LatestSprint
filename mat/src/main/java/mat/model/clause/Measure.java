@@ -85,6 +85,12 @@ public class Measure {
 	private MeasureDetails measureDetails;
 	
 	private String measureStewardId;
+	
+	private String nqfNumber;
+	
+	private Timestamp measurementPeriodFrom;
+	
+	private Timestamp measurementPeriodTo;
 
 	@Column(name = "VALUE_SET_DATE", length = 19)
 	public Timestamp getValueSetDate() {
@@ -407,5 +413,32 @@ public class Measure {
 
 	public void setMeasureStewardId(String measureStewardId) {
 		this.measureStewardId = measureStewardId;
+	}
+
+	@Column(name = "NQF_NUMBER")
+	public String getNqfNumber() {
+		return nqfNumber;
+	}
+
+	public void setNqfNumber(String nqfNumber) {
+		this.nqfNumber = nqfNumber;
+	}
+
+	@Column(name = "MEASUREMENT_PERIOD_FROM")
+	public Timestamp getMeasurementPeriodFrom() {
+		return measurementPeriodFrom;
+	}
+
+	public void setMeasurementPeriodFrom(Timestamp measurementPeriodFrom) {
+		this.measurementPeriodFrom = measurementPeriodFrom;
+	}
+
+	@Column(name = "MEASUREMENT_PERIOD_TO")
+	public Timestamp getMeasurementPeriodTo() {
+		return measurementPeriodTo;
+	}
+
+	public void setMeasurementPeriodTo(Timestamp measurementPeriodTo) {
+		this.measurementPeriodTo = measurementPeriodTo;
 	}
 }

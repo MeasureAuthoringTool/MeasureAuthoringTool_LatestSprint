@@ -57,14 +57,7 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 		this.getMeasureLibraryService().appendAndSaveNode(measureXmlModel, nodeName);
 		
 	}
-	
-	@Override
-	public void cloneMeasureXml(boolean creatingDraft, String oldMeasureId,
-			String clonedMeasureId) {
-		this.getMeasureLibraryService().cloneMeasureXml(creatingDraft, oldMeasureId, clonedMeasureId);
 		
-	}
-	
 	@Override
 	public void createAndSaveElementLookUp(List<QualityDataSetDTO> list,
 			String measureID, String expProfileToAllQDM) {
@@ -448,17 +441,6 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	}
 	
 	@Override
-	public SaveUpdateCQLResult saveCQLUserDefinedValuesettoMeasure(CQLValueSetTransferObject valueSetTransferObject) {
-		return this.getMeasureLibraryService().saveCQLUserDefinedValuesettoMeasure(valueSetTransferObject);
-	}
-	
-	@Override
-	public SaveUpdateCQLResult updateCQLValuesetsToMeasure(
-			CQLValueSetTransferObject matValueSetTransferObject) {
-		return this.getMeasureLibraryService().modifyCQLValueSetstoMeasure(matValueSetTransferObject);
-	}
-	
-	@Override
 	public SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String measureId, CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList) throws InvalidLibraryException{
 		return this.getMeasureLibraryService().saveIncludeLibrayInCQLLookUp(measureId, toBeModifiedObj, currentObj, incLibraryList);
 	}
@@ -513,11 +495,6 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	public CQLQualityDataModelWrapper saveValueSetList(List<CQLValueSetTransferObject> transferObjectList,
 			List<CQLQualityDataSetDTO> appliedValueSetList, String measureId) {
 		 return this.getMeasureLibraryService().saveValueSetList(transferObjectList, appliedValueSetList, measureId);
-	}
-
-	@Override
-	public SaveUpdateCQLResult modifyCQLCodeInMeasure(CQLCode modifyCQLCode, CQLCode refCode, String measureId) {
-		return this.getMeasureLibraryService().modifyCQLCodeInMeasure(modifyCQLCode, refCode, measureId);
 	}
 
 	@Override
