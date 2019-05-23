@@ -531,6 +531,8 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 				MatDetailItem activeMenuItem = navigationPanel.getActiveMenuItem();
 				scoringType = measureDetailsModel.getGeneralInformationModel().getScoringMethod();
 				isPatientBased = measureDetailsModel.getGeneralInformationModel().isPatientBased();
+				MatContext.get().getCurrentMeasureInfo().setScoringType(scoringType);
+				MatContext.get().getCurrentMeasureInfo().setPatientBased(isPatientBased);
 				MatContext.get().setCurrentMeasureScoringType(scoringType);
 				MatContext.get().setCurrentMeasureName(measureDetailsModel.getGeneralInformationModel().getMeasureName());
 				measureHeading.updateMeasureHeading();
@@ -667,24 +669,14 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 	}
 
 	private MeasureDetailState getMeasureTypeState(MeasureDetailsModel model) {
-		
-		if(model.getMeasureTypeModeModel().getMeasureTypeList() == null) {
+
+		if(model.getMeasureTypeModeModel().getMeasureTypeList() == null 
+				|| model.getMeasureTypeModeModel().getMeasureTypeList().isEmpty()) {
 			return MeasureDetailState.BLANK;
-		}
-		
-		// composite measures always have at least one measure type selected. So we should only show a green checkmark
-		// if the composite measure has more than two in its measure type list. 
-		if(model.isComposite()) {
-			if(model.getMeasureTypeModeModel().getMeasureTypeList().size() > 1) {
-				return MeasureDetailState.COMPLETE;
-			}
 		} else {
-			if(model.getMeasureTypeModeModel().getMeasureTypeList().size() > 0) {
-				return MeasureDetailState.COMPLETE;
-			}
+			return MeasureDetailState.COMPLETE;
 		}
-		
-		return MeasureDetailState.BLANK;
+
 	}
 
 	private MeasureDetailState getRichTextEditableTabState(MeasureDetailsTextAbstractModel model) {

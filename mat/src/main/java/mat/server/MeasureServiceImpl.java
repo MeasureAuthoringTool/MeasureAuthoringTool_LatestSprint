@@ -160,8 +160,8 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	}
 	
 	@Override
-	public void saveMeasureXml(MeasureXmlModel measureXmlModel) {
-		this.getMeasureLibraryService().saveMeasureXml(measureXmlModel);
+	public void saveMeasureXml(MeasureXmlModel measureXmlModel, String measureId) {
+		this.getMeasureLibraryService().saveMeasureXml(measureXmlModel, measureId);
 		
 	}
 	
@@ -256,12 +256,6 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	public ValidateMeasureResult validateMeasureXmlinpopulationWorkspace(
 			MeasureXmlModel measureXmlModel) {
 		return this.getMeasureLibraryService().validateMeasureXmlAtCreateMeasurePackager(measureXmlModel);
-	}
-	
-	@Override
-	public void updateMeasureXmlForDeletedComponentMeasureAndOrg(String measureId) {
-		
-		this.getMeasureLibraryService().updateMeasureXmlForDeletedComponentMeasureAndOrg(measureId);
 	}
 	
 	@Override
@@ -395,21 +389,18 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	}
 
 	@Override
-	public SaveUpdateCQLResult deleteDefinition(String measureId, CQLDefinition toBeDeletedObj, 
-			List<CQLDefinition> definitionList) {
-		return this.getMeasureLibraryService().deleteDefinition(measureId, toBeDeletedObj, definitionList);
+	public SaveUpdateCQLResult deleteDefinition(String measureId, CQLDefinition toBeDeletedObj) {
+		return this.getMeasureLibraryService().deleteDefinition(measureId, toBeDeletedObj);
 	}
 
 	@Override
-	public SaveUpdateCQLResult deleteFunctions(String measureId, CQLFunctions toBeDeletedObj, 
-			List<CQLFunctions> functionsList) {
-		return this.getMeasureLibraryService().deleteFunctions(measureId, toBeDeletedObj, functionsList);
+	public SaveUpdateCQLResult deleteFunction(String measureId, CQLFunctions toBeDeletedObj) {
+		return this.getMeasureLibraryService().deleteFunction(measureId, toBeDeletedObj);
 	}
 
 	@Override
-	public SaveUpdateCQLResult deleteParameter(String measureId, CQLParameter toBeDeletedObj, 
-			List<CQLParameter> parameterList) {
-		return this.getMeasureLibraryService().deleteParameter(measureId, toBeDeletedObj, parameterList);
+	public SaveUpdateCQLResult deleteParameter(String measureId, CQLParameter toBeDeletedObj) {
+		return this.getMeasureLibraryService().deleteParameter(measureId, toBeDeletedObj);
 	}
 	
 	@Override
@@ -465,10 +456,8 @@ public class MeasureServiceImpl extends SpringRemoteServiceServlet implements Me
 	}
 	
 	@Override
-	public SaveUpdateCQLResult deleteInclude(String currentMeasureId,
-			CQLIncludeLibrary toBeModifiedIncludeObj,
-			List<CQLIncludeLibrary> viewIncludeLibrarys) {
-		return this.getMeasureLibraryService().deleteInclude(currentMeasureId, toBeModifiedIncludeObj, viewIncludeLibrarys);
+	public SaveUpdateCQLResult deleteInclude(String currentMeasureId, CQLIncludeLibrary toBeModifiedIncludeObj) {
+		return this.getMeasureLibraryService().deleteInclude(currentMeasureId, toBeModifiedIncludeObj);
 	}
 	
 	@Override

@@ -362,7 +362,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 	public void fireMeasureSelected(ManageMeasureSearchModel.Result result){
 		fireMeasureSelectedEvent(result.getId(), result.getVersion(), result.getName(),
 				result.getShortName(), result.getScoringType(), result.isEditable(),
-				result.isMeasureLocked(), result.getLockedUserId(result.getLockedUserInfo()), result.isDraft());
+				result.isMeasureLocked(), result.getLockedUserId(result.getLockedUserInfo()), result.isDraft(), calculatePatientBased(result.isPatientBased(), result.getScoringType()));
 		setSearchingBusy(false);
 		isClone = false;
 	}
@@ -821,9 +821,9 @@ public class ManageMeasurePresenter implements MatPresenter {
 	} 
 
 	private void fireMeasureSelectedEvent(String id, String version, String name, String shortName, String scoringType,
-			boolean isEditable, boolean isLocked, String lockedUserId, boolean isDraft) {
+			boolean isEditable, boolean isLocked, String lockedUserId, boolean isDraft, boolean isPatientBased) {
 		MeasureSelectedEvent evt = new MeasureSelectedEvent(id, version, name, shortName, scoringType, isEditable,
-				isLocked, lockedUserId, isDraft);
+				isLocked, lockedUserId, isDraft, isPatientBased);
 		searchDisplay.resetMessageDisplay();
 		MatContext.get().getEventBus().fireEvent(evt);
 	}
@@ -1375,6 +1375,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 							final boolean isMeasureLocked = result.isMeasureLocked();
 							final boolean isDraft = result.isDraft();
 							final String userId = result.getLockedUserId(result.getLockedUserInfo());
+							final boolean isPatientBased = calculatePatientBased(result.isPatientBased(), scoringType);
 
 							MatContext.get().getMeasureLockService().isMeasureLocked(mid);
 							Command waitForLockCheck = new Command() {
@@ -1384,13 +1385,13 @@ public class ManageMeasurePresenter implements MatPresenter {
 									if (!synchDel.isCheckingLock()) {
 										if (!synchDel.measureIsLocked()) {
 											fireMeasureSelectedEvent(mid, version, name, shortName, scoringType,
-													isEditable, isMeasureLocked, userId, isDraft);
+													isEditable, isMeasureLocked, userId, isDraft, isPatientBased);
 											if (isEditable) {
 												MatContext.get().getMeasureLockService().setMeasureLock();
 											}
 										} else {
 											fireMeasureSelectedEvent(mid, version, name, shortName, scoringType, false,
-													isMeasureLocked, userId, isDraft);
+													isMeasureLocked, userId, isDraft, isPatientBased);
 											if (isEditable) {
 												MatContext.get().getMeasureLockService().setMeasureLock();
 											}
@@ -1425,6 +1426,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 							final boolean isMeasureLocked = result.isMeasureLocked();
 							final boolean isDraft = result.isDraft();
 							final String userId = result.getLockedUserId(result.getLockedUserInfo());
+							final boolean isPatientBased = calculatePatientBased(result.isPatientBased(), scoringType);
 							MatContext.get().getMeasureLockService().isMeasureLocked(mid);
 							Command waitForLockCheck = new Command() {
 								@Override
@@ -1433,13 +1435,13 @@ public class ManageMeasurePresenter implements MatPresenter {
 									if (!synchDel.isCheckingLock()) {
 										if (!synchDel.measureIsLocked()) {
 											fireMeasureSelectedEvent(mid, version, name, shortName, scoringType,
-													isEditable, isMeasureLocked, userId, isDraft);
+													isEditable, isMeasureLocked, userId, isDraft, isPatientBased);
 											if (isEditable) {
 												MatContext.get().getMeasureLockService().setMeasureLock();
 											}
 										} else {
 											fireMeasureSelectedEvent(mid, version, name, shortName, scoringType, false,
-													isMeasureLocked, userId, isDraft);
+													isMeasureLocked, userId, isDraft, isPatientBased);
 											if (isEditable) {
 												MatContext.get().getMeasureLockService().setMeasureLock();
 											}
@@ -1563,6 +1565,10 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 		searchDisplay.getClearButton().addClickHandler(event -> clearAllMeasureOwnershipTransfers());
 
+	}
+
+	protected boolean calculatePatientBased(Boolean patientBased, String scoringType) {
+		return patientBased == null ? !scoringType.equals(ConstantMessages.CONTINUOUS_VARIABLE_SCORING) : patientBased;
 	}
 
 	private void displayActiveMATUsersToTransferMeasureOwnership() {
@@ -1833,6 +1839,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 			final String scoringType = currentDetails.getMeasScoring();
 			final String version = currentDetails.getVersionNumber()+"."+currentDetails.getRevisionNumber();		
 			final boolean isDraft = currentDetails.isDraft();
+			final boolean isPatientBased = calculatePatientBased(currentDetails.isPatientBased(), scoringType);
 			MatContext.get().getMeasureService().save(currentDetails, new AsyncCallback<SaveMeasureResult>() {
 
 				@Override
@@ -1843,7 +1850,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 				@Override
 				public void onSuccess(SaveMeasureResult result) {
-					postSaveMeasureEvents(isInsert, result, detailDisplay, name, shortName, scoringType, version, isDraft);
+					postSaveMeasureEvents(isInsert, result, detailDisplay, name, shortName, scoringType, version, isDraft, isPatientBased);
 					setSearchingBusy(false);
 				}
 			});
@@ -1895,11 +1902,11 @@ public class ManageMeasurePresenter implements MatPresenter {
 	}
 	
 	private void postSaveMeasureEvents(boolean isInsert, SaveMeasureResult result, DetailDisplay detailDisplay,
-			String name, String shortName, String scoringType, String version, boolean isDraft) {
+			String name, String shortName, String scoringType, String version, boolean isDraft, boolean isPatientBased) {
 		
 		if (result.isSuccess()) {
 			if (isInsert) {
-				fireMeasureSelectedEvent(result.getId(), version, name, shortName, scoringType, true, false, null, isDraft);
+				fireMeasureSelectedEvent(result.getId(), version, name, shortName, scoringType, true, false, null, isDraft, isPatientBased);
 				fireMeasureEditEvent();
 			} else {
 				displaySearch();
@@ -1926,6 +1933,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 		final String scoringType = currentCompositeMeasureDetails.getMeasScoring();
 		final String version = currentCompositeMeasureDetails.getVersionNumber() + "." + currentCompositeMeasureDetails.getRevisionNumber();
 		final boolean isDraft = currentCompositeMeasureDetails.isDraft();
+		final boolean isPatientBased = calculatePatientBased(currentCompositeMeasureDetails.isPatientBased(), scoringType);
 		MatContext.get().getMeasureService().saveCompositeMeasure(currentCompositeMeasureDetails, new AsyncCallback<SaveMeasureResult>() {
 
 			@Override
@@ -1936,7 +1944,7 @@ public class ManageMeasurePresenter implements MatPresenter {
 
 			@Override
 			public void onSuccess(SaveMeasureResult result) {
-				postSaveMeasureEvents(isInsert, result, compositeDetailDisplay, name, shortName, scoringType, version, isDraft);
+				postSaveMeasureEvents(isInsert, result, compositeDetailDisplay, name, shortName, scoringType, version, isDraft, isPatientBased);
 				componentMeasureDisplay.setComponentBusy(false);
 
 			}

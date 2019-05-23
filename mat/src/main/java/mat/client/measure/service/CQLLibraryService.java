@@ -67,8 +67,7 @@ public interface CQLLibraryService extends RemoteService {
 	SaveUpdateCQLResult saveIncludeLibrayInCQLLookUp(String libraryId, CQLIncludeLibrary toBeModifiedObj,
 			CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList) throws InvalidLibraryException;
 
-	SaveUpdateCQLResult deleteInclude(String libraryId, CQLIncludeLibrary toBeModifiedIncludeObj,
-			List<CQLIncludeLibrary> viewIncludeLibrarys);
+	SaveUpdateCQLResult deleteInclude(String libraryId, CQLIncludeLibrary toBeModifiedIncludeObj);
 
 	GetUsedCQLArtifactsResult getUsedCqlArtifacts(String libraryId);
 
@@ -87,14 +86,11 @@ public interface CQLLibraryService extends RemoteService {
 	SaveUpdateCQLResult saveAndModifyParameters(String libraryId, CQLParameter toBeModifiedObj, CQLParameter currentObj,
 			List<CQLParameter> parameterList, boolean isFormatable);
 	
-	SaveUpdateCQLResult deleteDefinition(String libraryId, CQLDefinition toBeDeletedObj, 
-			List<CQLDefinition> definitionList);
+	SaveUpdateCQLResult deleteDefinition(String libraryId, CQLDefinition toBeDeletedObj);
 	
-	SaveUpdateCQLResult deleteFunctions(String libraryId, CQLFunctions toBeDeletedObj, 
-			List<CQLFunctions> functionsList);
+	SaveUpdateCQLResult deleteFunction(String libraryId, CQLFunctions toBeDeletedObj);
 	
-	SaveUpdateCQLResult deleteParameter(String libraryId, CQLParameter toBeDeletedObj, 
-			List<CQLParameter> parameterList);
+	SaveUpdateCQLResult deleteParameter(String libraryId, CQLParameter toBeDeletedObj);
 				
 	VsacApiResult updateCQLVSACValueSets(String currentCQLLibraryId, String expansionId);
 	 CQLKeywords getCQLKeywordsLists();

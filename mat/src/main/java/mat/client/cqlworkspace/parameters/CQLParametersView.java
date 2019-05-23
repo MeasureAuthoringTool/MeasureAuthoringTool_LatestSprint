@@ -9,6 +9,7 @@ import org.gwtbootstrap3.client.ui.PanelCollapse;
 import org.gwtbootstrap3.client.ui.TextArea;
 import org.gwtbootstrap3.client.ui.constants.ValidationState;
 
+import com.google.gwt.event.dom.client.KeyUpEvent;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
@@ -38,12 +39,13 @@ public class CQLParametersView {
 	private FormGroup parameterCommentGroup = new FormGroup();
 	private HTML heading = new HTML();
 	private InAppHelp inAppHelp = new InAppHelp("");
-	private CQLEditorPanel editorPanel = new CQLEditorPanel(PARAMETER, "Build CQL Expression", true);
-	private CQLEditorPanel viewCQLEditorPanel = new CQLEditorPanel("parameterViewCQL", "Click to View CQL", true);
+	private CQLEditorPanel editorPanel = new CQLEditorPanel(PARAMETER, "CQL Expression Editor", true);
+	private CQLEditorPanel viewCQLEditorPanel = new CQLEditorPanel("parameterViewCQL", "CQL Library Viewer", true);
 
 	
 	public CQLParametersView() {
-		editorPanel = new CQLEditorPanel(PARAMETER, "Build CQL Expression", true);
+		editorPanel = new CQLEditorPanel(PARAMETER, "CQL Expression Editor", true);
+		this.editorPanel.getEditor().addDomHandler(event -> editorPanel.catchTabOutKeyCommand(event, parameterButtonBar.getSaveButton()), KeyUpEvent.getType());
 		mainParamViewVerticalPanel.getElement().setId("mainParamViewVerticalPanel");
 		heading.addStyleName("leftAligned");
 	}
@@ -61,7 +63,6 @@ public class CQLParametersView {
 		editorPanel.setSize("650px", "200px");
 		editorPanel.getEditor().setText("");
 		editorPanel.getEditor().clearAnnotations();
-		editorPanel.getEditor().redisplay();
 		editorPanel.getPanelGroup().setMarginBottom(-10.0);
 		
 		viewCQLEditorPanel.setSize("655px", "200px");

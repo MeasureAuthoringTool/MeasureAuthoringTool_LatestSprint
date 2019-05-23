@@ -226,7 +226,7 @@ public interface MeasureLibraryService {
 	 * @param measureXmlModel
 	 *            the measure xml model
 	 */
-	void saveMeasureXml(MeasureXmlModel measureXmlModel);
+	void saveMeasureXml(MeasureXmlModel measureXmlModel, String measureId);
 	
 	/**
 	 * Search.
@@ -400,13 +400,6 @@ public interface MeasureLibraryService {
 	 */
 	ValidateMeasureResult validateMeasureXmlAtCreateMeasurePackager(
 			MeasureXmlModel measureXmlModel);
-	
-	/**
-	 * Update component measures on deletion.
-	 *
-	 * @param measureId the measure id
-	 */
-	void updateMeasureXmlForDeletedComponentMeasureAndOrg(String measureId);
 	
 	/**
 	 * Validate for group.
@@ -610,36 +603,27 @@ public interface MeasureLibraryService {
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param definitionList the definition list
 	 * @return the save and update cql result
 	 */
-	SaveUpdateCQLResult deleteDefinition(String measureId, CQLDefinition toBeDeletedObj, 
-			List<CQLDefinition> definitionList);
+	SaveUpdateCQLResult deleteDefinition(String measureId, CQLDefinition toBeDeletedObj);
 
 	/**
 	 * Delete functions
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param functionsList the functions list
 	 * @return the save and update cql result
 	 */
-	SaveUpdateCQLResult deleteFunctions(String measureId, CQLFunctions toBeDeletedObj, 
-			List<CQLFunctions> functionsList);
+	SaveUpdateCQLResult deleteFunction(String measureId, CQLFunctions toBeDeletedObj);
 
 	/**
 	 * Delete parameter
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param parameterList the parameter list
 	 * @return the save and update cql result
 	 */
-	SaveUpdateCQLResult deleteParameter(String measureId, CQLParameter toBeDeletedObj, 
-			List<CQLParameter> parameterList);
+	SaveUpdateCQLResult deleteParameter(String measureId, CQLParameter toBeDeletedObj);
 	
 	/**
 	 * Gets the CQL data type list.
@@ -682,9 +666,7 @@ public interface MeasureLibraryService {
 	void updateCQLMeasureXMLForExpansionIdentifier(List<CQLQualityDataSetDTO> modifyWithDTOList, String measureId,
 			String expansionProfile);
 
-	SaveUpdateCQLResult deleteInclude(String currentMeasureId,
-			CQLIncludeLibrary toBeModifiedIncludeObj,
-			List<CQLIncludeLibrary> viewIncludeLibrarys);
+	SaveUpdateCQLResult deleteInclude(String currentMeasureId, CQLIncludeLibrary toBeModifiedIncludeObj);
 
 	VsacApiResult updateCQLVSACValueSets(String currentMeasureId, String expansionId, String sessionId);
 

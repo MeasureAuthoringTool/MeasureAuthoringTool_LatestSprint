@@ -139,9 +139,8 @@ public class CQLLibraryServiceImpl extends SpringRemoteServiceServlet implements
 		return this.getCQLLibraryService().saveIncludeLibrayInCQLLookUp(libraryId, toBeModifiedObj, currentObj, incLibraryList);
 	}
 	@Override
-	public SaveUpdateCQLResult deleteInclude(String libraryId, CQLIncludeLibrary toBeModifiedIncludeObj,
-			List<CQLIncludeLibrary> viewIncludeLibrarys) {
-		return this.getCQLLibraryService().deleteInclude(libraryId, toBeModifiedIncludeObj, viewIncludeLibrarys);
+	public SaveUpdateCQLResult deleteInclude(String libraryId, CQLIncludeLibrary toBeDeletedIncludeObj) {
+		return this.getCQLLibraryService().deleteInclude(libraryId, toBeDeletedIncludeObj);
 	}
 	@Override
 	public GetUsedCQLArtifactsResult getUsedCqlArtifacts(String libraryId) {
@@ -187,19 +186,16 @@ public class CQLLibraryServiceImpl extends SpringRemoteServiceServlet implements
 		return this.getCQLLibraryService().saveAndModifyParameters(libraryId, toBeModifiedObj, currentObj, parameterList, isFormatable);
 	}
 	@Override
-	public SaveUpdateCQLResult deleteDefinition(String libraryId, CQLDefinition toBeDeletedObj,
-			List<CQLDefinition> definitionList) {
-		return this.getCQLLibraryService().deleteDefinition(libraryId, toBeDeletedObj, definitionList);
+	public SaveUpdateCQLResult deleteDefinition(String libraryId, CQLDefinition toBeDeletedObj) {
+		return this.getCQLLibraryService().deleteDefinition(libraryId, toBeDeletedObj);
 	}
 	@Override
-	public SaveUpdateCQLResult deleteFunctions(String libraryId, CQLFunctions toBeDeletedObj,
-			List<CQLFunctions> functionsList) {
-		return this.getCQLLibraryService().deleteFunctions(libraryId, toBeDeletedObj, functionsList);
+	public SaveUpdateCQLResult deleteFunction(String libraryId, CQLFunctions toBeDeletedObj) {
+		return this.getCQLLibraryService().deleteFunction(libraryId, toBeDeletedObj);
 	}
 	@Override
-	public SaveUpdateCQLResult deleteParameter(String libraryId, CQLParameter toBeDeletedObj,
-			List<CQLParameter> parameterList) {
-		return this.getCQLLibraryService().deleteParameter(libraryId, toBeDeletedObj, parameterList);
+	public SaveUpdateCQLResult deleteParameter(String libraryId, CQLParameter toBeDeletedObj) {
+		return this.getCQLLibraryService().deleteParameter(libraryId, toBeDeletedObj);
 	}
 
 	@Override

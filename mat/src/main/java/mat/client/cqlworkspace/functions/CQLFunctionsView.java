@@ -28,6 +28,7 @@ import com.google.gwt.cell.client.SafeHtmlCell;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.dom.client.KeyUpEvent;
 import com.google.gwt.dom.client.TableCaptionElement;
 import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
@@ -92,8 +93,8 @@ public class CQLFunctionsView {
 	private FormGroup returnTypeAndButtonPanelGroup = new FormGroup();
 	private HTML heading = new HTML();
 	private InAppHelp inAppHelp = new InAppHelp("");
-	private CQLEditorPanel editorPanel = new CQLEditorPanel(FUNCTION, "Build CQL Expression", false);
-	private CQLEditorPanel viewCQLEditorPanel = new CQLEditorPanel("functionViewCQL", "Click to View CQL", true);
+	private CQLEditorPanel editorPanel = new CQLEditorPanel(FUNCTION, "CQL Expression Editor", false);
+	private CQLEditorPanel viewCQLEditorPanel = new CQLEditorPanel("functionViewCQL", "CQL Library Viewer", true);
 
 	
 	public CQLFunctionsView() {
@@ -115,11 +116,11 @@ public class CQLFunctionsView {
 		funcVP.add(new SpacerWidget());
 		funcVP.add(new SpacerWidget());
 		
+		this.editorPanel.getEditor().addDomHandler(event -> editorPanel.catchTabOutKeyCommand(event, functionButtonBar.getSaveButton()), KeyUpEvent.getType());
 		editorPanel.setSize("650px", "200px");
 		editorPanel.getPanelGroup().setMarginBottom(-10.0);
 		editorPanel.getEditor().setText("");
 		editorPanel.getEditor().clearAnnotations();
-		editorPanel.getEditor().redisplay();
 
 		viewCQLEditorPanel.setSize("655px", "200px");
 		viewCQLEditorPanel.setCollabsable();

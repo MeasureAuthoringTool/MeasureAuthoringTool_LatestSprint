@@ -232,7 +232,7 @@ public interface MeasureServiceAsync {
 	 * @param callback
 	 *            the callback
 	 */
-	void saveMeasureXml(MeasureXmlModel measureXmlModel,
+	void saveMeasureXml(MeasureXmlModel measureXmlModel, String measureId,
 			AsyncCallback<Void> callback);
 	
 	/**
@@ -493,15 +493,6 @@ public interface MeasureServiceAsync {
 			AsyncCallback<MeasureDetailResult> asyncCallback);
 	
 	/**
-	 * Update measure xml for deleted component measure and org.
-	 *
-	 * @param id the id
-	 * @param asyncCallback the async callback
-	 */
-	void updateMeasureXmlForDeletedComponentMeasureAndOrg(String id,
-			AsyncCallback<Void> asyncCallback);
-	
-	/**
 	 * Update measure xml for expansion identifier.
 	 *
 	 * @param list the list
@@ -607,36 +598,27 @@ public interface MeasureServiceAsync {
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param definitionList the definition list
 	 * @param callback the callback
 	 */
-	void deleteDefinition(String measureId, CQLDefinition toBeDeletedObj,  
-			List<CQLDefinition> definitionList, AsyncCallback<SaveUpdateCQLResult> callback); 	
+	void deleteDefinition(String measureId, CQLDefinition toBeDeletedObj, AsyncCallback<SaveUpdateCQLResult> callback); 	
 	
 	/**
 	 * Delete functions 
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param functionsList the function list
 	 * @param callback the callback
 	 */
-	void deleteFunctions(String measureId, CQLFunctions toBeDeletedObj,  
-			List<CQLFunctions> functionsList, AsyncCallback<SaveUpdateCQLResult> callback);
+	void deleteFunction(String measureId, CQLFunctions toBeDeletedObj, AsyncCallback<SaveUpdateCQLResult> callback);
 	
 	/**
 	 * Delete parameter
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param parameterList the parameter list
 	 * @param callback the callback
 	 */
-	void deleteParameter(String measureId, CQLParameter toBeDeletedObj, 
-			List<CQLParameter> parameterList, AsyncCallback<SaveUpdateCQLResult> callback);
+	void deleteParameter(String measureId, CQLParameter toBeDeletedObj, AsyncCallback<SaveUpdateCQLResult> callback);
 	
 	void getUsedCQLArtifacts(String currentMeasureId, AsyncCallback<GetUsedCQLArtifactsResult> asyncCallback);
 
@@ -664,10 +646,7 @@ public interface MeasureServiceAsync {
 
 	void getMeasureCQLFileData(String measureId, AsyncCallback<SaveUpdateCQLResult> callback);
 
-	void deleteInclude(String currentMeasureId,
-			CQLIncludeLibrary toBeModifiedIncludeObj,
-			List<CQLIncludeLibrary> viewIncludeLibrarys,
-			AsyncCallback<SaveUpdateCQLResult> asyncCallback);
+	void deleteInclude(String currentMeasureId, CQLIncludeLibrary toBeModifiedIncludeObj, AsyncCallback<SaveUpdateCQLResult> asyncCallback);
 
 	void updateCQLVSACValueSets(String currentMeasureId, String expansionId,
 			AsyncCallback<VsacApiResult> asyncCallback);

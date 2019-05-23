@@ -55,7 +55,6 @@ import mat.model.cql.CQLDefinition;
 import mat.model.cql.CQLDefinitionsWrapper;
 import mat.model.cql.CQLFunctionArgument;
 import mat.model.cql.CQLFunctions;
-import mat.model.cql.CQLFunctionsWrapper;
 import mat.model.cql.CQLIncludeLibrary;
 import mat.model.cql.CQLIncludeLibraryWrapper;
 import mat.model.cql.CQLKeywords;
@@ -165,10 +164,8 @@ public class CQLServiceImpl implements CQLService {
 
 	public SaveUpdateCQLResult saveCQLFile(String xml, String cql, CQLLinterConfig config) {
 		XmlProcessor processor = new XmlProcessor(xml);
-		CQLModel previousModel = CQLUtilityClass.getCQLModelFromXML(xml);
-		config.setPreviousCQLModel(previousModel);
 		try {
-			ReverseEngineerListener listener = new ReverseEngineerListener(cql, previousModel);
+			ReverseEngineerListener listener = new ReverseEngineerListener(cql, config.getPreviousCQLModel());
 			CQLModel reversedEngineeredCQLModel = listener.getCQLModel();			
 			String reverseEngineeredCQLLookup = marshallCQLModel(reversedEngineeredCQLModel);
 			processor.replaceNode(reverseEngineeredCQLLookup, "cqlLookUp", "measure");
@@ -186,16 +183,16 @@ public class CQLServiceImpl implements CQLService {
 			if (parsedResult.getCqlErrors().isEmpty()) {
 				CQLFormatter formatter = new CQLFormatter();
 				String formattedCQL = formatter.format(CQLUtilityClass.getCqlString(reversedEngineeredCQLModel, ""));
-				CQLModel formattedReversedEngineeredCQLModel = reverseEngineerCQLModel(formattedCQL, previousModel);
+				CQLModel formattedReversedEngineeredCQLModel = reverseEngineerCQLModel(formattedCQL, config.getPreviousCQLModel());
 				String formattedCQLLookup = marshallCQLModel(formattedReversedEngineeredCQLModel);
 				parsedResult.setXml(formattedCQLLookup);
 				parsedResult.setCqlString(formattedCQL);
 			} else {
 				parsedResult.setXml(reverseEngineeredCQLLookup);
-				parsedResult.setCqlString(cql);
+				parsedResult.setCqlString(CQLUtilityClass.getCqlString(reversedEngineeredCQLModel, ""));
 			}
 			
-			CQLLinter linter = CQLUtil.lint(parsedResult.getCqlString(), config);			
+			CQLLinter linter = CQLUtil.lint(cql, config);			
 			SaveUpdateCQLResult result = getCQLDataForLoad(parsedResult.getXml());
 			result.setCqlErrors(parsedResult.getCqlErrors());
 			result.setCqlWarnings(parsedResult.getCqlWarnings());
@@ -204,6 +201,7 @@ public class CQLServiceImpl implements CQLService {
 			result.setCqlString(parsedResult.getCqlString());
 			result.setXml(parsedResult.getXml());
 			result.getLinterErrors().addAll(linter.getErrors());
+			result.getLinterWarningMessages().addAll(linter.getWarningMessages());
 			result.getLinterErrorMessages().addAll(linter.getErrorMessages());
 			result.setSuccess(true);		
 			
@@ -357,7 +355,7 @@ public class CQLServiceImpl implements CQLService {
 
 			result.setXml(CQLUtilityClass.getXMLFromCQLModel(cqlModel));
 			result.setFunction(functionWithEdits);
-			result.getCqlModel().setCqlFunctions(sortFunctionssList(result.getCqlModel().getCqlFunctions()));
+			result.getCqlModel().setCqlFunctions(sortFunctionList(result.getCqlModel().getCqlFunctions()));
 			result.setSuccess(true);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -800,12 +798,10 @@ public class CQLServiceImpl implements CQLService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public SaveUpdateCQLResult deleteDefinition(String xml, CQLDefinition toBeDeletedObj,
-			List<CQLDefinition> definitionList) {
+	public SaveUpdateCQLResult deleteDefinition(String xml, CQLDefinition toBeDeletedObj) {
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		CQLDefinitionsWrapper wrapper = new CQLDefinitionsWrapper();
 
-		CQLModel cqlModel = new CQLModel();
+		CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(xml);
 		result.setCqlModel(cqlModel);
 
 		if (toBeDeletedObj.isSupplDataElement()) {
@@ -819,80 +815,37 @@ public class CQLServiceImpl implements CQLService {
 				&& artifactsResult.getUsedCQLDefinitions().contains(toBeDeletedObj.getName())) {
 			result.setSuccess(false);
 			result.setFailureReason(SaveUpdateCQLResult.SERVER_SIDE_VALIDATION);
-		} else {
-			XmlProcessor processor = new XmlProcessor(xml);
-
-			if (xml != null && !xml.isEmpty()) {
-				String XPATH_EXPRESSION_CQLLOOKUP_DEFINITION = "//cqlLookUp//definition[@id='" + toBeDeletedObj.getId()
-						+ "']";
-				try {
-					Node definitionNode = processor.findNode(processor.getOriginalDoc(),
-							XPATH_EXPRESSION_CQLLOOKUP_DEFINITION);
-
-					if (definitionNode != null) {
-						// remove from xml
-						definitionNode.getParentNode().removeChild(definitionNode);
-						processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
-						result.setXml(processor.getOriginalXml());
-
-						// remove from definition list
-						definitionList.remove(toBeDeletedObj);
-						wrapper.setCqlDefinitions(definitionList);
-						result.setSuccess(true);
-						result.setDefinition(toBeDeletedObj);
-					}
-
-					else {
-						result.setSuccess(false);
-						result.setFailureReason(SaveUpdateCQLResult.NODE_NOT_FOUND);
-					}
-
-				} catch (XPathExpressionException e) {
-					result.setSuccess(false);
-					e.printStackTrace();
-				}
-
-			}
-		}
-		if (result.isSuccess() && (wrapper.getCqlDefinitions().size() > 0)) {
-			result.getCqlModel().setDefinitionList(sortDefinitionsList(wrapper.getCqlDefinitions()));
-		}
-
+			return result;
+		} 
+			
+		cqlModel.getDefinitionList().removeIf(d -> d.getId().equals(toBeDeletedObj.getId()));
+		result.setSuccess(true);
+		result.setCqlModel(cqlModel);
+		result.getCqlModel().setDefinitionList(sortDefinitionsList(cqlModel.getDefinitionList()));
+		result.setXml(CQLUtilityClass.getXMLFromCQLModel(cqlModel));
+		
 		return result;
 	}
 
 	@Override
 	public SaveUpdateCQLResult deleteValueSet(String xml, String toBeDelValueSetId) {
-		logger.info("Start deleteValueSet : ");
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		XmlProcessor xmlProcessor = new XmlProcessor(xml);
-		try {
-			String xpathforValueSet = "//cqlLookUp//valueset[@id='" + toBeDelValueSetId + "']";
-			Node valueSetElements = xmlProcessor.findNode(xmlProcessor.getOriginalDoc(), xpathforValueSet);
-
-			if (valueSetElements != null) {
-				String valueSetName = valueSetElements.getAttributes().getNamedItem("name").getNodeValue();
-				CQLQualityDataSetDTO valueSet = new CQLQualityDataSetDTO();
-				valueSet.setName(valueSetName);
-				Node parentNode = valueSetElements.getParentNode();
-				parentNode.removeChild(valueSetElements);
-				result.setSuccess(true);
-				result.setXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
-				result.setCqlQualityDataSetDTO(valueSet);
-
-			} else {
-				logger.info("Unable to find the selected valueset element with id in deleteValueSet : "
-						+ toBeDelValueSetId);
-				result.setSuccess(false);
-			}
-		} catch (XPathExpressionException e) {
+		CQLModel model = CQLUtilityClass.getCQLModelFromXML(xml);
+		
+		Optional<CQLQualityDataSetDTO> valuesetToDelete = model.getValueSetList().stream().filter(v -> v.getId().equals(toBeDelValueSetId)).findFirst();
+		
+		if(valuesetToDelete.isPresent()) {
+			model.getValueSetList().removeIf(v -> v.getId().equals(toBeDelValueSetId));
+			result.setXml(CQLUtilityClass.getXMLFromCQLModel(model));
+			result.setCqlModel(model);
+			result.setSuccess(true);
+			result.setCqlAppliedQDMList(model.getValueSetList());
+			result.setCqlQualityDataSetDTO(valuesetToDelete.get());
+		} else {
 			result.setSuccess(false);
-			logger.info("Error in method deleteValueSet: " + e.getMessage());
 		}
-
-		logger.info("END deleteValueSet : ");
+		
 		return result;
-
 	}
 
 	@Override
@@ -921,6 +874,7 @@ public class CQLServiceImpl implements CQLService {
 				parentNode.removeChild(codeNode);
 				result.setSuccess(true);
 				result.setXml(xmlProcessor.transform(xmlProcessor.getOriginalDoc()));
+				result.setCqlModel(CQLUtilityClass.getCQLModelFromXML(result.getXml()));
 				result.setCqlCodeList(getCQLCodes(result.getXml()).getCqlCodeList());
 				result.setCqlCode(cqlCode);
 			} else {
@@ -976,17 +930,10 @@ public class CQLServiceImpl implements CQLService {
 		return isCodeSystemUsed;
 	}
 
-	/*
-	 * {@inheritDoc}
-	 */
 	@Override
-	public SaveUpdateCQLResult deleteFunctions(String xml, CQLFunctions toBeDeletedObj,
-			List<CQLFunctions> functionsList) {
-
+	public SaveUpdateCQLResult deleteFunction(String xml, CQLFunctions toBeDeletedObj) {
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		CQLFunctionsWrapper wrapper = new CQLFunctionsWrapper();
-
-		CQLModel cqlModel = new CQLModel();
+		CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(xml);
 		result.setCqlModel(cqlModel);
 
 		GetUsedCQLArtifactsResult artifactsResult = getUsedCQlArtifacts(xml);
@@ -994,60 +941,21 @@ public class CQLServiceImpl implements CQLService {
 				&& artifactsResult.getUsedCQLFunctions().contains(toBeDeletedObj.getName())) {
 			result.setSuccess(false);
 			result.setFailureReason(SaveUpdateCQLResult.SERVER_SIDE_VALIDATION);
-		} else {
-
-			XmlProcessor processor = new XmlProcessor(xml);
-
-			if (xml != null && !xml.isEmpty()) {
-				String XPATH_EXPRESSION_CQLLOOKUP_FUNCTION = "//cqlLookUp//function[@id='" + toBeDeletedObj.getId()
-						+ "']";
-				try {
-					Node functionNode = processor.findNode(processor.getOriginalDoc(),
-							XPATH_EXPRESSION_CQLLOOKUP_FUNCTION);
-
-					if (functionNode != null) {
-
-						// remove from xml
-						functionNode.getParentNode().removeChild(functionNode);
-						processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
-						result.setXml(processor.getOriginalXml());
-
-						// remove from function list
-						functionsList.remove(toBeDeletedObj);
-						wrapper.setCqlFunctionsList(functionsList);
-						result.setSuccess(true);
-						result.setFunction(toBeDeletedObj);
-					}
-
-					else {
-						result.setSuccess(false);
-						result.setFailureReason(SaveUpdateCQLResult.NODE_NOT_FOUND);
-					}
-
-				} catch (XPathExpressionException e) {
-					result.setSuccess(false);
-					e.printStackTrace();
-				}
-			}
+			return result;
 		}
-		if (result.isSuccess() && (wrapper.getCqlFunctionsList().size() > 0)) {
-			result.getCqlModel().setCqlFunctions(sortFunctionssList(wrapper.getCqlFunctionsList()));
-		}
+		
+		cqlModel.getCqlFunctions().removeIf(f -> f.getId().equals(toBeDeletedObj.getId()));
+		result.setCqlModel(cqlModel);
+		result.setXml(CQLUtilityClass.getXMLFromCQLModel(cqlModel));
+		result.setSuccess(true);
+		result.getCqlModel().setCqlFunctions(sortFunctionList(result.getCqlModel().getCqlFunctions()));
 
 		return result;
 	}
 
-	/*
-	 * {@inheritDoc}
-	 */
 	@Override
-	public SaveUpdateCQLResult deleteParameter(String xml, CQLParameter toBeDeletedObj,
-			List<CQLParameter> parameterList) {
+	public SaveUpdateCQLResult deleteParameter(String xml, CQLParameter toBeDeletedObj) {
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		CQLParametersWrapper wrapper = new CQLParametersWrapper();
-
-		CQLModel cqlModel = new CQLModel();
-		result.setCqlModel(cqlModel);
 
 		if (toBeDeletedObj.isReadOnly()) {
 			result.setSuccess(false);
@@ -1060,63 +968,19 @@ public class CQLServiceImpl implements CQLService {
 				&& artifactsResult.getUsedCQLParameters().contains(toBeDeletedObj.getName())) {
 			result.setSuccess(false);
 			result.setFailureReason(SaveUpdateCQLResult.SERVER_SIDE_VALIDATION);
-		} else {
-			XmlProcessor processor = new XmlProcessor(xml);
-
-			if (xml != null) {
-				String XPATH_EXPRESSION_CQLLOOKUP_PARAMETER = "//cqlLookUp//parameter[@id='" + toBeDeletedObj.getId()
-						+ "']";
-				try {
-					Node parameterNode = processor.findNode(processor.getOriginalDoc(),
-							XPATH_EXPRESSION_CQLLOOKUP_PARAMETER);
-
-					if (parameterNode != null) {
-
-						// remove from xml
-						parameterNode.getParentNode().removeChild(parameterNode);
-						processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
-						result.setXml(processor.getOriginalXml());
-
-						// remove from parameter list
-						parameterList.remove(toBeDeletedObj);
-						wrapper.setCqlParameterList(parameterList);
-						result.setSuccess(true);
-						result.setParameter(toBeDeletedObj);
-					}
-
-					else {
-						result.setSuccess(false);
-						result.setFailureReason(SaveUpdateCQLResult.NODE_NOT_FOUND);
-					}
-
-				} catch (XPathExpressionException e) {
-					result.setSuccess(false);
-					e.printStackTrace();
-				}
-
-			}
-		}
-		if (result.isSuccess() && (wrapper.getCqlParameterList().size() > 0)) {
-			result.getCqlModel().setCqlParameters(sortParametersList(wrapper.getCqlParameterList()));
-		}
-
+			return result;
+		} 
+		
+		CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(xml);
+		cqlModel.getCqlParameters().removeIf(p -> p.getId().equals(toBeDeletedObj.getId()));
+		result.setXml(CQLUtilityClass.getXMLFromCQLModel(cqlModel));
+		result.setCqlModel(cqlModel);	
+		result.setSuccess(true);
+		result.getCqlModel().setCqlParameters(sortParametersList(result.getCqlModel().getCqlParameters()));
+	
 		return result;
 	}
 
-	/**
-	 * Update risk adjustment variables.
-	 *
-	 * @param processor       the processor
-	 * @param toBeModifiedObj the to be modified obj
-	 * @param currentObj      the current obj
-	 */
-
-
-
-
-	/*
-	 * {@inheritDoc}
-	 */
 	@Override
 	public SaveUpdateCQLResult getCQLData(String xmlString) {
 		CQLModel cqlModel = new CQLModel();
@@ -1409,7 +1273,7 @@ public class CQLServiceImpl implements CQLService {
 	 * @param funcList the Function list
 	 * @return the list
 	 */
-	private List<CQLFunctions> sortFunctionssList(List<CQLFunctions> funcList) {
+	private List<CQLFunctions> sortFunctionList(List<CQLFunctions> funcList) {
 
 		Collections.sort(funcList, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
 
@@ -1709,7 +1573,8 @@ public class CQLServiceImpl implements CQLService {
 				v.setProgram(qds.getProgram());
 				v.setRelease(qds.getRelease());
 				v.setDataType(qds.getDataType());
-				v.setValueSetType(qds.getTaxonomy());
+				v.setValueSetType(qds.getValueSetType());
+				v.setTaxonomy(qds.getTaxonomy());
 				v.setSuppDataElement(qds.isSuppDataElement());
 				v.setType(qds.getType());
 			});
@@ -2026,53 +1891,18 @@ public class CQLServiceImpl implements CQLService {
 	}
 
 	@Override
-	public SaveUpdateCQLResult deleteInclude(String xml, CQLIncludeLibrary toBeModifiedIncludeObj,
-			List<CQLIncludeLibrary> viewIncludeLibrarys) {
+	public SaveUpdateCQLResult deleteInclude(String xml, CQLIncludeLibrary toBeModifiedIncludeObj) {
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		CQLIncludeLibraryWrapper wrapper = new CQLIncludeLibraryWrapper();
-		XmlProcessor processor = new XmlProcessor(xml);
-
-		if (xml != null) {
-			String XPATH_EXPRESSION_CQLLOOKUP_INCLUDE = "//cqlLookUp//includeLibrary[@id='"
-					+ toBeModifiedIncludeObj.getId() + "']";
-			logger.info("XPATH: " + XPATH_EXPRESSION_CQLLOOKUP_INCLUDE);
-			try {
-				Node includeNode = processor.findNode(processor.getOriginalDoc(), XPATH_EXPRESSION_CQLLOOKUP_INCLUDE);
-
-				if (includeNode != null) {
-					logger.info("FOUND NODE");
-
-					// remove from xml
-					Node deletedNode = includeNode.getParentNode().removeChild(includeNode);
-					logger.debug(deletedNode.getAttributes().getNamedItem("name").toString());
-					processor.setOriginalXml(processor.transform(processor.getOriginalDoc()));
-					result.setXml(processor.getOriginalXml());
-
-					// remove from library list
-					viewIncludeLibrarys.remove(toBeModifiedIncludeObj);
-					wrapper.setCqlIncludeLibrary(viewIncludeLibrarys);
-					result.setSuccess(true);
-					result.setIncludeLibrary(toBeModifiedIncludeObj);
-				}
-
-				else {
-					logger.info("NOT FOUND NODE");
-					result.setSuccess(false);
-					result.setFailureReason(SaveUpdateCQLResult.NODE_NOT_FOUND);
-				}
-
-			} catch (XPathExpressionException e) {
-				result.setSuccess(false);
-				logger.error("deleteInclude" + e.getMessage());
-			}
-		}
-
+		result.setXml(xml);
+		
+		CQLModel model = CQLUtilityClass.getCQLModelFromXML(xml);
+		model.getCqlIncludeLibrarys().removeIf(m -> m.getId().equals(toBeModifiedIncludeObj.getId()));
+		result.setSuccess(true);
+		
 		if (result.isSuccess()) {
-			CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(result.getXml());
-			result.setCqlModel(cqlModel);
-			CQLUtil.getIncludedCQLExpressions(cqlModel, cqlLibraryDAO);
-			logger.info(result.getXml());
-			logger.info(result.isSuccess());
+			result.setXml(CQLUtilityClass.getXMLFromCQLModel(model));
+			result.setCqlModel(model);
+			CQLUtil.getIncludedCQLExpressions(model, cqlLibraryDAO);
 		}
 
 		return result;

@@ -229,7 +229,7 @@ public interface MeasureService extends RemoteService {
 	 * @param measureXmlModel
 	 *            the measure xml model
 	 */
-	void saveMeasureXml(MeasureXmlModel measureXmlModel);
+	void saveMeasureXml(MeasureXmlModel measureXmlModel, String measureId);
 	
 	/**
 	 * Search.
@@ -464,13 +464,6 @@ public interface MeasureService extends RemoteService {
 	MeasureDetailResult getUsedStewardAndDevelopersList(String measureId);
 	
 	/**
-	 * Update measure xml for deleted component measure and org.
-	 *
-	 * @param id the id
-	 */
-	void updateMeasureXmlForDeletedComponentMeasureAndOrg(String id);
-	
-	/**
 	 * Update measure xml for expansion identifier.
 	 *
 	 * @param modifyWithDTO the modify with dto
@@ -582,36 +575,27 @@ public interface MeasureService extends RemoteService {
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param definitionList the definition list
 	 * @return the save update cql result
 	 */
-	SaveUpdateCQLResult deleteDefinition(String measureId, CQLDefinition toBeDeletedObj, 
-			List<CQLDefinition> definitionList);
+	SaveUpdateCQLResult deleteDefinition(String measureId, CQLDefinition toBeDeletedObj);
 	
 	/**
 	 * Delete functions
 	 *  
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param functionsList the functions list
 	 * @return the save update cql result
 	 */
-	SaveUpdateCQLResult deleteFunctions(String measureId, CQLFunctions toBeDeletedObj,  
-			List<CQLFunctions> functionsList); 
+	SaveUpdateCQLResult deleteFunction(String measureId, CQLFunctions toBeDeletedObj); 
 	
 	/**
 	 * Delete parameter
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param parameterList the parameter list
 	 * @return the save update cql result
 	 */
-	SaveUpdateCQLResult deleteParameter(String measureId, CQLParameter toBeDeletedObj,  
-			List<CQLParameter> parameterList); 
+	SaveUpdateCQLResult deleteParameter(String measureId, CQLParameter toBeDeletedObj); 
 	
 	
 	/**
@@ -636,9 +620,7 @@ public interface MeasureService extends RemoteService {
 
 	SaveUpdateCQLResult getMeasureCQLFileData(String measureId);
 
-	SaveUpdateCQLResult deleteInclude(String currentMeasureId,
-			CQLIncludeLibrary toBeModifiedIncludeObj,
-			List<CQLIncludeLibrary> viewIncludeLibrarys);
+	SaveUpdateCQLResult deleteInclude(String currentMeasureId, CQLIncludeLibrary toBeModifiedIncludeObj);
 	
 	VsacApiResult updateCQLVSACValueSets(String currentMeasureId, String expansionId);
 

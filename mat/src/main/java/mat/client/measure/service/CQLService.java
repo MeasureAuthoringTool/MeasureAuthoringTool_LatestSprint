@@ -101,36 +101,27 @@ public interface CQLService {
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param definitionList the definition list
 	 * @return the save and update result
 	 */
-	SaveUpdateCQLResult deleteDefinition(String measureId, CQLDefinition toBeDeletedObj, 
-			List<CQLDefinition> definitionList);
+	SaveUpdateCQLResult deleteDefinition(String measureId, CQLDefinition toBeDeletedObj);
 	
 	/**
 	 * Delete functions
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeltedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param functionsList the functions list
 	 * @return the save and update result
 	 */
-	SaveUpdateCQLResult deleteFunctions(String measureId, CQLFunctions toBeDeltedObj, 
-			List<CQLFunctions> functionsList);
+	SaveUpdateCQLResult deleteFunction(String measureId, CQLFunctions toBeDeltedObj);
 	
 	/**
 	 * Delete parameter
 	 * 
 	 * @param measureId the measure id
 	 * @param toBeDeletedObj the to be deleted obj
-	 * @param currentObj the current obj
-	 * @param parameterList the parameter list
 	 * @return the save and update result
 	 */
-	SaveUpdateCQLResult deleteParameter(String measureId, CQLParameter toBeDeletedObj, 
-			List<CQLParameter> parameterList);
+	SaveUpdateCQLResult deleteParameter(String measureId, CQLParameter toBeDeletedObj);
 	
 	/**
 	 * Gets the CQL data type list.
@@ -169,9 +160,7 @@ public interface CQLService {
 	
 	SaveUpdateCQLResult saveAndModifyIncludeLibrayInCQLLookUp(String measureId, CQLIncludeLibrary toBeModifiedObj, CQLIncludeLibrary currentObj, List<CQLIncludeLibrary> incLibraryList) throws InvalidLibraryException;
 
-	SaveUpdateCQLResult deleteInclude(String currentMeasureId,
-			CQLIncludeLibrary toBeModifiedIncludeObj,
-			List<CQLIncludeLibrary> viewIncludeLibrarys);
+	SaveUpdateCQLResult deleteInclude(String currentMeasureId, CQLIncludeLibrary toBeModifiedIncludeObj);
 
 	void saveCQLAssociation(CQLIncludeLibrary currentObj, String measureId);
 
