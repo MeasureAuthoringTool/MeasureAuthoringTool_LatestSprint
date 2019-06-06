@@ -59,10 +59,10 @@ public class InsertAttributeBuilderDialogBox {
 	private static final String QUANTITY_UNIT_ALERT = "Quantity field is now enabled. Units dropdown is now enabled.";
 	private static final String FACILITY_LOCATIONS = "facilityLocations";
 	private static final String ATTR_ID = "id";
-	private static final String PRESCRIBER_ID = "prescriberId";
-	private static final String DISPENSER_ID = "dispenserId";
 	private static final String DIAGNOSES = "diagnoses";
 	private static final String COMPONENTS = "components";
+	private static final String PERFORMER = "performer";
+	private static final String REQUESTER = "requester";
 	private static final String VALUE_SETS = "Value Sets";
 	private static final String CODES = "Codes";
 	private static final String NULLABLE = "Nullable";
@@ -442,8 +442,8 @@ public class InsertAttributeBuilderDialogBox {
 
 	private static boolean isModeDisabledEntry(final String attrSelected) {
 		return attrSelected.equalsIgnoreCase(COMPONENTS) || attrSelected.equalsIgnoreCase(DIAGNOSES)
-				|| attrSelected.equalsIgnoreCase(FACILITY_LOCATIONS) || attrSelected.equalsIgnoreCase(ATTR_ID)
-				|| attrSelected.equalsIgnoreCase(PRESCRIBER_ID) || attrSelected.equalsIgnoreCase(DISPENSER_ID);
+				|| attrSelected.equalsIgnoreCase(FACILITY_LOCATIONS) || attrSelected.equalsIgnoreCase(PERFORMER) || 
+				attrSelected.equalsIgnoreCase(REQUESTER) || attrSelected.equalsIgnoreCase(ATTR_ID);
 	}
 
 	private static void clearAllFormGroups() {
@@ -719,6 +719,8 @@ public class InsertAttributeBuilderDialogBox {
 		String modeName = modelistBox.getItemText(modelistBox.getSelectedIndex());
 		attributeName = attributeName.toLowerCase();
 		modeName = modeName.toLowerCase();
+
+
 		if (modeName.equalsIgnoreCase("comparison") || modeName.equalsIgnoreCase("computative")) {
 			if (attributeName.contains("datetime") && modeName.equalsIgnoreCase("comparison")) {
 				// the date time field is about to be enabled. If the it is currently disabled,
@@ -728,12 +730,18 @@ public class InsertAttributeBuilderDialogBox {
 						&& !dtw.getMsTxtBox().isEnabled()) {
 					messageHelpBlock.setText(DATE_TIME_ALERT);
 				}
-
 				dtw.setDateTimeEnabled(true);
 				quantityTextBox.setEnabled(false);
 				unitslistBox.setEnabled(false);
+				
 			} else if (attributeName.equalsIgnoreCase("result")) {
 				setEnabled(true);
+				
+			} else if(attributeName.contains("statusdate") && modeName.equalsIgnoreCase("comparison")) {
+				dtw.setDateTimeEnabled(true);
+				quantityTextBox.setEnabled(false);
+				unitslistBox.setEnabled(false);
+				
 			} else {
 				dtw.setDateTimeEnabled(false);
 
@@ -742,6 +750,7 @@ public class InsertAttributeBuilderDialogBox {
 				if(!quantityTextBox.isEnabled() && !unitslistBox.isEnabled()) {
 					messageHelpBlock.setText(QUANTITY_UNIT_ALERT);
 				}
+
 
 				quantityTextBox.setEnabled(true);
 				unitslistBox.setEnabled(true);

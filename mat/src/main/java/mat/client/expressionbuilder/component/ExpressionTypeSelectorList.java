@@ -23,13 +23,16 @@ import mat.client.expressionbuilder.model.IExpressionBuilderModel;
 import mat.client.expressionbuilder.model.ModelAndOperatorTypeUtil;
 import mat.client.expressionbuilder.model.OperatorModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
+import mat.client.expressionbuilder.util.ExpressionTypeUtil;
 import mat.client.expressionbuilder.util.OperatorTypeUtil;
 
 public class ExpressionTypeSelectorList extends Composite {
 
 	private ExpressionBuilderModel model;
 	private List<ExpressionType> availableExpressionTypes;
+	private List<ExpressionType> originalAvailableExpressionTypes; 
 	private List<OperatorType> availableOperatorTypes;
+	private List<OperatorType> originalAvailableOperatorTypes;
 	private List<String> availableAliases;
 
 	private BuildButtonObserver buildButtonObserver;
@@ -50,6 +53,8 @@ public class ExpressionTypeSelectorList extends Composite {
 			List<String> availableAliases, 
 			BuildButtonObserver observer, ExpressionBuilderModel model, String labelText, ExpressionBuilderModal parentModal) {
 		this.availableExpressionTypes = availableExpressionTypes;
+		this.originalAvailableExpressionTypes = new ArrayList<>(availableExpressionTypes);
+		this.originalAvailableOperatorTypes = new ArrayList<>(availableOperatorTypes);
 		this.availableAliases = availableAliases;
 		this.availableOperatorTypes = new ArrayList<>();
 		this.availableOperatorTypes.addAll(availableOperatorTypes);
@@ -77,53 +82,24 @@ public class ExpressionTypeSelectorList extends Composite {
 		VerticalPanel panel = new VerticalPanel();
 		panel.setStyleName("selectorsPanel");
 		panel.setWidth("100%");
-		HorizontalPanel labelPanel = new HorizontalPanel();
-		FormLabel label = new FormLabel();
-		label.setText(this.labelText);
-		label.setTitle(this.labelText);
-		labelPanel.add(label);
-		if(isInitialModalScreen()) {
-			InAppHelpButton inAppHelpButton = new InAppHelpButton();
-			labelPanel.add(inAppHelpButton);
-			inAppHelpButton.setMarginTop(-9);
-			inAppHelpButton.addClickHandler(event -> handleOpen());
-		}
-		
-		panel.add(labelPanel);
+
+		panel.add(buildLabelPanel());
 				
-		// filter available operators based on first expression type selected
+		// filter available operators and expressions based on first expression type selected
 		if(!this.model.getChildModels().isEmpty()) {
-			CQLType firstType = this.model.getChildModels().get(0).getType();
-			
-			List<OperatorType> availableOperatorTypesForFirstExpressionType = new ArrayList<>();
-			availableOperatorTypesForFirstExpressionType.addAll(OperatorTypeUtil.getAvailableOperatorsCQLType(firstType));
-			this.availableOperatorTypes = availableOperatorTypesForFirstExpressionType;
-			
-			List<OperatorType> newAvailableOperators = new ArrayList<>();
-			for(OperatorType type : this.availableOperatorTypes) {
-				if(availableOperatorTypesForFirstExpressionType.contains(type)) {
-					newAvailableOperators.add(type);
-				}
-			}
-			
-			this.availableOperatorTypes = newAvailableOperators;
+			updateOperatorsAndExpressionsBasedOnFirstSelection();
+		} else {
+			resetOperatorsAndExpressions();
 		}
 		
 		for(int i = 0; i < this.model.getChildModels().size(); i++) {
 			IExpressionBuilderModel currentChildModel = this.model.getChildModels().get(i);
 			
-			// operators should not display with the collapsable panel, but should be formatted with code.
+			// operators should not display with the collapsible panel, but should be formatted with code.
 			if(currentChildModel instanceof OperatorModel) {
 				FocusPanel operatorFocusPanel = new FocusPanel();
 				operatorFocusPanel.getElement().setAttribute("aria-label", currentChildModel.getCQL(""));
-				
-				Code code = new Code(); 
-				code.setText(currentChildModel.getCQL(""));
-				code.setTitle(currentChildModel.getCQL(""));
-				code.setColor("black");
-				code.setStyleName("expressionBuilderCode");
-				
-				operatorFocusPanel.add(code);
+				operatorFocusPanel.add(buildCode(currentChildModel.getCQL("")));
 				panel.add(operatorFocusPanel);
 				
 				// all subsequent available operators should be equivalent to the previously selected operator
@@ -152,6 +128,54 @@ public class ExpressionTypeSelectorList extends Composite {
 		
 	
 		return panel;
+	}
+
+	private HorizontalPanel buildLabelPanel() {
+		HorizontalPanel labelPanel = new HorizontalPanel();
+		FormLabel label = new FormLabel();
+		label.setText(this.labelText);
+		label.setTitle(this.labelText);
+		labelPanel.add(label);
+		if(isInitialModalScreen()) {
+			InAppHelpButton inAppHelpButton = new InAppHelpButton();
+			labelPanel.add(inAppHelpButton);
+			inAppHelpButton.setMarginTop(-9);
+			inAppHelpButton.addClickHandler(event -> handleOpen());
+		}
+		return labelPanel;
+	}
+
+	private Code buildCode(String cqlCode) {
+		Code code = new Code(); 
+		code.setText(cqlCode);
+		code.setTitle(cqlCode);
+		code.setColor("black");
+		code.setStyleName("expressionBuilderCode");
+		return code;
+	}
+
+	private void updateOperatorsAndExpressionsBasedOnFirstSelection() {
+		CQLType firstType = this.model.getChildModels().get(0).getType();
+
+		List<OperatorType> availableOperatorTypesForFirstExpressionType = new ArrayList<>();
+		availableOperatorTypesForFirstExpressionType.addAll(OperatorTypeUtil.getAvailableOperatorsCQLType(firstType));
+
+		this.availableOperatorTypes = availableOperatorTypesForFirstExpressionType;
+
+		List<OperatorType> newAvailableOperators = new ArrayList<>();
+		for(OperatorType type : this.availableOperatorTypes) {
+			if(availableOperatorTypesForFirstExpressionType.contains(type)) {
+				newAvailableOperators.add(type);
+			}
+		}
+
+		this.availableOperatorTypes =  newAvailableOperators;
+		this.availableExpressionTypes = ExpressionTypeUtil.getAvailableExpressionsCQLType(firstType);
+	}
+	
+	private void resetOperatorsAndExpressions() {
+		this.availableOperatorTypes = this.originalAvailableOperatorTypes;
+		this.availableExpressionTypes = this.originalAvailableExpressionTypes;
 	}
 	
 	private void handleOpen() {

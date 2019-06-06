@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +129,6 @@ import mat.model.cql.CQLQualityDataSetDTO;
 import mat.server.cqlparser.CQLLinter;
 import mat.server.cqlparser.CQLLinterConfig;
 import mat.server.humanreadable.cql.CQLHumanReadableGenerator;
-import mat.server.humanreadable.cql.HumanReadableComponentMeasureModel;
 import mat.server.humanreadable.cql.HumanReadableMeasureInformationModel;
 import mat.server.humanreadable.cql.HumanReadableModel;
 import mat.server.model.MatUserDetails;
@@ -144,6 +144,7 @@ import mat.server.service.impl.XMLMarshalUtil;
 import mat.server.util.CQLUtil;
 import mat.server.util.ExportSimpleXML;
 import mat.server.util.MATPropertiesService;
+import mat.server.util.ManageMeasureDetailModelConversions;
 import mat.server.util.MeasureUtility;
 import mat.server.util.QDMUtil;
 import mat.server.util.XmlProcessor;
@@ -705,10 +706,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					? manageMeasureDetailModel.getPeriodModel().getStopDate() : null);
 		}
 		manageMeasureDetailModel.setEndorseByNQF(StringUtils.isNotBlank(manageMeasureDetailModel.getEndorsement()));
-		manageMeasureDetailModel.setOrgVersionNumber(MeasureUtility.formatVersionText(measure.getRevisionNumber(),
-				String.valueOf(measure.getVersionNumber())));
-		manageMeasureDetailModel.setVersionNumber(
-				MeasureUtility.getVersionText(manageMeasureDetailModel.getOrgVersionNumber(), measure.isDraft()));
+		manageMeasureDetailModel.setFormattedVersion(MeasureUtility.getVersionText(measure.getVersion(), measure.getRevisionNumber(), measure.isDraft()));
+		manageMeasureDetailModel.setOrgVersionNumber(MeasureUtility.formatVersionText(measure.getRevisionNumber(), String.valueOf(measure.getVersionNumber())));
+		manageMeasureDetailModel.setVersionNumber(MeasureUtility.getVersionText(manageMeasureDetailModel.getOrgVersionNumber(), measure.isDraft()));
 		manageMeasureDetailModel.setFinalizedDate(DateUtility.convertDateToString(measure.getFinalizedDate()));
 		manageMeasureDetailModel.setDraft(measure.isDraft());
 		manageMeasureDetailModel.setValueSetDate(DateUtility.convertDateToStringNoTime(measure.getValueSetDate()));
@@ -1378,116 +1378,66 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		logger.info("Loading Measure for MeasueId: " + key);
 		Measure measure = measurePackageService.getById(key);
 		if(!measure.getIsCompositeMeasure()) {
-			
 			MeasureXmlModel xmlModel = getMeasureXmlForMeasure(key);
-			MeasureDetailResult measureDetailResult = getUsedStewardAndDevelopersList(measure.getId());
 			String xmlString = new XmlProcessor(xmlModel.getXml()).getXmlByTagName(MEASURE_DETAILS);
-			ManageMeasureDetailModel manageMeasureDetailModel = convertXMLToModel(xmlString, measure);
+		
+			ManageMeasureDetailModel manageMeasureDetailModel = new ManageMeasureDetailModel();		
+			MeasureDetailResult measureDetailResult = new MeasureDetailResult();
+			if(xmlString == null || measure.getMeasureDetails() != null) {
+				manageMeasureDetailModel = setManageMeasureDetailModelFromDatabaseData(measure, measureDetailResult);
+				measureDetailResult = getUsedStewardAndDevelopersList(measure.getId());
+			} else {
+				manageMeasureDetailModel = convertXMLToModel(xmlString, measure);
+				measureDetailResult = getUsedStewardAndDeveloperFromXml(measure.getId());
+				addIdsToMeasureType(manageMeasureDetailModel);
+			}
 			
 			manageMeasureDetailModel.setQdmVersion(measure.getQdmVersion());
-			setManageMeasureDetailModelFromDatabaseData(measure, measureDetailResult, manageMeasureDetailModel);
-			
 			manageMeasureDetailModel.setMeasureDetailResult(measureDetailResult);
+			
 			return manageMeasureDetailModel;
 		}
 		else {
 			return getCompositeMeasure(key);
 		}
+	}
 		
-
-	}
-
-	private void setManageMeasureDetailModelFromDatabaseData(Measure measure, MeasureDetailResult measureDetailResult,
-			ManageMeasureDetailModel manageMeasureDetailModel) {
-		measureDetailsService.getManageMeasureDetailModelFromMeasureDetails(manageMeasureDetailModel, measure.getMeasureDetails());
-		generateMeasureStewardFromDatabaseData(measure, measureDetailResult, manageMeasureDetailModel);
-		generateMeasureDevelopersFromDatabaseData(measure, measureDetailResult, manageMeasureDetailModel);
-		generateMeasureTypeFromDatabaseData(measure, measureDetailResult, manageMeasureDetailModel);
-		manageMeasureDetailModel.setName(measure.getDescription());
-		manageMeasureDetailModel.setShortName(measure.getaBBRName());
-		manageMeasureDetailModel.setMeasureOwnerId(measure.getOwner().getId());
-		manageMeasureDetailModel.setMeasScoring(measure.getMeasureScoring());
-		manageMeasureDetailModel.setIsPatientBased(measure.getPatientBased() == null ? calculateDefaultPatientBasedIndicatorBasedOnScoringType(measure.getMeasureScoring()) : measure.getPatientBased());
-		manageMeasureDetailModel.setFinalizedDate(DateUtility.convertDateToString(measure.getFinalizedDate()));
-		manageMeasureDetailModel.setGroupId(measure.getMeasureSet().getId());
-		manageMeasureDetailModel.seteMeasureId(measure.geteMeasureId());
-		manageMeasureDetailModel.setMeasureSetId(measure.getMeasureSet().getId());
-		String nqfNum =  measure.getNqfNumber();
-		manageMeasureDetailModel.setEndorseByNQF(StringUtils.isNotBlank(nqfNum));
-		manageMeasureDetailModel.setNqfId(StringUtils.trimToEmpty(nqfNum));
-		manageMeasureDetailModel.setOrgVersionNumber(MeasureUtility.formatVersionText(measure.getRevisionNumber(),
-				String.valueOf(measure.getVersionNumber())));
-		manageMeasureDetailModel.setVersionNumber(
-				MeasureUtility.getVersionText(manageMeasureDetailModel.getOrgVersionNumber(), measure.isDraft()));
-		Timestamp calendarYearFrom = measure.getMeasurementPeriodFrom();
-		Timestamp calendarYearTo = measure.getMeasurementPeriodTo();
-		
-		manageMeasureDetailModel.setCalenderYear(calendarYearFrom == null && calendarYearTo == null ? true : false);
-		if(calendarYearFrom != null && calendarYearTo != null) {
-			manageMeasureDetailModel.setMeasFromPeriod(new SimpleDateFormat("MM/dd/yyyy").format(calendarYearFrom));
-			manageMeasureDetailModel.setMeasToPeriod(new SimpleDateFormat("MM/dd/yyyy").format(calendarYearTo));
+	private void addIdsToMeasureType(ManageMeasureDetailModel model) {
+		if(model.getMeasureTypeSelectedList() != null) {
+			model.getMeasureTypeSelectedList().forEach(mt -> mt.setId(measureTypeDAO.getMeasureTypeByName(mt.getDescription()).getId()));
 		}
 	}
 
-	private boolean calculateDefaultPatientBasedIndicatorBasedOnScoringType(String measureScoring) {
-		return !StringUtils.equals(measureScoring, ConstantMessages.CONTINUOUS_VARIABLE_SCORING);
-	}
-
-	private void generateMeasureTypeFromDatabaseData(Measure measure, MeasureDetailResult measureDetailResult,
-			ManageMeasureDetailModel manageMeasureDetailModel) {
-		List<MeasureTypeAssociation> measureTypesAssociation = measure.getMeasureTypes();
-		List<MeasureType> measureTypes = new ArrayList<>();
-		if(measureTypes != null) {
-			measureTypesAssociation.forEach(association -> measureTypes.add(new MeasureType(association.getMeasureTypes().getId(), association.getMeasureTypes().getDescription(), association.getMeasureTypes().getAbbrName())));
-			manageMeasureDetailModel.setMeasureTypeSelectedList(measureTypes);
+	private ManageMeasureDetailModel setManageMeasureDetailModelFromDatabaseData(Measure measure, MeasureDetailResult measureDetailResult) {
+		ManageMeasureDetailModelConversions converter = new ManageMeasureDetailModelConversions();
+		if(BooleanUtils.isTrue(measure.getIsCompositeMeasure())) {
+			return converter.createManageCompositeMeasureDetailModel(measure, organizationDAO, measureTypeDAO);
+		} else {
+			return converter.createManageMeasureDetailModel(measure, organizationDAO, measureTypeDAO);
 		}
-		
-		
-	}
-
-	private void generateMeasureDevelopersFromDatabaseData(Measure measure, MeasureDetailResult measureDetailResult,
-			ManageMeasureDetailModel manageMeasureDetailModel) {
-		List<Author> authors = getAuthorListFromOrganizations(measure.getMeasureDevelopers());
-		if(!authors.isEmpty()) {
-			manageMeasureDetailModel.setAuthorSelectedList(authors);
-			measureDetailResult.setUsedAuthorList(manageMeasureDetailModel.getAuthorSelectedList());
-		}
-	}
-
-	private void generateMeasureStewardFromDatabaseData(Measure measure, MeasureDetailResult measureDetailResult,
-			ManageMeasureDetailModel manageMeasureDetailModel) {
-		Organization measureSteward = getOrganizationFromOrgId(measure.getMeasureStewardId());
-		if(measureSteward != null) {
-			manageMeasureDetailModel.setStewardId(measureSteward == null ? "" : String.valueOf(measureSteward.getId()));
-			manageMeasureDetailModel.setStewardValue(measureSteward == null ? "" : measureSteward.getOrganizationName());
-			measureDetailResult.setUsedSteward(new MeasureSteward(String.valueOf(measureSteward.getId()), measureSteward.getOrganizationName(), measureSteward.getOrganizationOID()));
-		}
-	}
-
-	private Organization getOrganizationFromOrgId(String measureStewardId) {
-		return organizationDAO.findById(measureStewardId);
-	}
-
-	private List<Author> getAuthorListFromOrganizations(List<MeasureDeveloperAssociation> list) {
-		List<Author> authors = new ArrayList<>();
-		if(list != null) {
-			list.forEach(association -> authors.add(new Author(String.valueOf(association.getOrganization().getId()), association.getOrganization().getOrganizationName(), association.getOrganization().getOrganizationOID())));
-		}
-		return authors;
 	}
 
 	@Override
 	public ManageCompositeMeasureDetailModel getCompositeMeasure(String measureId) {
 		Measure measure = measurePackageService.getById(measureId);
 		MeasureXmlModel xmlModel = getMeasureXmlForMeasure(measureId);
-		MeasureDetailResult measureDetailResult = getUsedStewardAndDevelopersList(measure.getId());
+		MeasureDetailResult measureDetailResult = new MeasureDetailResult();
 		String xmlString = new XmlProcessor(xmlModel.getXml()).getXmlByTagName(MEASURE_DETAILS);
-		ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel = (ManageCompositeMeasureDetailModel) convertXMLToModel(xmlString, measure);
+		
+		ManageCompositeMeasureDetailModel manageCompositeMeasureDetailModel = new ManageCompositeMeasureDetailModel();
+		if(xmlString == null || measure.getMeasureDetails() != null) {
+			manageCompositeMeasureDetailModel = (ManageCompositeMeasureDetailModel) setManageMeasureDetailModelFromDatabaseData(measure, measureDetailResult);
+			measureDetailResult = getUsedStewardAndDevelopersList(measure.getId());
+		} else {
+			manageCompositeMeasureDetailModel = (ManageCompositeMeasureDetailModel) convertXMLToModel(xmlString, measure);
+			measureDetailResult = getUsedStewardAndDeveloperFromXml(measure.getId());
+			addIdsToMeasureType(manageCompositeMeasureDetailModel);
+		}
+		
+		
 		manageCompositeMeasureDetailModel.setMeasureDetailResult(measureDetailResult);
 		manageCompositeMeasureDetailModel.setQdmVersion(measure.getQdmVersion());
-		
-		setManageMeasureDetailModelFromDatabaseData(measure, measureDetailResult, manageCompositeMeasureDetailModel);
-		
+				
 		return manageCompositeMeasureDetailModel;
 	}
 
@@ -2618,7 +2568,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			measure.setFinalizedDate(
 					new Timestamp(DateUtility.convertStringToDate(model.getFinalizedDate()).getTime()));
 		}
-		if ((model.getValueSetDate() != null) && !model.getValueSetDate().equals("")) {
+		if (!StringUtils.isEmpty(model.getValueSetDate())) {
 			measure.setValueSetDate(new Timestamp(DateUtility.convertStringToDate(model.getValueSetDate()).getTime()));
 		}
 	}
@@ -3518,7 +3468,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		SaveUpdateCQLResult cqlResult = CQLUtil.parseCQLLibraryForErrors(cqlModel, cqlLibraryDAO, null);
 
 		if (cqlResult.getCqlErrors() != null && cqlResult.getCqlErrors().isEmpty()) {
-			String exportedXML = ExportSimpleXML.export(newXml, measureDAO, organizationDAO, cqlLibraryDAO, cqlModel);
+			String exportedXML = ExportSimpleXML.export(newXml, measureDAO, organizationDAO, cqlLibraryDAO, cqlModel, measureTypeDAO);
 
 			CQLModel model = CQLUtilityClass.getCQLModelFromXML(exportedXML);
 
@@ -4616,6 +4566,21 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 
 		return usedStewardAndAuthorList;
 	}
+	
+	private MeasureDetailResult getUsedStewardAndDeveloperFromXml(String measureId) {
+		logger.info("In MeasureLibraryServiceImpl.getUsedStewardAndDevelopersList() method..");
+		logger.info("Loading Measure for MeasueId: " + measureId);
+		MeasureDetailResult usedStewardAndAuthorList = new MeasureDetailResult();
+		MeasureXmlModel xml = getMeasureXmlForMeasure(measureId);
+		
+		List<Organization> allOrganization = getAllOrganizations();
+		usedStewardAndAuthorList.setUsedAuthorList(getAuthorsList(xml, allOrganization));
+		usedStewardAndAuthorList.setUsedSteward(getSteward(xml, allOrganization));
+		usedStewardAndAuthorList.setAllAuthorList(getAllAuthorList(allOrganization));
+		usedStewardAndAuthorList.setAllStewardList(getAllStewardList(allOrganization));
+
+		return usedStewardAndAuthorList;
+	}
 
 	/**
 	 * Gets the all steward list.
@@ -4637,6 +4602,69 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		
 		return organizationList.stream().map(
 				org -> new Author(String.valueOf(org.getId()), org.getOrganizationName(), org.getOrganizationOID())).collect(Collectors.toList());
+	}
+	
+	private void addAuthorsToList(List<Organization> allOrganization, List<Author> usedAuthorList, Long id) {
+		Author author = getAuthorFromOrganization(id, allOrganization);
+		if(author != null) {
+			usedAuthorList.add(author);
+		}
+	}
+	
+	private List<Author> getAuthorsList(MeasureXmlModel xmlModel, List<Organization> allOrganization) {
+		XmlProcessor processor = new XmlProcessor(xmlModel.getXml());
+		String XPATH_EXPRESSION_DEVELOPERS = "/measure//measureDetails//developers";
+		List<Author> usedAuthorList = new ArrayList<>();
+
+		try {
+			NodeList developerParentNodeList = (NodeList) xPath.evaluate(XPATH_EXPRESSION_DEVELOPERS, processor.getOriginalDoc(), XPathConstants.NODESET);
+			Node developerParentNode = developerParentNodeList.item(0);
+
+			if (developerParentNode != null) {
+				NodeList developerNodeList = developerParentNode.getChildNodes();
+
+				int childNodes =  developerNodeList.getLength();
+
+				LinkedHashSet<Long> authorList = new LinkedHashSet<>();
+
+				for (int i = 0; i < childNodes; i++) {
+					authorList.add(Long.parseLong(developerNodeList.item(i).getAttributes().getNamedItem(ID).getNodeValue()));
+				}
+
+				if(CollectionUtils.isNotEmpty(authorList)) {
+					authorList.forEach(id -> addAuthorsToList(allOrganization, usedAuthorList, id));
+				}
+			}
+
+		} catch (XPathExpressionException e) {
+			logger.debug("getAuthorsList: " + e);
+		}
+
+		return usedAuthorList;
+	}
+	
+	private MeasureSteward getSteward(MeasureXmlModel xmlModel, List<Organization> allOrganization) {
+		MeasureSteward measureSteward = new MeasureSteward();
+		XmlProcessor processor = new XmlProcessor(xmlModel.getXml());
+		String XPATH_EXPRESSION_STEWARD = "/measure//measureDetails//steward";
+
+		try {
+			Node stewardParentNode = (Node) xPath.evaluate(XPATH_EXPRESSION_STEWARD, processor.getOriginalDoc(), XPathConstants.NODE);
+			
+			if (stewardParentNode != null) {
+				String id = stewardParentNode.getAttributes().getNamedItem(ID).getNodeValue();
+
+				Organization organization = allOrganization.stream().filter(org -> id.equalsIgnoreCase(Long.toString(org.getId()))).findAny().orElse(new Organization());
+				measureSteward.setId(id);
+				measureSteward.setOrgName(organization.getOrganizationName());
+				measureSteward.setOrgOid(organization.getOrganizationOID());
+			}
+
+		} catch (XPathExpressionException e) {
+			logger.debug("getSteward: " + e);
+		}
+		
+		return measureSteward;
 	}
 
 	/**
@@ -6033,22 +6061,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	public String getHumanReadableForMeasureDetails(String measureId) {
 		String humanReadableHTML = "";
 		try {
-			MeasureXmlModel measureXML = getMeasureXmlForMeasure(measureId);
-			
-			XMLMarshalUtil xmlMarshalUtil = new XMLMarshalUtil();
-			HumanReadableModel model = (HumanReadableModel) xmlMarshalUtil.convertXMLToObject("SimpleXMLHumanReadableModelMapping.xml", measureXML.getXml(), HumanReadableModel.class);
-
-			if(model.getMeasureInformation().getComponentMeasures() != null) {
-				for(HumanReadableComponentMeasureModel componentModel: model.getMeasureInformation().getComponentMeasures()) {
-					ManageMeasureDetailModel manageComponentMeasureDetailModel = getMeasure(componentModel.getId());
-					componentModel.setMeasureSetId(manageComponentMeasureDetailModel.getMeasureSetId());
-					componentModel.setName(manageComponentMeasureDetailModel.getName());
-					componentModel.setVersion(manageComponentMeasureDetailModel.getVersionNumber());
-				}
-			}
-
-			HumanReadableMeasureInformationModel measureInformationModel = model.getMeasureInformation();
-
+			ManageMeasureDetailModel measureDetailsModel = getMeasure(measureId);
+			HumanReadableModel model = new HumanReadableModel();
+			HumanReadableMeasureInformationModel measureInformationModel = new HumanReadableMeasureInformationModel(measureDetailsModel);
+			model.setMeasureInformation(measureInformationModel);			
 			standardizeStartAndEndDate(measureInformationModel);
 			humanReadableHTML = humanReadableGenerator.generate(measureInformationModel);
 		} catch (Exception e) {
@@ -6057,6 +6073,8 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		}
 		return humanReadableHTML;
 	}
+	
+	
 
 	private void standardizeStartAndEndDate(HumanReadableMeasureInformationModel measureInformationModel) {
 		if((measureInformationModel.getMeasurementPeriodStartDate() == null && measureInformationModel.getMeasurementPeriodEndDate() == null) ||
