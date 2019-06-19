@@ -343,7 +343,7 @@ public class CQLServiceImpl implements CQLService {
 
 			// do some processing if the are no errors in the CQL
 			if (result.getCqlErrors().isEmpty()) {
-				Optional<CQLExpressionObject> expressionObject = findExpressionObject(functionWithEdits.getName(), result.getCqlObject().getCqlDefinitionObjectList());
+				Optional<CQLExpressionObject> expressionObject = findExpressionObject(functionWithEdits.getName(), result.getCqlObject().getCqlFunctionObjectList());
 				if (expressionObject.isPresent()) {
 					functionWithEdits.setReturnType(expressionObject.get().getReturnType());
 				}
@@ -747,6 +747,7 @@ public class CQLServiceImpl implements CQLService {
 		result.setXml(CQLUtilityClass.getXMLFromCQLModel(cqlModel));
 		result.setCqlModel(cqlModel);
 		result.setIncludeLibrary(includedLibraryWithEdits);
+		result.setUsedCQLArtifacts(getUsedCQlArtifacts(result.getXml()));
 
 
 		return result;
@@ -806,24 +807,8 @@ public class CQLServiceImpl implements CQLService {
 	@Override
 	public SaveUpdateCQLResult deleteDefinition(String xml, CQLDefinition toBeDeletedObj) {
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-
 		CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(xml);
-		result.setCqlModel(cqlModel);
-
-		if (toBeDeletedObj.isSupplDataElement()) {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCQLResult.SERVER_SIDE_VALIDATION);
-			return result;
-		}
-
-		GetUsedCQLArtifactsResult artifactsResult = getUsedCQlArtifacts(xml);
-		if (artifactsResult.getCqlErrors().isEmpty()
-				&& artifactsResult.getUsedCQLDefinitions().contains(toBeDeletedObj.getName())) {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCQLResult.SERVER_SIDE_VALIDATION);
-			return result;
-		} 
-			
+		result.setCqlModel(cqlModel);			
 		cqlModel.getDefinitionList().removeIf(d -> d.getId().equals(toBeDeletedObj.getId()));
 		result.setSuccess(true);
 		result.setCqlModel(cqlModel);
@@ -940,16 +925,7 @@ public class CQLServiceImpl implements CQLService {
 	public SaveUpdateCQLResult deleteFunction(String xml, CQLFunctions toBeDeletedObj) {
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(xml);
-		result.setCqlModel(cqlModel);
-
-		GetUsedCQLArtifactsResult artifactsResult = getUsedCQlArtifacts(xml);
-		if (artifactsResult.getCqlErrors().isEmpty()
-				&& artifactsResult.getUsedCQLFunctions().contains(toBeDeletedObj.getName())) {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCQLResult.SERVER_SIDE_VALIDATION);
-			return result;
-		}
-		
+		result.setCqlModel(cqlModel);		
 		cqlModel.getCqlFunctions().removeIf(f -> f.getId().equals(toBeDeletedObj.getId()));
 		result.setCqlModel(cqlModel);
 		result.setXml(CQLUtilityClass.getXMLFromCQLModel(cqlModel));
@@ -961,22 +937,7 @@ public class CQLServiceImpl implements CQLService {
 
 	@Override
 	public SaveUpdateCQLResult deleteParameter(String xml, CQLParameter toBeDeletedObj) {
-		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-
-		if (toBeDeletedObj.isReadOnly()) {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCQLResult.SERVER_SIDE_VALIDATION);
-			return result;
-		}
-
-		GetUsedCQLArtifactsResult artifactsResult = getUsedCQlArtifacts(xml);
-		if (artifactsResult.getCqlErrors().isEmpty()
-				&& artifactsResult.getUsedCQLParameters().contains(toBeDeletedObj.getName())) {
-			result.setSuccess(false);
-			result.setFailureReason(SaveUpdateCQLResult.SERVER_SIDE_VALIDATION);
-			return result;
-		} 
-		
+		SaveUpdateCQLResult result = new SaveUpdateCQLResult();		
 		CQLModel cqlModel = CQLUtilityClass.getCQLModelFromXML(xml);
 		cqlModel.getCqlParameters().removeIf(p -> p.getId().equals(toBeDeletedObj.getId()));
 		result.setXml(CQLUtilityClass.getXMLFromCQLModel(cqlModel));
@@ -1028,6 +989,7 @@ public class CQLServiceImpl implements CQLService {
 		cqlModel.setIncludedLibrarys(cqlIncludeModelMap);
 		CQLUtil.setIncludedCQLExpressions(cqlModel);
 		result.setCqlModel(cqlModel);
+		result.setUsedCQLArtifacts(getUsedCQlArtifacts(xmlString));
 
 		return result;
 	}
@@ -1909,6 +1871,7 @@ public class CQLServiceImpl implements CQLService {
 			result.setXml(CQLUtilityClass.getXMLFromCQLModel(model));
 			result.setCqlModel(model);
 			CQLUtil.getIncludedCQLExpressions(model, cqlLibraryDAO);
+			result.setUsedCQLArtifacts(getUsedCQlArtifacts(result.getXml()));
 		}
 
 		return result;

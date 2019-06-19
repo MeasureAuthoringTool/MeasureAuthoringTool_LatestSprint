@@ -3,7 +3,9 @@ package mat.server.util;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -11,9 +13,9 @@ import org.apache.commons.lang3.StringUtils;
 
 import mat.client.measure.ManageCompositeMeasureDetailModel;
 import mat.client.measure.ManageMeasureDetailModel;
+import mat.client.measure.ManageMeasureSearchModel.Result;
 import mat.client.measure.NqfModel;
 import mat.client.measure.PeriodModel;
-import mat.client.measure.ManageMeasureSearchModel.Result;
 import mat.dao.MeasureTypeDAO;
 import mat.dao.OrganizationDAO;
 import mat.model.Author;
@@ -89,9 +91,18 @@ public class ManageMeasureDetailModelConversions {
 		compositeMeasureDetailModel.setComponentMeasuresSelectedList(resultObjectForComponentMeasures);
 		compositeMeasureDetailModel.setAppliedComponentMeasures(resultObjectForComponentMeasures);
 		
+		compositeMeasureDetailModel.setAliasMapping(createAliasMapping(measure));
+		
 		return compositeMeasureDetailModel;
 	}
 	
+
+	private Map<String, String> createAliasMapping(Measure measure) {
+		Map<String, String> aliasMap = new HashMap<>();
+		measure.getComponentMeasures().stream().forEach(component -> aliasMap.put(component.getComponentMeasure().getId(), component.getAlias()));
+		return aliasMap;
+	}
+
 	private List<Result> createResultObjectForComponentMeasures(List<ComponentMeasure> componentMeasures) {
 		List<Result> measureResults = new ArrayList<>();
 		measureResults.addAll(componentMeasures.stream().map(measure -> createResultObject(measure)).collect(Collectors.toList()));
@@ -105,7 +116,7 @@ public class ManageMeasureDetailModelConversions {
 		result.setName(measure.getDescription());
 		result.setScoringType(measure.getMeasureScoring());
 		result.setShortName(measure.getaBBRName());
-		result.setVersion(measure.getVersion());
+		result.setVersion(MeasureUtility.formatVersionText("000", measure.getVersion()));
 		result.setFinalizedDate(measure.getFinalizedDate());
 		result.setDraft(measure.isDraft());
 		result.setMeasureSetId(measure.getMeasureSet().getId());
@@ -147,6 +158,10 @@ public class ManageMeasureDetailModelConversions {
 		measureDetailModel.setNqfModel(createNQFModel(measure));
 		measureDetailModel.setNqfId(measure.getNqfNumber());
 		measureDetailModel.setPeriodModel(createPeriodModel(measure));
+		if(measure.getMeasurementPeriodFrom() != null && measure.getMeasurementPeriodTo() != null) {
+			measureDetailModel.setMeasFromPeriod(getSimpleDateFormat(measure.getMeasurementPeriodFrom()));
+			measureDetailModel.setMeasToPeriod(getSimpleDateFormat(measure.getMeasurementPeriodTo()));
+		}
 		measureDetailModel.setMeasureSetId(measure.getMeasureSet().getId());
 		measureDetailModel.setDraft(measure.isDraft());
 		measureDetailModel.setValueSetDate(String.valueOf(measure.getValueSetDate()));

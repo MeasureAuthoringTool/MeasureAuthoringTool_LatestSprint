@@ -1,6 +1,7 @@
 package mat.client.cqlworkspace;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -63,6 +64,10 @@ public class InsertAttributeBuilderDialogBox {
 	private static final String COMPONENTS = "components";
 	private static final String PERFORMER = "performer";
 	private static final String REQUESTER = "requester";
+	private static final String PRESCRIBER = "prescriber";
+	private static final String SENDER = "sender";
+	private static final String RECIPIENT = "recipient";
+	private static final String RECORDER = "recorder";
 	private static final String VALUE_SETS = "Value Sets";
 	private static final String CODES = "Codes";
 	private static final String NULLABLE = "Nullable";
@@ -441,9 +446,9 @@ public class InsertAttributeBuilderDialogBox {
 	}
 
 	private static boolean isModeDisabledEntry(final String attrSelected) {
-		return attrSelected.equalsIgnoreCase(COMPONENTS) || attrSelected.equalsIgnoreCase(DIAGNOSES)
-				|| attrSelected.equalsIgnoreCase(FACILITY_LOCATIONS) || attrSelected.equalsIgnoreCase(PERFORMER) || 
-				attrSelected.equalsIgnoreCase(REQUESTER) || attrSelected.equalsIgnoreCase(ATTR_ID);
+		Set<String> hashset = new HashSet<>(Arrays.asList(COMPONENTS, DIAGNOSES, FACILITY_LOCATIONS, PERFORMER, 
+				PRESCRIBER, REQUESTER, RECIPIENT, SENDER, RECORDER, ATTR_ID));
+		return hashset.contains(attrSelected);
 	}
 
 	private static void clearAllFormGroups() {

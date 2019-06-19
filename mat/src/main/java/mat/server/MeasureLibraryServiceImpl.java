@@ -605,40 +605,6 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		// empty method body
 	}
 
-
-	/**
-	 * Append cql parameters.
-	 *
-	 * @param xmlProcessor
-	 *            the xml processor
-	 */
-	public void checkForDefaultCQLDefinitionsAndAppend(XmlProcessor xmlProcessor) {
-
-		NodeList defaultCQLDefNodeList = findDefaultDefinitions(xmlProcessor);
-
-		if (defaultCQLDefNodeList != null && defaultCQLDefNodeList.getLength() == 4) {
-			logger.info("All Default parameter elements present in the measure.");
-			return;
-		}
-
-		String defStr = getCqlService().getSupplementalDefinitions();
-		try {
-			xmlProcessor.appendNode(defStr, "definition", "/measure/cqlLookUp/definitions");
-
-			NodeList supplementalDefnNodes = xmlProcessor.findNodeList(xmlProcessor.getOriginalDoc(),
-					"/measure/cqlLookUp/definitions/definition[@supplDataElement='true']");
-
-			if (supplementalDefnNodes != null) {
-				for (int i = 0; i < supplementalDefnNodes.getLength(); i++) {
-					Node supplNode = supplementalDefnNodes.item(i);
-					supplNode.getAttributes().getNamedItem(ID).setNodeValue(UUIDUtilClient.uuid());
-				}
-			}
-		} catch (SAXException | IOException| XPathExpressionException e) {
-			logger.debug("checkForDefaultCQLDefinitionsAndAppend:" + e.getMessage());
-		}
-	}
-
 	/**
 	 * This method will look into XPath "/measure/cqlLookUp/definitions/" and
 	 * try and NodeList for Definitions with the following names; 'SDE
@@ -660,38 +626,6 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			}
 		}
 		return returnNodeList;
-	}
-
-
-	/**
-	 * Check for default cql parameters and append.
-	 *
-	 * @param xmlProcessor
-	 *            the xml processor
-	 */
-	public void checkForDefaultCQLParametersAndAppend(XmlProcessor xmlProcessor) {
-
-		List<String> missingDefaultCQLParameters = xmlProcessor.checkForDefaultParameters();
-
-		if (missingDefaultCQLParameters.isEmpty()) {
-			logger.info("All Default parameter elements present in the measure.");
-			return;
-		}
-		logger.info("Found the following Default parameter elements missing:" + missingDefaultCQLParameters);
-		CQLParameter parameter = new CQLParameter();
-
-		parameter.setId(UUID.randomUUID().toString());
-		parameter.setName(CQLWorkSpaceConstants.CQL_DEFAULT_MEASUREMENTPERIOD_PARAMETER_NAME);
-		parameter.setLogic(CQLWorkSpaceConstants.CQL_DEFAULT_MEASUREMENTPERIOD_PARAMETER_LOGIC);
-		parameter.setReadOnly(true);
-		String parStr = getCqlService().createParametersXML(parameter);
-
-		try {
-			xmlProcessor.appendNode(parStr, "parameter", "/measure/cqlLookUp/parameters");
-		} catch (SAXException | IOException e) {
-			logger.debug("checkForDefaultCQLParametersAndAppend:" + e.getMessage());
-		}
-
 	}
 	
 	private void convertAddlXmlElementsToModel(final ManageMeasureDetailModel manageMeasureDetailModel,
@@ -2202,18 +2136,9 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			MatContext.get().setCurrentMeasureScoringType(model.getMeasScoring());
 		}
 		
-		try {
-			xmlProcessor.updateCQLLibraryName(measure.getDescription());
-		} catch (XPathExpressionException e) {
-			e.printStackTrace();
-		}
-		
 		String newXml = xmlProcessor.transform(xmlProcessor.getOriginalDoc());
 		xmlModel.setXml(newXml);
 		measurePackageService.saveMeasureXml(xmlModel);
-		
-
-		
 	}
 
 	private void calculateCalendarYearForMeasure(final ManageMeasureDetailModel model, Measure measure) {
@@ -2305,9 +2230,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				XmlProcessor xmlProcessor = new XmlProcessor(xmlModel.getXml());
 				String newXml = xmlProcessor.replaceNode(measureXmlModel.getXml(),
 						measureXmlModel.getToReplaceNode(), measureXmlModel.getParentNode());
-				
-				checkForDefaultCQLParametersAndAppend(xmlProcessor);
-				checkForDefaultCQLDefinitionsAndAppend(xmlProcessor);
+			
 				updateCQLVersion(xmlProcessor, version);
 				
 				newXml = xmlProcessor.transform(xmlProcessor.getOriginalDoc());
@@ -4949,7 +4872,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 
 	private void lintAndAddToResult(String measureId, SaveUpdateCQLResult result) {
 		Measure measure = measureDAO.find(measureId);
-		CQLLinterConfig config = new CQLLinterConfig(MeasureUtility.cleanString(measure.getDescription()),
+		CQLLinterConfig config = new CQLLinterConfig(result.getCqlModel().getLibraryName(),
 				MeasureUtility.formatVersionText(measure.getRevisionNumber(), measure.getVersion()),
 				QDMUtil.QDM_MODEL_IDENTIFIER, measure.getQdmVersion());
 		config.setPreviousCQLModel(result.getCqlModel());
@@ -4973,11 +4896,12 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			MatContextServiceUtil.get().setMeasure(true);
 			Measure measure = measureDAO.find(measureId);
 
-			CQLLinterConfig config = new CQLLinterConfig(MeasureUtility.cleanString(measure.getDescription()),
+			CQLModel previousModel = CQLUtilityClass.getCQLModelFromXML(measureXMLModel.getXml());
+
+			CQLLinterConfig config = new CQLLinterConfig(previousModel.getLibraryName(),
 					MeasureUtility.formatVersionText(measure.getRevisionNumber(), measure.getVersion()),
 					QDMUtil.QDM_MODEL_IDENTIFIER, measure.getQdmVersion());
 			
-			CQLModel previousModel = CQLUtilityClass.getCQLModelFromXML(measureXMLModel.getXml());
 			config.setPreviousCQLModel(previousModel);
 			
 			result = getCqlService().saveCQLFile(measureXMLModel.getXml(), cql, config);
@@ -5119,18 +5043,19 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 
 	@Override
 	public SaveUpdateCQLResult saveAndModifyCQLGeneralInfo(String currentMeasureId, String libraryName, String comments) {
-
-		MeasureXmlModel xmlModel = measurePackageService.getMeasureXmlForMeasure(currentMeasureId);
 		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
-		if (xmlModel != null) {
-			result = getCqlService().saveAndModifyCQLGeneralInfo(xmlModel.getXml(), libraryName, comments);
-			if (result.isSuccess()) {
-				xmlModel.setXml(result.getXml());
-				measurePackageService.saveMeasureXml(xmlModel);
+		if(MatContextServiceUtil.get().isCurrentMeasureEditable(measureDAO, currentMeasureId)) {
+			MeasureXmlModel xmlModel = measurePackageService.getMeasureXmlForMeasure(currentMeasureId);
+			if (xmlModel != null) {
+				result = getCqlService().saveAndModifyCQLGeneralInfo(xmlModel.getXml(), libraryName, comments);
+				if (result.isSuccess()) {
+					xmlModel.setXml(result.getXml());
+					measurePackageService.saveMeasureXml(xmlModel);
+				}
+
 			}
-
 		}
-
+		
 		return result;
 	}
 
@@ -5143,7 +5068,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			if (xmlModel != null) {
 				result = getCqlService().deleteDefinition(xmlModel.getXml(), toBeDeletedObj);
 				if (result.isSuccess()) {
-					XmlProcessor processor = new XmlProcessor(result.getXml());
+					XmlProcessor processor = new XmlProcessor(xmlModel.getXml());
 					processor.replaceNode(result.getXml(), "cqlLookUp", "measure");
 					xmlModel.setXml(processor.transform(processor.getOriginalDoc()));
 					cleanPopulationsAndGroups(toBeDeletedObj, xmlModel);
@@ -5240,7 +5165,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			if (xmlModel != null) {
 				result = getCqlService().deleteFunction(xmlModel.getXml(), toBeDeletedObj);
 				if (result.isSuccess()) {
-					XmlProcessor processor = new XmlProcessor(result.getXml());
+					XmlProcessor processor = new XmlProcessor(xmlModel.getXml());
 					processor.replaceNode(result.getXml(), "cqlLookUp", "measure");
 					xmlModel.setXml(processor.transform(processor.getOriginalDoc()));
 					cleanMeasureObservationAndGroups(toBeDeletedObj, xmlModel);
@@ -5668,6 +5593,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					xmlModel.setXml(processor.transform(processor.getOriginalDoc()));
 					measurePackageService.saveMeasureXml(xmlModel);
 					getCqlService().deleteCQLAssociation(toBeModifiedIncludeObj, currentMeasureId);
+					result.setUsedCQLArtifacts(cqlService.getUsedCQlArtifacts(xmlModel.getXml()));
 				}
 			}
 		}
