@@ -70,7 +70,6 @@ import mat.client.measure.service.ValidateMeasureResult;
 import mat.client.measurepackage.MeasurePackageClauseDetail;
 import mat.client.measurepackage.MeasurePackageDetail;
 import mat.client.measurepackage.MeasurePackageOverview;
-import mat.client.shared.CQLWorkSpaceConstants;
 import mat.client.shared.GenericResult;
 import mat.client.shared.MatContext;
 import mat.client.shared.MatException;
@@ -79,6 +78,7 @@ import mat.dao.DataTypeDAO;
 import mat.dao.MeasureTypeDAO;
 import mat.dao.OrganizationDAO;
 import mat.dao.RecentMSRActivityLogDAO;
+import mat.dao.UserDAO;
 import mat.dao.clause.CQLLibraryDAO;
 import mat.dao.clause.ComponentMeasuresDAO;
 import mat.dao.clause.MeasureDAO;
@@ -158,7 +158,6 @@ import mat.shared.GetUsedCQLArtifactsResult;
 import mat.shared.MeasureSearchModel;
 import mat.shared.SaveUpdateCQLResult;
 import mat.shared.StringUtility;
-import mat.shared.UUIDUtilClient;
 import mat.shared.cql.error.InvalidLibraryException;
 import mat.shared.error.AuthenticationException;
 import mat.shared.error.measure.DeleteMeasureException;
@@ -249,7 +248,10 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 	private CQLLibraryService cqlLibraryService;
 	
 	@Autowired
-	private MeasureExportDAO measureExportDAO; 
+	private MeasureExportDAO measureExportDAO;
+	
+	@Autowired
+	private UserDAO userDAO;
 
 	javax.xml.xpath.XPath xPath = XPathFactory.newInstance().newXPath();
 
@@ -4872,14 +4874,18 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 
 	private void lintAndAddToResult(String measureId, SaveUpdateCQLResult result) {
 		Measure measure = measureDAO.find(measureId);
-		CQLLinterConfig config = new CQLLinterConfig(result.getCqlModel().getLibraryName(),
-				MeasureUtility.formatVersionText(measure.getRevisionNumber(), measure.getVersion()),
-				QDMUtil.QDM_MODEL_IDENTIFIER, measure.getQdmVersion());
-		config.setPreviousCQLModel(result.getCqlModel());
+		if (measure.isDraft()) {
+			CQLLinterConfig config = new CQLLinterConfig(result.getCqlModel().getLibraryName(),
+					MeasureUtility.formatVersionText(measure.getRevisionNumber(), measure.getVersion()),
+					QDMUtil.QDM_MODEL_IDENTIFIER, measure.getQdmVersion());
+			config.setPreviousCQLModel(result.getCqlModel());
 
-		CQLLinter linter = CQLUtil.lint(result.getCqlString(), config);
-		result.getLinterErrors().addAll(linter.getErrors());
-		result.getLinterErrorMessages().addAll(linter.getErrorMessages());
+			CQLLinter linter = CQLUtil.lint(result.getCqlString(), config);
+			result.getLinterErrors().addAll(linter.getErrors());
+			result.getLinterErrorMessages().addAll(linter.getErrorMessages());
+		} else {
+			result.resetErrors();
+		}
 	}
 
 	@Override
@@ -4928,7 +4934,13 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				}
 			}
 			
-			measurePackageService.saveMeasureXml(measureXMLModel);			
+			measurePackageService.saveMeasureXml(measureXMLModel);
+			
+			if(result.isSuccess()) {
+				measure.setCqlLibraryHistory(cqlService.createCQLLibraryHistory(measure.getCqlLibraryHistory(), result.getCqlString(), null, measure));
+				
+				measureDAO.save(measure);
+			}
 		}
 		
 		return result;
@@ -5326,11 +5338,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			for (CQLValueSetTransferObject transferObject : transferObjectList) {
 				SaveUpdateCQLResult result = null;
 				transferObject.setAppliedQDMList(appliedValueSetList);
-				if (transferObject.getCqlQualityDataSetDTO().getOid().equals(ConstantMessages.USER_DEFINED_QDM_OID)) {
-					result = getCqlService().saveCQLValueset(measureXMLModel.getMeasureId(), transferObject);
-				} else {
-					result = getCqlService().saveCQLValueset(measureXMLModel.getMeasureId(), transferObject);
-				}
+				result = getCqlService().saveCQLValueset(measureXMLModel.getXml(), transferObject);
 
 				if (result.isSuccess()) {
 					XmlProcessor processor = new XmlProcessor(measureXMLModel.getXml());		
@@ -5413,22 +5421,19 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					transferObject.setId(measureId);
 					SaveUpdateCQLResult codeResult = getCqlService().saveCQLCodes(xmlModel.getXml(), transferObject);
 					if (codeResult != null && codeResult.isSuccess()) {
-						String newXml = appendCQLCodesInMeasureXml(codeResult, measureId, xmlModel);
-						if (StringUtils.isNotBlank(newXml)) {
-							xmlModel.setXml(newXml);
+						XmlProcessor processor = new XmlProcessor(xmlModel.getXml());
+						processor.replaceNode(codeResult.getXml(), "cqlLookUp", "measure");
+						xmlModel.setXml(processor.transform(processor.getOriginalDoc()));
 
-							CQLCodeSystem codeSystem = new CQLCodeSystem();
-							codeSystem.setCodeSystem(cqlCode.getCodeSystemOID());
-							codeSystem.setCodeSystemName(cqlCode.getCodeSystemName());
-							codeSystem.setCodeSystemVersion(cqlCode.getCodeSystemVersion());
-							SaveUpdateCQLResult updatedResult = getCqlService().saveCQLCodeSystem(xmlModel.getXml(),
-									codeSystem);
-							if (updatedResult.isSuccess()) {
-								newXml = appendCQLCodeSystemInMeasureXml(updatedResult, measureId, xmlModel);
-								if (StringUtils.isNotBlank(newXml)) {
-									xmlModel.setXml(newXml);
-								}
-							}
+						CQLCodeSystem codeSystem = new CQLCodeSystem();
+						codeSystem.setCodeSystem(cqlCode.getCodeSystemOID());
+						codeSystem.setCodeSystemName(cqlCode.getCodeSystemName());
+						codeSystem.setCodeSystemVersion(cqlCode.getCodeSystemVersion());
+						
+						SaveUpdateCQLResult updatedResult = getCqlService().saveCQLCodeSystem(xmlModel.getXml(), codeSystem);
+						if (updatedResult.isSuccess()) {
+							processor.replaceNode(updatedResult.getXml(), "cqlLookUp", "measure");
+							xmlModel.setXml(processor.transform(processor.getOriginalDoc()));
 						}
 						result.setXml(xmlModel.getXml());
 					} else {
@@ -5441,8 +5446,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 					CQLCodeWrapper wrapper = getCqlService().getCQLCodes(xmlModel.getXml());
 					if (wrapper != null && !wrapper.getCqlCodeList().isEmpty()) {
 						result.setCqlCodeList(wrapper.getCqlCodeList());
-						CQLModel cqlModel = cqlService.getCQLData(result.getXml())
-								.getCqlModel();
+						CQLModel cqlModel = cqlService.getCQLData(result.getXml()).getCqlModel();
 						result.setCqlModel(cqlModel);
 					}
 				}

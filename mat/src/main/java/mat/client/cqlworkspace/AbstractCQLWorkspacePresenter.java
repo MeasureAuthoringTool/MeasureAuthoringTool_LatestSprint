@@ -510,7 +510,12 @@ public abstract class AbstractCQLWorkspacePresenter {
 	
 	protected void onSaveCQLFileFailure(SaveUpdateCQLResult result) {
 		SharedCQLWorkspaceUtility.displayAnnotations(result, cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor());
-		messagePanel.getErrorMessageAlert().createAlert("The MAT was unable to save the changes. All items entered must be written in the correct CQL syntax. The line where MAT is no longer able to read the file is marked with a red square.");
+		if (result.getFailureReason() == SaveUpdateCQLResult.SYNTAX_ERRORS)  {
+			messagePanel.getErrorMessageAlert().createAlert("The MAT was unable to save the changes. All items entered must be written in the correct CQL syntax. The line where MAT is no longer able to read the file is marked with a red square.");
+		} 
+		else if(result.getFailureReason() == SaveUpdateCQLResult.DUPLICATE_CQL_KEYWORD) {
+			messagePanel.getErrorMessageAlert().createAlert("The CQL file could not be saved. All identifiers must be unique and can not match any CQL keywords");
+		}
 	}
 	
 	protected void onModifyValueSet(CQLQualityDataSetDTO result, boolean isUserDefined) {
@@ -1115,7 +1120,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected void eraseDefinition() {
 		cqlWorkspaceView.getCQLDefinitionsView().getDefineAceEditor().clearAnnotations();
 		if ((cqlWorkspaceView.getCQLDefinitionsView().getDefineAceEditor().getText() != null)) {
-			cqlWorkspaceView.getCQLDefinitionsView().getDefineAceEditor().setText(EMPTY_STRING);
+			cqlWorkspaceView.getCQLDefinitionsView().getDefineAceEditor().replace(EMPTY_STRING);
 			setIsPageDirty(true);
 		}
 	}
@@ -1123,7 +1128,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected void eraseFunction() {
 		cqlWorkspaceView.getCQLParametersView().getParameterAceEditor().clearAnnotations();
 		if ((cqlWorkspaceView.getCQLFunctionsView().getFunctionBodyAceEditor().getText() != null)) {
-			cqlWorkspaceView.getCQLFunctionsView().getFunctionBodyAceEditor().setText(EMPTY_STRING);
+			cqlWorkspaceView.getCQLFunctionsView().getFunctionBodyAceEditor().replace(EMPTY_STRING);
 			setIsPageDirty(true);
 		}
 	}
@@ -1131,7 +1136,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected void eraseParameter() {
 		cqlWorkspaceView.getCQLParametersView().getParameterAceEditor().clearAnnotations();
 		if (cqlWorkspaceView.getCQLParametersView().getParameterAceEditor().getText() != null) {
-			cqlWorkspaceView.getCQLParametersView().getParameterAceEditor().setText(EMPTY_STRING);
+			cqlWorkspaceView.getCQLParametersView().getParameterAceEditor().replace(EMPTY_STRING);
 			setIsPageDirty(true);
 		}
 	}
@@ -1400,7 +1405,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 		}
 		curAceEditor = cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor();
 		curAceEditor.setText("");
-		cqlWorkspaceView.getCQLLibraryEditorView().setHeading(getWorkspaceTitle() + " > View CQL", "cqlViewCQL_Id");
+		cqlWorkspaceView.getCQLLibraryEditorView().setHeading(getWorkspaceTitle() + " > CQL Library Editor", "cqlViewCQL_Id");
 		focusSkipLists();
 	}
 	

@@ -1,5 +1,7 @@
 package mat.client.expressionbuilder.component;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.gwtbootstrap3.client.ui.Button;
@@ -16,6 +18,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import mat.client.expressionbuilder.constant.ExpressionType;
 import mat.client.expressionbuilder.constant.OperatorType;
 import mat.client.expressionbuilder.modal.ExpressionBuilderModal;
+import mat.client.expressionbuilder.model.AliasModel;
 import mat.client.expressionbuilder.observer.BuildButtonObserver;
 import mat.client.shared.ListBoxMVP;
 
@@ -38,14 +41,16 @@ public class ExpressionTypeSelector extends Composite {
 	private BuildButtonObserver observer;
 
 	private VerticalPanel contentPanel;
-	private List<String> availableAliases;
+	private List<AliasModel> availableAliases;
 	private ExpressionBuilderModal parentModal;
 	
-	public ExpressionTypeSelector(List<ExpressionType> availableExpressionTypes, List<OperatorType> availableOperatorTypes, List<String> availableAliases, 
+	public ExpressionTypeSelector(List<ExpressionType> availableExpressionTypes, List<OperatorType> availableOperatorTypes, List<AliasModel> availableAliases, 
 			BuildButtonObserver observer, boolean isFirstSelection, ExpressionBuilderModal parentModal) {
 		this.availableExpressionTypes = availableExpressionTypes;
+		this.availableExpressionTypes.sort(Comparator.comparing(ExpressionType::getDisplayName));
 		this.availableOperatorTypes = availableOperatorTypes;
 		this.availableAliases = availableAliases;
+		Collections.sort(this.availableAliases, Comparator.comparing(AliasModel::getAlias, String.CASE_INSENSITIVE_ORDER));
 		this.observer = observer;
 		this.isFirstSelection = isFirstSelection;
 		
@@ -126,8 +131,8 @@ public class ExpressionTypeSelector extends Composite {
 			expressionTypeSelectorListBox.insertItem(type.getValue(), type.getDisplayName());
 		}
 		
-		for(String alias : this.availableAliases) {
-			expressionTypeSelectorListBox.insertItem(alias, alias + " (Query Source)");
+		for(AliasModel alias : this.availableAliases) {
+			expressionTypeSelectorListBox.insertItem(alias.getAlias(), alias.getAlias() + " (" + alias.getAliasType() +")");
 		}
 		
 		expressionTypeSelectorBuildButtonPanel.add(expressionTypeSelectorListBox);

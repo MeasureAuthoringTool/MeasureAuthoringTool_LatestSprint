@@ -402,7 +402,7 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 										messagePanel.getErrorMessageAlert().clearAlert();
 										messagePanel.getSuccessMessageAlert().setVisible(true);
 										cqlWorkspaceView.getCQLFunctionsView().getFuncNameTxtArea().setText(result.getFunction().getName());
-										cqlWorkspaceView.getCQLFunctionsView().getFunctionBodyAceEditor().setText(result.getFunction().getLogic());
+										cqlWorkspaceView.getCQLFunctionsView().getFunctionBodyAceEditor().replace(result.getFunction().getLogic());
 										setIsPageDirty(false);
 										cqlWorkspaceView.getCQLFunctionsView().getFunctionBodyAceEditor().clearAnnotations();
 										cqlWorkspaceView.getCQLFunctionsView().getFunctionBodyAceEditor().removeAllMarkers();
@@ -513,7 +513,7 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 										cqlWorkspaceView.getCQLLeftNavBarPanelView().updateParamMap();
 										messagePanel.getErrorMessageAlert().clearAlert();
 										cqlWorkspaceView.getCQLParametersView().getParameterNameTxtArea().setText(result.getParameter().getName());
-										cqlWorkspaceView.getCQLParametersView().getParameterAceEditor().setText(result.getParameter().getLogic());
+										cqlWorkspaceView.getCQLParametersView().getParameterAceEditor().replace(result.getParameter().getLogic());
 										setIsPageDirty(false);
 										cqlWorkspaceView.getCQLParametersView().getParameterAceEditor().clearAnnotations();
 										cqlWorkspaceView.getCQLParametersView().getParameterAceEditor().removeAllMarkers();
@@ -545,7 +545,6 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 	
 	@Override
 	protected void saveCQLFile() {
-		setIsPageDirty(false);
 		String currentCQL = cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().getText();		
 		MatContext.get().getLibraryService().saveCQLFile(MatContext.get().getCurrentCQLLibraryId(), currentCQL, new AsyncCallback<SaveUpdateCQLResult>() {
 
@@ -557,13 +556,14 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 
 			@Override
 			public void onSuccess(SaveUpdateCQLResult result) {
-				cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().setText(result.getCqlString());
+				cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().replace(result.getCqlString());
 				messagePanel.clearAlerts();
 				if(!result.isSuccess()) {
 					onSaveCQLFileFailure(result);
 				} else {
 					onSaveCQLFileSuccess(result);
 					handleCQLData(result);
+					setIsPageDirty(false);
 				}
 				
 				cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().focus();
@@ -628,7 +628,7 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 										cqlWorkspaceView.getCQLLeftNavBarPanelView().updateDefineMap();
 										messagePanel.getErrorMessageAlert().clearAlert();
 										cqlWorkspaceView.getCQLDefinitionsView().getDefineNameTxtArea().setText(result.getDefinition().getName());
-										cqlWorkspaceView.getCQLDefinitionsView().getDefineAceEditor().setText(result.getDefinition().getLogic());
+										cqlWorkspaceView.getCQLDefinitionsView().getDefineAceEditor().replace(result.getDefinition().getLogic());
 										setIsPageDirty(false);
 										cqlWorkspaceView.getCQLDefinitionsView().getDefineAceEditor().clearAnnotations();
 										cqlWorkspaceView.getCQLDefinitionsView().getDefineAceEditor().removeAllMarkers();
@@ -1073,12 +1073,8 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 						while (iterator.hasNext()) {
 							CQLQualityDataSetDTO dataSetDTO = iterator.next();
 							if (dataSetDTO.getUuid() != null) {
-								if (dataSetDTO.getUuid().equals(cqlWorkspaceView.getValueSetView()
-										.getSelectedElementToRemove().getUuid())) {
-									if (!dataSetDTO.isUsed()) {
-										deleteValueSet(dataSetDTO.getId());
-										iterator.remove();
-									}
+								if (dataSetDTO.getUuid().equals(cqlWorkspaceView.getValueSetView().getSelectedElementToRemove().getUuid())) {
+									deleteValueSet(dataSetDTO.getId());
 								}
 							}
 						}

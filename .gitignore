@@ -16,3 +16,4 @@ mat/src/main/java/mat/server/twofactorauth/VipUserServicesQueryClient.java
 mat/war/WEB-INF/classes/
 mat/.gitignore
 mat/docs
+mat/src/main/java/mat/server/service/duplibrarys

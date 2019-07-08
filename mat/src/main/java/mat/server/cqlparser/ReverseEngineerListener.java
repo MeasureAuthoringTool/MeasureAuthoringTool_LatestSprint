@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -23,7 +22,6 @@ import org.cqframework.cql.gen.cqlLexer;
 import org.cqframework.cql.gen.cqlParser;
 import org.cqframework.cql.gen.cqlParser.CodeDefinitionContext;
 import org.cqframework.cql.gen.cqlParser.CodesystemDefinitionContext;
-import org.cqframework.cql.gen.cqlParser.ContextDefinitionContext;
 import org.cqframework.cql.gen.cqlParser.ExpressionDefinitionContext;
 import org.cqframework.cql.gen.cqlParser.FunctionDefinitionContext;
 import org.cqframework.cql.gen.cqlParser.IncludeDefinitionContext;
@@ -205,12 +203,13 @@ public class ReverseEngineerListener extends cqlBaseListener {
 		String identifier = CQLParserUtil.parseString(ctx.identifier().getText());
 		String codeId = CQLParserUtil.parseString(ctx.codeId().getText());
 		String codeSystemName = CQLParserUtil.parseString(ctx.codesystemIdentifier().getText());
-		String displayClause = CQLParserUtil.parseString(ctx.displayClause().STRING().getText());
+		String displayClause = ctx.displayClause() != null ? CQLParserUtil.parseString(ctx.displayClause().STRING().getText()) : "";
 	
 		
 		Optional<CQLCode> previousCode = previousModel.getCodeList().stream().filter(c -> (
 				c.getDisplayName().equals(identifier)
 				&& c.getCodeOID().equals(codeId)
+				&& c.getName().equals(displayClause)
 			)).findFirst();
 		
 		if(previousCode.isPresent()) {
@@ -236,9 +235,10 @@ public class ReverseEngineerListener extends cqlBaseListener {
 	@Override
 	public void enterValuesetDefinition(ValuesetDefinitionContext ctx) {
 		
-		String identifier = CQLParserUtil.parseString(ctx.identifier().getText());
-		String valuesetId = CQLParserUtil.parseString(ctx.valuesetId().getText()).replace(VALUESET_OID_PREFIX, "");
+		String identifier = ctx.identifier() != null ? CQLParserUtil.parseString(ctx.identifier().getText()) : "";
+		String valuesetId =  ctx.valuesetId() != null ? CQLParserUtil.parseString(ctx.valuesetId().getText()).replace(VALUESET_OID_PREFIX, "") : "";
 		
+	
 		String version = "";
 		if(ctx.versionSpecifier() != null) {
 			version = CQLParserUtil.parseString(ctx.versionSpecifier().getText());
@@ -273,11 +273,6 @@ public class ReverseEngineerListener extends cqlBaseListener {
 	}
 	
 	@Override
-	public void enterContextDefinition(ContextDefinitionContext ctx) {
-		currentContext = ctx.identifier().getText();
-	}
-	
-	@Override
 	public void enterParameterDefinition(ParameterDefinitionContext ctx) {
 		String identifier = CQLParserUtil.parseString(ctx.identifier().getText());
 		String comment = getExpressionComment(ctx).trim();		
@@ -306,7 +301,7 @@ public class ReverseEngineerListener extends cqlBaseListener {
 			builder.append(t.getText());
 		}
 		
-		return builder.toString().replaceFirst(PARAMETER, "").replace(identifier, "").trim();
+		return builder.toString().replaceFirst(PARAMETER, "").replace("public", "").replace("private", "").replace(identifier, "").trim();
 	}
 	
 	@Override
@@ -334,7 +329,7 @@ public class ReverseEngineerListener extends cqlBaseListener {
 	
 	@Override
 	public void enterFunctionDefinition(FunctionDefinitionContext ctx) {
-		String identifier = CQLParserUtil.parseString(ctx.identifier().getText());	
+		String identifier = CQLParserUtil.parseString(ctx.identifierOrFunctionIdentifier().getText());	
 		String logic = getDefinitionAndFunctionLogic(ctx).trim();
 		String comment = getExpressionComment(ctx).trim();
 		
@@ -343,8 +338,8 @@ public class ReverseEngineerListener extends cqlBaseListener {
 			for(OperandDefinitionContext operand : ctx.operandDefinition()) {
 				String name = "";
 				String type = "";
-				if(operand.identifier() != null) {
-					name = operand.identifier().getText();
+				if(operand.referentialIdentifier() != null) {
+					name = operand.referentialIdentifier().getText();
 				}
 				
 				if(operand.typeSpecifier() != null) {
@@ -400,18 +395,7 @@ public class ReverseEngineerListener extends cqlBaseListener {
 	private String getDefinitionAndFunctionLogic(ParserRuleContext ctx) {
 		return getTextBetweenTokenIndexes(ctx.start.getTokenIndex(), findExpressionLogicStop(ctx));
 	}
-	
-	private String getLogicForParameter(int startTokenIndex, int stopTokenIndex, String identifier) {
-		List<Token> ts = tokens.getTokens(startTokenIndex, stopTokenIndex);
 		
-		StringBuilder builder = new StringBuilder();
-		for(Token t : ts) {
-			builder.append(t.getText());
-		}
-		
-		return builder.toString().replaceFirst(PARAMETER, "").replace(identifier, "").trim();
-	}
-	
 	private String getTextBetweenTokenIndexes(int startTokenIndex, int stopTokenIndex) {
 		List<Token> ts = tokens.getTokens(startTokenIndex, stopTokenIndex);
 		

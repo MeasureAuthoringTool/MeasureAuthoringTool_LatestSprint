@@ -4,8 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -18,11 +20,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.cqframework.cql.gen.cqlBaseListener;
 import org.cqframework.cql.gen.cqlLexer;
 import org.cqframework.cql.gen.cqlParser;
+import org.cqframework.cql.gen.cqlParser.AccessModifierContext;
 import org.cqframework.cql.gen.cqlParser.CodeDefinitionContext;
 import org.cqframework.cql.gen.cqlParser.CodesystemDefinitionContext;
 import org.cqframework.cql.gen.cqlParser.ConceptDefinitionContext;
+import org.cqframework.cql.gen.cqlParser.ContextDefinitionContext;
+import org.cqframework.cql.gen.cqlParser.ExpressionDefinitionContext;
+import org.cqframework.cql.gen.cqlParser.FunctionDefinitionContext;
+import org.cqframework.cql.gen.cqlParser.IdentifierOrFunctionIdentifierContext;
 import org.cqframework.cql.gen.cqlParser.IncludeDefinitionContext;
 import org.cqframework.cql.gen.cqlParser.LibraryDefinitionContext;
+import org.cqframework.cql.gen.cqlParser.ParameterDefinitionContext;
 import org.cqframework.cql.gen.cqlParser.UsingDefinitionContext;
 import org.cqframework.cql.gen.cqlParser.ValuesetDefinitionContext;
 
@@ -35,11 +43,11 @@ import mat.shared.CQLError;
 
 public class CQLLinter extends cqlBaseListener {
 	
-	private static final String VALUESET_OID_PREFIX = "urn:oid:";
+	private static final String OID_PREFIX = "urn:oid:";
 	
 	private CQLLinterConfig config;
 	private List<String> errorMessages;
-	private List<String> warningMessages;
+	private Set<String> warningMessages;
 	private List<String> missingIncludedLibraries;
 	private List<String> missingValuesets;
 	private List<String> missingCodes;
@@ -52,12 +60,13 @@ public class CQLLinter extends cqlBaseListener {
 	
 	private List<CQLCodeSystem> codeSystems;
 	private List<CQLCode> matchedCodes;
+
 	
 	public CQLLinter(String cql, CQLLinterConfig config) throws IOException {
 		this.config = config;
 		this.errors = new ArrayList<>();
 		this.errorMessages = new ArrayList<>();
-		this.setWarningMessages(new ArrayList<>());
+		this.warningMessages = new HashSet<>();
 		this.missingIncludedLibraries = new ArrayList<>();
 		this.missingValuesets = new ArrayList<>();
 		this.missingCodes = new ArrayList<>();
@@ -186,6 +195,17 @@ public class CQLLinter extends cqlBaseListener {
 		
 		return false;
 	}
+	
+	private void createErrorIfIdentifierIsUnquoted(String ctx) {
+		if(!ctx.startsWith("\"") || !ctx.endsWith("\"")) {
+			this.warningMessages.add("The MAT requires quotation marks around definition, parameter, function, value set, code, and codesystem names. We have added quotation marks in the CQL file where they were missing.");
+		}
+	}
+	
+	@Override
+	public void enterAccessModifier(AccessModifierContext ctx) {
+		this.warningMessages.add("The MAT does not support access modifiers tied to expressions. Any entered access modifiers have been removed from the CQL file.");
+	}
 
 	@Override
 	public void enterLibraryDefinition(LibraryDefinitionContext ctx) {
@@ -255,9 +275,18 @@ public class CQLLinter extends cqlBaseListener {
 	
 	@Override
 	public void enterCodesystemDefinition(CodesystemDefinitionContext ctx) {
+		createErrorIfIdentifierIsUnquoted(ctx.identifier().getText());
 		CQLCodeSystem codesystem = new CQLCodeSystem();
-		codesystem.setCodeSystem(CQLParserUtil.parseString(ctx.codesystemId().getText()));
-		codesystem.setCodeSystemName(CQLParserUtil.parseString(ctx.identifier().getText()));
+		String codeSystemId = CQLParserUtil.parseString(ctx.codesystemId().getText());
+		String codeSystemName = CQLParserUtil.parseString(ctx.identifier().getText());
+		
+		codesystem.setCodeSystem(codeSystemId);
+		codesystem.setCodeSystemName(codeSystemName);
+		
+		
+		if(!codeSystemId.startsWith(OID_PREFIX)) {
+			createWarningMessageForMissingOIDPrefix();
+		}
 		
 		if(ctx.versionSpecifier() != null) {
 			codesystem.setCodeSystemVersion(CQLParserUtil.parseString(ctx.versionSpecifier().getText()));
@@ -270,15 +299,19 @@ public class CQLLinter extends cqlBaseListener {
 	
 	@Override
 	public void enterCodeDefinition(CodeDefinitionContext ctx) {
+		createErrorIfIdentifierIsUnquoted(ctx.identifier().getText());
 		String identifier = CQLParserUtil.parseString(ctx.identifier().getText());
 		String codeId = CQLParserUtil.parseString(ctx.codeId().getText());	
+		
+		String displayClause = ctx.displayClause() != null ? CQLParserUtil.parseString(ctx.displayClause().STRING().getText()) : "";
 		
 		// find all codes that have a matching identifier and code id
 		// in MAT the identifier is mapped the displayName field (which is also called the descriptor)
 		if(config.getPreviousCQLModel().getCodeList() != null) {
 			List<CQLCode> potentialMatches = config.getPreviousCQLModel().getCodeList().stream().filter(c -> 
 				(c.getDisplayName().equals(identifier) 
-				&& c.getCodeOID().equals(codeId))
+				&& c.getCodeOID().equals(codeId) 
+				&& c.getName().equals(displayClause))
 			).collect(Collectors.toList());
 			
 			
@@ -305,37 +338,72 @@ public class CQLLinter extends cqlBaseListener {
 
 	@Override
 	public void enterValuesetDefinition(ValuesetDefinitionContext ctx) {
+		createErrorIfIdentifierIsUnquoted(ctx.identifier().getText());
 		String identifier = CQLParserUtil.parseString(ctx.identifier().getText());
-		String valuesetId = CQLParserUtil.parseString(ctx.valuesetId().getText()).replace(VALUESET_OID_PREFIX, "");
+		String valuesetId = CQLParserUtil.parseString(ctx.valuesetId().getText());
+		if(!valuesetId.startsWith(OID_PREFIX)) {
+			createWarningMessageForMissingOIDPrefix();
+		}
+		
+		String parsedValuesetId = valuesetId.replace(OID_PREFIX, "");
+		
 
 		// find all libraries that have a matching identifier, alias, and version
 		if(config.getPreviousCQLModel().getValueSetList() != null) {
 			List<CQLQualityDataSetDTO> potentialMatches = config.getPreviousCQLModel().getValueSetList().stream().filter(v -> (
 					identifier.equals(v.getName())
-					&& valuesetId.equals(v.getOid())
+					&& parsedValuesetId.equals(v.getOid())
 				)).collect(Collectors.toList());
 				
 				// if there were no matches in the previous model, or all matches do not have an id, then return an error. 
 				// not having an original code list name means that it has never been fetched through the valueset section.
 				// if there were no matches in the previous model, that also means it has never been fetched
 				if(potentialMatches.isEmpty() || potentialMatches.stream().filter(v -> StringUtils.isEmpty(v.getOriginalCodeListName())).count() > 0) {
-					createValuesetError(ctx, identifier, valuesetId);
+					createValuesetError(ctx, identifier, parsedValuesetId);
 				}
 		} else {
-			createValuesetError(ctx, identifier, valuesetId);
+			createValuesetError(ctx, identifier, parsedValuesetId);
 		}
 		
 		noCommentZoneEndLine = ctx.getStop().getLine();
 	}
+
+	private void createWarningMessageForMissingOIDPrefix() {
+		this.warningMessages.add("The MAT has added \"urn:oid:\" to value set and/or codesystem declarations where necessary to ensure items are in the correct format.");
+	}
 	
+	@Override
 	public void enterConceptDefinition(ConceptDefinitionContext ctx) {
 		noCommentZoneEndLine = ctx.getStop().getLine();
+	}
+	
+	@Override
+	public void enterContextDefinition(ContextDefinitionContext ctx) {
+		if(!"Patient".equals(CQLParserUtil.parseString(ctx.identifier().getText()))) {
+			this.warningMessages.add("The MAT only supports expressions with a context of patient. All expressions have been placed under context patient.");
+		}
 	}
 
 	private void createValuesetError(ValuesetDefinitionContext ctx, String identifier, String oid) {
 		String valueset = identifier + " (" + oid + ")";
 		this.missingValuesets.add(valueset);
 		this.errors.add(createError(valueset + " does not exist in the Value Sets section of the MAT.", ctx));
+	}
+	
+	@Override
+	public void enterParameterDefinition(ParameterDefinitionContext ctx) {
+		createErrorIfIdentifierIsUnquoted(ctx.identifier().getText());
+	}
+	
+	@Override
+	public void enterExpressionDefinition(ExpressionDefinitionContext ctx) {
+		createErrorIfIdentifierIsUnquoted(ctx.identifier().getText());
+	}
+	
+	@Override
+	public void enterFunctionDefinition(FunctionDefinitionContext ctx) {
+		createErrorIfIdentifierIsUnquoted(ctx.identifierOrFunctionIdentifier().getText());
+
 	}
 	
 	public List<String> getErrorMessages() {
@@ -359,7 +427,7 @@ public class CQLLinter extends cqlBaseListener {
 		StringBuilder builder = new StringBuilder();
 		builder.append("The following code(s) does not exist in the Codes section of the MAT: ");
 		builder.append(String.join(", ", this.missingCodes));
-		builder.append(". Please navigate to the Codes section and add the code(s) there to correct the error.");
+		builder.append(". Please navigate to the Codes section and ensure the codes there match what is in the CQL Library Editor.");
 		return builder.toString();
 	}
 	
@@ -367,7 +435,7 @@ public class CQLLinter extends cqlBaseListener {
 		StringBuilder builder = new StringBuilder();
 		builder.append("The following value set(s) does not exist in the Value Set section of the MAT: ");
 		builder.append(String.join(", ", this.missingValuesets));
-		builder.append(".  Please navigate to the Value Set section and add the value set(s) there to correct the error.");
+		builder.append(". Please navigate to the Value Set section and ensure the value sets there match what is in the CQL Library Editor.");
 		return builder.toString();
 	}
 	
@@ -397,10 +465,10 @@ public class CQLLinter extends cqlBaseListener {
 	}
 
 	public List<String> getWarningMessages() {
-		return warningMessages;
+		return new ArrayList<>(this.warningMessages);
 	}
 
 	public void setWarningMessages(List<String> warningMessages) {
-		this.warningMessages = warningMessages;
+		this.warningMessages = new HashSet<>(warningMessages);
 	}
 }

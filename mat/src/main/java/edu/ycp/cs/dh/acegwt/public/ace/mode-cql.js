@@ -33,9 +33,10 @@ var SqlHighlightRules = function() {
 	    		"Abs|AgeInDays|AgeInDaysAt|AgeInHours|AgeInHoursAt|AgeInMinutes|AgeInMinutesAt|AgeInMonths|AgeInMonthsAt|AgeInSeconds|" +
 	    		"AgeInSecondsAt|AgeInWeeks|AgeInWeeksAt|AgeInYears|AgeInYearsAt|AllTrue|AnyTrue|Avg|CalculateAgeInDays|CalculateAgeInDaysAt|CalculateAgeInHours|" +
 	    		"CalculateAgeInHoursAt|CalculateAgeInMinutes|CalculateAgeInMinutesAt|CalculateAgeInMonths|CalculateAgeInMonthsAt|CalculateAgeInSeconds|" +
-	    		"CalculateAgeInSecondsAt|CalculateAgeInWeeks|CalculateAgeInWeeksAt|CalculateAgeInYears|CalculateAgeInYearsAt|Ceiling|Coalesce|Count|DateTime|Exp|First|Floor|GeometricMean|IndexOf|Last|" +
-	    		"Length|Ln|Log|Max|Median|Min|Mode|Now|PopulationStdDev|PopulationVariance|Product|Round|StdDev|Sum|Time|TimeOfDay|ToDate|Today|" +
-	    		"Truncate|Variance"
+	    		"CalculateAgeInSecondsAt|CalculateAgeInWeeks|CalculateAgeInWeeksAt|CalculateAgeInYears|CalculateAgeInYearsAt|Ceiling|Coalesce|Count|DateTime|Exp|First|" +
+	    		"Floor|GeometricMean|HighBoundary|IndexOf|Last|Length|Ln|Log|LowBoundary|Lower|Matches|Max|Median|Min|Mode|Now|PopulationStdDev|PopulationVariance|Precision|" +
+	    		"Product|Round|Size|Skip|Split|SplitOnMatches|StartsWith|StdDev|Substring|Sum|Tail|Take|Time|TimeOfDay|ToBoolean|ToDate|ToDateTime|ToDecimal|ToInteger|ToQuantity|" +
+	    		"ToString|ToTime|Today|Truncate|Upper|Variance|"
 	    );
 
 	    var builtinConstants = (
@@ -46,7 +47,8 @@ var SqlHighlightRules = function() {
 	        //data type attribute constants
 	        'activeDatetime|admissionSource|anatomicalLocationSite|authorDatetime|birthDatetime|category|cause|code|components|daysSupplied|denominator|diagnoses|dischargeDisposition|dosage|expiredDatetime|' +
 	        'facilityLocation|facilityLocations|frequency|high|id|incisionDatetime|lengthOfStay|locationPeriod|low|medium|method|negationRationale|numerator|participationPeriod|performer|prevalencePeriod|' +
-	        'priority|prescriber|reason|recipient|receivedDatetime|recorder|referenceRange|refills|relatedTo|relationship|relevantDatetime|relevantPeriod|reporter|result|resultDatetime|requester|route|sender|statusDate|sentDatetime|setting|severity|status|supply|targetOutcome|type'
+	        'priority|prescriber|reason|recipient|receivedDatetime|recorder|referenceRange|refills|relatedTo|relationship|relevantDatetime|relevantPeriod|reporter|result|resultDatetime|requester|route|sender|statusDate|sentDatetime|setting|severity|status|supply|targetOutcome|type|' + 
+	        'Entity|PatientEntity|Organization|Practitioner|CarePartner'
 	    );
 	    
     var keywordMapper = this.createKeywordMapper({

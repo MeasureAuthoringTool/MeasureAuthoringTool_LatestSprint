@@ -43,11 +43,16 @@ import mat.client.clause.clauseworkspace.model.MeasureXmlModel;
 import mat.client.codelist.service.SaveUpdateCodeListResult;
 import mat.client.measure.service.CQLService;
 import mat.client.shared.MatException;
+import mat.dao.UserDAO;
 import mat.dao.clause.CQLLibraryAssociationDAO;
 import mat.dao.clause.CQLLibraryDAO;
 import mat.model.CQLValueSetTransferObject;
 import mat.model.MatCodeTransferObject;
 import mat.model.MatValueSet;
+import mat.model.User;
+import mat.model.clause.CQLLibrary;
+import mat.model.clause.CQLLibraryHistory;
+import mat.model.clause.Measure;
 import mat.model.cql.CQLCode;
 import mat.model.cql.CQLCodeSystem;
 import mat.model.cql.CQLCodeWrapper;
@@ -96,9 +101,17 @@ public class CQLServiceImpl implements CQLService {
 
 	private static final int COMMENTS_MAX_LENGTH = 2500;
 
-	@Autowired private CQLLibraryDAO cqlLibraryDAO;
-	@Autowired private CQLLibraryAssociationDAO cqlLibraryAssociationDAO;
-	@Autowired private MeasurePackageService measurePackageService;
+	@Autowired 
+	private CQLLibraryDAO cqlLibraryDAO;
+	
+	@Autowired 
+	private CQLLibraryAssociationDAO cqlLibraryAssociationDAO;
+	
+	@Autowired 
+	private MeasurePackageService measurePackageService;
+	
+	@Autowired
+	private UserDAO userDAO;
 
 	/** The cql supplemental definition XML string. */
 	private String cqlSupplementalDefinitionXMLString =
@@ -179,6 +192,14 @@ public class CQLServiceImpl implements CQLService {
 				parsedResult.setFailureReason(SaveUpdateCQLResult.SYNTAX_ERRORS);				
 				return parsedResult;
 			}
+			
+			if (CQLValidationUtil.doesModelHaveDuplicateIdentifierOrIdentifierAsKeyword(reversedEngineeredCQLModel)) {
+				parsedResult.setXml(xml); // retain the old xml if there are duplicate identifiers (essentially not saving)
+				parsedResult.setCqlString(cql);
+				parsedResult.setSuccess(false);
+				parsedResult.setFailureReason(SaveUpdateCQLResult.DUPLICATE_CQL_KEYWORD);				
+				return parsedResult;
+			}
 
 			if (parsedResult.getCqlErrors().isEmpty()) {
 				CQLFormatter formatter = new CQLFormatter();
@@ -212,6 +233,23 @@ public class CQLServiceImpl implements CQLService {
 			return null;
 		}
 
+	}
+	
+	public List<CQLLibraryHistory> createCQLLibraryHistory(List<CQLLibraryHistory> existingLibraryHistoryList, String CQLLibraryString, CQLLibrary cqlLibrary, Measure measure){
+		CQLLibraryHistory cqlLibraryHistory = new CQLLibraryHistory();
+		
+		cqlLibraryHistory.setMeasure(measure);
+		cqlLibraryHistory.setCqlLibrary(cqlLibrary);
+		cqlLibraryHistory.setFreeTextEditorUsed(true);
+		cqlLibraryHistory.setCqlLibraryString(CQLLibraryString);
+		String loggedinUserId = LoggedInUserUtil.getLoggedInUser();
+		User user = userDAO.find(loggedinUserId);
+		cqlLibraryHistory.setLastModifiedBy(user);
+		if(existingLibraryHistoryList == null) {
+			existingLibraryHistoryList = new ArrayList<>();
+		}
+		existingLibraryHistoryList.add(cqlLibraryHistory);
+		return existingLibraryHistoryList;
 	}
 
 	private String marshallCQLModel(CQLModel cqlModel)
@@ -1557,8 +1595,7 @@ public class CQLServiceImpl implements CQLService {
 			} else {
 				qds.setUuid(UUID.randomUUID().toString());
 				qds.setId(UUID.randomUUID().toString().replaceAll("-", ""));
-				
-				if(isDuplicate(valueSetTransferObject, true)) {
+				if(model.getValueSetList().stream().filter(v -> v.getName().equals(qds.getName())).count() > 0) {
 					result.setSuccess(false);
 					result.setFailureReason(SaveUpdateCodeListResult.ALREADY_EXISTS);
 					result.setCqlQualityDataSetDTO(qds);
@@ -1628,12 +1665,14 @@ public class CQLServiceImpl implements CQLService {
 			List<CQLCode> previousMatchingCodes = model.getCodeList().stream().filter(c -> (
 					c.getDisplayName().equals(appliedCode.getDisplayName()) 
 					&& c.getCodeOID().equals(appliedCode.getCodeOID())
+					&& c.getCodeName().equals(appliedCode.getCodeName())
 					&& StringUtils.isEmpty(c.getCodeIdentifier()))
 					).collect(Collectors.toList());
 
 			if(!previousMatchingCodes.isEmpty()) {
 				previousMatchingCodes.forEach(c -> {
 					c.setSuffix(appliedCode.getSuffix());
+					c.setCodeOID(appliedCode.getCodeOID());
 					c.setCodeIdentifier(appliedCode.getCodeIdentifier());
 					c.setCodeSystemOID(appliedCode.getCodeSystemOID());
 					c.setCodeSystemName(appliedCode.getCodeSystemName());
