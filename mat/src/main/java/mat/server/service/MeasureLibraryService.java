@@ -192,7 +192,7 @@ public interface MeasureLibraryService {
 	 *            the model
 	 * @return the save measure result
 	 */
-	SaveMeasureResult save(ManageMeasureDetailModel model);
+	SaveMeasureResult saveOrUpdateMeasure(ManageMeasureDetailModel model);
 	
 	SaveMeasureResult saveCompositeMeasure(ManageCompositeMeasureDetailModel model);
 	
@@ -708,4 +708,6 @@ public interface MeasureLibraryService {
 	String getHumanReadableForMeasureDetails(String measureId);
 
 	SaveUpdateCQLResult saveCQLFile(String measureId, String cql);
+	
+	boolean libraryNameExists(String libraryName, String setId);
 }

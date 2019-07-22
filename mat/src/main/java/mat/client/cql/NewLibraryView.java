@@ -19,11 +19,14 @@ import mat.client.cqlworkspace.EditConfirmationDialogBox;
 import mat.client.shared.ErrorMessageAlert;
 import mat.client.shared.SpacerWidget;
 import mat.client.shared.SuccessMessageAlert;
-public class CQLLibraryDetailView implements CqlLibraryPresenter.DetailDisplay{
+import mat.client.shared.WarningConfirmationMessageAlert;
+public class NewLibraryView implements CqlLibraryPresenter.DetailDisplay{
 	
 
+	private static final String CQL_LIBRARY_NAME = "CQL Library Name";
 	private TextArea nameField = new TextArea();
 	private ErrorMessageAlert errorMessage = new ErrorMessageAlert();
+	private WarningConfirmationMessageAlert warningConfirmationAlert = new WarningConfirmationMessageAlert();
 	private SuccessMessageAlert successMessage = new SuccessMessageAlert();
 	protected HTML instructions = new HTML("Enter a CQL Library name. Then continue to the CQL Composer.");
 	private SimplePanel mainDetailViewVP = new SimplePanel();
@@ -31,7 +34,7 @@ public class CQLLibraryDetailView implements CqlLibraryPresenter.DetailDisplay{
 	
 	SaveContinueCancelButtonBar buttonToolBar = new SaveContinueCancelButtonBar("cqlDetail");
 	
-	public CQLLibraryDetailView(){
+	public NewLibraryView(){
 		resetAll();
 		mainDetailViewVP.clear();
 	}
@@ -49,13 +52,13 @@ public class CQLLibraryDetailView implements CqlLibraryPresenter.DetailDisplay{
 		
 		FormGroup nameGroup = new FormGroup();
 		FormLabel nameLabel = new FormLabel();
-		nameLabel.setText("Name");
-		nameLabel.setTitle("Name");
+		nameLabel.setText(CQL_LIBRARY_NAME);
+		nameLabel.setTitle(CQL_LIBRARY_NAME);
 		nameLabel.setShowRequiredIndicator(true);
 		nameLabel.setMarginTop(5);
 		nameLabel.setId("cqlLibraryName_Label");
 		nameField.setId("CQLLibraryName_Input");
-		nameField.setTitle("Enter Name Required");
+		nameField.setTitle("Enter CQL Library Name Required");
 		nameField.setMaxLength(500);
 		nameField.setWidth("400px");
 		nameField.setHeight("50px");
@@ -74,6 +77,7 @@ public class CQLLibraryDetailView implements CqlLibraryPresenter.DetailDisplay{
 		contentPanel.add(new SpacerWidget());
 		contentPanel.add(instructions);
 		contentPanel.add(errorMessage);
+		contentPanel.add(warningConfirmationAlert);
 		contentPanel.add(new SpacerWidget());
 		contentPanel.add(new SpacerWidget());
 		
@@ -123,6 +127,11 @@ public class CQLLibraryDetailView implements CqlLibraryPresenter.DetailDisplay{
 	@Override
 	public ErrorMessageAlert getErrorMessage() {
 		return errorMessage;
+	}
+	
+	@Override
+	public WarningConfirmationMessageAlert getWarningConfirmationAlert() {
+		return warningConfirmationAlert;
 	}
 
 	public void setErrorMessage(ErrorMessageAlert errorMessage) {

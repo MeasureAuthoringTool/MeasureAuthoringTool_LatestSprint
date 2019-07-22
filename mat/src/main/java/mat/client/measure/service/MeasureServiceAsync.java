@@ -194,7 +194,7 @@ public interface MeasureServiceAsync {
 	 * @param callback
 	 *            the callback
 	 */
-	void save(ManageMeasureDetailModel model, AsyncCallback<SaveMeasureResult> callback);
+	void saveNewMeasure(ManageMeasureDetailModel model, AsyncCallback<SaveMeasureResult> callback);
 	
 	void saveCompositeMeasure(ManageCompositeMeasureDetailModel model, AsyncCallback<SaveMeasureResult> callback);
 	
@@ -683,4 +683,6 @@ public interface MeasureServiceAsync {
 	void generateAndSaveMaxEmeasureId(boolean isEditable, String measureId, AsyncCallback<Integer> asyncCallback);
 
 	void getHumanReadableForMeasureDetails(String currentMeasureId, AsyncCallback<String> asyncCallback);
+	
+    void checkIfLibraryNameExists(String libraryName, String setId, AsyncCallback<Boolean> callback);
 }

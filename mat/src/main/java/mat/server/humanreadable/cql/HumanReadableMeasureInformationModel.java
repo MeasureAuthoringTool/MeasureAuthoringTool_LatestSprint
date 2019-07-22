@@ -58,7 +58,7 @@ public class HumanReadableMeasureInformationModel {
 	
 	public HumanReadableMeasureInformationModel(ManageMeasureDetailModel model) {
 		this.qdmVersion = Double.parseDouble(model.getQdmVersion());
-		this.ecqmTitle = model.getName();
+		this.ecqmTitle = model.getMeasureName();
 		this.ecqmIdentifier = model.geteMeasureId() == 0 ? "" : model.geteMeasureId() + "";		
 		this.ecqmVersionNumber = model.getFormattedVersion().replace("Draft based on", "").replace("v", "").trim();
 		this.nqfNumber = model.getNqfId();
@@ -68,8 +68,8 @@ public class HumanReadableMeasureInformationModel {
 		this.measurementPeriodEndDate = model.getMeasToPeriod();
 		this.measureSteward = model.getStewardValue();
 		
-		this.measureDevelopers = new ArrayList<>();
 		if(!CollectionUtils.isEmpty(model.getAuthorSelectedList())) {
+			this.measureDevelopers = new ArrayList<>();
 			model.getAuthorSelectedList().forEach(d -> this.measureDevelopers.add(d.getAuthorName()));
 		}
 		
@@ -94,9 +94,9 @@ public class HumanReadableMeasureInformationModel {
 		}
 		
 		this.measureScoring = model.getMeasScoring();
-		this.measureTypes = new ArrayList<>();
 		
 		if(!CollectionUtils.isEmpty(model.getMeasureTypeSelectedList())) {
+			this.measureTypes = new ArrayList<>();
 			model.getMeasureTypeSelectedList().forEach(mt -> this.measureTypes.add(mt.getDescription()));
 		}
 		

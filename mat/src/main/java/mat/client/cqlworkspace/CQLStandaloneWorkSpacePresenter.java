@@ -561,8 +561,8 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 				if(!result.isSuccess()) {
 					onSaveCQLFileFailure(result);
 				} else {
-					onSaveCQLFileSuccess(result);
 					handleCQLData(result);
+					onSaveCQLFileSuccess(result);
 					setIsPageDirty(false);
 				}
 				
@@ -596,7 +596,6 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 				define.setName(definitionName);
 				define.setLogic(definitionLogic);
 				define.setCommentString(definitionComment);
-				define.setContext(defineContext);
 				CQLDefinition toBeModifiedObj = null;
 
 				if (cqlWorkspaceView.getCQLLeftNavBarPanelView().getCurrentSelectedDefinitionObjId() != null) {
@@ -1106,15 +1105,23 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 			@Override
 			public void onSuccess(SaveUpdateCQLResult result) {
 				if (result != null) {
-					cqlLibraryName = result.getCqlModel().getLibraryName().trim();
-					cqlLibraryComment = result.getCqlModel().getLibraryComment();
-					cqlWorkspaceView.getCqlGeneralInformationView().getLibraryNameTextBox().setText(cqlLibraryName);
-					cqlWorkspaceView.getCqlGeneralInformationView().getCommentsTextBox().setText(result.getCqlModel().getLibraryComment());
-					cqlWorkspaceView.getCqlGeneralInformationView().getCommentsTextBox().setCursorPos(0);
-					messagePanel.getSuccessMessageAlert().createAlert(cqlLibraryName + " general information successfully updated");
-					setIsPageDirty(false);
-					MatContext.get().getCurrentLibraryInfo().setLibraryName(cqlLibraryName);
-					CqlComposerPresenter.setContentHeading();
+					if (result.isSuccess()) {
+						cqlLibraryName = result.getCqlModel().getLibraryName().trim();
+						cqlLibraryComment = result.getCqlModel().getLibraryComment();
+						cqlWorkspaceView.getCqlGeneralInformationView().getLibraryNameTextBox().setText(cqlLibraryName);
+						cqlWorkspaceView.getCqlGeneralInformationView().getCommentsTextBox().setText(result.getCqlModel().getLibraryComment());
+						cqlWorkspaceView.getCqlGeneralInformationView().getCommentsTextBox().setCursorPos(0);
+						messagePanel.getSuccessMessageAlert().createAlert(cqlLibraryName + " general information successfully updated");
+						setIsPageDirty(false);
+						MatContext.get().getCurrentLibraryInfo().setLibraryName(cqlLibraryName);
+						CqlComposerPresenter.setContentHeading();
+						isLibraryNameExists = false;
+					} else {
+						if (result.getFailureReason() == SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME) {
+							isLibraryNameExists = true;
+							messagePanel.getErrorMessageAlert().createAlert(MessageDelegate.DUPLICATE_LIBRARY_NAME_SAVE);
+						}
+					}
 				}
 				showSearchingBusy(false);
 			}
@@ -1229,6 +1236,7 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 					setId = result.getSetId();
 				}
 				if (result.getCqlModel().getLibraryName() != null) {
+					isLibraryNameExists = (result.getFailureReason() == SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME);
 					cqlLibraryName = cqlWorkspaceView.getCqlGeneralInformationView().createCQLLibraryName(MatContext.get().getCurrentCQLLibraryeName());
 					cqlLibraryComment = result.getCqlModel().getLibraryComment();
 					String libraryVersion = MatContext.get().getCurrentCQLLibraryVersion();
@@ -1309,17 +1317,14 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 					MatContext.get().setIncludes(getIncludesList(result.getCqlModel().getCqlIncludeLibrarys()));
 					MatContext.get().setIncludedValues(result);
 				}
-
-				boolean isValidQDMVersion = cqlWorkspaceView.getCQLLeftNavBarPanelView().checkForIncludedLibrariesQDMVersion(true);
-				if (!isValidQDMVersion) {
-					messagePanel.getErrorMessageAlert().createAlert(INVALID_QDM_VERSION_IN_INCLUDES);
-				}
+				
+				buildOrClearErrorPanel();
 			}
 		}
 	}
 
 	private void addLeftNavEventHandler() {
-		cqlWorkspaceView.getCQLLeftNavBarPanelView().getGeneralInformation().addClickHandler(event -> generalInfoEvent());
+		cqlWorkspaceView.getCQLLeftNavBarPanelView().getGeneralInformation().addClickHandler(event -> checkIfLibraryNameExistsAndLoadGeneralInfo());
 		cqlWorkspaceView.getCQLLeftNavBarPanelView().getIncludesLibrary().addClickHandler(event -> leftNavIncludesLibraryClicked(event));
 		cqlWorkspaceView.getCQLLeftNavBarPanelView().getCodesLibrary().addClickHandler(event -> leftNavBarCodesClicked(event));
 		cqlWorkspaceView.getCQLLeftNavBarPanelView().getAppliedQDM().addClickHandler(event -> leftNavAppliedQDMClicked());

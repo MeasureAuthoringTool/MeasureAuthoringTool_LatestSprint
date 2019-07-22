@@ -19,21 +19,10 @@
         <org.springframework.security>5.0.6.RELEASE</org.springframework.security>
     </properties>
     <repositories>
-		<repository>
-			<id>central</id>
-			<url>http://maven.icm.edu.pl/artifactory/repo/</url>
-		</repository>
-		<repository>
-			<id>oss-sonatype</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>oss-sonatype-public</id>
-			<url>https://oss.sonatype.org/content/groups/public/</url>
-		</repository>
+        <repository>
+            <id>central</id>
+            <url>http://maven.icm.edu.pl/artifactory/repo/</url>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
@@ -56,40 +45,40 @@
                 </exclusion>
             </exclusions>
         </dependency>
-		<dependency>
+			<dependency>
 			<groupId>info.cqframework</groupId>
 			<artifactId>cql</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.6</version>
 		</dependency>
 		<dependency>
 			<groupId>info.cqframework</groupId>
 			<artifactId>model</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.6</version>
 		</dependency>
 		<dependency>
 			<groupId>info.cqframework</groupId>
 			<artifactId>elm</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.6</version>
 		</dependency>
 		<dependency>
 			<groupId>info.cqframework</groupId>
 			<artifactId>cql-to-elm</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.6</version>
 		</dependency>
 		<dependency>
 			<groupId>info.cqframework</groupId>
 			<artifactId>quick</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.6</version>
 		</dependency>
 		<dependency>
 			<groupId>info.cqframework</groupId>
 			<artifactId>qdm</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.6</version>
 		</dependency>
 		<dependency>
 			<groupId>info.cqframework</groupId>
 			<artifactId>cql-formatter</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.6</version>
 		</dependency>
         <dependency>
             <groupId>com.google.gwt</groupId>
@@ -340,7 +329,7 @@
         <dependency>
             <groupId>mat</groupId>
             <artifactId>CQLtoELM</artifactId>
-            <version>1.4.6.49</version>
+            <version>1.4.6.51</version>
         </dependency>
         <dependency>
             <groupId>mat</groupId>

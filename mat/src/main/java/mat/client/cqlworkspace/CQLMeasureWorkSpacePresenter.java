@@ -227,12 +227,20 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 			@Override
 			public void onSuccess(SaveUpdateCQLResult result) {
 				if (result != null) {
-					cqlLibraryName = result.getCqlModel().getLibraryName();
-					cqlLibraryComment = result.getCqlModel().getLibraryComment();
-					cqlWorkspaceView.getCqlGeneralInformationView().getCommentsTextBox().setText(cqlLibraryComment);
-					cqlWorkspaceView.getCqlGeneralInformationView().getCommentsTextBox().setCursorPos(0);
-					messagePanel.getSuccessMessageAlert().createAlert(MatContext.get().getCurrentMeasureName() + " general information successfully updated.");
-					setIsPageDirty(false);
+					if (result.isSuccess()) {
+						cqlLibraryName = result.getCqlModel().getLibraryName();
+						cqlLibraryComment = result.getCqlModel().getLibraryComment();
+						cqlWorkspaceView.getCqlGeneralInformationView().getCommentsTextBox().setText(cqlLibraryComment);
+						cqlWorkspaceView.getCqlGeneralInformationView().getCommentsTextBox().setCursorPos(0);
+						messagePanel.getSuccessMessageAlert().createAlert(MatContext.get().getCurrentMeasureName() + " general information successfully updated.");
+						setIsPageDirty(false);
+						isLibraryNameExists = false;
+					} else {
+						if (result.getFailureReason() == SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME) {
+							isLibraryNameExists = true;
+							messagePanel.getErrorMessageAlert().createAlert(MessageDelegate.DUPLICATE_LIBRARY_NAME_SAVE);
+						}
+					}
 				}
 				showSearchingBusy(false);
 			}
@@ -637,8 +645,8 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 				if(!result.isSuccess()) {
 					onSaveCQLFileFailure(result);
 				} else {
-					onSaveCQLFileSuccess(result);
 					handleCQLData(result);
+					onSaveCQLFileSuccess(result);
 					setIsPageDirty(false);
 				}
 				
@@ -774,11 +782,12 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 		cqlWorkspaceView.getCQLLeftNavBarPanelView().getParamCollapse().getElement().setClassName(PANEL_COLLAPSE_COLLAPSE);
 		cqlWorkspaceView.getCQLLeftNavBarPanelView().getDefineCollapse().getElement().setClassName(PANEL_COLLAPSE_COLLAPSE);
 		cqlWorkspaceView.getCQLLeftNavBarPanelView().getFunctionCollapse().getElement().setClassName(PANEL_COLLAPSE_COLLAPSE);
-		if (cqlWorkspaceView.getCQLFunctionsView().getFunctionArgumentList().size() > 0) {
+		if (!cqlWorkspaceView.getCQLFunctionsView().getFunctionArgumentList().isEmpty()) {
 			cqlWorkspaceView.getCQLFunctionsView().getFunctionArgumentList().clear();
 		}
 		isModified = false;
 		isCodeModified = false;
+		isLibraryNameExists = false;
 		setId = null;
 		currentIncludeLibrarySetId = null;
 		currentIncludeLibraryId = null;
@@ -889,6 +898,7 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 				setId = result.getSetId();
 			}
 			if (result.getCqlModel().getLibraryName() != null) {
+				isLibraryNameExists = (result.getFailureReason() == SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME);
 				cqlLibraryName = cqlWorkspaceView.getCqlGeneralInformationView().createCQLLibraryName(result.getCqlModel().getLibraryName());
 				cqlWorkspaceView.getCqlGeneralInformationView().getLibraryNameTextBox().setText(cqlLibraryName);
 
@@ -963,11 +973,9 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 				cqlWorkspaceView.getCQLLeftNavBarPanelView().udpateIncludeLibraryMap();
 				MatContext.get().setIncludedValues(result);
 			}
-
-			boolean isValidQDMVersion = cqlWorkspaceView.getCQLLeftNavBarPanelView().checkForIncludedLibrariesQDMVersion(false); //false because it is a measures cql view
-			if (!isValidQDMVersion) {
-				messagePanel.getErrorMessageAlert().createAlert(INVALID_QDM_VERSION_IN_INCLUDES);
-			} 
+			
+			buildOrClearErrorPanel();
+			
 		} else {
 			Window.alert(MatContext.get().getMessageDelegate().getGenericErrorMessage());
 		}
@@ -2435,7 +2443,7 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 
 	private void leftNavGeneralInformationClicked() {
 		cqlWorkspaceView.hideAceEditorAutoCompletePopUp();
-		generalInfoEvent();
+		checkIfLibraryNameExistsAndLoadGeneralInfo();
 	}
 
 	private void leftNavComponentsClicked(ClickEvent event) {

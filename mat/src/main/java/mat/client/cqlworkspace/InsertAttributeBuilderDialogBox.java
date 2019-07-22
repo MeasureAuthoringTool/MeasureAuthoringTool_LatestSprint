@@ -61,14 +61,17 @@ public class InsertAttributeBuilderDialogBox {
 	private static final String FACILITY_LOCATIONS = "facilityLocations";
 	private static final String ATTR_ID = "id";
 	private static final String DIAGNOSES = "diagnoses";
+	private static final String DISPENSER = "dispenser";
 	private static final String COMPONENTS = "components";
 	private static final String PERFORMER = "performer";
 	private static final String REQUESTER = "requester";
+	private static final String LINKED_PATIENT_ID = "linkedPatientId";
+	private static final String PARTICIPANT = "participant";
+	private static final String PATIENT_ID = "patientId";
 	private static final String PRESCRIBER = "prescriber";
 	private static final String SENDER = "sender";
 	private static final String RECIPIENT = "recipient";
 	private static final String RECORDER = "recorder";
-	private static final String RELEVANT_PERIOD = "relevantPeriod";
 	private static final String VALUE_SETS = "Value Sets";
 	private static final String CODES = "Codes";
 	private static final String NULLABLE = "Nullable";
@@ -447,8 +450,8 @@ public class InsertAttributeBuilderDialogBox {
 	}
 
 	private static boolean isModeDisabledEntry(final String attrSelected) {
-		Set<String> hashset = new HashSet<>(Arrays.asList(COMPONENTS, DIAGNOSES, FACILITY_LOCATIONS, PERFORMER, 
-				PRESCRIBER, REQUESTER, RECIPIENT, SENDER, RECORDER, RELEVANT_PERIOD, ATTR_ID));
+		Set<String> hashset = new HashSet<>(Arrays.asList(COMPONENTS, DIAGNOSES, DISPENSER, FACILITY_LOCATIONS, LINKED_PATIENT_ID, PARTICIPANT, PATIENT_ID, PERFORMER, 
+				PRESCRIBER, REQUESTER, RECIPIENT, SENDER, RECORDER, ATTR_ID));
 		return hashset.contains(attrSelected);
 	}
 

@@ -45,10 +45,10 @@ public class CQLValidationUtil {
 		    	identifiersSet.add(dto.getName());
 		    }
 	    	for (CQLCode code : cqlModel.getCodeList()) {
-	    		if (identifiersSet.contains(code.getName())) {
+	    		if (identifiersSet.contains(code.getDisplayName())) {
 	    			return true;
 	    		}
-    			identifiersSet.add(code.getName());
+    			identifiersSet.add(code.getDisplayName());
 	    	}
 	    	for (CQLDefinition def : cqlModel.getDefinitionList()) {
 	    		if (identifiersSet.contains(def.getDefinitionName())) {

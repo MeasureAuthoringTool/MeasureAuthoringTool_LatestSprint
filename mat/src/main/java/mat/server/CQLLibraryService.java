@@ -36,6 +36,8 @@ import mat.client.measure.service.CQLService;
 import mat.client.measure.service.SaveCQLLibraryResult;
 import mat.client.shared.CQLWorkSpaceConstants;
 import mat.client.shared.MatContext;
+import mat.client.shared.MatException;
+import mat.client.shared.MessageDelegate;
 import mat.client.umls.service.VsacApiResult;
 import mat.client.util.ClientConstants;
 import mat.dao.CQLLibraryAuditLogDAO;
@@ -237,7 +239,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		dataSetObject.setOwnerLastName(user.getLastName());
 		dataSetObject.setOwnerEmailAddress(user.getEmailAddress());
 		dataSetObject.setOwnerId(user.getId());
-		dataSetObject.setCqlSetId(cqlLibrary.getSet_id());
+		dataSetObject.setCqlSetId(cqlLibrary.getSetId());
 		
 		String currentUserId = LoggedInUserUtil.getLoggedInUser();
 		String userRole = LoggedInUserUtil.getLoggedInUserRole();
@@ -303,16 +305,27 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	}
 	
 	@Override
-	public SaveCQLLibraryResult saveDraftFromVersion(String libraryId){
+	public SaveCQLLibraryResult draftExistingCQLLibrary(String libraryId, String libraryName) throws MatException{
 		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
 		CQLLibrary existingLibrary = cqlLibraryDAO.find(libraryId);
-		boolean isDraftable = MatContextServiceUtil.get().isCurrentCQLLibraryDraftable(
-				cqlLibraryDAO, libraryId);
+		boolean isDraftable = MatContextServiceUtil.get().isCurrentCQLLibraryDraftable(cqlLibraryDAO, libraryId);
+		
 		if(existingLibrary != null && isDraftable){
+			
+			if (cqlService.checkIfLibraryNameExists(libraryName, existingLibrary.getSetId())) {
+				throw new MatException(MessageDelegate.DUPLICATE_LIBRARY_NAME);
+			}
+			
+			String name = cqlLibraryDAO.getLibraryNameIfDraftAlreadyExists(existingLibrary.getSetId());
+			if (StringUtils.isNotBlank(name)) {
+				String msg = "This draft can not be created. A draft of " + name + " has already been created in the system.";
+				throw new MatException(msg);
+			}
+			
 			CQLLibrary newLibraryObject = new CQLLibrary();
 			newLibraryObject.setDraft(true);
-			newLibraryObject.setName(existingLibrary.getName());
-			newLibraryObject.setSet_id(existingLibrary.getSet_id());;
+			newLibraryObject.setName(libraryName);
+			newLibraryObject.setSetId(existingLibrary.getSetId());
 			newLibraryObject.setOwnerId(existingLibrary.getOwnerId());
 			newLibraryObject.setReleaseVersion(MATPropertiesService.get().getCurrentReleaseVersion());
 			newLibraryObject.setQdmVersion(MATPropertiesService.get().getQmdVersion());
@@ -352,8 +365,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	}
 	
 	@Override
-	public SaveCQLLibraryResult saveFinalizedVersion(String libraryId,  boolean isMajor,
-			 String version, boolean ignoreUnusedLibraries){
+	public SaveCQLLibraryResult saveFinalizedVersion(String libraryId,  boolean isMajor, String version, boolean ignoreUnusedLibraries){
 		logger.info("Inside saveFinalizedVersion: Start");
 		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
 		
@@ -365,7 +377,16 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 			return result;
 		}
 		
+		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+
+		if (cqlService.checkIfLibraryNameExists(cqlLibrary.getName(), cqlLibrary.getSetId())) {
+			result.setSuccess(false);
+			result.setFailureReason(SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME);
+			return result;
+		}
+		
 		SaveUpdateCQLResult cqlResult = getCQLData(libraryId);
+		
 		if(!cqlResult.getCqlErrors().isEmpty() || !cqlResult.getLinterErrors().isEmpty() || !cqlResult.isDatatypeUsedCorrectly()){
 			result.setSuccess(false);
 			result.setFailureReason(ConstantMessages.INVALID_CQL_DATA);
@@ -373,7 +394,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		}
 		
 		List<String> usedLibraries = cqlResult.getUsedCQLArtifacts().getUsedCQLLibraries();
-		CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
+		
 		String cqlLibraryXml = getCQLLibraryXml(cqlLibrary);
 		if(CQLUtil.checkForUnusedIncludes(cqlLibraryXml, usedLibraries)){
 			if(!ignoreUnusedLibraries) {
@@ -389,7 +410,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		if(library != null){
 			String versionNumber = null;
 			if (isMajor) {
-				versionNumber = cqlLibraryDAO.findMaxVersion(library.getSet_id(), null);
+				versionNumber = cqlLibraryDAO.findMaxVersion(library.getSetId(), null);
 				if (versionNumber == null) {
 					versionNumber = "0.000";
 				}
@@ -399,7 +420,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 				logger.info("Min Version number passed from Page Model: " + versionIndex);
 				String selectedVersion = version.substring(versionIndex + 1);
 				logger.info("Min Version number after trim: " + selectedVersion);
-				versionNumber = cqlLibraryDAO.findMaxOfMinVersion(library.getSet_id(), selectedVersion);
+				versionNumber = cqlLibraryDAO.findMaxOfMinVersion(library.getSetId(), selectedVersion);
 			}
 			
 			int endIndex = versionNumber.indexOf('.');
@@ -529,19 +550,25 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	}
 
 	@Override
-	public SaveCQLLibraryResult save(CQLLibraryDataSetObject cqlLibraryDataSetObject) {
+	public SaveCQLLibraryResult saveLibrary(CQLLibraryDataSetObject cqlLibraryDataSetObject) {
 
 		if (cqlLibraryDataSetObject != null) {
 			cqlLibraryDataSetObject.scrubForMarkUp();
 		}
 
 		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
+		if (cqlService.checkIfLibraryNameExists(cqlLibraryDataSetObject.getCqlName(), cqlLibraryDataSetObject.getCqlSetId())) {
+			result.setFailureReason(SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME);
+			result.setSuccess(false);
+			return result;
+		}
+		
 		List<String> message = isValidCQLLibrary(cqlLibraryDataSetObject);
-		if (message.size() == 0) {
+		if (message.isEmpty()) {
 			CQLLibrary library = new CQLLibrary();
 			library.setDraft(true);
 			library.setName(cqlLibraryDataSetObject.getCqlName());
-			library.setSet_id(UUID.randomUUID().toString());
+			library.setSetId(UUID.randomUUID().toString());
 			library.setReleaseVersion(MATPropertiesService.get().getCurrentReleaseVersion());
 			library.setQdmVersion(MATPropertiesService.get().getQmdVersion());
 			library.setRevisionNumber("000");
@@ -712,7 +739,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		if(cqlLibraryXml != null) {
 			cqlResult = cqlService.getCQLData(cqlLibraryXml);
 			lintAndAddToResult(cqlResult, cqlLibrary);
-			cqlResult.setSetId(cqlLibrary.getSet_id());
+			cqlResult.setSetId(cqlLibrary.getSetId());
 			cqlResult.setSuccess(true);
 		}
 		
@@ -727,8 +754,12 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 		
 		if(cqlLibraryXml != null) {
 			cqlResult = cqlService.getCQLDataForLoad(cqlLibraryXml);
-			cqlResult.setSetId(cqlLibrary.getSet_id());
+			cqlResult.setSetId(cqlLibrary.getSetId());
 			cqlResult.setSuccess(true);
+			
+			if (cqlService.checkIfLibraryNameExists(cqlLibrary.getName(), cqlLibrary.getSetId())) {
+				cqlResult.setFailureReason(SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME);	
+			}
 		}
 		
 		return cqlResult;
@@ -917,16 +948,23 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	
 	@Override
 	public SaveUpdateCQLResult saveAndModifyCQLGeneralInfo(String libraryId, String libraryName, String libraryComment) {
-		SaveUpdateCQLResult result = null;
+		SaveUpdateCQLResult result = new SaveUpdateCQLResult();
 		if(MatContextServiceUtil.get().isCurrentCQLLibraryEditable(cqlLibraryDAO, libraryId)){
 			CQLLibrary cqlLibrary = cqlLibraryDAO.find(libraryId);
-			String cqlXml = getCQLLibraryXml(cqlLibrary);
-			if (cqlXml != null) {
-				result = cqlService.saveAndModifyCQLGeneralInfo(cqlXml, libraryName, libraryComment);
-				if (result != null && result.isSuccess()) {
-					cqlLibrary.setName(libraryName);
-					cqlLibrary.setCQLByteArray(result.getXml().getBytes());
-					cqlLibraryDAO.save(cqlLibrary);
+			
+			if (cqlService.checkIfLibraryNameExists(libraryName, cqlLibrary.getSetId())) {
+				result.setFailureReason(SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME);
+				result.setSuccess(false);
+				
+			} else {
+				String cqlXml = getCQLLibraryXml(cqlLibrary);
+				if (cqlXml != null) {
+					result = cqlService.saveAndModifyCQLGeneralInfo(cqlXml, libraryName, libraryComment);
+					if (result != null && result.isSuccess()) {
+						cqlLibrary.setName(libraryName);
+						cqlLibrary.setCQLByteArray(result.getXml().getBytes());
+						cqlLibraryDAO.save(cqlLibrary);
+					}
 				}
 			}
 		}
@@ -1215,13 +1253,14 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 						transferObject.setId(libraryId);
 						SaveUpdateCQLResult codeResult = cqlService.saveCQLCodes(cqlLibraryXml,transferObject);
 						if(codeResult != null && codeResult.isSuccess()) {
+							cqlLibraryXml = codeResult.getXml();
 							cqlLibrary.setCQLByteArray(codeResult.getXml().getBytes());
 							SaveUpdateCQLResult updatedResult = updateCodeSystem(codeResult.getXml(), transferObject.getCqlCode());
 							if(updatedResult.isSuccess()) {
 								cqlLibrary.setCQLByteArray(updatedResult.getXml().getBytes());
 								cqlLibraryXml = updatedResult.getXml();
 							}
-							result.setXml(updatedResult.getXml());
+							result.setXml(cqlLibraryXml);
 						} else {
 							result.setSuccess(false);
 							break;
@@ -1557,7 +1596,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
                 }
                 String versionNumber = "v" + cqlLibrary.getVersionNumber(); 
                 String id = cqlLibrary.getId();
-                String setId = cqlLibrary.getSet_id();
+                String setId = cqlLibrary.getSetId();
                 String firstName = user.getFirstName();
                 String lastName = user.getLastName(); 
                 String organization = user.getOrganization().getOrganizationName();

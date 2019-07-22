@@ -188,7 +188,7 @@ public interface MeasureService extends RemoteService {
 	 *            the model
 	 * @return the save measure result
 	 */
-	SaveMeasureResult save(ManageMeasureDetailModel model);
+	SaveMeasureResult saveNewMeasure(ManageMeasureDetailModel model);
 	
 	SaveMeasureResult saveCompositeMeasure(ManageCompositeMeasureDetailModel model);
 	
@@ -653,4 +653,6 @@ public interface MeasureService extends RemoteService {
 	public int generateAndSaveMaxEmeasureId(boolean isEditable, String measureId);
 	
 	public String getHumanReadableForMeasureDetails(String measureId);
+	
+    public boolean checkIfLibraryNameExists(String libraryName, String setId);
 }
