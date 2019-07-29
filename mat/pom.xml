@@ -45,7 +45,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-			<dependency>
+		<dependency>
 			<groupId>info.cqframework</groupId>
 			<artifactId>cql</artifactId>
 			<version>1.4.6</version>
@@ -329,7 +329,7 @@
         <dependency>
             <groupId>mat</groupId>
             <artifactId>CQLtoELM</artifactId>
-            <version>1.4.6.51</version>
+            <version>1.4.6.54</version>
         </dependency>
         <dependency>
             <groupId>mat</groupId>

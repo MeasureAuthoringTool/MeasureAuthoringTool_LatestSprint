@@ -16,7 +16,6 @@ import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
 import edu.ycp.cs.dh.acegwt.client.ace.AceAnnotationType;
-import mat.DTO.UserPreferenceDTO;
 import mat.client.buttons.InfoDropDownMenu;
 import mat.client.buttons.InfoToolBarButton;
 import mat.client.buttons.InsertToolBarButton;
@@ -24,7 +23,6 @@ import mat.client.buttons.SaveButton;
 import mat.client.cqlworkspace.shared.CQLEditor;
 import mat.client.cqlworkspace.shared.CQLEditorPanel;
 import mat.client.inapphelp.component.InAppHelp;
-import mat.client.shared.MatContext;
 import mat.client.shared.SkipListBuilder;
 import mat.client.shared.SpacerWidget;
 import mat.shared.CQLError;
@@ -57,31 +55,32 @@ public class CQLLibraryEditorView {
 	}
 	
 	public VerticalPanel buildView(boolean isEditable){
+
+		editorPanel = new CQLEditorPanel(CQL_LIBRARY_EDITOR_ID, "CQL Library Editor", !isEditable);
 		cqlLibraryEditorVP.clear();
 		cqlLibraryEditorVP.getElement().setId("cqlLibraryEditor_Id");
 		heading.addStyleName("leftAligned");
-					
+		
 		cqlLibraryEditorVP.add(SharedCQLWorkspaceUtility.buildHeaderPanel(heading, inAppHelp));
 		cqlLibraryEditorVP.add(new SpacerWidget());
 		
 		getCqlAceEditor().setText("");
 		getCqlAceEditor().clearAnnotations();
-		UserPreferenceDTO userPreference = MatContext.get().getLoggedInUserPreference();
-		boolean enableFreeTextEditor = (userPreference != null && userPreference.isFreeTextEditorEnabled()) && isEditable;
-		
-		getCqlAceEditor().setReadOnly(!enableFreeTextEditor);
-		getSaveButton().setEnabled(enableFreeTextEditor);
 		
 		if(isEditable) {
 			exportErrorFile.setPull(Pull.LEFT);
 			cqlLibraryEditorVP.add(exportErrorFile);
-			
-			FlowPanel fp = new FlowPanel();
-			buildInfoInsertBtnGroup();
-			fp.add(infoBtnGroup);
-			fp.add(insertButton);
-			cqlLibraryEditorVP.add(fp);
 		}
+		
+		FlowPanel fp = new FlowPanel();
+		buildInfoInsertBtnGroup();
+		fp.add(infoBtnGroup);
+		fp.add(insertButton);
+		cqlLibraryEditorVP.add(fp);
+		
+		getCqlAceEditor().setReadOnly(!isEditable); 
+		getSaveButton().setEnabled(isEditable);
+		insertButton.setEnabled(isEditable);
 		
 		this.editorPanel.getEditor().addDomHandler(event -> editorPanel.catchTabOutKeyCommand(event, saveButton), KeyUpEvent.getType());
 		editorPanel.setSize("650px", "500px");
@@ -117,6 +116,7 @@ public class CQLLibraryEditorView {
 	}
 
 	public void resetAll() {
+		editorPanel = new CQLEditorPanel(CQL_LIBRARY_EDITOR_ID, "CQL Library Editor", false);
 		getCqlAceEditor().setText("");
 	}
 	

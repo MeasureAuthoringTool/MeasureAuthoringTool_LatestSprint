@@ -23,6 +23,7 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.SimplePanel;
 
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
+import mat.DTO.UserPreferenceDTO;
 import mat.client.Mat;
 import mat.client.clause.QDSAttributesService;
 import mat.client.clause.QDSAttributesServiceAsync;
@@ -98,6 +99,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected static final String VSAC_UPDATE_SUCCESSFULL = "Successfully updated applied Value Set list with VSAC data.";
 	protected static final String SUCCESSFUL_MODIFY_APPLIED_VALUESET = "Selected value set has been modified successfully.";
 	protected static final String SUCCESSFUL_MODIFY_APPLIED_CODE = "Selected code has been modified successfully.";
+	protected static final String INCORRECT_VALUE_SET_CODE_DATATYPE_COMBINATION = "There is an incorrect value set/code datatype combination.";
 	protected static final String ARGUMENT = "Argument";
 	protected static final String LIBRARY = "Library";
 	protected static final String PARAMETER = "Parameter";
@@ -142,6 +144,9 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected CQLQualityDataSetDTO modifyValueSetDTO;
 	protected MatValueSet currentMatValueSet= null;
 	protected String cqlLibraryName;
+	protected enum Color {
+		RED, YELLOW, GREEN;
+	}
 	
 	protected final VSACAPIServiceAsync vsacapiService = MatContext.get().getVsacapiServiceAsync();
 	protected QDSAttributesServiceAsync attributeService = (QDSAttributesServiceAsync) GWT.create(QDSAttributesService.class);
@@ -489,8 +494,11 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected abstract void saveCQLFile();
 	
 	protected void onSaveCQLFileSuccess(SaveUpdateCQLResult result) {
+		Color c = Color.GREEN;
 		cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().clearAnnotations();
+		SharedCQLWorkspaceUtility.displayAnnotationForViewCQL(result, cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor());
 		List<String> errorMessages = new ArrayList<>();
+		
 		if(!result.getLinterErrorMessages().isEmpty() || !result.getCqlErrors().isEmpty()) {
 			errorMessages.add("The CQL file was saved with errors.");
 			
@@ -498,27 +506,51 @@ public abstract class AbstractCQLWorkspacePresenter {
 				result.getLinterErrorMessages().forEach(e -> errorMessages.add(e));	
 			} 
 			
-
+			c = Color.RED;
 			SharedCQLWorkspaceUtility.displayAnnotationForViewCQL(result, cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor());
-			messagePanel.getErrorMessageAlert().createAlert(errorMessages);
-		} else {
-			messagePanel.getSuccessMessageAlert().createAlert("Changes to the CQL File have been successfully saved.");
+		} 
+		
+		else {
+			errorMessages.add("Changes to the CQL File have been successfully saved.");
 		}
 		
 		if(!result.getLinterWarningMessages().isEmpty()) {
-			messagePanel.getWarningMessageAlert().createAlert(result.getLinterWarningMessages());
-			messagePanel.getWarningMessageAlert().setMarginTop(0.0);
+			errorMessages.addAll(result.getLinterWarningMessages());
+			if(c != Color.RED) {
+				c = Color.YELLOW;
+			}
+		}
+		
+		if(!result.isDatatypeUsedCorrectly()) {
+			errorMessages.add(INCORRECT_VALUE_SET_CODE_DATATYPE_COMBINATION);
+			c = Color.RED;
+		}
+		setSpecificErrorMessage(c, errorMessages);
+	}
+	
+	private void setSpecificErrorMessage(Color color, List<String> errorMessages) {
+		switch(color) 
+		{
+			case GREEN:
+				messagePanel.getSuccessMessageAlert().createAlert("Changes to the CQL File have been successfully saved.");
+				break;
+			case YELLOW:
+				messagePanel.getWarningMessageAlert().createAlert(errorMessages);
+				break;
+			case RED:
+				messagePanel.getErrorMessageAlert().createAlert(errorMessages);
+				break;
 		}
 	}
 	
 	protected void onSaveCQLFileFailure(SaveUpdateCQLResult result) {
-		SharedCQLWorkspaceUtility.displayAnnotations(result, cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor());
+		SharedCQLWorkspaceUtility.displayAnnotationForViewCQL(result, cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor());
 		if (result.getFailureReason() == SaveUpdateCQLResult.SYNTAX_ERRORS)  {
 			messagePanel.getErrorMessageAlert().createAlert("The MAT was unable to save the changes. All items entered must be written in the correct CQL syntax. The line where MAT is no longer able to read the file is marked with a red square.");
 		} 
 		else if(result.getFailureReason() == SaveUpdateCQLResult.DUPLICATE_CQL_KEYWORD) {
 			messagePanel.getErrorMessageAlert().createAlert("The CQL file could not be saved. All identifiers must be unique and can not match any CQL keywords");
-		}
+		} 
 	}
 	
 	protected void onModifyValueSet(CQLQualityDataSetDTO result, boolean isUserDefined) {
@@ -1403,9 +1435,11 @@ public abstract class AbstractCQLWorkspacePresenter {
 			unsetActiveMenuItem(currentSection);
 			cqlWorkspaceView.getCQLLeftNavBarPanelView().getCQLLibraryEditorTab().setActive(true);
 			currentSection = CQLWorkSpaceConstants.CQL_VIEW_MENU;
-			cqlWorkspaceView.buildCQLFileView(hasEditPermissions());
+			UserPreferenceDTO userPreference = MatContext.get().getLoggedInUserPreference();
+			cqlWorkspaceView.buildCQLFileView(hasEditPermissions() && userPreference.isFreeTextEditorEnabled());
 			buildCQLView();
 		}
+		addEventHandlerOnAceEditors();
 		curAceEditor = cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor();
 		curAceEditor.setText("");
 		cqlWorkspaceView.getCQLLibraryEditorView().setHeading(getWorkspaceTitle() + " > CQL Library Editor", "cqlViewCQL_Id");
@@ -1423,7 +1457,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 		currentSection = CQLWorkSpaceConstants.CQL_FUNCTION_MENU;
 		cqlWorkspaceView.buildFunctionLibraryView();
 		cqlWorkspaceView.getCQLFunctionsView().setWidgetReadOnly(hasEditPermissions());
-
+		addEventHandlerOnAceEditors();
 		cqlWorkspaceView.getCQLFunctionsView().getAddNewButtonBar().getaddNewButton().setEnabled(hasEditPermissions());
 		cqlWorkspaceView.getCQLFunctionsView().getFunctionButtonBar().getDeleteButton().setEnabled(false);
 		cqlWorkspaceView.getCQLFunctionsView().getFunctionButtonBar().getDeleteButton().setTitle("Delete");
@@ -1442,6 +1476,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 		currentSection = CQLWorkSpaceConstants.CQL_PARAMETER_MENU;
 		cqlWorkspaceView.buildParameterLibraryView();
 		cqlWorkspaceView.getCQLParametersView().setWidgetReadOnly(hasEditPermissions());
+		addEventHandlerOnAceEditors();
 		cqlWorkspaceView.getCQLParametersView().getAddNewButtonBar().getaddNewButton().setEnabled(hasEditPermissions());
 		cqlWorkspaceView.getCQLParametersView().getParameterButtonBar().getDeleteButton().setEnabled(false);
 		cqlWorkspaceView.getCQLParametersView().getParameterButtonBar().getDeleteButton().setTitle("Delete");
@@ -1462,6 +1497,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 		currentSection = CQLWorkSpaceConstants.CQL_DEFINE_MENU;
 		cqlWorkspaceView.buildDefinitionLibraryView();
 		cqlWorkspaceView.getCQLDefinitionsView().setWidgetReadOnly(hasEditPermissions());
+		addEventHandlerOnAceEditors();
 		cqlWorkspaceView.getCQLDefinitionsView().getAddNewButtonBar().getaddNewButton().setEnabled(hasEditPermissions());
 		cqlWorkspaceView.getCQLDefinitionsView().getDefineButtonBar().getDeleteButton().setEnabled(false);
 		cqlWorkspaceView.getCQLDefinitionsView().getDefineButtonBar().getDeleteButton().setTitle("Delete");

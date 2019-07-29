@@ -545,30 +545,30 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 	
 	@Override
 	protected void saveCQLFile() {
-		String currentCQL = cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().getText();		
-		MatContext.get().getLibraryService().saveCQLFile(MatContext.get().getCurrentCQLLibraryId(), currentCQL, new AsyncCallback<SaveUpdateCQLResult>() {
-
-			@Override
-			public void onFailure(Throwable caught) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void onSuccess(SaveUpdateCQLResult result) {
-				cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().replace(result.getCqlString());
-				messagePanel.clearAlerts();
-				if(!result.isSuccess()) {
-					onSaveCQLFileFailure(result);
-				} else {
-					handleCQLData(result);
-					onSaveCQLFileSuccess(result);
-					setIsPageDirty(false);
+		
+		if(hasEditPermissions()) {
+			
+			String currentCQL = cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().getText();		
+			MatContext.get().getLibraryService().saveCQLFile(MatContext.get().getCurrentCQLLibraryId(), currentCQL, new AsyncCallback<SaveUpdateCQLResult>() {
+	
+				@Override
+				public void onFailure(Throwable caught) {
 				}
-				
-				cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().focus();
-			}
-		});
+				@Override
+				public void onSuccess(SaveUpdateCQLResult result) {
+					cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().replace(result.getCqlString());
+					messagePanel.clearAlerts();
+					if(!result.isSuccess()) {
+						onSaveCQLFileFailure(result);
+					} else {
+						handleCQLData(result);
+						onSaveCQLFileSuccess(result);
+						setIsPageDirty(false);
+					}
+					cqlWorkspaceView.getCQLLibraryEditorView().getCqlAceEditor().focus();
+				}
+			});
+		}
 	}
 
 	@Override
@@ -1247,18 +1247,7 @@ public class CQLStandaloneWorkSpacePresenter extends AbstractCQLWorkspacePresent
 					cqlWorkspaceView.getCqlGeneralInformationView().setGeneralInfoOfLibrary(cqlLibraryName, libraryVersion, result.getCqlModel().getQdmVersion(), "QDM", cqlLibraryComment);
 				}
 
-				List<CQLQualityDataSetDTO> appliedValueSetAndCodeList = new ArrayList<>();
-				List<CQLQualityDataSetDTO> appliedValueSetAndCodeListFromXML = result.getCqlModel().getAllValueSetAndCodeList();
-
-
-				for (CQLQualityDataSetDTO dto : appliedValueSetAndCodeListFromXML) {
-					if((dto.getOriginalCodeListName() != null && !dto.getOriginalCodeListName().isEmpty()) 
-							|| (dto.getCodeIdentifier() != null && !dto.getCodeIdentifier().isEmpty()) &&
-							appliedValueSetAndCodeList.stream().filter(v -> v.getName().equals(dto.getName())).count() == 0) {
-						appliedValueSetAndCodeList.add(dto);
-					}					
-				}
-				
+				List<CQLQualityDataSetDTO> appliedValueSetAndCodeList =  result.getCqlModel().getAllValueSetAndCodeList();				
 				MatContext.get().setValuesets(appliedValueSetAndCodeList);
 				MatContext.get().setCQLModel(result.getCqlModel());
 				appliedValueSetTableList.clear();

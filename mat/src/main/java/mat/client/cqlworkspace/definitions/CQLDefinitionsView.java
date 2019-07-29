@@ -237,6 +237,7 @@ public class CQLDefinitionsView {
 	}
 	
 	public void resetAll() {
+		editorPanel= new CQLEditorPanel(DEFINITION, "CQL Expression Editor", false);
 		getDefineNameTxtArea().setText("");
 		getDefineAceEditor().setText("");
 		getViewCQLAceEditor().setText("");
@@ -247,7 +248,7 @@ public class CQLDefinitionsView {
 	public void setWidgetReadOnly(boolean isEditable) {
 		getDefineNameTxtArea().setEnabled(isEditable);
 		getDefineCommentTextArea().setEnabled(isEditable);
-		getDefineAceEditor().setReadOnly(!isEditable);
+		editorPanel.setIsReadOnly(!isEditable);
 		getDefineButtonBar().getSaveButton().setEnabled(isEditable);
 		getDefineButtonBar().getDeleteButton().setEnabled(isEditable);
 		getDefineButtonBar().getInsertButton().setEnabled(isEditable);

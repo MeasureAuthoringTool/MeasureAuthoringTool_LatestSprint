@@ -445,7 +445,8 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 				((NewCompositeMeasureView) compositeDetailDisplay).setCompositeScoringChoices(compositeChoices);
 			}
 		});
-
+		((NewCompositeMeasureView) compositeDetailDisplay).getMeasureScoringListBox().addChangeHandler(event -> setPatientBasedIndicatorBasedOnScoringChoice((((NewCompositeMeasureView) compositeDetailDisplay))));
+		
 		((NewCompositeMeasureView) compositeDetailDisplay).getMeasureNameTextBox().addValueChangeHandler(event -> setIsPageDirty(true));
 		((NewCompositeMeasureView) compositeDetailDisplay).getECQMAbbreviatedTitleTextBox().addValueChangeHandler(event -> setIsPageDirty(true));
 		((NewCompositeMeasureView) compositeDetailDisplay).getCQLLibraryNameTextBox().addValueChangeHandler(event -> setIsPageDirty(true));
@@ -606,6 +607,7 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 		}
 
 		setSearchingBusy(true);
+		updateCompositeDetailsFromCompositeDetailView();
 		updateCompositeDetailsFromComponentMeasureDisplay();
 		
 		searchDisplay.resetMessageDisplay();
@@ -1841,6 +1843,7 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 	}
 	
 	private void setDetailsToView() {
+		panel.getButtonPanel().clear();
 		detailDisplay.clearFields();
 		resetPatientBasedInput(detailDisplay);
 		detailDisplay.getMeasureNameTextBox().setValue(currentDetails.getMeasureName());
@@ -1859,7 +1862,7 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 				detailDisplay.getPatientBasedListBox().removeItem(1);
 				detailDisplay.getPatientBasedListBox().setSelectedIndex(0);
 			}
-		} 
+		}
 	}
 
 	private void shareDisplayHandlers(final ShareDisplay shareDisplay) {

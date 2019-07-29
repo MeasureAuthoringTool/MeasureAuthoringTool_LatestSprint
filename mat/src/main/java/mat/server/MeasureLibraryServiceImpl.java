@@ -1551,6 +1551,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 		BigDecimal mVersion = new BigDecimal(maximumVersionNumber);
 		mVersion = mVersion.add(new BigDecimal(incrementBy));
 		mDetail.setVersionNumber(mVersion.toString());
+		mDetail.setRevisionNumber("000");
 		Date currentDate = new Date();
 		mDetail.setFinalizedDate(DateUtility.convertDateToString(currentDate));
 		mDetail.setDraft(false);
@@ -1614,8 +1615,17 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
     }
 
     private String replaceVersionInXMLString(String measureXML, String versionStr, String measureId) throws XPathExpressionException {
+    	
     	XmlProcessor xmlProcessor = new XmlProcessor(measureXML);
     	String cqlVersionXPath = "//cqlLookUp/version";
+    	String measureVersionXPath = "//measureDetails/version";
+    	Node measureVersionNode = (Node) xPath.evaluate(measureVersionXPath,
+    			xmlProcessor.getOriginalDoc().getDocumentElement(), XPathConstants.NODE);
+    	if (measureVersionNode != null) {
+    		measureVersionNode.setTextContent(MeasureUtility.formatVersionText(versionStr));
+    	} else {
+    		logger.info("measureDetails Node not found. This is in measure : " + measureId);
+    	}
 
     	Node cqlVersionNode = (Node) xPath.evaluate(cqlVersionXPath,
     			xmlProcessor.getOriginalDoc().getDocumentElement(), XPathConstants.NODE);
@@ -4942,24 +4952,26 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			processor.replaceNode(result.getXml(), CQL_LOOKUP, MEASURE);
 			measureXMLModel.setXml(processor.transform(processor.getOriginalDoc()));
 			
-			// need to clean definitions from populations and groupings. 
-			// go through all of the definitions in the previous model and check if they are in the new model
-			// if the old definition is not in the new model, clean the groupings
-			for(CQLDefinition previousDefinition : previousModel.getDefinitionList()) {
-				Optional<CQLDefinition> previousDefinitionInNewModel = result.getCqlModel().getDefinitionList().stream().filter(d -> d.getId().equals((previousDefinition.getId()))).findFirst();
-				if(!previousDefinitionInNewModel.isPresent()) {
-					cleanPopulationsAndGroups(previousDefinition, measureXMLModel);
+			if(result.isSuccess()) {
+				// need to clean definitions from populations and groupings. 
+				// go through all of the definitions in the previous model and check if they are in the new model
+				// if the old definition is not in the new model, clean the groupings
+				for(CQLDefinition previousDefinition : previousModel.getDefinitionList()) {
+					Optional<CQLDefinition> previousDefinitionInNewModel = result.getCqlModel().getDefinitionList().stream().filter(d -> d.getId().equals((previousDefinition.getId()))).findFirst();
+					if(!previousDefinitionInNewModel.isPresent()) {
+						cleanPopulationsAndGroups(previousDefinition, measureXMLModel);
+					}
+				}
+				
+				// do the same thing for functions
+				for(CQLFunctions previousFunction : previousModel.getCqlFunctions()) {
+					Optional<CQLFunctions> previousFunctionInNewModel = result.getCqlModel().getCqlFunctions().stream().filter(f -> f.getId().equals((previousFunction.getId()))).findFirst();
+					if(!previousFunctionInNewModel.isPresent()) {
+						cleanMeasureObservationAndGroups(previousFunction, measureXMLModel);
+					}
 				}
 			}
-			
-			// do the same thing for functions
-			for(CQLFunctions previousFunction : previousModel.getCqlFunctions()) {
-				Optional<CQLFunctions> previousFunctionInNewModel = result.getCqlModel().getCqlFunctions().stream().filter(f -> f.getId().equals((previousFunction.getId()))).findFirst();
-				if(!previousFunctionInNewModel.isPresent()) {
-					cleanMeasureObservationAndGroups(previousFunction, measureXMLModel);
-				}
-			}
-			
+
 			measurePackageService.saveMeasureXml(measureXMLModel);
 			
 			if(result.isSuccess()) {
@@ -5907,6 +5919,11 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			result.setId(pkg.getId());
 			model.setMeasureTypeSelectedList(getMeasureTypeForComposite(model.getMeasureTypeSelectedList()));
 			createComponentMeasureAsLibraryInMeasureXML(pkg.getId(), model);
+			
+			if (isExisting) {
+				result.setCompositeMeasureDetailModel(getCompositeMeasure(model.getId()));
+			}
+			
 			return result;
 		} else {
 			logger.info("Validation Failed for measure :: Invalid Data Issues.");
