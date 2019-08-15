@@ -6,6 +6,7 @@ import org.gwtbootstrap3.client.ui.FieldSet;
 import org.gwtbootstrap3.client.ui.FormGroup;
 import org.gwtbootstrap3.client.ui.FormLabel;
 import org.gwtbootstrap3.client.ui.HelpBlock;
+import org.gwtbootstrap3.client.ui.TextArea;
 import org.gwtbootstrap3.client.ui.TextBox;
 import org.gwtbootstrap3.client.ui.constants.ValidationState;
 
@@ -29,13 +30,12 @@ import mat.client.shared.MessageAlert;
 import mat.client.shared.SpacerWidget;
 import mat.client.shared.TextAreaWithMaxLength;
 import mat.client.shared.WarningConfirmationMessageAlert;
-import mat.client.shared.WarningMessageAlert;
 
 public class AbstractNewMeasureView implements DetailDisplay {
 	protected SimplePanel mainPanel = new SimplePanel();
 	protected MeasureNameLabel measureNameLabel = new MeasureNameLabel();
-	protected TextAreaWithMaxLength measureNameTextBox = new TextAreaWithMaxLength();
-	protected TextAreaWithMaxLength cqlLibraryNameTextBox = new TextAreaWithMaxLength();
+	protected TextArea measureNameTextBox = new TextArea();
+	protected TextArea cqlLibraryNameTextBox = new TextArea();
 	protected TextBox eCQMAbbreviatedTitleTextBox = new TextBox();
 	protected MessageAlert errorMessages = new ErrorMessageAlert();
 	protected WarningConfirmationMessageAlert warningMessageAlert = new WarningConfirmationMessageAlert();
@@ -49,9 +49,14 @@ public class AbstractNewMeasureView implements DetailDisplay {
     protected FormGroup shortNameGroup = new FormGroup();
     protected FormGroup scoringGroup = new FormGroup();
     protected FormGroup patientBasedFormGrp = new FormGroup();
+    protected HTML cautionMsgLibraryName = new HTML();
     protected HTML cautionMsgPlaceHolder = new HTML();
 	protected HTML cautionPatientbasedMsgPlaceHolder = new HTML();
 	EditConfirmationDialogBox confirmationDialogBox = new EditConfirmationDialogBox();
+	
+	public static final String CAUTION_LIBRARY_NAME_MSG_STR = "<div style=\"padding-left:5px;\">WARNING: Long CQL Library names may cause problems upon export with zip files and file storage. "
+			+ "Please keep CQL Library names concise.<br/>";
+	
 	protected String cautionPatientbasedMsgStr = "<div style=\"padding-left:5px;\">WARNING: Changing the Measure Scoring type will "
 			+ "reset the Patient-based Measure to its default setting.<br/>";
     
@@ -226,12 +231,24 @@ public class AbstractNewMeasureView implements DetailDisplay {
 		return cqlLibraryNameLabel;
 	}
 	
-	protected void buildCQLLibraryTextArea() {
+	private void buildCQLLibraryTextArea() {
 		cqlLibraryNameTextBox.setId("CqlLibraryNameTextArea");
 		cqlLibraryNameTextBox.setTitle("Enter CQL Library Name Required.");
 		cqlLibraryNameTextBox.setWidth("400px");
 		cqlLibraryNameTextBox.setHeight("50px");
 		cqlLibraryNameTextBox.setMaxLength(500);
+	}
+	
+	protected HorizontalPanel buildCQLLibraryNamePanel() {
+		 HorizontalPanel cqlLibraryNamePanel = new HorizontalPanel();
+		 cqlLibraryNameGroup.add(buildCQLLibraryNameLabel());
+		 
+		 buildCQLLibraryTextArea();
+		 cqlLibraryNamePanel.add(cqlLibraryNameTextBox);
+		 cqlLibraryNamePanel.add(new HTML("&nbsp;"));
+		 cautionMsgLibraryName.setHTML(CAUTION_LIBRARY_NAME_MSG_STR);
+		 cqlLibraryNamePanel.add(cautionMsgLibraryName);
+		 return cqlLibraryNamePanel;
 	}
 	
 	protected FormLabel buildShortNameLabel() {
