@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.xml.xpath.XPathExpressionException;
 
@@ -697,31 +699,10 @@ public class CQLServiceImpl implements CQLService {
 	 */
 	private String parseOutBody(String cqlExpressionString, String expressionDefinitionString, boolean isSpaces,
 			int indentSize) {
-
 		// remove the definition statement from the expressions string to make the
-		// epxerssion body and then trim whitespace
+		// expression body and then trim whitespace
 		String expressionBodyString = cqlExpressionString.replace(expressionDefinitionString, "").trim();
-
-		Scanner scanner = new Scanner(expressionBodyString);
-		StringBuilder builder = new StringBuilder();
-
-		// go through and rebuild the the format
-		// this will remove the first whitespace in a line so
-		// it properly displays in the ace editor.
-		// without doing this, the the ace editor display
-		// would be indented one too many
-		while (scanner.hasNextLine()) {
-			String line = scanner.nextLine();
-
-			if (!line.isEmpty()) {
-				line = line.replaceFirst(CQLUtilityClass.getWhiteSpaceString(isSpaces, indentSize), "");
-			}
-
-			builder.append(line + "\n");
-		}
-
-		scanner.close();
-		return builder.toString();
+		return CQLUtilityClass.replaceFirstWhitespaceInLineForExpression(expressionBodyString);
 	}
 
 	@Override
@@ -1641,6 +1622,9 @@ public class CQLServiceImpl implements CQLService {
 			}
 		}	
 
+		List<CQLCode> codesList = model.getCodeList().stream().sorted(Comparator.comparing(CQLCode::getDisplayName, String.CASE_INSENSITIVE_ORDER)).collect(Collectors.toList()); 
+		model.setCodeList(codesList);
+		
 		result.setCqlCodeList(model.getCodeList());
 		result.setSuccess(true);
 		result.setCqlModel(model);

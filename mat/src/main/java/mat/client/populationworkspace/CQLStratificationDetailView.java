@@ -162,8 +162,8 @@ public class CQLStratificationDetailView implements CQLPopulationDetail {
 
 		// select a definition name in the listbox
 		for (int j = 0; j < definitionListBox.getItemCount(); j++) {
-			String definitionName = definitionListBox.getItemText(j);
-			if (definitionName.equals(populationClauseObject.getCqlExpressionDisplayName())) {
+			String definitionUUID = definitionListBox.getValue(j);
+			if (definitionUUID.equals(populationClauseObject.getCqlExpressionUUID())) {
 				definitionListBox.setItemSelected(j, true);
 				break;
 			}
@@ -447,7 +447,7 @@ public class CQLStratificationDetailView implements CQLPopulationDetail {
 					pc.setCqlExpressionUUID("");					
 				} else {					
 					pc.setCqlExpressionType("cqldefinition");
-					pc.setCqlExpressionDisplayName(l.getSelectedItemText());
+					pc.setCqlExpressionDisplayName(getSelectedName(l.getSelectedValue()));
 					pc.setCqlExpressionUUID(l.getSelectedValue());
 				}
 				modifiedStratumList.add(pc);
@@ -464,6 +464,16 @@ public class CQLStratificationDetailView implements CQLPopulationDetail {
 		strataDataModel.getStratificationObjectList().addAll(modifiedList);
 
 		return strataDataModel;		
+	}
+	
+	private String getSelectedName(String selectedUuid) {
+		for(ExpressionObject o : this.populationDataModel.getDefinitionNameList()) {
+			if(o.getUuid().equals(selectedUuid)) {
+				return o.getName();
+			}
+		}
+				
+		return "";
 	}
 
 }

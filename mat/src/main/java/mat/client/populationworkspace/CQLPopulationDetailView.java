@@ -20,6 +20,7 @@ import com.google.gwt.user.client.ui.ScrollPanel;
 
 import mat.client.populationworkspace.model.PopulationClauseObject;
 import mat.client.populationworkspace.model.PopulationDataModel;
+import mat.client.populationworkspace.model.PopulationDataModel.ExpressionObject;
 import mat.client.populationworkspace.model.PopulationsObject;
 import mat.client.shared.CQLPopulationTopLevelButtonGroup;
 import mat.client.shared.SpacerWidget;
@@ -107,8 +108,7 @@ public class CQLPopulationDetailView implements CQLPopulationDetail {
 		definitionListBox.setTitle("Select Definition List");
 		definitionListBox.setId("definitionList_" + populationClauseObject.getDisplayName());
 
-		populationDataModel.getDefinitionNameList()
-				.forEach(definition -> definitionListBox.addItem(definition.getName(), definition.getUuid()));
+		populationDataModel.getDefinitionNameList().forEach(definition -> definitionListBox.addItem(definition.getName(), definition.getUuid()));
 
 		SelectElement selectElement = SelectElement.as(definitionListBox.getElement());
 		com.google.gwt.dom.client.NodeList<OptionElement> options = selectElement.getOptions();
@@ -118,8 +118,8 @@ public class CQLPopulationDetailView implements CQLPopulationDetail {
 
 		// select a definition name in the listbox
 		for (int j = 0; j < definitionListBox.getItemCount(); j++) {
-			String definitionName = definitionListBox.getItemText(j);
-			if (definitionName.equals(populationClauseObject.getCqlExpressionDisplayName())) {
+			String definitionUUID = definitionListBox.getValue(j);
+			if (definitionUUID.equals(populationClauseObject.getCqlExpressionUUID())) {
 				definitionListBox.setItemSelected(j, true);
 				break;
 			}
@@ -250,7 +250,7 @@ public class CQLPopulationDetailView implements CQLPopulationDetail {
 				pc.setCqlExpressionUUID("");	
 			} else {
 				pc.setCqlExpressionType("cqldefinition");
-				pc.setCqlExpressionDisplayName(l.getSelectedItemText());
+				pc.setCqlExpressionDisplayName(getSelectedName(l.getSelectedValue()));
 				pc.setCqlExpressionUUID(l.getSelectedValue());
 			}
 						
@@ -261,5 +261,15 @@ public class CQLPopulationDetailView implements CQLPopulationDetail {
 		populationsObject.getPopulationClauseObjectList().addAll(modifiedList);
 		return populationsObject;
 		
+	}
+	
+	private String getSelectedName(String selectedUuid) {
+		for(ExpressionObject o : this.populationDataModel.getDefinitionNameList()) {
+			if(o.getUuid().equals(selectedUuid)) {
+				return o.getName();
+			}
+		}
+		
+		return "";
 	}
 }

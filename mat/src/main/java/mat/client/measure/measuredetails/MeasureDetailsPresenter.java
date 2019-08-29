@@ -293,13 +293,12 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 		});
 		measureDetailsView.getDeleteMeasureButton().addClickHandler(event -> handleDeleteMeasureButtonClick());
 		measureDetailsView.getSaveButton().addClickHandler(event -> handleSaveButtonClick());
+		measureDetailsView.getCancelButton().addClickHandler(event -> handleCancelButtonClick());
 		componentMeasureDisplay.getBackButton().addClickHandler(event -> displayCompositeMeasuresOnMeasureDetails(false));
 		componentMeasureDisplay.getCancelButton().addClickHandler(event -> displayCompositeMeasuresOnMeasureDetails(false));
 		componentMeasureDisplay.getSaveButton().addClickHandler(event -> saveCompositeMeasures());
 	}
 
-	
-	
 	private void saveCompositeMeasures() {
 
 		componentMeasureDisplay.setComponentBusy(true);
@@ -457,6 +456,12 @@ public class MeasureDetailsPresenter implements MatPresenter, MeasureDetailsObse
 			} else {
 				measureDetailsView.displayErrorMessage(validationErrors);
 			}
+		}
+	}
+	
+	private void handleCancelButtonClick() {
+		if(!isReadOnly) {
+			measureDetailsView.getComponentDetailView().resetForm();
 		}
 	}
 

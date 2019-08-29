@@ -44,7 +44,8 @@ public class CommonMeasureValidator {
 		
 		return errorMessages;
     }
-
+    
+    
 	public List<String> validateMeasureName(String measureName) {
 		List<String> errorMessages = new ArrayList<>();
 		if(StringUtility.isEmptyOrNull(measureName)) {

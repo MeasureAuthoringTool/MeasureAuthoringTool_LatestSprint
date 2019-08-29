@@ -370,9 +370,9 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 		isClone = false;
 	}
 	
-	private void auditMeasureSelected(ManageMeasureSearchModel.Result result){
+	private void auditMeasureDraft(ManageMeasureSearchModel.Result result){
 		MatContext.get().getAuditService().recordMeasureEvent(result.getId(), "Draft Created",
-				"Draft created based on Version " + result.getVersionValue(), false,
+				"Draft created based on Version v" + result.getVersionValue(), false,
 				new AsyncCallback<Boolean>() {
 					@Override
 					public void onFailure(Throwable caught) {}
@@ -380,6 +380,7 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 					public void onSuccess(Boolean result) {}
 				});
 	}
+	
 	
 	private void clearErrorMessageAlerts() {
 		detailDisplay.getWarningConfirmationMessageAlert().clearAlert();
@@ -631,6 +632,7 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 
 				@Override
 				public void onSuccess(ManageMeasureSearchModel.Result result) {
+					auditMeasureDraft(result);
 					displaySuccessAndFireSelectedEvent(result, MatContext.get().getMessageDelegate().getMeasureDraftSuccessfulMessage(compositeDetailDisplay.getMeasureNameTextBox().getValue()));	
 				}
 
@@ -667,6 +669,7 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 
 				@Override
 				public void onSuccess(ManageMeasureSearchModel.Result result) {
+					auditMeasureDraft(result);
 					displaySuccessAndFireSelectedEvent(result, MatContext.get().getMessageDelegate().getMeasureDraftSuccessfulMessage(detailDisplay.getMeasureNameTextBox().getValue()));
 				}
 			});
@@ -733,7 +736,10 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 			message = "Data Validation Failed.Please verify data.";
 		} else if(SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME == result.getFailureReason()) {
 			message = MessageDelegate.DUPLICATE_LIBRARY_NAME;
-		}  else {
+		} else if(SaveUpdateCQLResult.DUPLICATE_CQL_KEYWORD == result.getFailureReason()) {
+			message = MatContext.get().getMessageDelegate().getLibraryNameIsCqlKeywordError();
+
+		} else {
 			message = "Unknown Code " + result.getFailureReason();
 		}
 		return message;
@@ -956,20 +962,6 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 	}
 
 	private void export(ManageMeasureSearchModel.Result result) {
-		String id = result.getId();
-		MatContext.get().getAuditService().recordMeasureEvent(id, "Measure Exported", null, true,
-				new AsyncCallback<Boolean>() {
-					@Override
-					public void onFailure(Throwable caught) {
-						detailDisplay.getErrorMessageDisplay().createAlert("Error while adding export comment");
-					}
-
-					@Override
-					public void onSuccess(Boolean result) {
-					}
-
-				});
-
 		ManageExportPresenter exportPresenter = new ManageExportPresenter(exportView, result, this);
 
 		searchDisplay.getErrorMessageDisplayForBulkExport().clearAlert();
@@ -1067,6 +1059,11 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 	private boolean isValidCompositeMeasure(ManageCompositeMeasureDetailModel compositeMeasureDetails) {
 		ManageCompositeMeasureModelValidator manageCompositeMeasureModelValidator = new ManageCompositeMeasureModelValidator();
 		List<String> message = manageCompositeMeasureModelValidator.validateMeasureWithClone(compositeMeasureDetails, isClone);
+		
+		if(!AbstractCQLWorkspacePresenter.isValidExpressionName(compositeMeasureDetails.getCQLLibraryName())) {
+			message.add(MatContext.get().getMessageDelegate().getLibraryNameIsCqlKeywordError());
+		}
+		
 		boolean valid = message.isEmpty();
 		if(valid) {
 			compositeDetailDisplay.getErrorMessageDisplay().clearAlert();
@@ -1317,6 +1314,7 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 	}
 
 	private void buildAdvancedSearchModel(MeasureSearchModel searchModel) {
+		searchModel.setCqlLibraryName(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getCqlLibraryNameByValue());
 		searchModel.setIsDraft(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getSearchStateValue());
 		searchModel.setPatientBased(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getPatientBasedValue());
 		searchModel.setScoringTypes(searchDisplay.getMeasureSearchFilterWidget().getAdvancedSearchPanel().getScoringTypeList());
@@ -1559,7 +1557,7 @@ public class ManageMeasurePresenter implements MatPresenter, TabObserver {
 			@Override
 			public void onClick(ClickEvent event) {
 				fireMeasureSelected(resultToFireEvent);
-				auditMeasureSelected(resultToFireEvent);
+				auditMeasureDraft(resultToFireEvent);
 				resultToFireEvent = new ManageMeasureSearchModel.Result();
 			}
 		});

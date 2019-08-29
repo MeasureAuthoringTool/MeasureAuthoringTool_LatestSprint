@@ -60,7 +60,6 @@ import mat.client.shared.SearchWidgetBootStrap;
 import mat.client.shared.SkipListBuilder;
 import mat.client.shared.SpacerWidget;
 import mat.client.umls.service.VSACAPIServiceAsync;
-import mat.client.umls.service.VsacApiResult;
 import mat.client.util.CellTableUtility;
 import mat.client.util.MatTextBox;
 import mat.model.MatCodeTransferObject;
@@ -542,24 +541,6 @@ public class CQLCodesView {
 		cellTableMainPanel.clear();
 	}
 
-	public String convertMessage(final int id) {
-		String message;
-		switch (id) {
-		case VsacApiResult.UMLS_NOT_LOGGEDIN:
-			message = MatContext.get().getMessageDelegate().getUMLS_NOT_LOGGEDIN();
-			break;
-		case VsacApiResult.CODE_URL_REQUIRED:
-			message = MatContext.get().getMessageDelegate().getUMLS_CODE_IDENTIFIER_REQUIRED();
-			break;
-		case VsacApiResult.VSAC_REQUEST_TIMEOUT:
-			message = MatContext.get().getMessageDelegate().getVSAC_RETRIEVE_TIMEOUT();
-			break;
-		default:
-			message = MatContext.get().getMessageDelegate().getVSAC_RETRIEVE_FAILED();
-		}
-		return message;
-	}
-
 	public void resetCQLCodesSearchPanel() {
 		HTML searchHeaderText = new HTML("<strong>Search</strong>");
 		getSearchHeader().clear();
@@ -1032,7 +1013,6 @@ public class CQLCodesView {
 
 	public void setIsEditable(boolean isEditable) {		
 		getIncludeCodeSystemVersionCheckBox().setEnabled(isEditable);
-		getApplyButton().setEnabled(isEditable);
 		getCancelCodeButton().setEnabled(isEditable);
 		getRetrieveFromVSACButton().setEnabled(isEditable);
 		this.setIsLoading(!isEditable);

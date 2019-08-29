@@ -16,7 +16,8 @@ public class MessageDelegate {
 	public static final String DUPLICATE_LIBRARY_NAME_SAVE = "The MAT was unable to save the change to the CQL library name. All CQL library names must be unique within the MAT.";
 	public static final String VERSION_LIBRARY_NAME_ERROR_MESSAGE = "The MAT is unable to version the measure. The CQL Library name associated with this measure is not unique. Please edit the CQL Library name before versioning.";
 	public static final String VERSION_STANDALONE_LIBRARY_NAME_ERROR_MESSAGE = "The MAT is unable to version the Library. The CQL Library name is not unique. Please edit the CQL Library name before versioning.";
-	
+	public static final String VSAC_UNAUTHORIZED_ERROR = "Unable to retrieve information from VSAC. Please log in to UMLS again to re-establish a connection.";
+
 	private static final String WELCOME_MESSAGE = "You have successfully logged into the MAT.";
 	private static final String ALERT_LOADING_MESSAGE = "Please wait until loading is complete.";
 	private static final String CHANGES_SAVED = "Changes are successfully saved.";
@@ -27,6 +28,7 @@ public class MessageDelegate {
 	private static final String LAST_NAME_REQUIRED = "Last Name is required.";
 	private static final String LOGIN_ID_REQUIRED = "User ID is required.";
 	private static final String LIBRARY_NAME_REQUIRED = "Library Name is required.";
+	public static final String LIBRARY_NAME_IS_CQL_KEYWORD_ERROR = "The CQL Library Name can not be the same as a CQL Keyword.";
 	private static final String CQL_STAND_ALONE_LIBRARY_NAME_ERROR = "Invalid Library Name. Library names must start with an alpha-character or underscore, followed by an alpha-numeric character(s) or underscore(s), and must not contain spaces.";
 	private static final String EMAIL_ID_INCORRECT_FORMAT = "Email Address has an incorrect format.";
 	private static final String EMAIL_ID_REQUIRED = "Email Address is required.";
@@ -959,5 +961,9 @@ public class MessageDelegate {
 			s = "invalid value set date.";
 		}
 		return pre + s;
+	}
+
+	public String getLibraryNameIsCqlKeywordError() {
+		return LIBRARY_NAME_IS_CQL_KEYWORD_ERROR;
 	}
 }

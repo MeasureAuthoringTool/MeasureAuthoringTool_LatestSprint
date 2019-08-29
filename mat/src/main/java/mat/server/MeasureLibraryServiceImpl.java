@@ -142,6 +142,7 @@ import mat.server.service.impl.MeasureAuditServiceImpl;
 import mat.server.service.impl.PatientBasedValidator;
 import mat.server.service.impl.XMLMarshalUtil;
 import mat.server.util.CQLUtil;
+import mat.server.util.CQLValidationUtil;
 import mat.server.util.ExportSimpleXML;
 import mat.server.util.MATPropertiesService;
 import mat.server.util.ManageMeasureDetailModelConversions;
@@ -149,6 +150,7 @@ import mat.server.util.MeasureUtility;
 import mat.server.util.QDMUtil;
 import mat.server.util.XmlProcessor;
 import mat.server.validator.measure.CompositeMeasureValidator;
+import mat.shared.CQLModelValidator;
 import mat.shared.CQLValidationResult;
 import mat.shared.CompositeMeasureValidationResult;
 import mat.shared.ConstantMessages;
@@ -1746,6 +1748,12 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			result.setSuccess(false);
 			return result;
 		}
+		
+		if(CQLValidationUtil.isCQLReservedWord(model.getCQLLibraryName())) {
+			result.setFailureReason(SaveUpdateCQLResult.DUPLICATE_CQL_KEYWORD);
+			result.setSuccess(false);
+			return result;
+		}
 			
 		ManageMeasureModelValidator manageMeasureModelValidator = new ManageMeasureModelValidator();
 		List<String> message = manageMeasureModelValidator.validateMeasure(model);
@@ -1797,6 +1805,7 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 				result.setId(pkg.getId());
 				return result;
 			}
+			result.setVersionStr(MeasureUtility.formatVersionText(pkg.getRevisionNumber(), pkg.getVersion()));
 			result.setSuccess(true);
 			result.setId(pkg.getId());
 			saveMeasureXml(createMeasureXmlModel(model, pkg, MEASURE), pkg.getId());
@@ -4941,9 +4950,18 @@ public class MeasureLibraryServiceImpl implements MeasureLibraryService {
 			CQLLinter linter = CQLUtil.lint(result.getCqlString(), config);
 			result.getLinterErrors().addAll(linter.getErrors());
 			result.getLinterErrorMessages().addAll(linter.getErrorMessages());
+			result.setDoesMeasureHaveIncludedLibraries(checkIfIncludedLibrariesAreCoposite(result.getCqlModel().getIncludedLibrarys(), measure.getIsCompositeMeasure()));
+			result.setMeasureComposite(measure.getIsCompositeMeasure());
 		} else {
 			result.resetErrors();
 		}
+	}
+
+	private boolean checkIfIncludedLibrariesAreCoposite(Map<CQLIncludeLibrary, CQLModel> includedLibrarys, Boolean compositeMeasure) {
+		if(!compositeMeasure) {
+			return includedLibrarys.size() > 0;
+		}
+		return includedLibrarys.keySet().stream().anyMatch(library -> !"true".equals(library.getIsComponent()));
 	}
 
 	@Override

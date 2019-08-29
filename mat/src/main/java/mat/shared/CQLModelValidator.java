@@ -2,6 +2,8 @@ package mat.shared;
 
 import com.google.gwt.regexp.shared.RegExp;
 
+import mat.client.shared.MatContext;
+
 
 /**
  * The Class CQLModelValidator.

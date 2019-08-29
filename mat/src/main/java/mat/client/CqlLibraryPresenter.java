@@ -1056,11 +1056,11 @@ public class CqlLibraryPresenter implements MatPresenter, TabObserver {
 			return false;
 		}
 
-		else if(!validator.doesAliasNameFollowCQLAliasNamingConvention(detailDisplay.getNameField().getText().trim())) {
+		else if(!validator.doesAliasNameFollowCQLAliasNamingConvention(detailDisplay.getNameField().getText())) {
 			detailDisplay.getErrorMessage().createAlert(MatContext.get().getMessageDelegate().getCqlStandAloneLibraryNameError());
 			return false;
 		}
-		
+	
 		return true;
 	}
 	
@@ -1074,6 +1074,7 @@ public class CqlLibraryPresenter implements MatPresenter, TabObserver {
 	
 	private void createCQLLibrary() {
 		CQLLibraryDataSetObject libraryDataSetObject = new CQLLibraryDataSetObject();
+		detailDisplay.getNameField().setText(detailDisplay.getNameField().getText().trim());
 		libraryDataSetObject.setCqlName(detailDisplay.getNameField().getText());
 
 		if(isLibraryNameValid()) {
@@ -1095,9 +1096,11 @@ public class CqlLibraryPresenter implements MatPresenter, TabObserver {
 					} else {
 						if (result.getFailureReason() == SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME) {
 							detailDisplay.getErrorMessage().createAlert(MessageDelegate.DUPLICATE_LIBRARY_NAME);
-						} else {
+						} else if(result.getFailureReason() == SaveUpdateCQLResult.DUPLICATE_CQL_KEYWORD) {
+							detailDisplay.getErrorMessage().createAlert(MessageDelegate.LIBRARY_NAME_IS_CQL_KEYWORD_ERROR);
+						}else {
 							detailDisplay.getErrorMessage().createAlert(MatContext.get().getMessageDelegate().getCqlStandAloneLibraryNameError());
-						}
+						} 
 					}
 				}
 			});

@@ -88,7 +88,10 @@ public abstract class AbstractCQLWorkspacePresenter {
 	protected static final String COPY_QDM_SELECT_ATLEAST_ONE  = "Please select at least one Value Set to copy.";
 	protected static final String COPY_CODE_SELECT_ATLEAST_ONE  = "Please select at least one Code to copy.";
 	protected static final String VIEW_CQL_WARNING_MESSAGE = "You are viewing CQL with validation warnings. Warnings are marked with a yellow triangle on the line number.";
-	protected static final String VIEW_CQL_ERROR_MESSAGE = "You are viewing CQL with validation errors. Errors are marked with a red square on the line number.";
+	protected static final String VIEW_CQL_ERROR_MESSAGE = "You are viewing the CQL file with validation errors. Errors are marked with a red square on the line number.";
+	protected static final String VIEW_CQL_ERROR_MESSAGE_COMPOSITE_AND_INCLUDED = "You are viewing the CQL file with validation errors. Errors in the main library are marked with a red square on the line number. To view errors in included libraries or component measures, navigate to those sections of the CQL Workspace.";
+	protected static final String VIEW_CQL_ERROR_MESSAGE_COMPOSITE = "You are viewing the CQL file with validation errors. Errors in the main library are marked with a red square on the line number. To view errors in component measures, navigate to the Components section of the CQL Workspace.";
+	protected static final String VIEW_CQL_ERROR_MESSAGE_INCLUDED = "You are viewing the CQL file with validation errors. Errors in the main library are marked with a red square on the line number. To view errors in included libraries, navigate to the Includes section of the CQL Workspace.";
 	protected static final String VIEW_CQL_NO_ERRORS_MESSAGE ="You are viewing CQL with no validation errors.";
 	protected static final String VIEW_CQL_ERROR_MESSAGE_BAD_VALUESET_DATATYPE ="CQL file with validation errors. You have an incorrect value set/code datatype combination.";
 	protected static final String ERROR_SAVE_CQL_PARAMETER  = "Please enter parameter name.";
@@ -218,7 +221,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 		return isPageDirty;
 	}	
 	
-	protected boolean isValidExpressionName(String expressionName) {
+	public static boolean isValidExpressionName(String expressionName) {
 		final String trimedExpression = expressionName.trim();
 		return !trimedExpression.isEmpty() && !trimedExpression.equalsIgnoreCase(PATIENT)
 				&& MatContext.get().getCqlConstantContainer() != null 
@@ -478,7 +481,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 					CQLCode code = buildCQLCodeFromCodesView(StringUtility.removeEscapedCharsFromString(cqlWorkspaceView.getCodesView().getCodeDescriptorInput().getValue()));
 					cqlWorkspaceView.getCodesView().setValidateCodeObject(code);
 				} else {
-					String message = cqlWorkspaceView.getCodesView().convertMessage(result.getFailureReason());
+					String message = convertMessage(result.getFailureReason());
 					messagePanel.getErrorMessageAlert().createAlert(message);
 					messagePanel.getErrorMessageAlert().setVisible(true);
 				}
@@ -1798,6 +1801,7 @@ public abstract class AbstractCQLWorkspacePresenter {
 	}
 	
 	protected void includeViewEraseButtonClicked() {
+		setIsPageDirty(false);
 		cqlWorkspaceView.resetMessageDisplay();
 		cqlWorkspaceView.getCQLLeftNavBarPanelView().setIsDoubleClick(false);
 		cqlWorkspaceView.getCQLLeftNavBarPanelView().setIsNavBarClick(false);
@@ -1873,6 +1877,10 @@ public abstract class AbstractCQLWorkspacePresenter {
 			addIncludeLibraryInCQLLookUp();
 			cqlWorkspaceView.getIncludeView().getAliasNameTxtArea().setFocus(true);
 		}
+	}
+	
+	protected void aliasNameChangeHandler() {
+		setIsPageDirty(true);
 	}
 	
 	protected void includeFocusPanelKeyDown(KeyDownEvent event) {
@@ -2028,4 +2036,31 @@ public abstract class AbstractCQLWorkspacePresenter {
 			messagePanel.getSuccessMessageAlert().createAlert(successMsg);
 		}
 	}
+	
+	protected String convertMessage(final int id) {
+		String message;
+		switch (id) {
+		case VsacApiResult.UMLS_NOT_LOGGEDIN:
+			message = MatContext.get().getMessageDelegate().getUMLS_NOT_LOGGEDIN();
+			break;
+		case VsacApiResult.OID_REQUIRED:
+			message = MatContext.get().getMessageDelegate().getUMLS_OID_REQUIRED();
+			break;
+		case VsacApiResult.CODE_URL_REQUIRED:
+			message = MatContext.get().getMessageDelegate().getUMLS_CODE_IDENTIFIER_REQUIRED();
+			break;
+		case VsacApiResult.VSAC_REQUEST_TIMEOUT:
+			message = MatContext.get().getMessageDelegate().getVSAC_RETRIEVE_TIMEOUT();
+			break;
+		case VsacApiResult.VSAC_UNAUTHORIZED_ERROR:
+			message = MessageDelegate.VSAC_UNAUTHORIZED_ERROR;
+			Mat.hideUMLSActive(true);
+			MatContext.get().setUMLSLoggedIn(false);
+			break;
+		default:
+			message = MatContext.get().getMessageDelegate().getVSAC_RETRIEVE_FAILED();
+		}
+		return message;
+	}
+	
 }

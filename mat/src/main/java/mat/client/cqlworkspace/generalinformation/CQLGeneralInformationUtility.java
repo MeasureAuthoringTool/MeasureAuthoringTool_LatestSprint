@@ -2,6 +2,7 @@ package mat.client.cqlworkspace.generalinformation;
 
 import org.gwtbootstrap3.client.ui.constants.ValidationState;
 
+import mat.client.cqlworkspace.AbstractCQLWorkspacePresenter;
 import mat.client.shared.MatContext;
 import mat.client.shared.MessagePanel;
 import mat.shared.CQLModelValidator;
@@ -33,6 +34,12 @@ public class CQLGeneralInformationUtility {
 		if(validator.isLibraryNameMoreThan500Characters(libraryName)) {
 			view.getLibraryNameGroup().setValidationState(ValidationState.ERROR);
 			messagePanel.getErrorMessageAlert().createAlert(LIBRARY_LENGTH_ERROR);
+			return false; 
+		}
+		
+		if(!AbstractCQLWorkspacePresenter.isValidExpressionName(libraryName)) {
+			view.getLibraryNameGroup().setValidationState(ValidationState.ERROR);
+			messagePanel.getErrorMessageAlert().createAlert(MatContext.get().getMessageDelegate().getLibraryNameIsCqlKeywordError());
 			return false; 
 		}
 		

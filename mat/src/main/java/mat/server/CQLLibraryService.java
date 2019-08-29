@@ -79,6 +79,7 @@ import mat.server.service.CQLLibraryServiceInterface;
 import mat.server.service.UserService;
 import mat.server.service.impl.MatContextServiceUtil;
 import mat.server.util.CQLUtil;
+import mat.server.util.CQLValidationUtil;
 import mat.server.util.MATPropertiesService;
 import mat.server.util.MeasureUtility;
 import mat.server.util.QDMUtil;
@@ -317,6 +318,11 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 				throw new MatException(MatContext.get().getMessageDelegate().getCqlStandAloneLibraryNameError());
 			}
 			
+			if(CQLValidationUtil.isCQLReservedWord(libraryName)) {
+				throw new MatException(MessageDelegate.LIBRARY_NAME_IS_CQL_KEYWORD_ERROR);
+
+			}
+						
 			if (cqlService.checkIfLibraryNameExists(libraryName, existingLibrary.getSetId())) {
 				throw new MatException(MessageDelegate.DUPLICATE_LIBRARY_NAME);
 			}
@@ -559,10 +565,18 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 	public SaveCQLLibraryResult saveLibrary(CQLLibraryDataSetObject cqlLibraryDataSetObject) {
 
 		if (cqlLibraryDataSetObject != null) {
+			cqlLibraryDataSetObject.setCqlName(StringUtils.trim(cqlLibraryDataSetObject.getCqlName()));
 			cqlLibraryDataSetObject.scrubForMarkUp();
 		}
 
 		SaveCQLLibraryResult result = new SaveCQLLibraryResult();
+		
+		if(CQLValidationUtil.isCQLReservedWord(cqlLibraryDataSetObject.getCqlName())) {
+			result.setFailureReason(SaveUpdateCQLResult.DUPLICATE_CQL_KEYWORD);
+			result.setSuccess(false);
+			return result;
+		}
+		
 		if (cqlService.checkIfLibraryNameExists(cqlLibraryDataSetObject.getCqlName(), cqlLibraryDataSetObject.getCqlSetId())) {
 			result.setFailureReason(SaveUpdateCQLResult.DUPLICATE_LIBRARY_NAME);
 			result.setSuccess(false);
@@ -587,17 +601,18 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 				result.setFailureReason(SaveCQLLibraryResult.INVALID_USER);
 				return result;
 			}
-			String cqlLookUpString = createCQLLookUpTag(cqlLibraryDataSetObject.getCqlName(),library.getVersion()+"."+library.getRevisionNumber());
-			if (cqlLookUpString != null && !cqlLookUpString.isEmpty()) {
+			
+			String version = library.getVersion() + "." + library.getRevisionNumber();
+			String cqlLookUpString = createCQLLookUpTag(cqlLibraryDataSetObject.getCqlName(), version);			
+			if (StringUtils.isNotBlank(cqlLookUpString)) {
 				byte[] cqlByteArray = cqlLookUpString.getBytes();
 				library.setCQLByteArray(cqlByteArray);
 				cqlLibraryDAO.save(library);
 				result.setSuccess(true);
 				result.setId(library.getId());
 				result.setCqlLibraryName(cqlLibraryDataSetObject.getCqlName());
-				result.setVersionStr(library.getVersion()+"."+library.getRevisionNumber());
-				result.setEditable(MatContextServiceUtil.get()
-						.isCurrentCQLLibraryEditable(cqlLibraryDAO, library.getId()));
+				result.setVersionStr(version);
+				result.setEditable(MatContextServiceUtil.get().isCurrentCQLLibraryEditable(cqlLibraryDAO, library.getId()));
 			} else {
 				result.setSuccess(false);
 				result.setFailureReason(SaveCQLLibraryResult.INVALID_CQL);
@@ -613,9 +628,9 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 
 	private List<String> isValidCQLLibrary(CQLLibraryDataSetObject model) {
 
-		List<String> message = new ArrayList<String>();
+		List<String> message = new ArrayList<>();
 
-		if ((model.getCqlName() == null) || "".equals(model.getCqlName().trim())) {
+		if (StringUtils.isBlank(model.getCqlName())) {
 			message.add(MatContext.get().getMessageDelegate().getLibraryNameRequired());
 		} else {
 			CQLModelValidator cqlLibraryModel = new CQLModelValidator();
@@ -1149,6 +1164,8 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 			CQLLinter linter = CQLUtil.lint(result.getCqlString(), config);
 			result.getLinterErrors().addAll(linter.getErrors());
 			result.getLinterErrorMessages().addAll(linter.getErrorMessages());
+			result.setDoesMeasureHaveIncludedLibraries(result.getCqlModel().getIncludedLibrarys().size() > 0);
+			result.setMeasureComposite(false);
 		} else {
 			result.resetErrors();
 		}
@@ -1548,7 +1565,7 @@ public class CQLLibraryService extends SpringRemoteServiceServlet implements CQL
 			List<CQLLibrary> allLibrariesInFamily = cqlLibraryDAO.getAllLibrariesInSet(libraries);
 			for (int j = 0; j < allLibrariesInFamily.size(); j++) {
 				String additionalInfo = "CQL Library Owner transferred from "
-						+ allLibrariesInFamily.get(j).getOwnerId().getEmailAddress() + " to " + toEmail;
+						+ allLibrariesInFamily.get(j).getOwnerId().getFullName() + " to " + userTo.getFullName();
 				allLibrariesInFamily.get(j).setOwnerId(userTo);
 				this.save(allLibrariesInFamily.get(j));
 				cqlLibraryAuditLogDAO.recordCQLLibraryEvent(allLibrariesInFamily.get(j), "CQL Library Ownership Changed", additionalInfo);

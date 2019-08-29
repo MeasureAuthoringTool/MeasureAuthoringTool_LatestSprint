@@ -258,9 +258,11 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 		cqlWorkspaceView.getIncludeView().getEraseButton().addClickHandler(event -> includeViewEraseButtonClicked());
 		cqlWorkspaceView.getIncludeView().getDeleteButton().addClickHandler(event -> includeViewDeleteButtonClicked());
 		cqlWorkspaceView.getIncludeView().getCloseButton().addClickHandler(event -> includeViewCloseButtonClicked());
+		cqlWorkspaceView.getIncludeView().getAliasNameTxtArea().addValueChangeHandler(event -> aliasNameChangeHandler());
 		cqlWorkspaceView.getIncludeView().setObserver(new CQLIncludeLibraryView.Observer() {
 			@Override
 			public void onCheckBoxClicked(CQLLibraryDataSetObject result) {
+				setIsPageDirty(true);
 				MatContext.get().getCQLLibraryService().findCQLLibraryByID(result.getId(), new AsyncCallback<CQLLibraryDataSetObject>() {
 					@Override
 					public void onFailure(Throwable caught) {
@@ -908,7 +910,7 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 
 				cqlLibraryComment = result.getCqlModel().getLibraryComment();
 				String measureVersion = getCurrentMeasureVersion();
-				cqlWorkspaceView.getCqlGeneralInformationView().setGeneralInfoOfLibrary(cqlLibraryName, measureVersion,
+				cqlWorkspaceView.getCqlGeneralInformationView().setGeneralInfoOfLibrary(cqlLibraryName, result.getCqlModel().getVersionUsed(),
 						result.getCqlModel().getQdmVersion(), "QDM", cqlLibraryComment);
 			}
 
@@ -1424,6 +1426,8 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 				showSearchingBusy(false);
 				messagePanel.getSuccessMessageAlert().createAlert(SUCCESSFULLY_VALUESET_PASTE);
 			}
+			
+			cqlWorkspaceView.getValueSetView().clearSelectedCheckBoxes();
 			MatContext.get().getGlobalCopyPaste().getCopiedValueSetList().clear();
 		} else {
 			showSearchingBusy(false);
@@ -1532,6 +1536,8 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 				showSearchingBusy(false);
 				messagePanel.getSuccessMessageAlert().createAlert(SUCCESSFULLY_PASTED_CODES_IN_MEASURE);
 			}
+			
+			cqlWorkspaceView.getCodesView().clearSelectedCheckBoxes();
 			MatContext.get().getGlobalCopyPaste().getCopiedCodeList().clear();
 		} else {
 			showSearchingBusy(false);
@@ -1680,7 +1686,7 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 					cqlWorkspaceView.getCQLLeftNavBarPanelView().setAppliedQdmTableList(appliedValueSetTableList);
 					cqlWorkspaceView.getCQLLeftNavBarPanelView().updateValueSetMap(appliedValueSetTableList);
 				} else {
-					messagePanel.getErrorMessageAlert().createAlert(cqlWorkspaceView.getValueSetView().convertMessage(result.getFailureReason()));
+					messagePanel.getErrorMessageAlert().createAlert(convertMessage(result.getFailureReason()));
 				}
 				showSearchingBusy(false);
 			}
@@ -1738,7 +1744,7 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 					messagePanel.getSuccessMessageAlert().createAlert(getValuesetSuccessfulReterivalMessage(matValueSets.get(0).getDisplayName()));
 					messagePanel.getSuccessMessageAlert().setVisible(true);
 				} else {
-					String message = cqlWorkspaceView.getValueSetView().convertMessage(result.getFailureReason());
+					String message = convertMessage(result.getFailureReason());
 					messagePanel.getErrorMessageAlert().createAlert(message);
 					messagePanel.getErrorMessageAlert().setVisible(true);
 					showSearchingBusy(false);
@@ -2419,8 +2425,9 @@ public class CQLMeasureWorkSpacePresenter extends AbstractCQLWorkspacePresenter 
 			editIncludedLibraryDialogBox.getErrorMessageAlert().createAlert(NO_LIBRARY_TO_REPLACE);
 		}
 	}
-
+	
 	private void includeViewSaveModifyClicked() {
+		setIsPageDirty(false);
 		messagePanel.getErrorMessageAlert().clearAlert();
 		messagePanel.getSuccessMessageAlert().clearAlert();
 		final EditIncludedLibraryDialogBox editIncludedLibraryDialogBox = new EditIncludedLibraryDialogBox("Replace Library");
